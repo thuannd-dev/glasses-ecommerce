@@ -1,5 +1,4 @@
 using System;
-using System.ComponentModel.DataAnnotations;
 
 namespace Domain;
 
@@ -13,9 +12,8 @@ public class Stock
 
     public required int QuantityReserved { get; set; }
 
-    public required int QuantityAvailable { get; set; }
+    public int QuantityAvailable { get; private set; }
 
-    [MaxLength(500)]
     public string? Notes { get; set; }
 
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
@@ -27,6 +25,4 @@ public class Stock
 
     public User? UpdatedByUser { get; set; }
 
-    // Computed property (not mapped)
-    public int ActualAvailable => QuantityOnHand - QuantityReserved;
 }

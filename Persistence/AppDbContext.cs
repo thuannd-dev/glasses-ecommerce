@@ -326,7 +326,7 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User>(op
                 .HasDatabaseName("IX_ProductImage_ProductVariantId_DisplayOrder");
             
             entity.HasIndex(e => e.IsDeleted)
-                .HasDatabaseName("IX_ProductImage_IsDeleted)
+                .HasDatabaseName("IX_ProductImage_IsDeleted")
                 .HasFilter("[IsDeleted] = 0");
 
             //Constraints
@@ -340,6 +340,52 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User>(op
 
         });
 
+
+         //STOCK ENTITY CONFIGURATION
+        builder.Entity<Stock>(entity =>
+        {
+            //Relationships
+            entity.HasOne(e => e.ProductVariant)
+                .WithOne(pv => pv.Stock)
+                .HasForeignKey<Stock>(e => e.ProductVariantId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.UpdatedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.UpdatedBy)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            //Properties
+            entity.Property(s => s.Notes).HasMaxLength(500);
+            entity.Property(x => x.QuantityAvailable)
+                .HasComputedColumnSql(
+                    "[QuantityOnHand] - [QuantityReserved]",
+                    stored: true
+                );
+
+            //Indexes
+            entity.HasIndex(e => e.ProductVariantId)
+                .IsUnique()
+                .HasDatabaseName("IX_Stock_ProductVariantId");
+            
+            entity.HasIndex(e => e.UpdatedAt)
+                .HasDatabaseName("IX_Stock_UpdatedAt");
+            
+            entity.HasIndex(e => e.UpdatedBy)
+                .HasDatabaseName("IX_Stock_UpdatedBy");
+
+            //Constraints
+            entity.ToTable(t =>
+            {
+                t.HasCheckConstraint(
+                    "CK_Stock_Quantity_Valid",
+                    "[QuantityOnHand] >= 0 AND " +
+                    "[QuantityReserved] >= 0 AND " +
+                    "[QuantityReserved] <= [QuantityOnHand]"
+                );
+            });
+        
+        });
 
         // InventoryTransaction ENTITY CONFIGURATION 
         //chỉnh status thành enum constraint xuống db + mapping
