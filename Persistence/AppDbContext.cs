@@ -615,6 +615,41 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User>(op
                 );
             });
         });
+
+        //CART ITEM ENTITY CONFIGURATION
+        builder.Entity<CartItem>(entity =>
+        {
+            //Relationships
+            entity.HasOne(ci => ci.Cart)
+                .WithMany(c => c.Items)
+                .HasForeignKey(ci => ci.CartId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(ci => ci.ProductVariant)
+                .WithMany()
+                .HasForeignKey(ci => ci.ProductVariantId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            //Indexes
+            entity.HasIndex(e => e.CartId)
+                .HasDatabaseName("IX_CartItem_CartId");
+            
+            entity.HasIndex(e => e.ProductVariantId)
+                .HasDatabaseName("IX_CartItem_ProductVariantId");
+            
+            entity.HasIndex(e => new { e.CartId, e.ProductVariantId })
+                .IsUnique()
+                .HasDatabaseName("UX_CartItem_Cart_ProductVariant");
+
+            //Constraints
+            entity.ToTable(t =>
+            {
+                t.HasCheckConstraint(
+                    "CK_CartItem_Quantity",
+                    "Quantity > 0"
+                );
+            });
+        });
     }
 
 }

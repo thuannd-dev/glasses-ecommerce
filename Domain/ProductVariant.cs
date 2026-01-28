@@ -38,6 +38,5 @@ public class ProductVariant
     
     public Stock? Stock { get; set; }
     public ICollection<ProductImage> Images { get; set; } = [];
-    public ICollection<CartItem> CartItems { get; set; } = [];
     public ICollection<OrderItem> OrderItems { get; set; } = [];
 }
