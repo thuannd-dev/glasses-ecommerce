@@ -13,7 +13,6 @@ public class OrderItem
 
     public required int Quantity { get; set; }
 
-    [Column(TypeName = "decimal(10,2)")]
     public required decimal UnitPrice { get; set; }
 
     // Navigation properties
@@ -21,7 +20,6 @@ public class OrderItem
     public ProductVariant ProductVariant { get; set; } = null!;
     public ICollection<AfterSalesTicket> AfterSalesTickets { get; set; } = [];
 
-    // Computed property
-    [NotMapped]
+    // Computed property (not mapped to DB)
     public decimal TotalPrice => Quantity * UnitPrice;
 }

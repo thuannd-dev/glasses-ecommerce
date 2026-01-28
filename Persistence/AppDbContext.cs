@@ -756,7 +756,50 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User>(op
                     "DiscountApplied >= 0"
                 );
             });
-        });       
-    }
+        });     
 
+        //ORDER ITEM ENTITY CONFIGURATION
+        builder.Entity<OrderItem>(entity =>
+        {
+            //Relationships
+            entity.HasOne(oi => oi.Order)
+                .WithMany(o => o.OrderItems)
+                .HasForeignKey(oi => oi.OrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(oi => oi.ProductVariant)
+                .WithMany()
+                .HasForeignKey(oi => oi.ProductVariantId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            //Properties
+            entity.Property(oi => oi.UnitPrice).HasColumnType("decimal(10,2)");
+            entity.Ignore(oi => oi.TotalPrice);
+
+            //Indexes
+            entity.HasIndex(e => e.OrderId)
+                .HasDatabaseName("IX_OrderItem_OrderId");
+            
+            entity.HasIndex(e => e.ProductVariantId)
+                .HasDatabaseName("IX_OrderItem_ProductVariantId");
+            
+            entity.HasIndex(e => new { e.OrderId, e.ProductVariantId })
+                .IsUnique()
+                .HasDatabaseName("UX_OrderItem_Order_ProductVariant");
+
+            //Constraints
+            entity.ToTable(t =>
+            {
+                t.HasCheckConstraint(
+                    "CK_OrderItem_Quantity",
+                    "Quantity > 0"
+                );
+
+                t.HasCheckConstraint(
+                    "CK_OrderItem_UnitPrice",
+                    "UnitPrice >= 0"
+                );
+            });
+        });  
+    }
 }
