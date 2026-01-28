@@ -2,3 +2,9 @@
   width: 100% !important;
   border: none !important;
 }
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;   /* ✅ cho scroll */
+}
