@@ -650,6 +650,67 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User>(op
                 );
             });
         });
+
+        //PROMOTION ENTITY CONFIGURATION
+        builder.Entity<Promotion>(entity =>
+        {
+            //Properties
+            entity.Property(p => p.PromoCode).HasMaxLength(50);
+            entity.Property(p => p.PromoName).HasMaxLength(200);
+            entity.Property(p => p.Description).HasMaxLength(500);
+            entity.Property(p => p.DiscountValue).HasColumnType("decimal(10,2)");
+            entity.Property(p => p.MaxDiscountValue).HasColumnType("decimal(10,2)");
+
+            //Indexes
+            entity.HasIndex(e => e.PromoCode)
+                .IsUnique()
+                .HasDatabaseName("UX_Promotion_PromoCode");
+
+            entity.HasIndex(e => new { e.ValidFrom, e.ValidTo })
+                .HasDatabaseName("IX_Promotion_ValidDates");
+
+            entity.HasIndex(e => new { e.IsActive, e.ValidFrom, e.ValidTo })
+                .HasDatabaseName("IX_Promotion_Active_ValidPeriod");
+            
+            entity.HasIndex(e => e.PromotionType)
+                .HasDatabaseName("IX_Promotion_PromotionType");
+            
+            entity.HasIndex(e => new { e.PromotionType, e.ValidFrom, e.ValidTo })
+                .HasDatabaseName("IX_Promotion_Type_ValidPeriod");
+
+            //Constraints
+            entity.ToTable(t =>
+            {
+                t.HasCheckConstraint(
+                    "CK_Promotion_DiscountValue",
+                    "DiscountValue >= 0"
+                );      
+
+                t.HasCheckConstraint(   
+                    "CK_Promotion_DiscountValue_ByType",
+                    @"
+                    (PromotionType = 0 AND DiscountValue > 0 AND DiscountValue <= 100)
+                    OR (PromotionType = 1 AND DiscountValue > 0)
+                    OR (PromotionType = 2 AND DiscountValue = 0)
+                    "
+                );
+
+                t.HasCheckConstraint(
+                    "CK_Promotion_MaxDiscountValue",
+                    "MaxDiscountValue IS NULL OR MaxDiscountValue >= 0"
+                );
+
+                t.HasCheckConstraint(
+                    "CK_Promotion_ValidPeriod",
+                    "ValidTo > ValidFrom"   
+                );
+
+                t.HasCheckConstraint(
+                    "CK_Promotion_Type",
+                    "[PromotionType] IN (0, 1, 2)"
+                );
+            });
+        });        
     }
 
 }
