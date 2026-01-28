@@ -1,3 +1,13 @@
+# Order đang auto include PromoUsageLogs để tính FinalAmount
+
+- Khi chỉ cần lấy Order thì nhớ ignore PromoUsageLogs trong query để tránh truy vấn thừa
+
+```bash
+db.Orders
+  .IgnoreAutoIncludes()
+  .Select(...)
+```
+
 # Installation
 
 ## Requirements
@@ -65,7 +75,6 @@ dotnet dev-certs https --trust
 20. Initialize Repository
 
 21. dotnet new gitignore
-
 
 22. Copy old folder, files to new project
 

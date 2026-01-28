@@ -93,4 +93,20 @@ public class Order
             _ => false
         };
     }
+
+    public decimal CalculateFinalAmount()
+    {
+        var discount = PromoUsageLogs?.Sum(x => x.DiscountApplied) ?? 0m;
+
+        return TotalAmount + ShippingFee - discount;
+    }
+
+    // Business logic methods: applying promotion, không cho phép áp dụng nhiều promotion cùng lúc
+    public void ApplyPromotion(PromoUsageLog log)
+    {
+        if (PromoUsageLogs.Count != 0)
+            throw new InvalidOperationException("Order already has a promotion");
+
+        PromoUsageLogs.Add(log);
+    }
 }

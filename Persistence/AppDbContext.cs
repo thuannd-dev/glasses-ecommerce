@@ -152,6 +152,10 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User>(op
         // ORDER ENTITY CONFIGURATION
         builder.Entity<Order>(entity =>
         {
+            // AutoInclude
+            entity.Navigation(e => e.PromoUsageLogs)
+                .AutoInclude();
+
             // Relationships
             entity.HasOne(e => e.User)
                 .WithMany(u => u.Orders)
