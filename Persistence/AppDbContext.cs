@@ -1034,5 +1034,46 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User>(op
 
             });
         });
+
+        // REFUND ENTITY CONFIGURATION
+        builder.Entity<Refund>(entity =>
+        {
+            // Relationships
+            entity.HasOne(r => r.Payment)
+                .WithMany(p => p.Refunds)
+                .HasForeignKey(r => r.PaymentId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Properties
+            entity.Property(r => r.RefundStatus).IsRequired();
+
+            entity.Property(r => r.Amount).HasColumnType("decimal(10,2)");
+
+            entity.Property(r => r.RefundReason).HasMaxLength(500);
+
+            // Indexes
+            entity.HasIndex(e => e.PaymentId)
+                .HasDatabaseName("IX_Refund_PaymentId");
+
+            entity.HasIndex(e => e.RefundStatus)
+                .HasDatabaseName("IX_Refund_RefundStatus");
+            
+            entity.HasIndex(e => e.RefundAt)
+                .HasDatabaseName("IX_Refund_RefundAt");
+
+            // Constraints
+            entity.ToTable(t =>
+            {
+                t.HasCheckConstraint(
+                    "CK_Refund_Status",
+                    "[RefundStatus] IN (1, 2, 3, 4)"
+                );
+
+                t.HasCheckConstraint(
+                    "CK_Refund_Amount",
+                    "[Amount] >= 0"
+                );
+            });
+        });
     }
 }
