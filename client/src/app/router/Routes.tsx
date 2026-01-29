@@ -1,82 +1,79 @@
 import { createBrowserRouter, Navigate } from "react-router";
 import App from "../layout/App";
-import ActivityDashboard from "../../features/activities/dashboard/ActivityDashboard";
+import AuthLayout from "../layout/AuthLayout";
+
 import HomePage from "../../features/home/HomePage";
-import ActivityForm from "../../features/activities/form/ActivityForm";
-import ActivityDetailPage from "../../features/activities/details/ActivityDetailPage";
 import Counter from "../../features/counter/Counter";
+
+import CollectionLandingPage from "../../features/collections/CollectionLandingPage";
+import CollectionPage from "../../features/collections/CollectionPage";
+import ProductDetailPage from "../../features/collections/ProductDetailPage";
+
+import LoginForm from "../../features/account/LoginForm";
+import RegisterForm from "../../features/account/RegisterForm";
+
 import TestErrors from "../../features/errors/TestErrors";
 import NotFound from "../../features/errors/NotFound";
 import ServerError from "../../features/errors/ServerError";
-import LoginForm from "../../features/account/LoginForm";
-import RequireAuth from "./RequireAuth";
-import RegisterForm from "../../features/account/RegisterForm";
 
+import CartPage from "../../features/cart/CartPage";
+
+import CheckoutPage from "../../features/checkout/CheckoutPage";
+import OrderSuccessPage from "../../features/checkout/OrderSuccessPage";
 export const router = createBrowserRouter([
+  // ======================
+  // HOME (NO NAVBAR)
+  // ======================
+  {
+    path: "/",
+    element: <HomePage />,
+  },
+
+  // ======================
+  // AUTH (NO NAVBAR)
+  // ======================
+  {
+    element: <AuthLayout />,
+    children: [
+      { path: "login", element: <LoginForm /> },
+      { path: "register", element: <RegisterForm /> },
+    ],
+  },
+
+  // ======================
+  // APP (WITH NAVBAR)
+  // ======================
   {
     path: "/",
     element: <App />,
     children: [
-      // Protected Routes - Routes accessible only with authentication
+      // Collections group
       {
-        element: <RequireAuth />,
+        path: "collections",
         children: [
-          {
-            path: "activities",
-            element: <ActivityDashboard />,
-          },
-          {
-            path: "activities/:id",
-            element: <ActivityDetailPage />,
-          },
-          {
-            path: "createActivity",
-            element: <ActivityForm key="create" />,
-          },
-          {
-            path: "manage/:id",
-            element: <ActivityForm />,
-          },
+          { index: true, element: <CollectionLandingPage /> }, // /collections
+          { path: ":category", element: <CollectionPage /> }, // /collections/glasses
         ],
       },
-      // Public Routes - Routes accessible without authentication
-      {
-        path: "",
-        element: <HomePage />,
-      },
 
-      {
-        path: "counter",
-        element: <Counter />,
-      },
-      {
-        path: "errors",
-        element: <TestErrors />,
-      },
-      {
-        path: "not-found",
-        element: <NotFound />,
-      },
-      {
-        path: "server-error",
-        element: <ServerError />,
-      },
-      {
-        path: "login",
-        element: <LoginForm />,
-      },
-      {
-        path: "register",
-        element: <RegisterForm />,
-      },
-      {
-        path: "*",
-        element: <Navigate replace to="/not-found" />,
-        //replace property replace the current entry in the History stack to avoid loop
-        //User enter url which does not exist → redirect to /not-found
-        //User click Back → come back to url which does not exist
-        //-> Continue redirect to /not-found → loop make user uncomfortable
-      },
+      // ✅ Product detail
+      { path: "product/:id", element: <ProductDetailPage /> }, // /product/g1
+
+      // Other pages
+      { path: "counter", element: <Counter /> },
+
+      // Errors
+      { path: "errors", element: <TestErrors /> },
+      { path: "server-error", element: <ServerError /> },
+      { path: "not-found", element: <NotFound /> },
+
+      // Fallback
+      { path: "*", element: <Navigate replace to="/not-found" /> },
+
+      //guest
+      { path: "cart", element: <CartPage /> },
+      { path: "checkout", element: <CheckoutPage /> },
+      { path: "order-success", element: <OrderSuccessPage /> },
     ],
   },
 ]);
