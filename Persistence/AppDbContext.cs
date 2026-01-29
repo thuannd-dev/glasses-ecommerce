@@ -1273,7 +1273,7 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User>(op
             entity.HasIndex(e => new { e.PolicyType, e.IsActive, e.IsDeleted })
                 .HasDatabaseName("IX_PolicyConfiguration_Type_Active_Deleted")
                 .HasFilter("[IsActive] = 1 AND [IsDeleted] = 0");
-                
+
             // Constraints
             entity.ToTable(t =>
             {
@@ -1303,6 +1303,59 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User>(op
                     OR
                     (PolicyType = 2 AND WarrantyMonths IS NOT NULL AND WarrantyMonths >= 0)
                     "
+                );
+            });
+        });
+
+        // FEATURE TOGGLE ENTITY CONFIGURATION
+        builder.Entity<FeatureToggle>(entity =>
+        {
+            // Relationships
+            entity.HasOne(ft => ft.Updater)
+                .WithMany()
+                .HasForeignKey(ft => ft.UpdatedBy)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Properties
+            entity.Property(ft => ft.FeatureName)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(ft => ft.Description)
+                .HasMaxLength(500);
+
+            entity.Property(ft => ft.Scope)
+                .HasMaxLength(50);
+
+            entity.Property(ft => ft.ScopeValue)
+                .HasMaxLength(200);
+
+            // Indexes
+            entity.HasIndex(e => e.FeatureName)
+                .IsUnique()
+                .HasDatabaseName("UX_FeatureToggle_FeatureName");
+
+            entity.HasIndex(e => e.IsEnabled)
+                .HasDatabaseName("IX_FeatureToggle_IsEnabled")
+                .HasFilter("[IsEnabled] = 1");
+
+            entity.HasIndex(e => new { e.Scope, e.ScopeValue })
+                .HasDatabaseName("IX_FeatureToggle_Scope_ScopeValue");
+
+            entity.HasIndex(e => new { e.FeatureName, e.IsEnabled })
+                .HasDatabaseName("IX_FeatureToggle_FeatureName_IsEnabled");
+
+            // Constraints
+            entity.ToTable(t =>
+            {
+                t.HasCheckConstraint(
+                    "CK_FeatureToggle_Scope_ScopeValue",
+                    "(Scope IS NULL AND ScopeValue IS NULL)" +
+                    "OR (Scope IS NOT NULL AND ScopeValue IS NOT NULL)"
+                );
+                t.HasCheckConstraint(
+                    "CK_FeatureToggle_EffectivePeriod",
+                    "EffectiveTo IS NULL OR EffectiveTo > EffectiveFrom"
                 );
             });
         });
