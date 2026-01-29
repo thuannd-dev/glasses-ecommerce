@@ -1237,5 +1237,74 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User>(op
                 );
             });
         });
+
+        // POLICY CONFIGURATION ENTITY CONFIGURATION
+        builder.Entity<PolicyConfiguration>(entity =>
+        {
+            // Relationships
+            entity.HasOne(pc => pc.Creator)
+                .WithMany()
+                .HasForeignKey(pc => pc.CreatedBy)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(pc => pc.Updater)
+                .WithMany()
+                .HasForeignKey(pc => pc.UpdatedBy)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(pc => pc.Deleter)
+                .WithMany()
+                .HasForeignKey(pc => pc.DeletedBy)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Properties
+            entity.Property(pc => pc.PolicyName).IsRequired().HasMaxLength(200);
+            entity.Property(pc => pc.MinOrderAmount).HasColumnType("decimal(10,2)");
+
+            // Indexes
+            entity.HasIndex(e => e.PolicyType)
+                .HasDatabaseName("IX_PolicyConfiguration_PolicyType");
+
+            entity.HasIndex(e => e.IsActive)
+                .HasDatabaseName("IX_PolicyConfiguration_IsActive")
+                .HasFilter("[IsActive] = 1");
+
+            entity.HasIndex(e => new { e.IsActive, e.EffectiveFrom, e.EffectiveTo })
+                .HasDatabaseName("IX_PolicyConfiguration_Active_EffectivePeriod");
+
+            entity.HasIndex(e => new { e.PolicyType, e.IsActive, e.IsDeleted })
+                .HasDatabaseName("IX_PolicyConfiguration_Type_Active_Deleted")
+                .HasFilter("[IsActive] = 1 AND [IsDeleted] = 0");
+                
+            // Constraints
+            entity.ToTable(t =>
+            {
+                t.HasCheckConstraint(
+                    "CK_PolicyConfiguration_PolicyType",
+                    "[PolicyType] IN (1, 2, 3)"
+                );
+
+                t.HasCheckConstraint(
+                    "CK_PolicyConfiguration_EffectivePeriod",
+                    "EffectiveTo IS NULL OR (EffectiveTo > EffectiveFrom)"
+                );
+
+                t.HasCheckConstraint(
+                    "CK_PolicyConfiguration_ReturnWindowDays_Requires_ReturnPolicy",
+                    @"
+                    (PolicyType != 1 AND ReturnWindowDays IS NULL)
+                    OR
+                    (PolicyType = 1 AND ReturnWindowDays IS NOT NULL AND ReturnWindowDays >= 0)
+                    "
+                );
+
+                t.HasCheckConstraint(
+                    "CK_PolicyConfiguration_WarrantyMonths_Requires_WarrantyPolicy",
+                    @"
+                    (PolicyType != 2 AND WarrantyMonths IS NULL)
+                    OR
+                    (PolicyType = 2 AND WarrantyMonths IS NOT NULL AND WarrantyMonths >= 0)
+                    "
+                );
+            });
+        });
     }
 }
