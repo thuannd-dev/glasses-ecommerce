@@ -21,13 +21,13 @@ public enum AfterSalesTicketStatus
 
 public class AfterSalesTicket
 {
-    public string Id { get; set; } = Guid.CreateVersion7(TimeProvider.System.GetUtcNow()).ToString();
+    public Guid Id { get; set; } = Guid.CreateVersion7(TimeProvider.System.GetUtcNow());
 
-    public required string OrderId { get; set; }
+    public required Guid OrderId { get; set; }
 
-    public string? OrderItemId { get; set; } // NULL if the ticket is for the whole order
+    public Guid? OrderItemId { get; set; } // NULL if the ticket is for the whole order
 
-    public required string CustomerId { get; set; }
+    public required Guid CustomerId { get; set; }
 
     public AfterSalesTicketType TicketType { get; set; } = AfterSalesTicketType.Unknown; // RETURN, WARRANTY, REFUND
 
@@ -41,7 +41,7 @@ public class AfterSalesTicket
 
     public bool IsRequiredEvidence { get; set; } = true;
 
-    public string? AssignedTo { get; set; }
+    public Guid? AssignedTo { get; set; }
 
     public string? PolicyViolation { get; set; }
 

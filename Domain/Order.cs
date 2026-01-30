@@ -30,13 +30,12 @@ public enum OrderStatus
 }
 public class Order
 {
-    public string Id { get; set; } = Guid.CreateVersion7(TimeProvider.System.GetUtcNow()).ToString();
+    public Guid Id { get; set; } = Guid.CreateVersion7(TimeProvider.System.GetUtcNow());
 
-    public required string AddressId { get; set; }
+    public required Guid AddressId { get; set; }
 
-    public string? UserId { get; set; } // NULL for offline orders
-
-    public string? CreatedBySalesStaff { get; set; }
+    public Guid? UserId { get; set; } // NULL for offline orders
+    public Guid? CreatedBySalesStaff { get; set; }
 
     public required OrderType OrderType { get; set; } = OrderType.ReadyStock;
 

@@ -11,8 +11,8 @@ public enum ShippingCarrier
 
 public class ShipmentInfo
 {
-    public string Id { get; set; } = Guid.CreateVersion7(TimeProvider.System.GetUtcNow()).ToString();
-    public required string OrderId { get; set; }
+    public Guid Id { get; set; } = Guid.CreateVersion7(TimeProvider.System.GetUtcNow());
+    public required Guid OrderId { get; set; }
 
     public ShippingCarrier CarrierName { get; set; } // GHN, GHTK
 
@@ -33,7 +33,7 @@ public class ShipmentInfo
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    public string? CreatedBy { get; set; }
+    public Guid? CreatedBy { get; set; }
 
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 

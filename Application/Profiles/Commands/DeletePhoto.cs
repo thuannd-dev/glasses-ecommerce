@@ -10,7 +10,7 @@ public class DeletePhoto
 {
     public class Command : IRequest<Result<Unit>>
     {
-        public required string PhotoId { get; set; }
+        public required Guid PhotoId { get; set; }
     }
 
     public class Handler(AppDbContext context, IUserAccessor userAccessor, IPhotoService photoService)

@@ -4,12 +4,11 @@ namespace Domain;
 
 public class ProductImage
 {
-    public string Id { get; set; } = Guid.CreateVersion7(TimeProvider.System.GetUtcNow()).ToString();
+    public Guid Id { get; set; } = Guid.CreateVersion7(TimeProvider.System.GetUtcNow());
 
-    public string? ProductVariantId { get; set; }
+    public Guid? ProductVariantId { get; set; }
 
-    public string? ProductId { get; set; }
-
+    public Guid? ProductId { get; set; }
     public required string ImageUrl { get; set; }
 
     public string? AltText { get; set; }
@@ -22,8 +21,8 @@ public class ProductImage
 
     public bool IsDeleted { get; set; }
     public DateTime? DeletedAt { get; set; }
-    public string? DeletedBy { get; set; }
-    public string? CreatedBy { get; set; }
+    public Guid? DeletedBy { get; set; }
+    public Guid? CreatedBy { get; set; }
 
     // Navigation properties
     public ProductVariant? ProductVariant { get; set; }

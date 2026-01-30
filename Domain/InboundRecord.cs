@@ -20,7 +20,7 @@ public enum InboundRecordStatus
 
 public class InboundRecord
 {
-    public string Id { get; set; } = Guid.CreateVersion7(TimeProvider.System.GetUtcNow()).ToString();
+    public Guid Id { get; set; } = Guid.CreateVersion7(TimeProvider.System.GetUtcNow());
 
     public SourceType SourceType { get; set; }// Supplier, Return, Adjustment
 
@@ -34,11 +34,11 @@ public class InboundRecord
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    public string? CreatedBy { get; set; }
+    public Guid? CreatedBy { get; set; }
 
     public DateTime? ApprovedAt { get; set; }
 
-    public string? ApprovedBy { get; set; }
+    public Guid? ApprovedBy { get; set; }
 
     public DateTime? RejectedAt { get; set; }
 

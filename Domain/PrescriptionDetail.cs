@@ -12,9 +12,9 @@ public enum EyeType
 
 public class PrescriptionDetail
 {
-    public string Id { get; set; } = Guid.CreateVersion7(TimeProvider.System.GetUtcNow()).ToString();
+    public Guid Id { get; set; } = Guid.CreateVersion7(TimeProvider.System.GetUtcNow());
 
-    public required string PrescriptionId { get; set; }
+    public required Guid PrescriptionId { get; set; }
 
     public EyeType Eye { get; set; } // Left, Right
 

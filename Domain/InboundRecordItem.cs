@@ -4,10 +4,10 @@ namespace Domain;
 
 public class InboundRecordItem
 {
-    public string Id { get; set; } = Guid.CreateVersion7(TimeProvider.System.GetUtcNow()).ToString();
-    public required string InboundRecordId { get; set; }
+    public Guid Id { get; set; } = Guid.CreateVersion7(TimeProvider.System.GetUtcNow());
+    public required Guid InboundRecordId { get; set; }
 
-    public required string ProductVariantId { get; set; }
+    public required Guid ProductVariantId { get; set; }
 
     public required int Quantity { get; set; }
 

@@ -31,10 +31,25 @@ builder.Services.AddControllers(opt =>
     opt.Filters.Add(new AuthorizeFilter(policy));
 
 });
-builder.Services.AddDbContext<AppDbContext>(opt =>
+
+//SQLite
+// builder.Services.AddDbContext<AppDbContext>(opt =>
+// {
+//     opt.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection"));
+// });
+
+//SQL Server
+builder.Services.AddDbContext<AppDbContext>(options =>
 {
-    opt.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection"));
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        sql =>
+        {
+            sql.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName);
+            sql.EnableRetryOnFailure();
+        });
 });
+
 builder.Services.AddCors();
 
 /*
@@ -71,7 +86,7 @@ builder.Services.AddTransient<DisableRouteMiddleware>();
 builder.Services.AddIdentityApiEndpoints<User>(opt =>
 {
     opt.User.RequireUniqueEmail = true;
-}).AddRoles<IdentityRole>()
+}).AddRoles<IdentityRole<Guid>>()
 .AddEntityFrameworkStores<AppDbContext>();
 
 builder.Services.AddAuthorizationBuilder()

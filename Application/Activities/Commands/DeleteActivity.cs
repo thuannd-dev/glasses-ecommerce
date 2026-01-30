@@ -11,7 +11,7 @@ public class DeleteActivity
     //which is a struct provided by MediatR that represents a void return type.
     public class Command : IRequest<Result<Unit>>
     {
-        public required string Id { get; set; }
+        public required Guid Id { get; set; }
     }
 
     public class Handler(AppDbContext context) : IRequestHandler<Command, Result<Unit>>

@@ -11,7 +11,7 @@ public class GetProfilePhotos
 {
     public class Query : IRequest<Result<List<Photo>>>
     {
-        public required string UserId { get; set; }
+        public required Guid UserId { get; set; }
     }
 
     public class Handler(AppDbContext context) : IRequestHandler<Query, Result<List<Photo>>>

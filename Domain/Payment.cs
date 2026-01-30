@@ -26,8 +26,8 @@ public enum PaymentType
 
 public class Payment
 {
-    public string Id { get; set; } = Guid.CreateVersion7(TimeProvider.System.GetUtcNow()).ToString();
-    public required string OrderId { get; set; }
+    public Guid Id { get; set; } = Guid.CreateVersion7(TimeProvider.System.GetUtcNow());
+    public required Guid OrderId { get; set; }
     public PaymentMethod PaymentMethod { get; set; } // COD, QR_CODE, BANK_TRANSFER
 
     public PaymentStatus PaymentStatus { get; set; } = PaymentStatus.Pending; // PENDING, COMPLETED, FAILED, REFUNDED

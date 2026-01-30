@@ -1,11 +1,12 @@
 using System;
 using Domain;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace Persistence;
 
-public class AppDbContext(DbContextOptions options) : IdentityDbContext<User>(options)
+public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, IdentityRole<Guid>, Guid>(options)
 {
 
     public required DbSet<Activity> Activities { get; set; }
@@ -294,7 +295,7 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User>(op
             entity.HasOne(e => e.Product)
                 .WithMany(p => p.Images)
                 .HasForeignKey(e => e.ProductId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.NoAction);
 
             entity.HasOne(e => e.ProductVariant)
                 .WithMany(pv => pv.Images)
@@ -1135,12 +1136,12 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User>(op
             entity.HasOne(ast => ast.Order)
                 .WithMany(o => o.AfterSalesTickets)
                 .HasForeignKey(ast => ast.OrderId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.NoAction);
 
             entity.HasOne(ast => ast.OrderItem)
                 .WithMany(oi => oi.AfterSalesTickets)
                 .HasForeignKey(ast => ast.OrderItemId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.NoAction);
 
             entity.HasOne(ast => ast.AssignedStaff)
                 .WithMany()

@@ -4,9 +4,9 @@ namespace Domain;
 
 public class Stock
 {
-    public string Id { get; set; } = Guid.CreateVersion7(TimeProvider.System.GetUtcNow()).ToString();
+    public Guid Id { get; set; } = Guid.CreateVersion7(TimeProvider.System.GetUtcNow());
 
-    public required string ProductVariantId { get; set; }
+    public required Guid ProductVariantId { get; set; }
 
     public required int QuantityOnHand { get; set; }
 
@@ -18,7 +18,7 @@ public class Stock
 
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-    public string? UpdatedBy { get; set; }
+    public Guid? UpdatedBy { get; set; }
 
     // Navigation properties
     public ProductVariant ProductVariant { get; set; } = null!;

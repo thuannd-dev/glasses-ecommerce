@@ -4,8 +4,8 @@ namespace Domain;
 
 public class ProductVariant
 {
-    public string Id { get; set; } = Guid.CreateVersion7(TimeProvider.System.GetUtcNow()).ToString();
-    public required string ProductId { get; set; }
+    public Guid Id { get; set; } = Guid.CreateVersion7(TimeProvider.System.GetUtcNow());
+    public required Guid ProductId { get; set; }
 
     public required string SKU { get; set; }
 

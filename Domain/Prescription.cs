@@ -4,13 +4,13 @@ namespace Domain;
 
 public class Prescription
 {
-    public string Id { get; set; } = Guid.CreateVersion7(TimeProvider.System.GetUtcNow()).ToString();
+    public Guid Id { get; set; } = Guid.CreateVersion7(TimeProvider.System.GetUtcNow());
 
-    public required string OrderId { get; set; }
+    public required Guid OrderId { get; set; }
 
     public bool IsVerified { get; set; }
 
-    public string? VerifiedBy { get; set; }
+    public Guid? VerifiedBy { get; set; }
 
     public DateTime? VerifiedAt { get; set; }
 

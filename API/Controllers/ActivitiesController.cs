@@ -18,7 +18,7 @@ public class ActivitiesController : BaseApiController
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<ActivityDto>> GetActivityDetail(string id)
+    public async Task<ActionResult<ActivityDto>> GetActivityDetail(Guid id)
     {
         return HandleResult(await Mediator.Send(new GetActivityDetails.Query { Id = id }));
     }
@@ -31,7 +31,7 @@ public class ActivitiesController : BaseApiController
 
     [HttpPut("{id}")]
     [Authorize(Policy = "IsActivityHost")]
-    public async Task<ActionResult> EditActivity(string id, EditActivityDto activity)
+    public async Task<ActionResult> EditActivity(Guid id, EditActivityDto activity)
     {
         activity.Id = id;
         //await Mediator.Send(new EditActivity.Command { Activity = activity }) return value type Result Unit
@@ -42,7 +42,7 @@ public class ActivitiesController : BaseApiController
 
     [HttpDelete("{id}")]
     [Authorize(Policy = "IsActivityHost")]
-    public async Task<ActionResult> DeleteActivity(string id)
+    public async Task<ActionResult> DeleteActivity(Guid id)
     {
         return HandleResult(await Mediator.Send(new DeleteActivity.Command { Id = id }));
     }
@@ -54,7 +54,7 @@ public class ActivitiesController : BaseApiController
     /// the activity's cancellation status (IsCancelled).
     /// </summary>
     [HttpPost("{id}/attend")]
-    public async Task<ActionResult> Attend(string id)
+    public async Task<ActionResult> Attend(Guid id)
     {
         return HandleResult(await Mediator.Send(new UpdateAttendance.Command {Id = id}));
     }

@@ -10,7 +10,7 @@ public class Activity
     //[Key] is unnecessary because Entity Framework Core will automatically
     //treat the Id property as the primary key if it is named "Id" or "<ClassName>Id".
     //So, you can  use [Key] attribute when want an attribute with the specific name is Id.
-    public string Id { get; set; } = Guid.CreateVersion7(TimeProvider.System.GetUtcNow()).ToString();
+    public Guid Id { get; set; } = Guid.CreateVersion7(TimeProvider.System.GetUtcNow());
     public required string Title { get; set; }
     //DateTime is a reference type but don't get warning 
     //beacause c# give a default value of DateTime is 1/ January 0001 00:00:00

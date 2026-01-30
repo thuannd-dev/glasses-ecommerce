@@ -26,19 +26,18 @@ public enum InventoryTransactionStatus
 
 public class InventoryTransaction
 {
-    public string Id { get; set; } = Guid.CreateVersion7(TimeProvider.System.GetUtcNow()).ToString();
+    public Guid Id { get; set; } = Guid.CreateVersion7(TimeProvider.System.GetUtcNow());
 
-    public required string UserId { get; set; }
+    public required Guid UserId { get; set; }
 
-    public required string ProductVariantId { get; set; }
-
+    public required Guid ProductVariantId { get; set; }
     public TransactionType TransactionType { get; set; } = TransactionType.Inbound;
 
     public required int Quantity { get; set; }
 
     public ReferenceType ReferenceType { get; set; } = ReferenceType.Order;
 
-    public string? ReferenceId { get; set; }
+    public Guid? ReferenceId { get; set; }
 
     public InventoryTransactionStatus Status { get; set; } = InventoryTransactionStatus.Pending;//Pending, Completed
 
@@ -46,11 +45,11 @@ public class InventoryTransaction
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    public string? CreatedBy { get; set; }
+    public Guid? CreatedBy { get; set; }
 
     public DateTime? ApprovedAt { get; set; }
 
-    public string? ApprovedBy { get; set; }
+    public Guid? ApprovedBy { get; set; }
 
     // Navigation properties
     public User User { get; set; } = null!;

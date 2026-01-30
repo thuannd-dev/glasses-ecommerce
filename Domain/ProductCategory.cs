@@ -4,7 +4,7 @@ namespace Domain;
 
 public class ProductCategory
 {
-    public string Id { get; set; } = Guid.CreateVersion7(TimeProvider.System.GetUtcNow()).ToString();
+    public Guid Id { get; set; } = Guid.CreateVersion7(TimeProvider.System.GetUtcNow());
 
     public required string Name { get; set; }
 

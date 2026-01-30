@@ -13,7 +13,7 @@ public class GetProfile
 {
     public class Query : IRequest<Result<UserProfile>>
     {
-        public required string UserId { get; set; }
+        public required Guid UserId { get; set; }
     }
 
     public class Handler(AppDbContext context, IMapper mapper) : IRequestHandler<Query, Result<UserProfile>>

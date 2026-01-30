@@ -12,7 +12,7 @@ public enum PolicyType
 
 public class PolicyConfiguration
 {
-    public string Id { get; set; } = Guid.CreateVersion7(TimeProvider.System.GetUtcNow()).ToString();
+    public Guid Id { get; set; } = Guid.CreateVersion7(TimeProvider.System.GetUtcNow());
 
     public PolicyType PolicyType { get; set; } // RETURN, WARRANTY, REFUND
     public required string PolicyName { get; set; }
@@ -39,15 +39,14 @@ public class PolicyConfiguration
 
     public DateTime? DeletedAt { get; set; }
 
-    public string? DeletedBy { get; set; }
+    public Guid? DeletedBy { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    public string? CreatedBy { get; set; }
-
+    public Guid? CreatedBy { get; set; }
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-    public string? UpdatedBy { get; set; }
+    public Guid? UpdatedBy { get; set; }
 
     // Navigation properties
     public User? Creator { get; set; }

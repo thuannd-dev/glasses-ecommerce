@@ -6,36 +6,181 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Persistence.Migrations
 {
     /// <inheritdoc />
-    public partial class AddingEntity : Migration
+    public partial class MigrateToSqlServer : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<bool>(
-                name: "IsLocked",
-                table: "AspNetUsers",
-                type: "INTEGER",
-                nullable: false,
-                defaultValue: false);
+            migrationBuilder.CreateTable(
+                name: "Activities",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Title = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Date = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Category = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    IsCancelled = table.Column<bool>(type: "bit", nullable: false),
+                    City = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Venue = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Latitude = table.Column<double>(type: "float", nullable: false),
+                    Longitude = table.Column<double>(type: "float", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Activities", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "AspNetRoles",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
+                    NormalizedName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
+                    ConcurrencyStamp = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AspNetRoles", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "AspNetUsers",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    DisplayName = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Bio = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ImageUrl = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    IsLocked = table.Column<bool>(type: "bit", nullable: false),
+                    UserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
+                    NormalizedUserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
+                    Email = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
+                    NormalizedEmail = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
+                    EmailConfirmed = table.Column<bool>(type: "bit", nullable: false),
+                    PasswordHash = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    SecurityStamp = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ConcurrencyStamp = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    PhoneNumber = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    PhoneNumberConfirmed = table.Column<bool>(type: "bit", nullable: false),
+                    TwoFactorEnabled = table.Column<bool>(type: "bit", nullable: false),
+                    LockoutEnd = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true),
+                    LockoutEnabled = table.Column<bool>(type: "bit", nullable: false),
+                    AccessFailedCount = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AspNetUsers", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ProductCategories",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    Slug = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ProductCategories", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Promotions",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    PromoCode = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    PromoName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    PromotionType = table.Column<int>(type: "int", nullable: false),
+                    DiscountValue = table.Column<decimal>(type: "decimal(10,2)", nullable: false),
+                    MaxDiscountValue = table.Column<decimal>(type: "decimal(10,2)", nullable: true),
+                    UsageLimit = table.Column<int>(type: "int", nullable: true),
+                    UsageLimitPerCustomer = table.Column<int>(type: "int", nullable: true),
+                    ValidFrom = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    ValidTo = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Promotions", x => x.Id);
+                    table.CheckConstraint("CK_Promotion_DiscountValue", "DiscountValue >= 0");
+                    table.CheckConstraint("CK_Promotion_DiscountValue_ByType", "\r\n                    (PromotionType = 0 AND DiscountValue > 0 AND DiscountValue <= 100)\r\n                    OR (PromotionType = 1 AND DiscountValue > 0)\r\n                    OR (PromotionType = 2 AND DiscountValue = 0)\r\n                    ");
+                    table.CheckConstraint("CK_Promotion_MaxDiscountValue", "MaxDiscountValue IS NULL OR MaxDiscountValue >= 0");
+                    table.CheckConstraint("CK_Promotion_Type", "[PromotionType] IN (0, 1, 2)");
+                    table.CheckConstraint("CK_Promotion_ValidPeriod", "ValidTo > ValidFrom");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "AspNetRoleClaims",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    RoleId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ClaimType = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ClaimValue = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AspNetRoleClaims", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_AspNetRoleClaims_AspNetRoles_RoleId",
+                        column: x => x.RoleId,
+                        principalTable: "AspNetRoles",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ActivityAttendees",
+                columns: table => new
+                {
+                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ActivityId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    IsHost = table.Column<bool>(type: "bit", nullable: false),
+                    DateJoined = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ActivityAttendees", x => new { x.ActivityId, x.UserId });
+                    table.ForeignKey(
+                        name: "FK_ActivityAttendees_Activities_ActivityId",
+                        column: x => x.ActivityId,
+                        principalTable: "Activities",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ActivityAttendees_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
 
             migrationBuilder.CreateTable(
                 name: "Addresses",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "TEXT", nullable: false),
-                    UserId = table.Column<string>(type: "TEXT", nullable: false),
-                    RecipientName = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
-                    RecipientPhone = table.Column<string>(type: "TEXT", maxLength: 20, nullable: false),
-                    Venue = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
-                    Ward = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
-                    District = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
-                    City = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
-                    PostalCode = table.Column<string>(type: "TEXT", maxLength: 20, nullable: true),
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    RecipientName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    RecipientPhone = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
+                    Venue = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    Ward = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    District = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    City = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    PostalCode = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
                     Latitude = table.Column<decimal>(type: "decimal(9,6)", nullable: true),
                     Longitude = table.Column<decimal>(type: "decimal(9,6)", nullable: true),
-                    IsDefault = table.Column<bool>(type: "INTEGER", nullable: false),
-                    IsDeleted = table.Column<bool>(type: "INTEGER", nullable: false),
-                    DeletedAt = table.Column<DateTime>(type: "TEXT", nullable: true)
+                    IsDefault = table.Column<bool>(type: "bit", nullable: false),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -49,14 +194,99 @@ namespace Persistence.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "AspNetUserClaims",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ClaimType = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ClaimValue = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AspNetUserClaims", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_AspNetUserClaims_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "AspNetUserLogins",
+                columns: table => new
+                {
+                    LoginProvider = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    ProviderKey = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    ProviderDisplayName = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AspNetUserLogins", x => new { x.LoginProvider, x.ProviderKey });
+                    table.ForeignKey(
+                        name: "FK_AspNetUserLogins_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "AspNetUserRoles",
+                columns: table => new
+                {
+                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    RoleId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AspNetUserRoles", x => new { x.UserId, x.RoleId });
+                    table.ForeignKey(
+                        name: "FK_AspNetUserRoles_AspNetRoles_RoleId",
+                        column: x => x.RoleId,
+                        principalTable: "AspNetRoles",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_AspNetUserRoles_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "AspNetUserTokens",
+                columns: table => new
+                {
+                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    LoginProvider = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    Value = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AspNetUserTokens", x => new { x.UserId, x.LoginProvider, x.Name });
+                    table.ForeignKey(
+                        name: "FK_AspNetUserTokens_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Carts",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "TEXT", nullable: false),
-                    UserId = table.Column<string>(type: "TEXT", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    Status = table.Column<int>(type: "INTEGER", nullable: false)
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Status = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -74,17 +304,17 @@ namespace Persistence.Migrations
                 name: "FeatureToggles",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "TEXT", nullable: false),
-                    FeatureName = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
-                    IsEnabled = table.Column<bool>(type: "INTEGER", nullable: false),
-                    Description = table.Column<string>(type: "TEXT", maxLength: 500, nullable: true),
-                    EffectiveFrom = table.Column<DateTime>(type: "TEXT", nullable: true),
-                    EffectiveTo = table.Column<DateTime>(type: "TEXT", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    UpdatedBy = table.Column<string>(type: "TEXT", nullable: true),
-                    Scope = table.Column<string>(type: "TEXT", maxLength: 50, nullable: true),
-                    ScopeValue = table.Column<string>(type: "TEXT", maxLength: 200, nullable: true)
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    FeatureName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    IsEnabled = table.Column<bool>(type: "bit", nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    EffectiveFrom = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    EffectiveTo = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    Scope = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    ScopeValue = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -103,18 +333,18 @@ namespace Persistence.Migrations
                 name: "InboundRecords",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "TEXT", nullable: false),
-                    SourceType = table.Column<int>(type: "INTEGER", nullable: false),
-                    SourceReference = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
-                    Status = table.Column<int>(type: "INTEGER", nullable: false),
-                    TotalItems = table.Column<int>(type: "INTEGER", nullable: false),
-                    Notes = table.Column<string>(type: "TEXT", maxLength: 500, nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    CreatedBy = table.Column<string>(type: "TEXT", nullable: true),
-                    ApprovedAt = table.Column<DateTime>(type: "TEXT", nullable: true),
-                    ApprovedBy = table.Column<string>(type: "TEXT", nullable: true),
-                    RejectedAt = table.Column<DateTime>(type: "TEXT", nullable: true),
-                    RejectionReason = table.Column<string>(type: "TEXT", maxLength: 500, nullable: true)
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    SourceType = table.Column<int>(type: "int", nullable: false),
+                    SourceReference = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    TotalItems = table.Column<int>(type: "int", nullable: false),
+                    Notes = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    CreatedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    ApprovedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    ApprovedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    RejectedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    RejectionReason = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -137,28 +367,48 @@ namespace Persistence.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Photos",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Url = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    PublicId = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Photos", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Photos_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "PolicyConfigurations",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "TEXT", nullable: false),
-                    PolicyType = table.Column<int>(type: "INTEGER", nullable: false),
-                    PolicyName = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
-                    ReturnWindowDays = table.Column<int>(type: "INTEGER", nullable: true),
-                    WarrantyMonths = table.Column<int>(type: "INTEGER", nullable: true),
-                    RefundAllowed = table.Column<bool>(type: "INTEGER", nullable: false),
-                    CustomizedLensRefundable = table.Column<bool>(type: "INTEGER", nullable: false),
-                    EvidenceRequired = table.Column<bool>(type: "INTEGER", nullable: false),
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    PolicyType = table.Column<int>(type: "int", nullable: false),
+                    PolicyName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    ReturnWindowDays = table.Column<int>(type: "int", nullable: true),
+                    WarrantyMonths = table.Column<int>(type: "int", nullable: true),
+                    RefundAllowed = table.Column<bool>(type: "bit", nullable: false),
+                    CustomizedLensRefundable = table.Column<bool>(type: "bit", nullable: false),
+                    EvidenceRequired = table.Column<bool>(type: "bit", nullable: false),
                     MinOrderAmount = table.Column<decimal>(type: "decimal(10,2)", nullable: true),
-                    IsActive = table.Column<bool>(type: "INTEGER", nullable: false),
-                    EffectiveFrom = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    EffectiveTo = table.Column<DateTime>(type: "TEXT", nullable: true),
-                    IsDeleted = table.Column<bool>(type: "INTEGER", nullable: false),
-                    DeletedAt = table.Column<DateTime>(type: "TEXT", nullable: true),
-                    DeletedBy = table.Column<string>(type: "TEXT", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    CreatedBy = table.Column<string>(type: "TEXT", nullable: true),
-                    UpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    UpdatedBy = table.Column<string>(type: "TEXT", nullable: true)
+                    IsActive = table.Column<bool>(type: "bit", nullable: false),
+                    EffectiveFrom = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    EffectiveTo = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    DeletedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    CreatedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -188,66 +438,50 @@ namespace Persistence.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "ProductCategories",
+                name: "Products",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "TEXT", nullable: false),
-                    Name = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
-                    Slug = table.Column<string>(type: "TEXT", maxLength: 150, nullable: false),
-                    Description = table.Column<string>(type: "TEXT", maxLength: 500, nullable: true),
-                    IsActive = table.Column<bool>(type: "INTEGER", nullable: false)
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    CategoryId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ProductName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    Type = table.Column<int>(type: "int", nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Brand = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_ProductCategories", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "Promotions",
-                columns: table => new
-                {
-                    Id = table.Column<string>(type: "TEXT", nullable: false),
-                    PromoCode = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
-                    PromoName = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
-                    Description = table.Column<string>(type: "TEXT", maxLength: 500, nullable: true),
-                    PromotionType = table.Column<int>(type: "INTEGER", nullable: false),
-                    DiscountValue = table.Column<decimal>(type: "decimal(10,2)", nullable: false),
-                    MaxDiscountValue = table.Column<decimal>(type: "decimal(10,2)", nullable: true),
-                    UsageLimit = table.Column<int>(type: "INTEGER", nullable: true),
-                    UsageLimitPerCustomer = table.Column<int>(type: "INTEGER", nullable: true),
-                    ValidFrom = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    ValidTo = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    IsActive = table.Column<bool>(type: "INTEGER", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Promotions", x => x.Id);
-                    table.CheckConstraint("CK_Promotion_DiscountValue", "DiscountValue >= 0");
-                    table.CheckConstraint("CK_Promotion_DiscountValue_ByType", "\r\n                    (PromotionType = 0 AND DiscountValue > 0 AND DiscountValue <= 100)\r\n                    OR (PromotionType = 1 AND DiscountValue > 0)\r\n                    OR (PromotionType = 2 AND DiscountValue = 0)\r\n                    ");
-                    table.CheckConstraint("CK_Promotion_MaxDiscountValue", "MaxDiscountValue IS NULL OR MaxDiscountValue >= 0");
-                    table.CheckConstraint("CK_Promotion_Type", "[PromotionType] IN (0, 1, 2)");
-                    table.CheckConstraint("CK_Promotion_ValidPeriod", "ValidTo > ValidFrom");
+                    table.PrimaryKey("PK_Products", x => x.Id);
+                    table.CheckConstraint("CK_Product_Status", "[Status] IN (0, 1, 2)");
+                    table.CheckConstraint("CK_Product_Type", "[Type] IN (1, 2, 3, 4, 5)");
+                    table.ForeignKey(
+                        name: "FK_Products_ProductCategories_CategoryId",
+                        column: x => x.CategoryId,
+                        principalTable: "ProductCategories",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
                 name: "Orders",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "TEXT", nullable: false),
-                    AddressId = table.Column<string>(type: "TEXT", nullable: false),
-                    UserId = table.Column<string>(type: "TEXT", nullable: true),
-                    CreatedBySalesStaff = table.Column<string>(type: "TEXT", nullable: true),
-                    OrderType = table.Column<int>(type: "INTEGER", nullable: false),
-                    OrderSource = table.Column<int>(type: "INTEGER", nullable: false),
-                    OrderStatus = table.Column<int>(type: "INTEGER", nullable: false),
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    AddressId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    CreatedBySalesStaff = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    OrderType = table.Column<int>(type: "int", nullable: false),
+                    OrderSource = table.Column<int>(type: "int", nullable: false),
+                    OrderStatus = table.Column<int>(type: "int", nullable: false),
                     TotalAmount = table.Column<decimal>(type: "decimal(10,2)", nullable: false),
                     ShippingFee = table.Column<decimal>(type: "decimal(10,2)", nullable: false),
-                    CustomerNote = table.Column<string>(type: "TEXT", maxLength: 500, nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    CustomerNote = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
                     DepositAmount = table.Column<decimal>(type: "decimal(10,2)", nullable: true),
                     RemainingAmount = table.Column<decimal>(type: "decimal(10,2)", nullable: true),
-                    CancellationDeadline = table.Column<DateTime>(type: "TEXT", nullable: true)
+                    CancellationDeadline = table.Column<DateTime>(type: "datetime2", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -275,27 +509,33 @@ namespace Persistence.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Products",
+                name: "ProductVariants",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "TEXT", nullable: false),
-                    CategoryId = table.Column<string>(type: "TEXT", nullable: false),
-                    ProductName = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
-                    Type = table.Column<int>(type: "INTEGER", nullable: false),
-                    Description = table.Column<string>(type: "TEXT", nullable: true),
-                    Brand = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
-                    Status = table.Column<int>(type: "INTEGER", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ProductId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    SKU = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    VariantName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    Color = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    Size = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
+                    Material = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    FrameWidth = table.Column<decimal>(type: "decimal(5,2)", nullable: true),
+                    LensWidth = table.Column<decimal>(type: "decimal(5,2)", nullable: true),
+                    BridgeWidth = table.Column<decimal>(type: "decimal(5,2)", nullable: true),
+                    TempleLength = table.Column<decimal>(type: "decimal(5,2)", nullable: true),
+                    Price = table.Column<decimal>(type: "decimal(10,2)", nullable: false),
+                    CompareAtPrice = table.Column<decimal>(type: "decimal(10,2)", nullable: true),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Products", x => x.Id);
-                    table.CheckConstraint("CK_Product_Status", "[Status] IN (0, 1, 2)");
-                    table.CheckConstraint("CK_Product_Type", "[Type] IN (1, 2, 3, 4, 5)");
+                    table.PrimaryKey("PK_ProductVariants", x => x.Id);
+                    table.CheckConstraint("CK_ProductVariant_CompareAtPrice", "[CompareAtPrice] IS NULL OR [CompareAtPrice] >= [Price]");
+                    table.CheckConstraint("CK_ProductVariant_Price", "[Price] >= 0");
                     table.ForeignKey(
-                        name: "FK_Products_ProductCategories_CategoryId",
-                        column: x => x.CategoryId,
-                        principalTable: "ProductCategories",
+                        name: "FK_ProductVariants_Products_ProductId",
+                        column: x => x.ProductId,
+                        principalTable: "Products",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -304,12 +544,12 @@ namespace Persistence.Migrations
                 name: "OrderStatusHistories",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "TEXT", nullable: false),
-                    OrderId = table.Column<string>(type: "TEXT", nullable: false),
-                    FromStatus = table.Column<string>(type: "TEXT", maxLength: 30, nullable: false),
-                    ToStatus = table.Column<string>(type: "TEXT", maxLength: 30, nullable: false),
-                    Notes = table.Column<string>(type: "TEXT", maxLength: 500, nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    OrderId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    FromStatus = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: false),
+                    ToStatus = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: false),
+                    Notes = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -326,14 +566,14 @@ namespace Persistence.Migrations
                 name: "Payments",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "TEXT", nullable: false),
-                    OrderId = table.Column<string>(type: "TEXT", nullable: false),
-                    PaymentMethod = table.Column<int>(type: "INTEGER", nullable: false),
-                    PaymentStatus = table.Column<int>(type: "INTEGER", nullable: false),
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    OrderId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    PaymentMethod = table.Column<int>(type: "int", nullable: false),
+                    PaymentStatus = table.Column<int>(type: "int", nullable: false),
                     Amount = table.Column<decimal>(type: "decimal(10,2)", nullable: false),
-                    TransactionId = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
-                    PaymentAt = table.Column<DateTime>(type: "TEXT", nullable: true),
-                    PaymentType = table.Column<int>(type: "INTEGER", nullable: false)
+                    TransactionId = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    PaymentAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    PaymentType = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -356,14 +596,14 @@ namespace Persistence.Migrations
                 name: "Prescriptions",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "TEXT", nullable: false),
-                    OrderId = table.Column<string>(type: "TEXT", nullable: false),
-                    IsVerified = table.Column<bool>(type: "INTEGER", nullable: false),
-                    VerifiedBy = table.Column<string>(type: "TEXT", nullable: true),
-                    VerifiedAt = table.Column<DateTime>(type: "TEXT", nullable: true),
-                    VerificationNotes = table.Column<string>(type: "TEXT", maxLength: 1000, nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    OrderId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    IsVerified = table.Column<bool>(type: "bit", nullable: false),
+                    VerifiedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    VerifiedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    VerificationNotes = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -387,11 +627,11 @@ namespace Persistence.Migrations
                 name: "PromoUsageLogs",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "TEXT", nullable: false),
-                    OrderId = table.Column<string>(type: "TEXT", nullable: false),
-                    PromotionId = table.Column<string>(type: "TEXT", nullable: false),
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    OrderId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    PromotionId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     DiscountApplied = table.Column<decimal>(type: "decimal(10,2)", nullable: false),
-                    UsedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    UsedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -415,31 +655,31 @@ namespace Persistence.Migrations
                 name: "ShipmentInfos",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "TEXT", nullable: false),
-                    OrderId = table.Column<string>(type: "TEXT", nullable: false),
-                    CarrierName = table.Column<int>(type: "INTEGER", nullable: false),
-                    TrackingCode = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
-                    TrackingUrl = table.Column<string>(type: "TEXT", maxLength: 500, nullable: true),
-                    ShippedAt = table.Column<DateTime>(type: "TEXT", nullable: true),
-                    EstimatedDeliveryAt = table.Column<DateTime>(type: "TEXT", nullable: true),
-                    ActualDeliveryAt = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    OrderId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    CarrierName = table.Column<int>(type: "int", nullable: false),
+                    TrackingCode = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    TrackingUrl = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    ShippedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    EstimatedDeliveryAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    ActualDeliveryAt = table.Column<DateTime>(type: "datetime2", nullable: true),
                     PackageWeight = table.Column<decimal>(type: "decimal(10,2)", nullable: true),
-                    PackageDimensions = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
-                    ShippingNotes = table.Column<string>(type: "TEXT", maxLength: 500, nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    CreatedBy = table.Column<string>(type: "TEXT", nullable: true),
-                    UpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    CreatorId = table.Column<string>(type: "TEXT", nullable: true)
+                    PackageDimensions = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    ShippingNotes = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    CreatedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_ShipmentInfos", x => x.Id);
                     table.CheckConstraint("CK_ShipmentInfo_Carrier", "[CarrierName] IN (0, 1, 2)");
                     table.ForeignKey(
-                        name: "FK_ShipmentInfos_AspNetUsers_CreatorId",
-                        column: x => x.CreatorId,
+                        name: "FK_ShipmentInfos_AspNetUsers_CreatedBy",
+                        column: x => x.CreatedBy,
                         principalTable: "AspNetUsers",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_ShipmentInfos_Orders_OrderId",
                         column: x => x.OrderId,
@@ -449,99 +689,13 @@ namespace Persistence.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "ProductVariants",
-                columns: table => new
-                {
-                    Id = table.Column<string>(type: "TEXT", nullable: false),
-                    ProductId = table.Column<string>(type: "TEXT", nullable: false),
-                    SKU = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
-                    VariantName = table.Column<string>(type: "TEXT", maxLength: 200, nullable: true),
-                    Color = table.Column<string>(type: "TEXT", maxLength: 50, nullable: true),
-                    Size = table.Column<string>(type: "TEXT", maxLength: 20, nullable: true),
-                    Material = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
-                    FrameWidth = table.Column<decimal>(type: "decimal(5,2)", nullable: true),
-                    LensWidth = table.Column<decimal>(type: "decimal(5,2)", nullable: true),
-                    BridgeWidth = table.Column<decimal>(type: "decimal(5,2)", nullable: true),
-                    TempleLength = table.Column<decimal>(type: "decimal(5,2)", nullable: true),
-                    Price = table.Column<decimal>(type: "decimal(10,2)", nullable: false),
-                    CompareAtPrice = table.Column<decimal>(type: "decimal(10,2)", nullable: true),
-                    IsActive = table.Column<bool>(type: "INTEGER", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ProductVariants", x => x.Id);
-                    table.CheckConstraint("CK_ProductVariant_CompareAtPrice", "[CompareAtPrice] IS NULL OR [CompareAtPrice] >= [Price]");
-                    table.CheckConstraint("CK_ProductVariant_Price", "[Price] >= 0");
-                    table.ForeignKey(
-                        name: "FK_ProductVariants_Products_ProductId",
-                        column: x => x.ProductId,
-                        principalTable: "Products",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "Refunds",
-                columns: table => new
-                {
-                    Id = table.Column<string>(type: "TEXT", nullable: false),
-                    PaymentId = table.Column<string>(type: "TEXT", nullable: false),
-                    RefundStatus = table.Column<int>(type: "INTEGER", nullable: false),
-                    Amount = table.Column<decimal>(type: "decimal(10,2)", nullable: false),
-                    RefundAt = table.Column<DateTime>(type: "TEXT", nullable: true),
-                    RefundReason = table.Column<string>(type: "TEXT", maxLength: 500, nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Refunds", x => x.Id);
-                    table.CheckConstraint("CK_Refund_Amount", "[Amount] >= 0");
-                    table.CheckConstraint("CK_Refund_Status", "[RefundStatus] IN (1, 2, 3, 4)");
-                    table.ForeignKey(
-                        name: "FK_Refunds_Payments_PaymentId",
-                        column: x => x.PaymentId,
-                        principalTable: "Payments",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "PrescriptionDetails",
-                columns: table => new
-                {
-                    Id = table.Column<string>(type: "TEXT", nullable: false),
-                    PrescriptionId = table.Column<string>(type: "TEXT", nullable: false),
-                    Eye = table.Column<int>(type: "INTEGER", nullable: false),
-                    SPH = table.Column<decimal>(type: "decimal(5,2)", nullable: true),
-                    CYL = table.Column<decimal>(type: "decimal(5,2)", nullable: true),
-                    AXIS = table.Column<int>(type: "INTEGER", nullable: true),
-                    PD = table.Column<decimal>(type: "decimal(5,2)", nullable: true),
-                    ADD = table.Column<decimal>(type: "decimal(5,2)", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_PrescriptionDetails", x => x.Id);
-                    table.CheckConstraint("CK_PrescriptionDetail_AXIS", "[AXIS] IS NULL OR ([AXIS] BETWEEN 0 AND 180)");
-                    table.CheckConstraint("CK_PrescriptionDetail_AXIS_Requires_CYL", "\r\n                    (CYL IS NULL AND AXIS IS NULL)\r\n                    OR\r\n                    (CYL IS NOT NULL AND AXIS IS NOT NULL)\r\n                    ");
-                    table.CheckConstraint("CK_PrescriptionDetail_CYL", "[CYL] IS NULL OR ([CYL] BETWEEN -6.00 AND 0.00)");
-                    table.CheckConstraint("CK_PrescriptionDetail_Eye", "[Eye] IN (1, 2)");
-                    table.CheckConstraint("CK_PrescriptionDetail_PD", "[PD] IS NULL OR ([PD] BETWEEN 40.00 AND 80.00)");
-                    table.CheckConstraint("CK_PrescriptionDetail_SPH", "[SPH] IS NULL OR ([SPH] BETWEEN -20.00 AND 20.00)");
-                    table.ForeignKey(
-                        name: "FK_PrescriptionDetails_Prescriptions_PrescriptionId",
-                        column: x => x.PrescriptionId,
-                        principalTable: "Prescriptions",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "CartItems",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "TEXT", nullable: false),
-                    CartId = table.Column<string>(type: "TEXT", nullable: false),
-                    ProductVariantId = table.Column<string>(type: "TEXT", nullable: false),
-                    Quantity = table.Column<int>(type: "INTEGER", nullable: false)
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    CartId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ProductVariantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Quantity = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -565,11 +719,11 @@ namespace Persistence.Migrations
                 name: "InboundRecordItems",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "TEXT", nullable: false),
-                    InboundRecordId = table.Column<string>(type: "TEXT", nullable: false),
-                    ProductVariantId = table.Column<string>(type: "TEXT", nullable: false),
-                    Quantity = table.Column<int>(type: "INTEGER", nullable: false),
-                    Notes = table.Column<string>(type: "TEXT", maxLength: 400, nullable: true)
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    InboundRecordId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ProductVariantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Quantity = table.Column<int>(type: "int", nullable: false),
+                    Notes = table.Column<string>(type: "nvarchar(400)", maxLength: 400, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -593,19 +747,19 @@ namespace Persistence.Migrations
                 name: "InventoryTransactions",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "TEXT", nullable: false),
-                    UserId = table.Column<string>(type: "TEXT", nullable: false),
-                    ProductVariantId = table.Column<string>(type: "TEXT", nullable: false),
-                    TransactionType = table.Column<int>(type: "INTEGER", nullable: false),
-                    Quantity = table.Column<int>(type: "INTEGER", nullable: false),
-                    ReferenceType = table.Column<int>(type: "INTEGER", nullable: false),
-                    ReferenceId = table.Column<string>(type: "TEXT", nullable: true),
-                    Status = table.Column<int>(type: "INTEGER", nullable: false),
-                    Notes = table.Column<string>(type: "TEXT", maxLength: 500, nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    CreatedBy = table.Column<string>(type: "TEXT", nullable: true),
-                    ApprovedAt = table.Column<DateTime>(type: "TEXT", nullable: true),
-                    ApprovedBy = table.Column<string>(type: "TEXT", nullable: true)
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ProductVariantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    TransactionType = table.Column<int>(type: "int", nullable: false),
+                    Quantity = table.Column<int>(type: "int", nullable: false),
+                    ReferenceType = table.Column<int>(type: "int", nullable: false),
+                    ReferenceId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    Notes = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    CreatedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    ApprovedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    ApprovedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -646,10 +800,10 @@ namespace Persistence.Migrations
                 name: "OrderItems",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "TEXT", nullable: false),
-                    OrderId = table.Column<string>(type: "TEXT", nullable: false),
-                    ProductVariantId = table.Column<string>(type: "TEXT", nullable: false),
-                    Quantity = table.Column<int>(type: "INTEGER", nullable: false),
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    OrderId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ProductVariantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Quantity = table.Column<int>(type: "int", nullable: false),
                     UnitPrice = table.Column<decimal>(type: "decimal(10,2)", nullable: false)
                 },
                 constraints: table =>
@@ -675,18 +829,18 @@ namespace Persistence.Migrations
                 name: "ProductImages",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "TEXT", nullable: false),
-                    ProductVariantId = table.Column<string>(type: "TEXT", nullable: true),
-                    ProductId = table.Column<string>(type: "TEXT", nullable: true),
-                    ImageUrl = table.Column<string>(type: "TEXT", maxLength: 500, nullable: false),
-                    AltText = table.Column<string>(type: "TEXT", maxLength: 200, nullable: true),
-                    DisplayOrder = table.Column<int>(type: "INTEGER", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    ModelUrl = table.Column<string>(type: "TEXT", maxLength: 500, nullable: true),
-                    IsDeleted = table.Column<bool>(type: "INTEGER", nullable: false),
-                    DeletedAt = table.Column<DateTime>(type: "TEXT", nullable: true),
-                    DeletedBy = table.Column<string>(type: "TEXT", nullable: true),
-                    CreatedBy = table.Column<string>(type: "TEXT", nullable: true)
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ProductVariantId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    ProductId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    ImageUrl = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    AltText = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    DisplayOrder = table.Column<int>(type: "int", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    ModelUrl = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    DeletedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    CreatedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -714,22 +868,21 @@ namespace Persistence.Migrations
                         name: "FK_ProductImages_Products_ProductId",
                         column: x => x.ProductId,
                         principalTable: "Products",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
                 name: "Stocks",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "TEXT", nullable: false),
-                    ProductVariantId = table.Column<string>(type: "TEXT", nullable: false),
-                    QuantityOnHand = table.Column<int>(type: "INTEGER", nullable: false),
-                    QuantityReserved = table.Column<int>(type: "INTEGER", nullable: false),
-                    QuantityAvailable = table.Column<int>(type: "INTEGER", nullable: false, computedColumnSql: "[QuantityOnHand] - [QuantityReserved]", stored: true),
-                    Notes = table.Column<string>(type: "TEXT", maxLength: 500, nullable: true),
-                    UpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    UpdatedBy = table.Column<string>(type: "TEXT", nullable: true)
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ProductVariantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    QuantityOnHand = table.Column<int>(type: "int", nullable: false),
+                    QuantityReserved = table.Column<int>(type: "int", nullable: false),
+                    QuantityAvailable = table.Column<int>(type: "int", nullable: false, computedColumnSql: "[QuantityOnHand] - [QuantityReserved]", stored: true),
+                    Notes = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -750,23 +903,77 @@ namespace Persistence.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Refunds",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    PaymentId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    RefundStatus = table.Column<int>(type: "int", nullable: false),
+                    Amount = table.Column<decimal>(type: "decimal(10,2)", nullable: false),
+                    RefundAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    RefundReason = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Refunds", x => x.Id);
+                    table.CheckConstraint("CK_Refund_Amount", "[Amount] >= 0");
+                    table.CheckConstraint("CK_Refund_Status", "[RefundStatus] IN (1, 2, 3, 4)");
+                    table.ForeignKey(
+                        name: "FK_Refunds_Payments_PaymentId",
+                        column: x => x.PaymentId,
+                        principalTable: "Payments",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "PrescriptionDetails",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    PrescriptionId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Eye = table.Column<int>(type: "int", nullable: false),
+                    SPH = table.Column<decimal>(type: "decimal(5,2)", nullable: true),
+                    CYL = table.Column<decimal>(type: "decimal(5,2)", nullable: true),
+                    AXIS = table.Column<int>(type: "int", nullable: true),
+                    PD = table.Column<decimal>(type: "decimal(5,2)", nullable: true),
+                    ADD = table.Column<decimal>(type: "decimal(5,2)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_PrescriptionDetails", x => x.Id);
+                    table.CheckConstraint("CK_PrescriptionDetail_AXIS", "[AXIS] IS NULL OR ([AXIS] BETWEEN 0 AND 180)");
+                    table.CheckConstraint("CK_PrescriptionDetail_AXIS_Requires_CYL", "\r\n                    (CYL IS NULL AND AXIS IS NULL)\r\n                    OR\r\n                    (CYL IS NOT NULL AND AXIS IS NOT NULL)\r\n                    ");
+                    table.CheckConstraint("CK_PrescriptionDetail_CYL", "[CYL] IS NULL OR ([CYL] BETWEEN -6.00 AND 0.00)");
+                    table.CheckConstraint("CK_PrescriptionDetail_Eye", "[Eye] IN (1, 2)");
+                    table.CheckConstraint("CK_PrescriptionDetail_PD", "[PD] IS NULL OR ([PD] BETWEEN 40.00 AND 80.00)");
+                    table.CheckConstraint("CK_PrescriptionDetail_SPH", "[SPH] IS NULL OR ([SPH] BETWEEN -20.00 AND 20.00)");
+                    table.ForeignKey(
+                        name: "FK_PrescriptionDetails_Prescriptions_PrescriptionId",
+                        column: x => x.PrescriptionId,
+                        principalTable: "Prescriptions",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "AfterSalesTickets",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "TEXT", nullable: false),
-                    OrderId = table.Column<string>(type: "TEXT", nullable: false),
-                    OrderItemId = table.Column<string>(type: "TEXT", nullable: true),
-                    CustomerId = table.Column<string>(type: "TEXT", nullable: false),
-                    TicketType = table.Column<int>(type: "INTEGER", nullable: false),
-                    TicketStatus = table.Column<int>(type: "INTEGER", nullable: false),
-                    Reason = table.Column<string>(type: "TEXT", maxLength: 500, nullable: false),
-                    RequestedAction = table.Column<string>(type: "TEXT", maxLength: 500, nullable: true),
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    OrderId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    OrderItemId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    CustomerId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    TicketType = table.Column<int>(type: "int", nullable: false),
+                    TicketStatus = table.Column<int>(type: "int", nullable: false),
+                    Reason = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    RequestedAction = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     RefundAmount = table.Column<decimal>(type: "decimal(10,2)", nullable: true),
-                    IsRequiredEvidence = table.Column<bool>(type: "INTEGER", nullable: false),
-                    AssignedTo = table.Column<string>(type: "TEXT", nullable: true),
-                    PolicyViolation = table.Column<string>(type: "TEXT", maxLength: 500, nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    ResolvedAt = table.Column<DateTime>(type: "TEXT", nullable: true)
+                    IsRequiredEvidence = table.Column<bool>(type: "bit", nullable: false),
+                    AssignedTo = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    PolicyViolation = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    ResolvedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -789,28 +996,26 @@ namespace Persistence.Migrations
                         name: "FK_AfterSalesTickets_OrderItems_OrderItemId",
                         column: x => x.OrderItemId,
                         principalTable: "OrderItems",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_AfterSalesTickets_Orders_OrderId",
                         column: x => x.OrderId,
                         principalTable: "Orders",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
                 name: "TicketAttachments",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "TEXT", nullable: false),
-                    TicketId = table.Column<string>(type: "TEXT", nullable: false),
-                    FileName = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
-                    FileUrl = table.Column<string>(type: "TEXT", maxLength: 500, nullable: false),
-                    FileExtension = table.Column<string>(type: "TEXT", maxLength: 50, nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    DeletedAt = table.Column<DateTime>(type: "TEXT", nullable: true),
-                    DeletedBy = table.Column<string>(type: "TEXT", nullable: true)
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    TicketId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    FileName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    FileUrl = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    FileExtension = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    DeletedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -829,6 +1034,11 @@ namespace Persistence.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                 });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ActivityAttendees_UserId",
+                table: "ActivityAttendees",
+                column: "UserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Address_UserId",
@@ -890,6 +1100,45 @@ namespace Persistence.Migrations
                 name: "IX_AfterSalesTicket_TicketType",
                 table: "AfterSalesTickets",
                 column: "TicketType");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AspNetRoleClaims_RoleId",
+                table: "AspNetRoleClaims",
+                column: "RoleId");
+
+            migrationBuilder.CreateIndex(
+                name: "RoleNameIndex",
+                table: "AspNetRoles",
+                column: "NormalizedName",
+                unique: true,
+                filter: "[NormalizedName] IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AspNetUserClaims_UserId",
+                table: "AspNetUserClaims",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AspNetUserLogins_UserId",
+                table: "AspNetUserLogins",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AspNetUserRoles_RoleId",
+                table: "AspNetUserRoles",
+                column: "RoleId");
+
+            migrationBuilder.CreateIndex(
+                name: "EmailIndex",
+                table: "AspNetUsers",
+                column: "NormalizedEmail");
+
+            migrationBuilder.CreateIndex(
+                name: "UserNameIndex",
+                table: "AspNetUsers",
+                column: "NormalizedUserName",
+                unique: true,
+                filter: "[NormalizedUserName] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_CartItem_CartId",
@@ -1147,6 +1396,11 @@ namespace Persistence.Migrations
                 name: "IX_Payment_TransactionId",
                 table: "Payments",
                 column: "TransactionId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Photos_UserId",
+                table: "Photos",
+                column: "UserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_PolicyConfiguration_Active_EffectivePeriod",
@@ -1415,11 +1669,6 @@ namespace Persistence.Migrations
                 column: "TrackingCode");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ShipmentInfos_CreatorId",
-                table: "ShipmentInfos",
-                column: "CreatorId");
-
-            migrationBuilder.CreateIndex(
                 name: "UX_ShipmentInfo_OrderId",
                 table: "ShipmentInfos",
                 column: "OrderId",
@@ -1472,6 +1721,24 @@ namespace Persistence.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
+                name: "ActivityAttendees");
+
+            migrationBuilder.DropTable(
+                name: "AspNetRoleClaims");
+
+            migrationBuilder.DropTable(
+                name: "AspNetUserClaims");
+
+            migrationBuilder.DropTable(
+                name: "AspNetUserLogins");
+
+            migrationBuilder.DropTable(
+                name: "AspNetUserRoles");
+
+            migrationBuilder.DropTable(
+                name: "AspNetUserTokens");
+
+            migrationBuilder.DropTable(
                 name: "CartItems");
 
             migrationBuilder.DropTable(
@@ -1485,6 +1752,9 @@ namespace Persistence.Migrations
 
             migrationBuilder.DropTable(
                 name: "OrderStatusHistories");
+
+            migrationBuilder.DropTable(
+                name: "Photos");
 
             migrationBuilder.DropTable(
                 name: "PolicyConfigurations");
@@ -1509,6 +1779,12 @@ namespace Persistence.Migrations
 
             migrationBuilder.DropTable(
                 name: "TicketAttachments");
+
+            migrationBuilder.DropTable(
+                name: "Activities");
+
+            migrationBuilder.DropTable(
+                name: "AspNetRoles");
 
             migrationBuilder.DropTable(
                 name: "Carts");
@@ -1544,11 +1820,10 @@ namespace Persistence.Migrations
                 name: "Products");
 
             migrationBuilder.DropTable(
-                name: "ProductCategories");
+                name: "AspNetUsers");
 
-            migrationBuilder.DropColumn(
-                name: "IsLocked",
-                table: "AspNetUsers");
+            migrationBuilder.DropTable(
+                name: "ProductCategories");
         }
     }
 }

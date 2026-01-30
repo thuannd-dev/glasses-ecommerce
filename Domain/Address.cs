@@ -4,8 +4,8 @@ namespace Domain;
 
 public class Address
 {
-    public string Id { get; set; } = Guid.CreateVersion7(TimeProvider.System.GetUtcNow()).ToString();
-    public required string UserId { get; set; }
+    public Guid Id { get; set; } = Guid.CreateVersion7(TimeProvider.System.GetUtcNow());
+    public required Guid UserId { get; set; }
     public required string RecipientName { get; set; } //Recipient: Người nhận hàng
     public required string RecipientPhone { get; set; }
     public required string Venue { get; set; }

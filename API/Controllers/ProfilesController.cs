@@ -16,25 +16,25 @@ namespace API.Controllers
         }
 
         [HttpGet("{userId}/photos")]
-        public async Task<ActionResult<List<Photo>>> GetPhotosForUser(string userId)
+        public async Task<ActionResult<List<Photo>>> GetPhotosForUser(Guid userId)
         {
             return HandleResult(await Mediator.Send(new GetProfilePhotos.Query { UserId = userId}));
         }
 
         [HttpDelete("{photoId}/photos")]
-        public async Task<ActionResult> DeletePhoto(string photoId)
+        public async Task<ActionResult> DeletePhoto(Guid photoId)
         {
             return HandleResult(await Mediator.Send(new DeletePhoto.Command { PhotoId = photoId}));
         }
 
         [HttpPut("{photoId}/main")]
-        public async Task<ActionResult> SetMainPhoto(string photoId)
+        public async Task<ActionResult> SetMainPhoto(Guid photoId)
         {
             return HandleResult(await Mediator.Send(new SetMainPhoto.Command { PhotoId = photoId }));
         }
 
         [HttpGet("{userId}")]
-        public async Task<ActionResult<UserProfile>> GetProfile(string userId)
+        public async Task<ActionResult<UserProfile>> GetProfile(Guid userId)
         {
             return HandleResult(await Mediator.Send(new GetProfile.Query { UserId = userId }));
         }
