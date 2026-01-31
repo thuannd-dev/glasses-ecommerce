@@ -121,6 +121,10 @@ app.UseCors(options => options.AllowAnyHeader()
 app.UseAuthentication();
 app.UseAuthorization();          
 
+//configure to serve static files (wwwroot)
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
 app.UseMiddleware<DisableRouteMiddleware>();
 
 /*
@@ -134,6 +138,7 @@ app.MapControllers();
 
 //Routing (apply /api prefix) - Ex : api/login
 app.MapGroup("api").MapIdentityApi<User>();
+app.MapFallbackToController("Index", "Fallback");
 
 app.MapOpenApi(); 
 

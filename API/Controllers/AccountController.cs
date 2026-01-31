@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
+[Route("api/account")]
 //UserManager have been injected in SignInManager
 public class AccountController(SignInManager<User> signInManager) : BaseApiController
 {

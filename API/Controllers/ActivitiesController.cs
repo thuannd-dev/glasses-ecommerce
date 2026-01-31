@@ -8,7 +8,7 @@ using Application.Activities.DTOs;
 using Microsoft.AspNetCore.Authorization;
 
 namespace API.Controllers;
-
+[Route("api/activities")]
 public class ActivitiesController : BaseApiController
 {
     [HttpGet]
