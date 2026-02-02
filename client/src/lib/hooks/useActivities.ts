@@ -51,11 +51,11 @@ export const useActivities = (id?: string) => {
 
   const updateActivity = useMutation({
     mutationFn: async (activity: Activity) => {
-      await agent.put("/activities", activity);
+      await agent.put(`/activities/${activity.id}`, activity);
     },
-    onSuccess: async () => {
+    onSuccess: async (_data, mutatedActivity) => {
       await queryClient.invalidateQueries({
-        queryKey: ["activities"],
+        queryKey: ["activities", mutatedActivity.id],
       });
     },
   });
@@ -117,7 +117,7 @@ export const useActivities = (id?: string) => {
 
           const isHost = oldActivity.hostId === currentUser.id;
           const isAttending = oldActivity.attendees.some(
-            (x) => x.id === currentUser.id
+            (x) => x.id === currentUser.id,
           );
 
           return {
@@ -138,7 +138,7 @@ export const useActivities = (id?: string) => {
                   },
                 ],
           };
-        }
+        },
       );
 
       // Return a context with the previous
@@ -150,7 +150,7 @@ export const useActivities = (id?: string) => {
       if (context?.prevActivity) {
         queryClient.setQueryData(
           ["activities", activityId],
-          context.prevActivity
+          context.prevActivity,
         );
       }
     },

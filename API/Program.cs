@@ -121,6 +121,10 @@ app.UseCors(options => options.AllowAnyHeader()
 app.UseAuthentication();
 app.UseAuthorization();          
 
+//configure to serve static files (wwwroot)
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
 app.UseMiddleware<DisableRouteMiddleware>();
 
 /*
@@ -153,6 +157,9 @@ app.MapScalarApiReference("/api/docs", options =>
         .ShowSidebar = true;
         
 });
+
+app.MapFallbackToController("Index", "Fallback");
+
 
 /*
     We can't get the service provider from the program class directly, (can't get it from class define it)
