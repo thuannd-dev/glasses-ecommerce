@@ -138,7 +138,6 @@ app.MapControllers();
 
 //Routing (apply /api prefix) - Ex : api/login
 app.MapGroup("api").MapIdentityApi<User>();
-app.MapFallbackToController("Index", "Fallback");
 
 app.MapOpenApi(); 
 
@@ -158,6 +157,9 @@ app.MapScalarApiReference("/api/docs", options =>
         .ShowSidebar = true;
         
 });
+
+app.MapFallbackToController("Index", "Fallback");
+
 
 /*
     We can't get the service provider from the program class directly, (can't get it from class define it)

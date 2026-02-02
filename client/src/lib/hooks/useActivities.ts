@@ -53,9 +53,9 @@ export const useActivities = (id?: string) => {
     mutationFn: async (activity: Activity) => {
       await agent.put(`/activities/${activity.id}`, activity);
     },
-    onSuccess: async () => {
+    onSuccess: async (_data, mutatedActivity) => {
       await queryClient.invalidateQueries({
-        queryKey: ["activities", activity?.id],
+        queryKey: ["activities", mutatedActivity.id],
       });
     },
   });
