@@ -62,3 +62,5 @@ dotnet ef database update --project Persistence --startup-project API
 9. cd API
 
 10. `dotnet watch`
+
+<img src="https://drive.usercontent.google.com/download?id=1jdmcLx6yzGvkFqgenQUoGFpslr1iV0WH"/>

@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Persistence;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,7 +32,18 @@ builder.Services.AddControllers(opt =>
     opt.Filters.Add(new AuthorizeFilter(policy));
 
 });
-builder.Services.AddDbContext<AppDbContext>(opt =>
+
+builder.Services.AddOpenApi();
+
+
+//SQLite
+// builder.Services.AddDbContext<AppDbContext>(opt =>
+// {
+//     opt.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection"));
+// });
+
+//SQL Server
+builder.Services.AddDbContext<AppDbContext>(options =>
 {
     opt.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection"));
 });
@@ -102,6 +114,10 @@ app.UseCors(options => options.AllowAnyHeader()
 app.UseAuthentication();
 app.UseAuthorization();          
 
+//configure to serve static files (wwwroot)
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
 app.UseMiddleware<DisableRouteMiddleware>();
 
 /*
@@ -115,6 +131,27 @@ app.MapControllers();
 
 //Routing (apply /api prefix) - Ex : api/login
 app.MapGroup("api").MapIdentityApi<User>();
+
+app.MapOpenApi(); 
+
+app.MapScalarApiReference("/api/docs", options =>
+{
+    options
+        .WithTitle("Glasses API")
+        .WithTheme(ScalarTheme.Laserwave)
+        .WithDefaultHttpClient(
+            ScalarTarget.JavaScript,
+            ScalarClient.Axios
+        )
+        .ShowOperationId()
+        .SortTagsAlphabetically()
+        .SortOperationsByMethod()
+        .PreserveSchemaPropertyOrder()//SHOULD HAVE
+        .ShowSidebar = true;
+        
+});
+
+app.MapFallbackToController("Index", "Fallback");
 
 
 /*

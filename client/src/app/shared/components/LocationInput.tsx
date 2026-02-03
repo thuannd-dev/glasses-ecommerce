@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { FieldValues, UseControllerProps } from "react-hook-form";
 import { useController } from "react-hook-form";
-import type { LocationIQSuggestion } from "../../../lib/types";
-
 import {
   Box,
   debounce,
@@ -66,7 +64,7 @@ export default function LocationInput<T extends FieldValues>(props: Props<T>) {
           //And i set up agent with default value (base url) in that to go our API
           //in this case is a different location
           const res = await axios.get<LocationIQSuggestion[]>(
-            `${locationUrl}q=${query}`
+            `${locationUrl}q=${query}`,
           );
           setSuggestions(res.data);
         } catch (error) {
@@ -75,7 +73,7 @@ export default function LocationInput<T extends FieldValues>(props: Props<T>) {
           setLoading(false);
         }
       }, 500),
-    [locationUrl]
+    [locationUrl],
   );
 
   const handleChange = async (value: string) => {
