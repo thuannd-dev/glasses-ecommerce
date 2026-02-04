@@ -96,6 +96,12 @@ builder.Services.AddIdentityApiEndpoints<User>(opt =>
 }).AddRoles<IdentityRole<Guid>>()
 .AddEntityFrameworkStores<AppDbContext>();
 
+// Configure Identity to include roles in claims
+builder.Services.Configure<IdentityOptions>(options =>
+{
+    options.ClaimsIdentity.RoleClaimType = System.Security.Claims.ClaimTypes.Role;
+});
+
 builder.Services.AddAuthorizationBuilder()
     .AddPolicy("IsActivityHost", policy =>
     {
