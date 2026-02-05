@@ -45,7 +45,7 @@ builder.Services.AddOpenApi();
 //SQL Server
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
-    opt.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection"));
+    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection"));
 });
 builder.Services.AddCors();
 

@@ -20,6 +20,12 @@ import CartPage from "../../features/cart/CartPage";
 
 import CheckoutPage from "../../features/checkout/CheckoutPage";
 import OrderSuccessPage from "../../features/checkout/OrderSuccessPage";
+
+import ManagerDashboard from "../../features/manager";
+import InboundApprovalPage from "../../features/inbound-approval";
+import { AfterSalesApprovalPage } from "../../features/after-sales-approval";
+import { ProductsPage } from "../../features/products";
+import { ManagerLayout } from "../../features/manager/layout";
 export const router = createBrowserRouter([
   // ======================
   // HOME (NO NAVBAR)
@@ -61,6 +67,17 @@ export const router = createBrowserRouter([
 
       // Other pages
       { path: "counter", element: <Counter /> },
+
+      // Manager Section (with sidebar layout)
+      {
+        element: <ManagerLayout />,
+        children: [
+          { path: "manager", element: <ManagerDashboard /> },
+          { path: "inbound-approval", element: <InboundApprovalPage /> },
+          { path: "after-sales-approval", element: <AfterSalesApprovalPage /> },
+          { path: "products", element: <ProductsPage /> },
+        ],
+      },
 
       // Errors
       { path: "errors", element: <TestErrors /> },
