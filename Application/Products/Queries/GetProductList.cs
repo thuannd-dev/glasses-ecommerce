@@ -123,11 +123,8 @@ public sealed class GetProductList
                     : query.OrderByDescending(p => p.CreatedAt)
             };
 
-            // Use split query for better performance with collections (Images, Variants)
-            query = query.AsSplitQuery();
-
             // Apply pagination and projection
-            //ProjectTo generates optimized SQL SELECT based on ProductListDto mapping
+            // ProjectTo generates optimized SQL SELECT with scalar subqueries (no collections to split)
             ProductListDto[] items = await query
                 .Skip((request.PageNumber - 1) * request.PageSize)
                 .Take(request.PageSize)
