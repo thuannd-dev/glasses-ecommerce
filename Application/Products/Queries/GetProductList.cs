@@ -108,6 +108,11 @@ public sealed class GetProductList
             ProductStatus statusFilter = request.Status ?? ProductStatus.Active;
             query = query.Where(p => p.Status == statusFilter);
 
+            // IMPORTANT: Ensure product has at least one active variant
+            // This prevents edge cases in price sorting where products without active variants
+            // would get default price (0) and appear in incorrect positions
+            query = query.Where(p => p.Variants.Any(v => v.IsActive));
+
             // Type filter
             if (request.Type.HasValue)
             {
@@ -142,20 +147,13 @@ public sealed class GetProductList
 
         private static IQueryable<Product> ApplySorting(IQueryable<Product> query, Query request)
         {
-            // Use expression-based sorting for better query translation
+            // Use Min() for cleaner and more performant price sorting
+            // All products are guaranteed to have at least one active variant at this point
             return request.SortBy switch
             {
                 SortByOption.Price => request.SortOrder == SortOrderOption.Asc
-                    ? query.OrderBy(p => p.Variants
-                        .Where(v => v.IsActive)
-                        .OrderBy(v => v.Price)
-                        .Select(v => v.Price)
-                        .FirstOrDefault())
-                    : query.OrderByDescending(p => p.Variants
-                        .Where(v => v.IsActive)
-                        .OrderBy(v => v.Price)
-                        .Select(v => v.Price)
-                        .FirstOrDefault()),
+                    ? query.OrderBy(p => p.Variants.Where(v => v.IsActive).Min(v => v.Price))
+                    : query.OrderByDescending(p => p.Variants.Where(v => v.IsActive).Min(v => v.Price)),
                 
                 SortByOption.Name => request.SortOrder == SortOrderOption.Asc
                     ? query.OrderBy(p => p.ProductName)

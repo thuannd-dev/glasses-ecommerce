@@ -6,11 +6,11 @@ name: Build and deploy ASP.Net Core app to Azure Web App - glasses-ecommerce
 on:
   push:
     branches:
-      - '**'  # CI runs on ALL branches
+      - main        # Only run on main for deployment
   pull_request:
     branches:
-      - main
-      - dev
+      - main        # Run CI on PRs to main (validates before merge)
+      - dev         # Run CI on PRs to dev (validates before merge)
   workflow_dispatch:
 
 jobs:

@@ -25,15 +25,14 @@ public sealed class GetProductDetail
     {
         public async Task<Result<ProductDto>> Handle(Query request, CancellationToken cancellationToken)
         {
-            // AsSplitQuery generates separate SQL queries for each collection:
-            // 1. Product + Category
-            // 2. Product Images (ordered by DisplayOrder)
-            // 3. Variants + Stock
-            // 4. Variant Images (ordered by DisplayOrder)
-            // This prevents Cartesian explosion from multiple LEFT JOINs
+            // Query execution order:
+            // 1. Filter by ID (Where)
+            // 2. Split query hint to prevent Cartesian explosion (AsSplitQuery)
+            // 3. Project to DTO with only required columns (ProjectTo)
+            // 4. Disable change tracking for read-only operation (AsNoTracking)
             var product = await context.Products
-                .AsSplitQuery()
                 .Where(p => p.Id == request.Id)
+                .AsSplitQuery()
                 .ProjectTo<ProductDto>(mapper.ConfigurationProvider)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(cancellationToken);
