@@ -10,6 +10,11 @@ using Persistence;
 
 namespace Application.Products.Queries;
 
+/// <summary>
+/// Retrieves paginated list of products with filtering and sorting.
+/// Uses optimized queries with ProjectTo for minimal data transfer.
+/// Price filtering/sorting considers only active variants for accuracy.
+/// </summary>
 public sealed class GetProductList
 {
     public enum SortByOption
@@ -44,38 +49,73 @@ public sealed class GetProductList
         public SortOrderOption SortOrder { get; set; } = SortOrderOption.Desc;
     }
 
-    public sealed class Handler(AppDbContext context, IMapper mapper) 
+    internal sealed class Handler(AppDbContext context, IMapper mapper) 
         : IRequestHandler<Query, Result<PagedResult<ProductListDto>>>
     {
-        public async Task<Result<PagedResult<ProductListDto>>> Handle(Query request, CancellationToken cancellationToken)
+        public async Task<Result<PagedResult<ProductListDto>>> Handle(
+            Query request, 
+            CancellationToken cancellationToken)
         {
-            var query = context.Products.AsQueryable();
+            IQueryable<Product> query = context.Products.AsQueryable();
 
             // Apply filters
-            if (request.CategoryIds != null && request.CategoryIds.Count > 0)
+            query = ApplyFilters(query, request);
+
+            // Get total count after filtering
+            int totalCount = await query.CountAsync(cancellationToken);
+
+            // Apply sorting
+            query = ApplySorting(query, request);
+
+            // Apply pagination and projection
+            // ProjectTo generates optimized SQL SELECT based on ProductListDto mapping
+            // AsSplitQuery prevents Cartesian explosion with multiple collections
+            List<ProductListDto> items = await query
+                .Skip((request.PageNumber - 1) * request.PageSize)
+                .Take(request.PageSize)
+                .AsSplitQuery()
+                .ProjectTo<ProductListDto>(mapper.ConfigurationProvider)
+                .AsNoTracking()
+                .ToListAsync(cancellationToken);
+
+            PagedResult<ProductListDto> pagedResult = new()
+            {
+                Items = items,
+                TotalCount = totalCount,
+                PageNumber = request.PageNumber,
+                PageSize = request.PageSize
+            };
+
+            return Result<PagedResult<ProductListDto>>.Success(pagedResult);
+        }
+
+        private static IQueryable<Product> ApplyFilters(IQueryable<Product> query, Query request)
+        {
+            // Category filter
+            if (request.CategoryIds is { Count: > 0 })
             {
                 query = query.Where(p => request.CategoryIds.Contains(p.CategoryId));
             }
 
+            // Brand filter (case-insensitive LIKE)
             if (!string.IsNullOrWhiteSpace(request.Brand))
             {
                 string brandPattern = $"%{request.Brand}%";
                 query = query.Where(p => p.Brand != null && EF.Functions.Like(p.Brand, brandPattern));
             }
 
-            // Default to Active if no status specified
-            var statusFilter = request.Status ?? ProductStatus.Active;
+            // Status filter (default to Active)
+            ProductStatus statusFilter = request.Status ?? ProductStatus.Active;
             query = query.Where(p => p.Status == statusFilter);
 
+            // Type filter
             if (request.Type.HasValue)
             {
                 query = query.Where(p => p.Type == request.Type.Value);
             }
 
-            //Remind that SearchTerm can match ProductName, Description, or Brand
-            //In this case, we use SQL Server so it's case-insensitive by default
-            //But in some databases, you might need to use functions to ensure case-insensitivity
-            //Ex: case-sensitive in PostgreSQL
+            // Search term filter (matches ProductName, Description, or Brand)
+            // Case-insensitive by default in SQL Server
             if (!string.IsNullOrWhiteSpace(request.SearchTerm))
             {
                 string searchPattern = $"%{request.SearchTerm}%";
@@ -86,50 +126,45 @@ public sealed class GetProductList
                 );
             }
 
-            // Price range filtering (based on variant prices)
+            // Price range filter (only considers active variants)
             if (request.MinPrice.HasValue || request.MaxPrice.HasValue)
             {
-                query = query.Where(p => p.Variants.Any(v => 
-                    (!request.MinPrice.HasValue || v.Price >= request.MinPrice.Value) &&
-                    (!request.MaxPrice.HasValue || v.Price <= request.MaxPrice.Value)
-                ));
+                query = query.Where(p => 
+                    p.Variants.Any(v => v.IsActive &&
+                        (!request.MinPrice.HasValue || v.Price >= request.MinPrice.Value) &&
+                        (!request.MaxPrice.HasValue || v.Price <= request.MaxPrice.Value)
+                    )
+                );
             }
 
-            // Get total count before pagination
-            var totalCount = await query.CountAsync(cancellationToken);
+            return query;
+        }
 
-            // Apply sorting
-            query = request.SortBy switch
+        private static IQueryable<Product> ApplySorting(IQueryable<Product> query, Query request)
+        {
+            // Use expression-based sorting for better query translation
+            return request.SortBy switch
             {
                 SortByOption.Price => request.SortOrder == SortOrderOption.Asc
-                    ? query.OrderBy(p => p.Variants.Any() ? p.Variants.Min(v => v.Price) : decimal.MaxValue)
-                    : query.OrderByDescending(p => p.Variants.Any() ? p.Variants.Min(v => v.Price) : decimal.MinValue),
+                    ? query.OrderBy(p => p.Variants
+                        .Where(v => v.IsActive)
+                        .OrderBy(v => v.Price)
+                        .Select(v => v.Price)
+                        .FirstOrDefault())
+                    : query.OrderByDescending(p => p.Variants
+                        .Where(v => v.IsActive)
+                        .OrderBy(v => v.Price)
+                        .Select(v => v.Price)
+                        .FirstOrDefault()),
+                
                 SortByOption.Name => request.SortOrder == SortOrderOption.Asc
                     ? query.OrderBy(p => p.ProductName)
                     : query.OrderByDescending(p => p.ProductName),
+                
                 _ => request.SortOrder == SortOrderOption.Asc
                     ? query.OrderBy(p => p.CreatedAt)
                     : query.OrderByDescending(p => p.CreatedAt)
             };
-
-            // Apply pagination and projection
-            //ProjectTo generates optimized SQL SELECT based on ProductListDto mapping
-            var items = await query
-                .Skip((request.PageNumber - 1) * request.PageSize)
-                .Take(request.PageSize)
-                .ProjectTo<ProductListDto>(mapper.ConfigurationProvider)
-                .AsNoTracking()
-                .ToListAsync(cancellationToken);
-
-            var pagedResult = new PagedResult<ProductListDto>
-            {
-                Items = items,
-                TotalCount = totalCount,
-                PageNumber = request.PageNumber,
-                PageSize = request.PageSize
-            };
-
-            return Result<PagedResult<ProductListDto>>.Success(pagedResult);
         }
     }
 }
