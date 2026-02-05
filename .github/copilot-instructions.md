@@ -23,3 +23,9 @@
 - Favor explicit typing (this is very important). Only use var when evident.
 - Make types internal and sealed by default unless otherwise specified
 - Prefer Guid for identifiers unless otherwise specified
+
+# EF Core performance guidelines:
+
+- Use AsNoTracking and projection for read-only queries.
+- Use AsSplitQuery for queries with multiple collections.
+- Apply optimizations only when they fit the query intent and data volume.

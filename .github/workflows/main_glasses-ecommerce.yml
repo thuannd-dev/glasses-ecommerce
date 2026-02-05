@@ -6,7 +6,11 @@ name: Build and deploy ASP.Net Core app to Azure Web App - glasses-ecommerce
 on:
   push:
     branches:
-      - main
+      - main # Only run on main for deployment
+  pull_request:
+    branches:
+      - main # Run CI on PRs to main (validates before merge)
+      - dev # Run CI on PRs to dev (validates before merge)
   workflow_dispatch:
 
 jobs:
@@ -41,6 +45,8 @@ jobs:
         run: dotnet publish -c Release -o "${{env.DOTNET_ROOT}}/myapp"
 
       - name: Upload artifact for deployment job
+        # Only upload artifact if we're on main branch
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         uses: actions/upload-artifact@v4
         with:
           name: .net-app
@@ -49,6 +55,8 @@ jobs:
   deploy:
     runs-on: windows-latest
     needs: build
+    # Only deploy when pushing to main branch
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     permissions:
       id-token: write #This is required for requesting the JWT
       contents: read #This is required for actions/checkout
