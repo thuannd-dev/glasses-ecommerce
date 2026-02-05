@@ -123,6 +123,18 @@ const NavBar = observer(function NavBar() {
             {/* Menu */}
             <Box sx={{ display: { xs: "none", md: "flex" }, gap: 0.5 }}>
               {menu}
+              
+              {/* Operations link for OperationsStaff role */}
+              {currentUser?.roles?.includes("Operations") && (
+                <Button
+                  component={NavLink}
+                  to="/operations/picking"
+                  sx={NAV_BTN_SX}
+                  title="Access Operations Dashboard"
+                >
+                  📦 Operations
+                </Button>
+              )}
             </Box>
 
             {/* Search */}
