@@ -4,58 +4,20 @@ import {
     AccordionSummary,
     Box,
     Button,
-    Checkbox,
     Divider,
-    FormControlLabel,
-    InputBase,
-    Paper,
+    Slider,
     Typography,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import SearchIcon from "@mui/icons-material/Search";
 import type { Dispatch, SetStateAction } from "react";
-import type {
-    FiltersState,
-    FrameSize,
-    Gender,
-    GlassesType,
-    Material,
-    Shape,
-} from "../../types";
+import type { FiltersState } from "../../types";
 
-const GLASSES_TYPES: { label: string; value: GlassesType }[] = [
+// Các brand và type lấy từ dữ liệu mẫu API
+const BRANDS = ["Ray-Ban", "Oakley", "Warby Parker", "Mykita"];
+const TYPES = [
     { label: "Eyeglasses", value: "eyeglasses" },
     { label: "Sunglasses", value: "sunglasses" },
-];
-
-const SHAPES: { label: string; value: Shape }[] = [
-    { label: "Round", value: "round" },
-    { label: "Square", value: "square" },
-    { label: "Cat-eye", value: "cat-eye" },
-    { label: "Aviator", value: "aviator" },
-    { label: "Rectangle", value: "rectangle" },
-];
-
-const COLORS = ["#111827", "#6B7280", "#D4AF37", "#8B5E34", "#60A5FA", "#22C55E"];
-
-const FRAME_SIZES: FrameSize[] = ["S", "M", "L"];
-
-const MATERIALS: { label: string; value: Material }[] = [
-    { label: "Acetate", value: "acetate" },
-    { label: "Metal", value: "metal" },
-    { label: "TR90", value: "tr90" },
-    { label: "Titanium", value: "titanium" },
-];
-
-const GENDERS: { label: string; value: Gender }[] = [
-    { label: "Unisex", value: "unisex" },
-    { label: "Men", value: "men" },
-    { label: "Women", value: "women" },
-];
-
-function toggleInArray<T>(arr: T[], v: T) {
-    return arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v];
-}
+] as const;
 
 export function FiltersSidebar({
     filters,
@@ -69,238 +31,173 @@ export function FiltersSidebar({
     stickyTop?: number;
 }) {
     return (
-        <Box sx={{
-            position: stickyTop !== undefined ? { md: "sticky" } : "static",
-            top: stickyTop !== undefined ? { md: stickyTop } : undefined,
-
-            px: 2.5,
-            pt: 2,
-            pb: 3, }}>
-            <Typography sx={{ fontWeight: 900, mb: 1.5, color: "#111827" }}>
+        <Box
+            sx={{
+                position: stickyTop !== undefined ? { md: "sticky" } : "static",
+                top: stickyTop !== undefined ? { md: stickyTop } : undefined,
+                px: 2.5,
+                pt: 2,
+                pb: 3,
+                display: "flex",
+                flexDirection: "column",
+                gap: 2,
+                height: "100%",
+            }}
+        >
+            <Typography sx={{ fontWeight: 900, mb: 0.5, color: "#111827" }}>
                 Filters
             </Typography>
 
-            {/* Search */}
-            <Paper
-                elevation={0}
+            {/* Phần nội dung có scroll riêng để khi mở dropdown UI không bị dịch chuyển */}
+            <Box
                 sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    px: 1.5,
-                    height: 44,
-                    borderRadius: 2,
-                    border: "1px solid rgba(17,24,39,0.15)",
+                    flex: 1,
+                    overflowY: "auto",
+                    pr: 1,
+                    mt: 1,
                 }}
             >
-                <InputBase
-                    value={filters.keyword}
-                    onChange={(e) => setFilters((prev) => ({ ...prev, keyword: e.target.value }))}
-                    placeholder="Enter brand name or product number"
-                    sx={{ flex: 1, fontSize: 14, fontWeight: 600 }}
-                />
-                <SearchIcon sx={{ opacity: 0.6 }} />
-            </Paper>
+                {/* Search removed: now using global navbar search */}
+                <Divider sx={{ my: 1.5 }} />
 
-            <Divider sx={{ my: 2.5 }} />
+                {/* Price (range 0 → 2000 USD) */}
+                <Accordion
+                    disableGutters
+                    elevation={0}
+                    sx={{ "&:before": { display: "none" } }}
+                >
+                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                        <Typography sx={{ fontWeight: 900 }}>Price (USD)</Typography>
+                    </AccordionSummary>
+                    <AccordionDetails sx={{ pt: 0 }}>
+                        <Box sx={{ px: 0.5, pb: 1 }}>
+                            <Slider
+                                value={[
+                                    filters.minPrice ?? 0,
+                                    filters.maxPrice ?? 2000,
+                                ]}
+                                onChange={(_, value) => {
+                                    const [min, max] = value as number[];
+                                    setFilters((prev) => ({
+                                        ...prev,
+                                        minPrice: min === 0 ? null : min,
+                                        maxPrice: max === 2000 ? null : max,
+                                    }));
+                                }}
+                                min={0}
+                                max={2000}
+                                step={10}
+                                valueLabelDisplay="auto"
+                                getAriaLabel={() => "Price range"}
+                                getAriaValueText={(v) => `$${v}`}
+                            />
+                            <Box
+                                sx={{
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    mt: 0.5,
+                                    fontSize: 12,
+                                    color: "rgba(17,24,39,0.7)",
+                                }}
+                            >
+                                <span>${filters.minPrice ?? 0}</span>
+                                <span>${filters.maxPrice ?? 2000}</span>
+                            </Box>
+                        </Box>
+                    </AccordionDetails>
+                </Accordion>
 
-            {/* Category */}
-            <Accordion
-                defaultExpanded
-                disableGutters
-                elevation={0}
-                sx={{ "&:before": { display: "none" } }}
-            >
-                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                    <Typography sx={{ fontWeight: 900 }}>Category</Typography>
-                </AccordionSummary>
-                <AccordionDetails sx={{ pt: 0 }}>
-                    {GLASSES_TYPES.map((x) => (
-                        <FormControlLabel
-                            key={x.value}
-                            control={
-                                <Checkbox
-                                    checked={filters.glassesTypes.includes(x.value)}
-                                    onChange={() =>
-                                        setFilters((prev) => ({
-                                            ...prev,
-                                            glassesTypes: toggleInArray(prev.glassesTypes, x.value),
-                                        }))
-                                    }
-                                />
-                            }
-                            label={x.label}
-                        />
-                    ))}
-                </AccordionDetails>
-            </Accordion>
-            <Divider />
-
-            {/* Shape */}
-            <Accordion disableGutters elevation={0} sx={{ "&:before": { display: "none" } }}>
-                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                    <Typography sx={{ fontWeight: 900 }}>Shape</Typography>
-                </AccordionSummary>
-                <AccordionDetails sx={{ pt: 0 }}>
-                    <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", columnGap: 1 }}>
-                        {SHAPES.map((x) => (
-                            <FormControlLabel
-                                key={x.value}
-                                control={
-                                    <Checkbox
-                                        checked={filters.shapes.includes(x.value)}
-                                        onChange={() =>
+                {/* Type (Eyeglasses / Sunglasses) */}
+                <Accordion
+                    disableGutters
+                    elevation={0}
+                    sx={{ "&:before": { display: "none" } }}
+                >
+                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                        <Typography sx={{ fontWeight: 900 }}>Type</Typography>
+                    </AccordionSummary>
+                    <AccordionDetails sx={{ pt: 0 }}>
+                        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+                            {TYPES.map((t) => {
+                                const active = filters.glassesTypes.includes(t.value);
+                                return (
+                                    <Box
+                                        key={t.value}
+                                        onClick={() =>
                                             setFilters((prev) => ({
                                                 ...prev,
-                                                shapes: toggleInArray(prev.shapes, x.value),
+                                                glassesTypes: active ? [] : [t.value],
                                             }))
                                         }
-                                    />
-                                }
-                                label={x.label}
-                            />
-                        ))}
-                    </Box>
-                </AccordionDetails>
-            </Accordion>
-            <Divider />
+                                        sx={{
+                                            px: 1.4,
+                                            py: 0.7,
+                                            borderRadius: 2,
+                                            border:
+                                                "1px solid rgba(17,24,39,0.18)",
+                                            bgcolor: active ? "#111827" : "#fff",
+                                            color: active ? "#fff" : "#111827",
+                                            fontWeight: 900,
+                                            cursor: "pointer",
+                                            userSelect: "none",
+                                            fontSize: 13,
+                                        }}
+                                    >
+                                        {t.label}
+                                    </Box>
+                                );
+                            })}
+                        </Box>
+                    </AccordionDetails>
+                </Accordion>
 
-            {/* Colour */}
-            <Accordion disableGutters elevation={0} sx={{ "&:before": { display: "none" } }}>
-                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                    <Typography sx={{ fontWeight: 900 }}>Colour</Typography>
-                </AccordionSummary>
-                <AccordionDetails sx={{ pt: 0 }}>
-                    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-                        {COLORS.map((c) => {
-                            const active = filters.colors.includes(c);
-                            return (
-                                <Box
-                                    key={c}
-                                    onClick={() =>
-                                        setFilters((prev) => ({
-                                            ...prev,
-                                            colors: toggleInArray(prev.colors, c),
-                                        }))
-                                    }
-                                    role="button"
-                                    tabIndex={0}
-                                    sx={{
-                                        width: 22,
-                                        height: 22,
-                                        borderRadius: "999px",
-                                        bgcolor: c,
-                                        cursor: "pointer",
-                                        outline: active
-                                            ? "2px solid #111827"
-                                            : "1px solid rgba(17,24,39,0.18)",
-                                        outlineOffset: 2,
-                                    }}
-                                />
-                            );
-                        })}
-                    </Box>
-                </AccordionDetails>
-            </Accordion>
-            <Divider />
-
-            {/* Frame size */}
-            <Accordion disableGutters elevation={0} sx={{ "&:before": { display: "none" } }}>
-                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                    <Typography sx={{ fontWeight: 900 }}>Frame size</Typography>
-                </AccordionSummary>
-                <AccordionDetails sx={{ pt: 0 }}>
-                    <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-                        {FRAME_SIZES.map((s) => {
-                            const active = filters.frameSizes.includes(s);
-                            return (
-                                <Box
-                                    key={s}
-                                    onClick={() =>
-                                        setFilters((prev) => ({
-                                            ...prev,
-                                            frameSizes: toggleInArray(prev.frameSizes, s),
-                                        }))
-                                    }
-                                    sx={{
-                                        px: 1.4,
-                                        py: 0.7,
-                                        borderRadius: 2,
-                                        border: "1px solid rgba(17,24,39,0.18)",
-                                        bgcolor: active ? "#111827" : "#fff",
-                                        color: active ? "#fff" : "#111827",
-                                        fontWeight: 900,
-                                        cursor: "pointer",
-                                        userSelect: "none",
-                                        fontSize: 13,
-                                    }}
-                                >
-                                    {s}
-                                </Box>
-                            );
-                        })}
-                    </Box>
-                </AccordionDetails>
-            </Accordion>
-            <Divider />
-
-            {/* Materials */}
-            <Accordion disableGutters elevation={0} sx={{ "&:before": { display: "none" } }}>
-                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                    <Typography sx={{ fontWeight: 900 }}>Materials</Typography>
-                </AccordionSummary>
-                <AccordionDetails sx={{ pt: 0 }}>
-                    <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", columnGap: 1 }}>
-                        {MATERIALS.map((x) => (
-                            <FormControlLabel
-                                key={x.value}
-                                control={
-                                    <Checkbox
-                                        checked={filters.materials.includes(x.value)}
-                                        onChange={() =>
+                {/* Brand (từ data API) */}
+                <Accordion
+                    disableGutters
+                    elevation={0}
+                    sx={{ "&:before": { display: "none" } }}
+                >
+                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                        <Typography sx={{ fontWeight: 900 }}>Brand</Typography>
+                    </AccordionSummary>
+                    <AccordionDetails sx={{ pt: 0 }}>
+                        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+                            {BRANDS.map((b) => {
+                                const active = filters.brand === b;
+                                return (
+                                    <Box
+                                        key={b}
+                                        onClick={() =>
                                             setFilters((prev) => ({
                                                 ...prev,
-                                                materials: toggleInArray(prev.materials, x.value),
+                                                brand: prev.brand === b ? null : b,
                                             }))
                                         }
-                                    />
-                                }
-                                label={x.label}
-                            />
-                        ))}
-                    </Box>
-                </AccordionDetails>
-            </Accordion>
-            <Divider />
+                                        sx={{
+                                            px: 1.4,
+                                            py: 0.7,
+                                            borderRadius: 2,
+                                            border:
+                                                "1px solid rgba(17,24,39,0.18)",
+                                            bgcolor: active ? "#111827" : "#fff",
+                                            color: active ? "#fff" : "#111827",
+                                            fontWeight: 900,
+                                            cursor: "pointer",
+                                            userSelect: "none",
+                                            fontSize: 13,
+                                        }}
+                                    >
+                                        {b}
+                                    </Box>
+                                );
+                            })}
+                        </Box>
+                    </AccordionDetails>
+                </Accordion>
+            </Box>
 
-            {/* Gender */}
-            <Accordion disableGutters elevation={0} sx={{ "&:before": { display: "none" } }}>
-                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                    <Typography sx={{ fontWeight: 900 }}>Gender</Typography>
-                </AccordionSummary>
-                <AccordionDetails sx={{ pt: 0 }}>
-                    <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", columnGap: 1 }}>
-                        {GENDERS.map((x) => (
-                            <FormControlLabel
-                                key={x.value}
-                                control={
-                                    <Checkbox
-                                        checked={filters.genders.includes(x.value)}
-                                        onChange={() =>
-                                            setFilters((prev) => ({
-                                                ...prev,
-                                                genders: toggleInArray(prev.genders, x.value),
-                                            }))
-                                        }
-                                    />
-                                }
-                                label={x.label}
-                            />
-                        ))}
-                    </Box>
-                </AccordionDetails>
-            </Accordion>
-
-            <Box sx={{ mt: 2.5, display: "grid", gap: 1.2 }}>
+            {/* Nút hành động luôn cố định, không bị đẩy khi dropdown mở/đóng */}
+            <Box sx={{ mt: 1.5, display: "grid", gap: 1.2 }}>
                 <Button
                     variant="contained"
                     sx={{

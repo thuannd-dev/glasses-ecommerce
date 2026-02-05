@@ -28,6 +28,7 @@ public sealed class UpdateCartItem
 
             // Find cart item with necessary includes
             CartItem? cartItem = await context.CartItems
+                .AsSplitQuery()
                 .Include(ci => ci.Cart)
                 .Include(ci => ci.ProductVariant)
                     .ThenInclude(pv => pv.Stock)

@@ -32,6 +32,9 @@ jobs:
           cd client
           npm install
           npm run build
+        env:
+          VITE_API_URL: /api
+          VITE_LOCATIONIQ_API_KEY: ${{ secrets.LOCATIONIQ_API_KEY }}
 
       - name: Set up .NET Core
         uses: actions/setup-dotnet@v4

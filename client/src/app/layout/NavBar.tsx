@@ -1,5 +1,5 @@
-import { useMemo } from "react";
-import { NavLink } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { observer, Observer } from "mobx-react-lite";
 import {
   FavoriteBorder,
@@ -24,9 +24,9 @@ import { alpha } from "@mui/material/styles";
 
 import { useStore } from "../../lib/hooks/useStore";
 import { useAccount } from "../../lib/hooks/useAccount";
+import { useCart } from "../../lib/hooks/useCart";
 import UserMenu from "./UserMenu";
 import CartDropdown from "../components/cart/CartDropdown";
-import { cartStore } from "../../lib/stores/cartStore";
 
 // ===== Styles =====
 const NAV_BTN_SX = {
@@ -63,8 +63,8 @@ const SEARCH_BOX_SX = {
 const ICON_SX = { color: "rgba(17,24,39,0.75)" } as const;
 
 const MENU_ITEMS = [
-  { label: "Eyeglasses", to: "/collections/glasses" },
-  { label: "Sunglasses", to: "/collections/fashion" },
+  { label: "Eyeglasses", to: "/collections/eyeglasses" },
+  { label: "Sunglasses", to: "/collections/sunglasses" },
   { label: "Lens", to: "/collections/lens" },
 ] as const;
 
@@ -72,6 +72,39 @@ const MENU_ITEMS = [
 const NavBar = observer(function NavBar() {
   const { uiStore } = useStore();
   const { currentUser } = useAccount();
+  const { cart } = useCart();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // Sync navbar search with current URL query (?search=...)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const urlSearch = params.get("search") ?? "";
+    setSearchTerm(urlSearch);
+  }, [location.search]);
+
+  const handleSubmitSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const trimmed = searchTerm.trim();
+
+    // If not on collections, go to /collections with search param
+    if (!location.pathname.startsWith("/collections")) {
+      const target = trimmed ? `/collections?search=${encodeURIComponent(trimmed)}` : "/collections";
+      navigate(target);
+      return;
+    }
+
+    // If already on collections, update search param but keep path
+    const params = new URLSearchParams(location.search);
+    if (trimmed) {
+      params.set("search", trimmed);
+    } else {
+      params.delete("search");
+    }
+    navigate(`${location.pathname}?${params.toString()}`, { replace: false });
+  };
 
   const menu = useMemo(
     () =>
@@ -127,11 +160,17 @@ const NavBar = observer(function NavBar() {
 
             {/* Search */}
             <Box sx={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <Box sx={SEARCH_BOX_SX}>
+              <Box
+                component="form"
+                onSubmit={handleSubmitSearch}
+                sx={SEARCH_BOX_SX}
+              >
                 <Search sx={{ fontSize: 18, color: "rgba(17,24,39,0.55)" }} />
                 <InputBase
                   placeholder="Search eyeglasses, sunglasses, lens..."
                   sx={{ flex: 1, fontSize: 13.5 }}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </Box>
             </Box>
@@ -159,7 +198,7 @@ const NavBar = observer(function NavBar() {
                   onClick={() => uiStore.toggleCart()}
                 >
                   <Badge
-                    badgeContent={cartStore.totalQuantity}
+                    badgeContent={cart?.totalQuantity ?? 0}
                     color="primary"
                   >
                     <LocalMallOutlined />

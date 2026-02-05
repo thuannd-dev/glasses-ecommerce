@@ -11,6 +11,7 @@ import ProductDetailPage from "../../features/collections/ProductDetailPage";
 
 import LoginForm from "../../features/account/LoginForm";
 import RegisterForm from "../../features/account/RegisterForm";
+import PostLoginRedirect from "../../features/account/PostLoginRedirect";
 
 import TestErrors from "../../features/errors/TestErrors";
 import NotFound from "../../features/errors/NotFound";
@@ -22,7 +23,7 @@ import CheckoutPage from "../../features/checkout/CheckoutPage";
 import OrderSuccessPage from "../../features/checkout/OrderSuccessPage";
 import SaleSupportPage from "../../features/staff/sale-support/SaleSupportPage";
 import OperationPage from "../../features/staff/operation/OperationPage";
-
+import ProfilePage from "../../features/Customer/profile/ProfilePage";
 export const router = createBrowserRouter([
   // ======================
   // HOME (NO NAVBAR)
@@ -40,6 +41,7 @@ export const router = createBrowserRouter([
     children: [
       { path: "login", element: <LoginForm /> },
       { path: "register", element: <RegisterForm /> },
+      { path: "auth/redirect", element: <PostLoginRedirect /> },
     ],
   },
 
@@ -66,6 +68,9 @@ export const router = createBrowserRouter([
       { path: "staff/sale-support", element: <SaleSupportPage /> },
       { path: "staff/operation", element: <OperationPage /> },
 
+      // Customer pages
+      { path: "profile", element: <ProfilePage /> },
+
       // Other pages
       { path: "counter", element: <Counter /> },
 
@@ -74,13 +79,13 @@ export const router = createBrowserRouter([
       { path: "server-error", element: <ServerError /> },
       { path: "not-found", element: <NotFound /> },
 
-      // Fallback
-      { path: "*", element: <Navigate replace to="/not-found" /> },
-
-      //guest
+      // Cart & Checkout (guest)
       { path: "cart", element: <CartPage /> },
       { path: "checkout", element: <CheckoutPage /> },
       { path: "order-success", element: <OrderSuccessPage /> },
+
+      // Fallback
+      { path: "*", element: <Navigate replace to="/not-found" /> },
     ],
   },
 ]);

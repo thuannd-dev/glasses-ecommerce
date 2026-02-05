@@ -3,35 +3,50 @@ import type { SortKey } from "../../types";
 
 export function CollectionTopBar({
     totalItems,
+    categoryLabel,
     sort,
     setSort,
 }: {
     totalItems: number;
+    /** Khi lọc theo category (eyeglasses/sunglasses) → hiển thị "X Eyeglasses" / "X Sunglasses" */
+    categoryLabel?: "eyeglasses" | "sunglasses" | null;
     sort: SortKey;
     setSort: (v: SortKey) => void;
 }) {
+    const label =
+        categoryLabel === "eyeglasses"
+            ? "Eyeglasses"
+            : categoryLabel === "sunglasses"
+              ? "Sunglasses"
+              : "Items";
+
     return (
         <Box
             sx={{
                 display: "flex",
-                alignItems: { xs: "flex-start", md: "center" },
-                justifyContent: "space-between",
+        alignItems: "center",
+        justifyContent: "space-between",
                 gap: 2,
                 flexDirection: { xs: "column", md: "row" },
             }}
         >
             <Typography sx={{ fontWeight: 900, color: "#111827" }}>
-                {totalItems} Items
+                {totalItems} {label}
             </Typography>
 
             <Select
                 value={sort}
                 onChange={(e) => setSort(e.target.value as SortKey)}
                 size="small"
+        MenuProps={{
+          // Không khóa scroll của trang để tránh layout dịch trái/phải
+          disableScrollLock: true,
+        }}
                 sx={{
-                    height: 44,
+          height: 44,
                     borderRadius: 2,    
-                    minWidth: 210,
+          width: 210,          // cố định width để tránh layout shift
+          flexShrink: 0,
                     "& .MuiOutlinedInput-notchedOutline": {
                         borderColor: "rgba(17,24,39,0.18)",
                     },

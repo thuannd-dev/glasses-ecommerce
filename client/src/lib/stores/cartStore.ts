@@ -16,16 +16,18 @@ class CartStore {
     }
 
     addItem(item: Omit<CartItem, "quantity">) {
-        const found = this.items.find(i => i.productId === item.productId);
+        const items = Array.isArray(this.items) ? this.items : [];
+        const found = items.find((i) => i.productId === item.productId);
         if (found) {
             found.quantity += 1;
         } else {
-            this.items.push({ ...item, quantity: 1 });
+            this.items = [...items, { ...item, quantity: 1 }];
         }
     }
 
     removeItem(productId: string) {
-        this.items = this.items.filter(i => i.productId !== productId);
+        const items = Array.isArray(this.items) ? this.items : [];
+        this.items = items.filter((i) => i.productId !== productId);
     }
 
     clear() {
@@ -33,11 +35,13 @@ class CartStore {
     }
 
     get totalQuantity() {
-        return this.items.reduce((s, i) => s + i.quantity, 0);
+        const items = Array.isArray(this.items) ? this.items : [];
+        return items.reduce((s, i) => s + i.quantity, 0);
     }
 
     get totalPrice() {
-        return this.items.reduce((s, i) => s + i.price * i.quantity, 0);
+        const items = Array.isArray(this.items) ? this.items : [];
+        return items.reduce((s, i) => s + i.price * i.quantity, 0);
     }
 }
 

@@ -132,6 +132,7 @@ export default function CheckoutPage() {
                     </Typography>
 
                     <Typography
+                        component="div" // tránh <div> nằm trong <p> gây hydration warning
                         fontSize={14}
                         color="rgba(17,24,39,0.65)"
                         mt={0.5}
