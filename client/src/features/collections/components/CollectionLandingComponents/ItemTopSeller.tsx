@@ -14,7 +14,7 @@ export default function ItemTopSeller() {
     sortOrder: 0,
   });
 
-  const visible = products.slice(0, 10);
+  const visible = (Array.isArray(products) ? products : []).slice(0, 10);
   const items: (Product | undefined)[] = isLoading
     ? Array.from({ length: 10 })
     : [...visible, ...visible];

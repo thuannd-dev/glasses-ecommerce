@@ -264,7 +264,10 @@ function buildProductsParams(params: ProductsQueryParams): Record<string, unknow
   return result;
 }
 
-export function useProducts(params: ProductsQueryParams = {}) {
+export function useProducts(
+  params: ProductsQueryParams = {},
+  options?: { enabled?: boolean },
+) {
   const queryParams = buildProductsParams(params);
 
   const {
@@ -276,20 +279,27 @@ export function useProducts(params: ProductsQueryParams = {}) {
     refetch,
   } = useQuery({
     queryKey: ["products", queryParams],
+    enabled: options?.enabled !== false,
     queryFn: async () => {
       const response = await agent.get<ProductsApiResponse>("/products", {
         params: queryParams,
       });
       const data = response.data;
+      const rawItems = data?.items;
+      const items = Array.isArray(rawItems)
+        ? rawItems.map(mapApiItemToProduct)
+        : [];
       return {
         ...data,
-        items: data.items.map(mapApiItemToProduct),
+        items,
       };
     },
   });
 
+  const products = Array.isArray(data?.items) ? data.items : [];
+
   return {
-    products: data?.items ?? [],
+    products,
     totalCount: data?.totalCount ?? 0,
     pageNumber: data?.pageNumber ?? params.pageNumber ?? 1,
     pageSize: data?.pageSize ?? params.pageSize ?? 10,
@@ -317,7 +327,7 @@ export function useCategories() {
   });
 
   return {
-    categories: data ?? [],
+    categories: Array.isArray(data) ? data : [],
     isLoading,
     isError,
     error,

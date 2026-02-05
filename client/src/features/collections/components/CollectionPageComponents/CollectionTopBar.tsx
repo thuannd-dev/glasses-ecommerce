@@ -3,13 +3,23 @@ import type { SortKey } from "../../types";
 
 export function CollectionTopBar({
     totalItems,
+    categoryLabel,
     sort,
     setSort,
 }: {
     totalItems: number;
+    /** Khi lọc theo category (eyeglasses/sunglasses) → hiển thị "X Eyeglasses" / "X Sunglasses" */
+    categoryLabel?: "eyeglasses" | "sunglasses" | null;
     sort: SortKey;
     setSort: (v: SortKey) => void;
 }) {
+    const label =
+        categoryLabel === "eyeglasses"
+            ? "Eyeglasses"
+            : categoryLabel === "sunglasses"
+              ? "Sunglasses"
+              : "Items";
+
     return (
         <Box
             sx={{
@@ -21,7 +31,7 @@ export function CollectionTopBar({
             }}
         >
             <Typography sx={{ fontWeight: 900, color: "#111827" }}>
-                {totalItems} Items
+                {totalItems} {label}
             </Typography>
 
             <Select

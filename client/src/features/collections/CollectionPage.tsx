@@ -88,23 +88,24 @@ export default function CollectionPage() {
     }, [categorySlug]);
 
     // Ưu tiên filter Type (Eyeglasses / Sunglasses) nếu người dùng chọn
+    const categoriesList = Array.isArray(categories) ? categories : [];
     let categoryIds: string[] | undefined;
-    if (filters.glassesTypes.length && categories.length) {
+    if (filters.glassesTypes.length && categoriesList.length) {
         const wantedSlugs = filters.glassesTypes.map((t) => {
             if (t === "eyeglasses") return "eyeglasses";
             if (t === "sunglasses") return "sunglasses";
             return String(t).toLowerCase();
         });
 
-        categoryIds = categories
+        categoryIds = categoriesList
             .filter((c) =>
                 wantedSlugs.includes(c.slug.toLowerCase()) ||
                 wantedSlugs.includes(c.name.toLowerCase()),
             )
             .map((c) => c.id);
-    } else if (categories.length && categorySlug) {
+    } else if (categoriesList.length && categorySlug) {
         // Nếu không chọn Type, map theo route /collections/:category
-        let matched = categories.find(
+        let matched = categoriesList.find(
             (c) =>
                 c.slug.toLowerCase() === categorySlug ||
                 c.name.toLowerCase() === categorySlug,
@@ -119,7 +120,7 @@ export default function CollectionPage() {
                         ? "sunglasses"
                         : categorySlug;
 
-            matched = categories.find(
+            matched = categoriesList.find(
                 (c) => c.slug.toLowerCase() === fallbackSlug,
             );
         }
@@ -131,22 +132,29 @@ export default function CollectionPage() {
         products: apiProducts,
         totalCount: totalItems,
         isLoading,
-    } = useProducts({
-        pageNumber: page,
-        pageSize: PAGE_SIZE,
-        categoryIds,
-        search: filters.keyword.trim() || undefined,
-        minPrice: filters.minPrice ?? undefined,
-        maxPrice: filters.maxPrice ?? undefined,
-        brand: filters.brand ?? undefined,
-        sortBy,
-        sortOrder,
-    });
+    } = useProducts(
+        {
+            pageNumber: page,
+            pageSize: PAGE_SIZE,
+            categoryIds,
+            search: filters.keyword.trim() || undefined,
+            minPrice: filters.minPrice ?? undefined,
+            maxPrice: filters.maxPrice ?? undefined,
+            brand: filters.brand ?? undefined,
+            sortBy,
+            sortOrder,
+        },
+        {
+            // Chỉ fetch khi đã có categories (để có categoryIds đúng) → totalCount đúng theo category
+            enabled: !categorySlug || categoriesList.length > 0,
+        },
+    );
 
     // Lọc client-side bổ sung theo type (Eyeglasses / Sunglasses) nếu cần
     const pageProducts: Product[] = useMemo(() => {
-        if (!filters.glassesTypes.length) return apiProducts;
-        return apiProducts.filter(
+        const list = Array.isArray(apiProducts) ? apiProducts : [];
+        if (!filters.glassesTypes.length) return list;
+        return list.filter(
             (p) => p.glassesType && filters.glassesTypes.includes(p.glassesType),
         );
     }, [apiProducts, filters.glassesTypes]);
@@ -229,6 +237,15 @@ export default function CollectionPage() {
             >
                 <CollectionTopBar
                     totalItems={totalItems}
+                    categoryLabel={
+                        filters.glassesTypes.length === 1
+                            ? filters.glassesTypes[0] === "eyeglasses"
+                                ? "eyeglasses"
+                                : filters.glassesTypes[0] === "sunglasses"
+                                  ? "sunglasses"
+                                  : null
+                            : null
+                    }
                     sort={sort}
                     setSort={setSort}
                 />
@@ -270,6 +287,7 @@ export default function CollectionPage() {
                     totalPages={totalPages}
                     totalItems={totalItems}
                     pageSize={PAGE_SIZE}
+                    displayedCount={pageProducts.length}
                     onChange={handleChangePage}
                 />
             )}

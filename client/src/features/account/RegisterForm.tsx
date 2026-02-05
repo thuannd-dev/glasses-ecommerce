@@ -38,9 +38,6 @@ export default function RegisterForm() {
             });
           }
         },
-        onSuccess: () => {
-          navigate("/collections");
-        },
       });
     } catch {
       // Lỗi đã xử lý bởi agent (toast) và/hoặc onError (form errors)

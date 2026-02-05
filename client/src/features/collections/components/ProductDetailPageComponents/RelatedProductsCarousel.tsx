@@ -14,8 +14,9 @@ type Props = {
 
 export function RelatedProductsCarousel({ categorySlug, currentProductId }: Props) {
   const { categories } = useCategories();
+  const categoriesList = Array.isArray(categories) ? categories : [];
 
-  const categoryId = categories.find(
+  const categoryId = categoriesList.find(
     (c) =>
       c.slug.toLowerCase() === categorySlug.toLowerCase() ||
       c.name.toLowerCase() === categorySlug.toLowerCase(),
@@ -27,7 +28,9 @@ export function RelatedProductsCarousel({ categorySlug, currentProductId }: Prop
     categoryIds: categoryId ? [categoryId] : undefined,
   });
 
-  const items: Product[] = products.filter((p) => p.id !== currentProductId);
+  const items: Product[] = (Array.isArray(products) ? products : []).filter(
+    (p) => p.id !== currentProductId,
+  );
   const [activeIndex, setActiveIndex] = useState(0); // index slide
   const itemsPerSlide = 6; // mỗi slide 6 sản phẩm
   const slideCount = Math.max(1, Math.ceil(items.length / itemsPerSlide));

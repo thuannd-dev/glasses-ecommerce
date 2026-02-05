@@ -33,9 +33,19 @@ export const useAccount = () => {
     mutationFn: async (creds: RegisterSchema) => {
       await agent.post("/account/register", creds);
     },
-    onSuccess: () => {
-      toast.success("Register successful - you can now login");
-      navigate("/collections");
+    onSuccess: async (_data, variables) => {
+      toast.success("Đăng ký thành công! Đang đăng nhập…");
+      try {
+        await agent.post("/login?useCookies=true", {
+          email: variables.email,
+          password: variables.password,
+        });
+        queryClient.invalidateQueries({ queryKey: ["user"] });
+        navigate("/auth/redirect");
+      } catch {
+        toast.info("Đăng ký thành công. Vui lòng đăng nhập.");
+        navigate("/login");
+      }
     },
   });
 

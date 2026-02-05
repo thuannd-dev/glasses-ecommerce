@@ -117,7 +117,8 @@ export function useCart() {
       const previous = queryClient.getQueryData<CartDto>(["cart"]);
 
       if (previous) {
-        const items = previous.items
+        const prevItems = Array.isArray(previous.items) ? previous.items : [];
+        const items = prevItems
           .map((it) =>
             it.id === id
               ? {
@@ -169,7 +170,8 @@ export function useCart() {
       const previous = queryClient.getQueryData<CartDto>(["cart"]);
 
       if (previous) {
-        const items = previous.items.filter((it) => it.id !== id);
+        const prevItems = Array.isArray(previous.items) ? previous.items : [];
+        const items = prevItems.filter((it) => it.id !== id);
         const totalQuantity = items.reduce(
           (sum, it) => sum + (it.quantity ?? 0),
           0,

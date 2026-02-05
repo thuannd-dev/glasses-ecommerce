@@ -30,7 +30,7 @@ const DASHBOARD_LINKS: { path: string; label: string; role: string; icon: React.
 export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const { currentUser, logoutUser } = useAccount();
-  const roles = currentUser?.roles ?? [];
+  const roles = Array.isArray(currentUser?.roles) ? currentUser.roles : [];
 
   const visibleLinks = DASHBOARD_LINKS.filter((link) => roles.includes(link.role));
 
