@@ -1,4 +1,4 @@
-import { Box, Container, Grid, Typography } from "@mui/material";
+import { Box, Grid, Typography } from "@mui/material";
 import { NavLink } from "react-router-dom";
 
 /* Navbar height (trừ khi full viewport) */
@@ -7,13 +7,13 @@ const NAV_H = 56;
 const CATEGORIES = [
     {
         title: "SUNGLASSES",
-        to: "/collections/fashion",
+        to: "/collections/sunglasses",
         image:
             "https://images.unsplash.com/photo-1511499767150-a48a237f0083?auto=format&fit=crop&w=1400&q=80",
     },
     {
         title: "EYEGLASSES",
-        to: "/collections/glasses",
+        to: "/collections/eyeglasses",
         image:
             "https://images.unsplash.com/photo-1646083774155-2a40b675641d?auto=format&fit=crop&w=1400&q=80",
     },
@@ -87,7 +87,13 @@ const CARD_SX = {
 export default function CategoryCards() {
     return (
         <Box component="section" sx={SECTION_SX}>
-            <Container maxWidth="xl">
+            <Box
+                sx={{
+                    width: "100%",
+                    px: { xs: 2, md: 4, lg: 8 },
+                    mx: "auto",
+                }}
+            >
                 {/* TITLE */}
                 <Box sx={{ textAlign: "center", mb: { xs: 6, md: 8 } }}>
                     <Typography
@@ -155,7 +161,7 @@ export default function CategoryCards() {
                         </Grid>
                     ))}
                 </Grid>
-            </Container>
+            </Box>
         </Box>
     );
 }

@@ -10,8 +10,14 @@ import SearchIcon from "@mui/icons-material/Search";
 import { NavLink } from "react-router-dom";
 import type { Product } from "../../types";
 
-function moneyVND(v: number) {
-    return `${v.toLocaleString("vi-VN")}₫`;
+function formatMoneyUSD(v: number | undefined | null) {
+    if (v == null || typeof v !== "number") return "$—";
+    return v.toLocaleString("en-US", {
+        style: "currency",
+        currency: "USD",
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    });
 }
 
 export function ProductCard({ p }: { p: Product }) {
@@ -132,19 +138,24 @@ export function ProductCard({ p }: { p: Product }) {
                     </Box>
                 ) : null}
 
-                {/* Text */}
+                {/* Text: brand, tên sản phẩm, giá */}
                 <Box sx={{ px: 2, pt: 1.2, pb: 2 }}>
                     <Typography sx={{ fontWeight: 900, letterSpacing: "0.02em" }}>
                         {p.brand}
                     </Typography>
 
-                    <Typography sx={{ color: "rgba(17,24,39,0.65)", fontSize: 12, mt: 0.4 }}>
-                        {p.code}
-                        {p.frameSize ? `  /  Size: ${p.frameSize}` : ""}
+                    <Typography sx={{ color: "rgba(17,24,39,0.75)", fontSize: 14, mt: 0.4 }}>
+                        {p.name}
                     </Typography>
+                    {p.code && p.code !== p.name ? (
+                        <Typography sx={{ color: "rgba(17,24,39,0.55)", fontSize: 12, mt: 0.2 }}>
+                            {p.code}
+                            {p.frameSize ? `  /  Size: ${p.frameSize}` : ""}
+                        </Typography>
+                    ) : null}
 
                     <Typography sx={{ mt: 1.2, fontWeight: 900, fontSize: 16 }}>
-                        {moneyVND(p.price)}
+                        {formatMoneyUSD(p.price)}
                     </Typography>
                 </Box>
             </CardActionArea>

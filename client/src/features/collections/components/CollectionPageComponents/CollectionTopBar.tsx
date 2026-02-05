@@ -14,8 +14,8 @@ export function CollectionTopBar({
         <Box
             sx={{
                 display: "flex",
-                alignItems: { xs: "flex-start", md: "center" },
-                justifyContent: "space-between",
+        alignItems: "center",
+        justifyContent: "space-between",
                 gap: 2,
                 flexDirection: { xs: "column", md: "row" },
             }}
@@ -28,10 +28,15 @@ export function CollectionTopBar({
                 value={sort}
                 onChange={(e) => setSort(e.target.value as SortKey)}
                 size="small"
+        MenuProps={{
+          // Không khóa scroll của trang để tránh layout dịch trái/phải
+          disableScrollLock: true,
+        }}
                 sx={{
-                    height: 44,
+          height: 44,
                     borderRadius: 2,    
-                    minWidth: 210,
+          width: 210,          // cố định width để tránh layout shift
+          flexShrink: 0,
                     "& .MuiOutlinedInput-notchedOutline": {
                         borderColor: "rgba(17,24,39,0.18)",
                     },

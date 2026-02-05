@@ -1,9 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Box, Button, Paper, Typography } from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
-import summerImg from "../../app/assets/cord-allman-B11CqlzCJ_8-unsplash.jpg";
-import dailyImg from "../../app/assets/joe-ciciarelli-BVNmFNShq6U-unsplash.jpg";
-import opticalImg from "../../app/assets/felirbe-Ns0iGdiSx00-unsplash.jpg";
 /**
  * ✅ OPTIONAL nếu bạn muốn dùng ảnh local dạng import (khuyên dùng khi build)
  * - đặt ảnh trong: src/assets/hero/
@@ -41,7 +38,7 @@ export default function HomePage() {
            * Cách 3 (import): value: summerImg
            */
           type: "image",
-          value: summerImg,
+          value: "https://res.cloudinary.com/ds0b8jtbr/image/upload/v1770195404/glasses/natrtu1emsrgfbxtyfgq.jpg",
           // value: summerImg,
         },
       },
@@ -51,10 +48,10 @@ export default function HomePage() {
         title: "Minimal. Clean. Premium.",
         subtitle: "Lightweight frame, comfortable to wear all day — suitable for school or work.",
         ctaText: "Shop Best Sellers",
-        ctaTo: "/activities",
+        ctaTo: "/collections",
         bg: {
           type: "image",
-          value: dailyImg,
+          value: "https://res.cloudinary.com/ds0b8jtbr/image/upload/v1770195488/glasses/lmrletxeep80klp3sg4n.jpg",
           // value: dailyImg,
         },
       },
@@ -64,10 +61,10 @@ export default function HomePage() {
         title: "Clear Vision. True Comfort.",
         subtitle: "Prescription lenses • blue light protection • lightweight • vision standard.",
         ctaText: "View Optical",
-        ctaTo: "/activities",
+        ctaTo: "/collections",
         bg: {
           type: "image",
-          value: opticalImg,
+          value: "https://res.cloudinary.com/ds0b8jtbr/image/upload/v1770195459/glasses/aj8poinrh7hkzmoajfk0.jpg",
           // value: opticalImg,
         },
       },

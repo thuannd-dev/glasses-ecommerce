@@ -1,10 +1,9 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState } from "react";
 import { useNavigate, Link } from "react-router";
 
-import { Box, Button, Typography, Divider, IconButton } from "@mui/material";
-import { Visibility, VisibilityOff, ArrowBack } from "@mui/icons-material";
+import { Box, Button, Typography, Divider } from "@mui/material";
+import { ArrowBack } from "@mui/icons-material";
 
 import { useAccount } from "../../lib/hooks/useAccount";
 import TextInput from "../../app/shared/components/TextInput";
@@ -13,14 +12,9 @@ import {
   type RegisterSchema,
 } from "../../lib/schemas/registerSchema";
 
-import Image2 from "../../app/assets/jordan-andrews-dca_s9Wy8c0-unsplash.jpg";
-
 export default function RegisterForm() {
   const { registerUser } = useAccount();
   const navigate = useNavigate();
-
-  const imageUrl = Image2;
-  const [showPassword, setShowPassword] = useState(false);
 
   const {
     control,
@@ -33,20 +27,24 @@ export default function RegisterForm() {
   });
 
   const onSubmit = async (data: RegisterSchema) => {
-    await registerUser.mutateAsync(data, {
-      onError: (error) => {
-        if (Array.isArray(error)) {
-          error.forEach((err) => {
-            if (err.includes("Email")) setError("email", { message: err });
-            else if (err.includes("Password"))
-              setError("password", { message: err });
-          });
-        }
-      },
-      onSuccess: () => {
-        navigate("/activities");
-      },
-    });
+    try {
+      await registerUser.mutateAsync(data, {
+        onError: (error) => {
+          if (Array.isArray(error)) {
+            error.forEach((err) => {
+              if (err.includes("Email")) setError("email", { message: err });
+              else if (err.includes("Password"))
+                setError("password", { message: err });
+            });
+          }
+        },
+        onSuccess: () => {
+          navigate("/collections");
+        },
+      });
+    } catch {
+      // Lỗi đã xử lý bởi agent (toast) và/hoặc onError (form errors)
+    }
   };
 
   return (
@@ -143,99 +141,64 @@ export default function RegisterForm() {
           {/* ✅ gap 2 → 3 */}
           <Box sx={{ display: "flex", flexDirection: "column", gap: 3, mt: 2 }}>
             {/* EMAIL */}
-            <Box sx={{ position: "relative" }}>
-              {errors.email && (
-                <Typography
-                  fontSize={13}
-                  fontWeight={600}
-                  color="error"
-                  sx={{
-                    position: "absolute",
-                    top: -22,
-                    left: 4,
-                    whiteSpace: "nowrap",
-                    lineHeight: 1.2,
-                  }}
-                >
-                  {errors.email.message}
-                </Typography>
-              )}
-
+            <Box>
               <TextInput
                 label="Email"
                 control={control}
                 name="email"
                 hideError
               />
-            </Box>
-
-            {/* DISPLAY NAME */}
-            <Box sx={{ position: "relative" }}>
-              {errors.displayName && (
+              {errors.email && (
                 <Typography
                   fontSize={13}
                   fontWeight={600}
                   color="error"
-                  sx={{
-                    position: "absolute",
-                    top: -22,
-                    left: 4,
-                    whiteSpace: "nowrap",
-                    lineHeight: 1.2,
-                  }}
+                  sx={{ mt: 0.5 }}
                 >
-                  {errors.displayName.message}
+                  {errors.email.message}
                 </Typography>
               )}
+            </Box>
 
+            {/* DISPLAY NAME */}
+            <Box>
               <TextInput
                 label="Display Name"
                 control={control}
                 name="displayName"
                 hideError
               />
+              {errors.displayName && (
+                <Typography
+                  fontSize={13}
+                  fontWeight={600}
+                  color="error"
+                  sx={{ mt: 0.5 }}
+                >
+                  {errors.displayName.message}
+                </Typography>
+              )}
             </Box>
 
             {/* PASSWORD */}
-            <Box sx={{ position: "relative", "& input": { pr: 5 } }}>
+            <Box>
+              <TextInput
+                label="Password"
+                type="password"
+                control={control}
+                name="password"
+                hideError
+              />
               {errors.password && (
                 <Typography
                   fontSize={13}
                   fontWeight={600}
                   color="error"
-                  sx={{
-                    position: "absolute",
-                    top: -22,
-                    left: 4,
-                    whiteSpace: "nowrap",
-                    lineHeight: 1.2,
-                  }}
+                  sx={{ mt: 0.5 }}
                 >
                   {errors.password.message}
                 </Typography>
               )}
-
-              <TextInput
-                label="Password"
-                type={showPassword ? "text" : "password"}
-                control={control}
-                name="password"
-                hideError
-              />
-
-              <IconButton
-                type="button"
-                onClick={() => setShowPassword((v) => !v)}
-                sx={{
-                  position: "absolute",
-                  right: 10,
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  color: "rgba(15,23,42,0.55)",
-                }}
-              >
-                {showPassword ? <VisibilityOff /> : <Visibility />}
-              </IconButton>
             </Box>
 
             <Button
@@ -276,7 +239,7 @@ export default function RegisterForm() {
           position: "relative",
           display: { xs: "none", md: "block" },
           overflow: "hidden",
-          backgroundImage: `url(${imageUrl})`,
+          backgroundImage: 'url(https://res.cloudinary.com/ds0b8jtbr/image/upload/v1770195516/glasses/je56zzn719qvattjehhe.jpg)',
           backgroundSize: "cover",
           backgroundPosition: "center",
         }}

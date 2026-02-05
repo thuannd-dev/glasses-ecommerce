@@ -38,4 +38,7 @@ export type FiltersState = {
     frameSizes: FrameSize[];
     materials: Material[];
     genders: Gender[];
+  minPrice: number | null;
+  maxPrice: number | null;
+  brand: string | null;
 };

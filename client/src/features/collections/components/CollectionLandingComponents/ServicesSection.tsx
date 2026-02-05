@@ -1,4 +1,4 @@
-import { Box, Button, Container, Grid, Typography } from "@mui/material";
+import { Box, Button, Grid, Typography } from "@mui/material";
 import { NavLink } from "react-router-dom";
 
 const NAV_H = 56;
@@ -46,9 +46,15 @@ const SERVICES = ["Prescription Glasses", "Blue Light Protection", "Premium Lens
 export default function ServicesSection() {
     return (
         <Box component="section" sx={SECTION_SX}>
-            <Box sx={WRAP_SX}>
-                <Container maxWidth="xl">
-                    <Grid container spacing={{ xs: 5, md: 6 }} alignItems="center">
+      <Box sx={WRAP_SX}>
+        <Box
+          sx={{
+            width: "100%",
+            px: { xs: 2, md: 4, lg: 8 },
+            mx: "auto",
+          }}
+        >
+          <Grid container spacing={{ xs: 5, md: 6 }} alignItems="center">
                         {/* LEFT */}
                         <Grid item xs={12} md={4}>
                             <Typography sx={{ fontWeight: 900, fontSize: { xs: 34, md: 44 }, lineHeight: 1.05 }}>
@@ -100,8 +106,8 @@ export default function ServicesSection() {
                                 sx={IMG_SX}
                             />
                         </Grid>
-                    </Grid>
-                </Container>
+          </Grid>
+        </Box>
             </Box>
         </Box>
     );

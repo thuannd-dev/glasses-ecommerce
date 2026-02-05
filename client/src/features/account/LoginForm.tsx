@@ -1,23 +1,19 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState } from "react";
-import { useLocation, useNavigate, Link } from "react-router";
+import { useRef } from "react";
+import { useNavigate, Link } from "react-router";
 
-import { Box, Button, Typography, Divider, IconButton } from "@mui/material";
-import { Visibility, VisibilityOff, ArrowBack } from "@mui/icons-material";
+import { Box, Button, Typography, Divider } from "@mui/material";
+import { ArrowBack } from "@mui/icons-material";
 
 import { loginSchema, type LoginSchema } from "../../lib/schemas/loginSchema";
 import { useAccount } from "../../lib/hooks/useAccount";
 import TextInput from "../../app/shared/components/TextInput";
-import Image1 from "../../app/assets/vooglam-eyewear-yKB_hLMCeRI-unsplash.jpg";
 
 export default function LoginForm() {
   const { loginUser } = useAccount();
   const navigate = useNavigate();
-  const location = useLocation();
-
-  const imageUrl = Image1;
-  const [showPassword, setShowPassword] = useState(false);
+  const submittingRef = useRef(false);
 
   const {
     control,
@@ -28,10 +24,17 @@ export default function LoginForm() {
     resolver: zodResolver(loginSchema),
   });
 
-  const onSubmit = async (data: LoginSchema) => {
-    await loginUser.mutateAsync(data, {
+  const onSubmit = (data: LoginSchema) => {
+    if (submittingRef.current || loginUser.isPending) return;
+    submittingRef.current = true;
+    loginUser.mutate(data, {
       onSuccess: () => {
-        navigate(location.state?.from || "/activities");
+        // Chuyển sang trang redirect: khi có user-info sẽ redirect thẳng vào dashboard (staff) hoặc /collections (customer).
+        // Tránh nhá qua trang collections rồi mới vào dashboard.
+        navigate("/auth/redirect");
+      },
+      onSettled: () => {
+        submittingRef.current = false;
       },
     });
   };
@@ -54,7 +57,7 @@ export default function LoginForm() {
           position: "relative",
           display: { xs: "none", md: "block" },
           overflow: "hidden",
-          backgroundImage: `url(${imageUrl})`,
+          backgroundImage: 'url(https://res.cloudinary.com/ds0b8jtbr/image/upload/v1770195541/glasses/schaeigwshjyqi1vuajl.jpg)',
           backgroundSize: "cover",
           backgroundPosition: "center",
         }}
@@ -181,72 +184,44 @@ export default function LoginForm() {
           {/* ✅ SỬA 1: giãn khoảng cách (2 → 3) */}
           <Box sx={{ display: "flex", flexDirection: "column", gap: 3, mt: 2 }}>
             {/* EMAIL */}
-            <Box sx={{ position: "relative" }}>
-              {errors.email && (
-                <Typography
-                  fontSize={13}        // ✅ SỬA 2: error to hơn
-                  fontWeight={600}
-                  color="error"
-                  sx={{
-                    position: "absolute",
-                    top: -22,
-                    left: 4,
-                    whiteSpace: "nowrap",
-                    lineHeight: 1.2,
-                  }}
-                >
-                  {errors.email.message}
-                </Typography>
-              )}
-
+            <Box>
               <TextInput
                 label="Email"
                 control={control}
                 name="email"
                 hideError
               />
+              {errors.email && (
+                <Typography
+                  fontSize={13}
+                  fontWeight={600}
+                  color="error"
+                  sx={{ mt: 0.5 }}
+                >
+                  {errors.email.message}
+                </Typography>
+              )}
             </Box>
 
             {/* PASSWORD */}
-            <Box sx={{ position: "relative", "& input": { pr: 5 } }}>
+            <Box>
+              <TextInput
+                label="Password"
+                type="password"
+                control={control}
+                name="password"
+                hideError
+              />
               {errors.password && (
                 <Typography
                   fontSize={13}
                   fontWeight={600}
                   color="error"
-                  sx={{
-                    position: "absolute",
-                    top: -22,
-                    left: 4,
-                    whiteSpace: "nowrap",
-                    lineHeight: 1.2,
-                  }}
+                  sx={{ mt: 0.5 }}
                 >
                   {errors.password.message}
                 </Typography>
               )}
-
-              <TextInput
-                label="Password"
-                type={showPassword ? "text" : "password"}
-                control={control}
-                name="password"
-                hideError
-              />
-
-              <IconButton
-                type="button"
-                onClick={() => setShowPassword((v) => !v)}
-                sx={{
-                  position: "absolute",
-                  right: 10,
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  color: "rgba(15,23,42,0.55)",
-                }}
-              >
-                {showPassword ? <VisibilityOff /> : <Visibility />}
-              </IconButton>
             </Box>
 
             <Typography
@@ -264,7 +239,7 @@ export default function LoginForm() {
 
             <Button
               type="submit"
-              disabled={!isValid || isSubmitting}
+              disabled={!isValid || isSubmitting || loginUser.isPending}
               variant="contained"
               size="large"
               sx={{
@@ -276,7 +251,7 @@ export default function LoginForm() {
                 boxShadow: "0 16px 36px rgba(25,118,210,0.18)",
               }}
             >
-              {isSubmitting ? "Signing in..." : "Login"}
+              {isSubmitting || loginUser.isPending ? "Signing in..." : "Login"}
             </Button>
 
             <Typography sx={{ textAlign: "center", color: "rgba(15,23,42,0.65)" }}>

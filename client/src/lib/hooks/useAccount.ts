@@ -10,34 +10,22 @@ export const useAccount = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  //After user logs in i want to fetch user info to know user already logged in successfully or not
-  //Because i can't access to cookies from client side (httpOnly cookies)
+  const fetchUser = async () => {
+    const response = await agent.get<User>("/account/user-info");
+    return response.data;
+  };
+
   const loginUser = useMutation({
     mutationFn: async (creds: LoginSchema) => {
-      await agent.post("/login?useCookies=true", creds);
-    },
-    onSuccess: async () => {
-      //Invalidate user query that force React Query to refetch user info
-      //Best practice in react query is using invalidateQueries after mutation that change data
-      //But a characteristic of invalidateQueries is not fetch data immediately
-      //  unless query is active (component using the query is mounted)
-      // -> If query is not active invalidateQueries will just mark the query as stale and not fetch data
-      // await queryClient.invalidateQueries({
-      //   queryKey: ["user"],
-      // });
-      //But in this case after login mutation success we need to refetch user info immediately
-      //Because <RequireAuth> need to know user is logged in or not to let user access protected routes
-      //So if we use invalidateQueries the currentUser value in <RequireAuth> may be still undefined
-      //  because the query is not active yet (the component using the query is not mounted yet)
-      //  -> user will be redirected to login page even after login successfully
-      //So in this case we will use queryClient.fetchQuery to fetch user info immediately after login success
-
-      //In conclusion: The difference between the 2 methods is that invalidateQueries will mark the query as stale,
-      //  and if it is currently active it will update immediately otherwise will get the fresh data next time it is used,
-      //  the refetch queries is useful when we want to trigger background updates for inactive queries.
-      await queryClient.fetchQuery({
-        queryKey: ["user"],
+      await agent.post("/login?useCookies=true", {
+        email: creds.email,
+        password: creds.password,
       });
+    },
+    onSuccess: () => {
+      // Chỉ invalidate user để các component khác (NavBar, RequireRole, ...) tự fetch user-info.
+      // Tránh gọi user-info ngay lập tức sau login vì cookie có thể chưa kịp được gửi kèm → 401/204.
+      queryClient.invalidateQueries({ queryKey: ["user"] });
     },
   });
 
@@ -47,17 +35,22 @@ export const useAccount = () => {
     },
     onSuccess: () => {
       toast.success("Register successful - you can now login");
-      navigate("/login");
+      navigate("/collections");
     },
   });
 
   const logoutUser = useMutation({
     mutationFn: async () => {
-      await agent.post("/account/logout");
+      try {
+        await agent.post("/account/logout");
+      } catch {
+        // Backend xóa cookie; client vẫn clear cache
+      }
     },
     onSuccess: () => {
       queryClient.removeQueries({ queryKey: ["user"] });
       queryClient.removeQueries({ queryKey: ["activities"] });
+      queryClient.removeQueries({ queryKey: ["cart"] });
       navigate("/");
     },
   });
@@ -68,10 +61,7 @@ export const useAccount = () => {
   // we don't want that because we just want to fetch user info once when app loads
   const { data: currentUser, isLoading: loadingUserInfo } = useQuery({
     queryKey: ["user"],
-    queryFn: async () => {
-      const response = await agent.get<User>("/account/user-info");
-      return response.data;
-    },
+    queryFn: fetchUser,
     //it mean that if we already have user data in cache we don't need to run this query again and the path is not /register
     // enabled:
     //   !queryClient.getQueryData(["user"]) && location.pathname !== "/register",
@@ -82,10 +72,10 @@ export const useAccount = () => {
     //  <RequireAuth> will redirect user to login page forever
     //  instead of letting user access /activities page
 
-    //In this case it mean that if we already have user data in cache we don't need to run this query again
-    //  and the path is not /register and the path is not /login
+    // Luôn fetch khi đang ở /auth/redirect (sau login) để lấy user + roles mới nhất.
+    // Nếu không, cache cũ có thể khiến enabled=false và không fetch → PostLoginRedirect không có roles.
     enabled:
-      !queryClient.getQueryData(["user"]) &&
+      (location.pathname === "/auth/redirect" || !queryClient.getQueryData(["user"])) &&
       location.pathname !== "/register" &&
       location.pathname !== "/login",
   });
