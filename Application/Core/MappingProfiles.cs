@@ -1,5 +1,6 @@
 using System;
 using Application.Activities.DTOs;
+using Application.Carts.DTOs;
 using Application.Categories.DTOs;
 using Application.Profiles.DTOs;
 using Application.Products.DTOs;
@@ -61,6 +62,36 @@ public class MappingProfiles : Profile
                     .OrderBy(i => i.DisplayOrder)
                     .FirstOrDefault()));
         
+        // Cart mappings
+        CreateMap<Cart, CartDto>()
+            .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()))
+            .ForMember(d => d.TotalItems, o => o.MapFrom(s => s.Items.Sum(i => i.Quantity)))
+            .ForMember(d => d.TotalPrice, o => o.MapFrom(s => 
+                s.Items.Sum(i => i.Quantity * (i.ProductVariant != null ? i.ProductVariant.Price : 0))));
         
+        CreateMap<CartItem, CartItemDto>()
+            .ForMember(d => d.Sku, o => o.MapFrom(s => s.ProductVariant != null ? s.ProductVariant.SKU : null))
+            .ForMember(d => d.Price, o => o.MapFrom(s => s.ProductVariant != null ? s.ProductVariant.Price : 0))
+            .ForMember(d => d.CompareAtPrice, o => o.MapFrom(s => s.ProductVariant != null ? s.ProductVariant.CompareAtPrice : null))
+            .ForMember(d => d.Color, o => o.MapFrom(s => s.ProductVariant != null ? s.ProductVariant.Color : null))
+            .ForMember(d => d.Size, o => o.MapFrom(s => s.ProductVariant != null ? s.ProductVariant.Size : null))
+            .ForMember(d => d.Material, o => o.MapFrom(s => s.ProductVariant != null ? s.ProductVariant.Material : null))
+            .ForMember(d => d.QuantityAvailable, o => o.MapFrom(s => 
+                s.ProductVariant != null && s.ProductVariant.Stock != null ? s.ProductVariant.Stock.QuantityAvailable : 0))
+            .ForMember(d => d.IsInStock, o => o.MapFrom(s => 
+                s.ProductVariant != null && s.ProductVariant.Stock != null && s.ProductVariant.Stock.QuantityAvailable > 0))
+            .ForMember(d => d.ProductId, o => o.MapFrom(s => s.ProductVariant != null ? s.ProductVariant.ProductId : Guid.Empty))
+            .ForMember(d => d.ProductName, o => o.MapFrom(s => s.ProductVariant != null && s.ProductVariant.Product != null ? s.ProductVariant.Product.ProductName : null))
+            .ForMember(d => d.ProductImageUrl, o => o.MapFrom(s => 
+                s.ProductVariant != null && s.ProductVariant.Images.OrderBy(i => i.DisplayOrder).FirstOrDefault() != null
+                    ? s.ProductVariant.Images.OrderBy(i => i.DisplayOrder).First().ImageUrl
+                    : s.ProductVariant != null && s.ProductVariant.Product != null
+                        ? s.ProductVariant.Product.Images
+                            .Where(i => !i.IsDeleted && i.ProductId != null)
+                            .OrderBy(i => i.DisplayOrder)
+                            .Select(i => i.ImageUrl)
+                            .FirstOrDefault()
+                        : null))
+            .ForMember(d => d.Subtotal, o => o.MapFrom(s => s.Quantity * (s.ProductVariant != null ? s.ProductVariant.Price : 0)));
     }
 }

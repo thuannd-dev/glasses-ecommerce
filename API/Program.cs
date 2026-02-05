@@ -96,6 +96,18 @@ builder.Services.AddIdentityApiEndpoints<User>(opt =>
 }).AddRoles<IdentityRole<Guid>>()
 .AddEntityFrameworkStores<AppDbContext>();
 
+// Configure cookie for cross-site authentication scenarios
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.Cookie.SameSite = SameSiteMode.None;
+    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
+        ? CookieSecurePolicy.SameAsRequest
+        : CookieSecurePolicy.Always;
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+    options.Cookie.Name = "GlassesAuth";
+});
+
 // Configure Identity to include roles in claims
 builder.Services.Configure<IdentityOptions>(options =>
 {
