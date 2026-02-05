@@ -69,12 +69,15 @@ public sealed class UpdateCartItem
             }
 
             // Update quantity
-            cartItem.Quantity = request.UpdateCartItemDto.Quantity;
-            cartItem.Cart.UpdatedAt = DateTime.UtcNow;
+            if (cartItem.Quantity != request.UpdateCartItemDto.Quantity)
+            {
+                cartItem.Quantity = request.UpdateCartItemDto.Quantity;
+                cartItem.Cart.UpdatedAt = DateTime.UtcNow;
+            }
 
             bool success = await context.SaveChangesAsync(cancellationToken) > 0;
 
-            if (!success)
+            if (!success && cartItem.Quantity != request.UpdateCartItemDto.Quantity)
             {
                 return Result<CartItemDto>.Failure("Failed to update cart item.", 500);
             }

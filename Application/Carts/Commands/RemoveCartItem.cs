@@ -32,6 +32,11 @@ public sealed class RemoveCartItem
                 return Result<Unit>.Failure("Cart item not found.", 404);
             }
 
+            if (cartItem.Cart == null)
+            {
+                return Result<Unit>.Failure("Cart not found for cart item.", 404);
+            }
+
             // Verify cart belongs to user
             if (cartItem.Cart.UserId != userId)
             {
