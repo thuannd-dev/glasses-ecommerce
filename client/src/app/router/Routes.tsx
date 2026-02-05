@@ -20,6 +20,12 @@ import CartPage from "../../features/cart/CartPage";
 
 import CheckoutPage from "../../features/checkout/CheckoutPage";
 import OrderSuccessPage from "../../features/checkout/OrderSuccessPage";
+
+import PickingListPage from "../../features/operations/PickingListPage";
+import PickingDetailPage from "../../features/operations/PickingDetailPage";
+import PackingSlipPage from "../../features/operations/PackingSlipPage";
+import ShipmentHandoverPage from "../../features/operations/ShipmentHandoverPage";
+
 export const router = createBrowserRouter([
   // ======================
   // HOME (NO NAVBAR)
@@ -74,6 +80,17 @@ export const router = createBrowserRouter([
       { path: "cart", element: <CartPage /> },
       { path: "checkout", element: <CheckoutPage /> },
       { path: "order-success", element: <OrderSuccessPage /> },
+
+      // ✅ Operations Staff - Picking & Packing
+      {
+        path: "operations",
+        children: [
+          { path: "picking", element: <PickingListPage /> }, // /operations/picking
+          { path: "picking/:orderId", element: <PickingDetailPage /> }, // /operations/picking/123
+          { path: "packing-slip/:orderId", element: <PackingSlipPage /> }, // /operations/packing-slip/123
+          { path: "shipment/:orderId", element: <ShipmentHandoverPage /> }, // /operations/shipment/123
+        ],
+      },
     ],
   },
 ]);

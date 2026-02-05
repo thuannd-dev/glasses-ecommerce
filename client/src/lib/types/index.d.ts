@@ -29,6 +29,7 @@ type User = {
   email: string;
   displayName: string;
   imageUrl?: string;
+  roles?: string[];
 };
 
 type LocationIQSuggestion = {
