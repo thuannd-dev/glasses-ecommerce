@@ -1,4 +1,5 @@
 using System;
+using System.Security.Claims;
 using API.DTOs;
 using Domain;
 using Microsoft.AspNetCore.Authorization;
@@ -59,12 +60,21 @@ public class AccountController(SignInManager<User> signInManager) : BaseApiContr
         //Passing the authorization middleware
         //user null when user have been deleted, security stamp mismatch, cookie no longer valid, user have been banned, ...
         //So we return Unauthorized instead of returning user info
+        
+        // Get roles from claims (no additional DB query needed)
+        // Roles are automatically included in claims after authentication
+        var roles = User.Claims
+            .Where(c => c.Type == ClaimTypes.Role)
+            .Select(c => c.Value)
+            .ToList();
+
         return Ok(new
         {
             user.DisplayName,    
             user.Email,
             user.Id,
-            user.ImageUrl
+            user.ImageUrl,
+            Roles = roles
         });
     }
 

@@ -18,7 +18,7 @@ public class ProductImage
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    public string? ModelUrl { get; set; }
+    public string? ModelUrl { get; set; } // for 3D model link
 
     public bool IsDeleted { get; set; }
     public DateTime? DeletedAt { get; set; }

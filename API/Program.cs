@@ -30,7 +30,10 @@ builder.Services.AddControllers(opt =>
     */
     var policy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
     opt.Filters.Add(new AuthorizeFilter(policy));
-
+}).AddJsonOptions(options =>
+{
+    // Configure the JSON serializer to convert enum values to their string representations
+    options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
 });
 
 builder.Services.AddOpenApi();
@@ -85,6 +88,24 @@ builder.Services.AddIdentityApiEndpoints<User>(opt =>
     opt.User.RequireUniqueEmail = true;
 }).AddRoles<IdentityRole>()
 .AddEntityFrameworkStores<AppDbContext>();
+
+// Configure cookie for cross-site authentication scenarios
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.Cookie.SameSite = SameSiteMode.None;
+    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
+        ? CookieSecurePolicy.SameAsRequest
+        : CookieSecurePolicy.Always;
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+    options.Cookie.Name = "GlassesAuth";
+});
+
+// Configure Identity to include roles in claims
+builder.Services.Configure<IdentityOptions>(options =>
+{
+    options.ClaimsIdentity.RoleClaimType = System.Security.Claims.ClaimTypes.Role;
+});
 
 builder.Services.AddAuthorizationBuilder()
     .AddPolicy("IsActivityHost", policy =>
@@ -165,8 +186,9 @@ try
 {
     var context = services.GetRequiredService<AppDbContext>();
     var userManager = services.GetRequiredService<UserManager<User>>();
+    var roleManager = services.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
     await context.Database.MigrateAsync(); // Apply any pending migrations to the database.
-    await DbInitializer.SeedData(context, userManager); // Seed the database with initial data.
+    await DbInitializer.SeedData(context, userManager, roleManager); // Seed the database with initial data.
 }
 catch (Exception ex)
 {

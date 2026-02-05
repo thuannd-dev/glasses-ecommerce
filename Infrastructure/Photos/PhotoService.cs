@@ -50,7 +50,7 @@ public class PhotoService : IPhotoService
             {
                 File = new FileDescription(file.FileName, stream),
                 // Transformation = new Transformation().Height(500).Width(500).Crop("fill")
-                Folder = "Reactivities"
+                Folder = "glasses"
             };
 
             var uploadResult = await _cloudinary.UploadAsync(uploadParams);
@@ -68,5 +68,32 @@ public class PhotoService : IPhotoService
         }
         
         return null;
+    }
+
+    public async Task<PhotoUploadResult?> UploadPhotoFromUrl(string imageUrl)
+    {
+        if (string.IsNullOrWhiteSpace(imageUrl))
+        {
+            return null;
+        }
+
+        var uploadParams = new ImageUploadParams
+        {
+            File = new FileDescription(imageUrl),
+            Folder = "glasses"
+        };
+
+        var uploadResult = await _cloudinary.UploadAsync(uploadParams);
+
+        if (uploadResult.Error != null)
+        {
+            throw new Exception(uploadResult.Error.Message);
+        }
+
+        return new PhotoUploadResult
+        {
+            PublicId = uploadResult.PublicId,
+            Url = uploadResult.SecureUrl.AbsoluteUri
+        };
     }
 }
