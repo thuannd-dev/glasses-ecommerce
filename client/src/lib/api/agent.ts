@@ -41,9 +41,15 @@ agent.interceptors.response.use(
           toast.error(data);
         }
         break;
-      case 401:
-        toast.error("Unauthorised");
+      case 401: {
+        const isLoginRequest = error.config?.url?.includes("/login");
+        toast.error(
+          isLoginRequest
+            ? "Wrong password or invalid email"
+            : "Unauthorised",
+        );
         break;
+      }
       case 404:
         router.navigate("/not-found");
         break;
