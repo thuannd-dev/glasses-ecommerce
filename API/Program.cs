@@ -137,7 +137,9 @@ app.UseMiddleware<ExceptionMiddleware>();
 */
 app.UseCors(options => options.AllowAnyHeader()
                                 .AllowAnyMethod().AllowCredentials()
-                                .WithOrigins("http://localhost:3000", "https://localhost:3000"));
+                                .WithOrigins("http://localhost:3000", "https://localhost:3000", 
+                                           "http://localhost:3001", "https://localhost:3001",
+                                           "http://localhost:5173", "https://localhost:5173"));
 
 app.UseAuthentication();
 app.UseAuthorization();          

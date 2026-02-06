@@ -21,12 +21,9 @@ import CartPage from "../../features/cart/CartPage";
 
 import CheckoutPage from "../../features/checkout/CheckoutPage";
 import OrderSuccessPage from "../../features/checkout/OrderSuccessPage";
+import SaleSupportPage from "../../features/staff/sale-support/SaleSupportPage";
+import OperationPage from "../../features/staff/operation/OperationPage";
 import ProfilePage from "../../features/Customer/profile/ProfilePage";
-import RequireRole from "./RequireRole";
-import SalesDashboard from "../../features/sales/SalesDashboard";
-import OperationsDashboard from "../../features/Operations/OperationsDashboard";
-import ManagerDashboard from "../../features/Manager/ManagerDashboard";
-import AdminDashboard from "../../features/Admin/AdminDashboard";
 export const router = createBrowserRouter([
   // ======================
   // HOME (NO NAVBAR)
@@ -55,26 +52,6 @@ export const router = createBrowserRouter([
     path: "/",
     element: <App />,
     children: [
-      // ======================
-      // ROLE-BASED AREAS
-      // ======================
-      {
-        element: <RequireRole allowedRoles={["Sales"]} />,
-        children: [{ path: "sales", element: <SalesDashboard /> }],
-      },
-      {
-        element: <RequireRole allowedRoles={["Operations"]} />,
-        children: [{ path: "operations", element: <OperationsDashboard /> }],
-      },
-      {
-        element: <RequireRole allowedRoles={["Manager"]} />,
-        children: [{ path: "manager", element: <ManagerDashboard /> }],
-      },
-      {
-        element: <RequireRole allowedRoles={["Admin"]} />,
-        children: [{ path: "admin", element: <AdminDashboard /> }],
-      },
-
       // Collections group
       {
         path: "collections",
@@ -87,25 +64,28 @@ export const router = createBrowserRouter([
       // ✅ Product detail
       { path: "product/:id", element: <ProductDetailPage /> }, // /product/g1
 
+      // Staff pages
+      { path: "staff/sale-support", element: <SaleSupportPage /> },
+      { path: "staff/operation", element: <OperationPage /> },
+
+      // Customer pages
+      { path: "profile", element: <ProfilePage /> },
+
       // Other pages
       { path: "counter", element: <Counter /> },
-      {
-        element: <RequireRole allowedRoles={["Customer"]} />,
-        children: [{ path: "profile", element: <ProfilePage /> }],
-      },
 
       // Errors
       { path: "errors", element: <TestErrors /> },
       { path: "server-error", element: <ServerError /> },
       { path: "not-found", element: <NotFound /> },
 
-      // Fallback
-      { path: "*", element: <Navigate replace to="/not-found" /> },
-
-      //guest
+      // Cart & Checkout (guest)
       { path: "cart", element: <CartPage /> },
       { path: "checkout", element: <CheckoutPage /> },
       { path: "order-success", element: <OrderSuccessPage /> },
+
+      // Fallback
+      { path: "*", element: <Navigate replace to="/not-found" /> },
     ],
   },
 ]);

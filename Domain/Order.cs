@@ -21,12 +21,14 @@ public enum OrderStatus
 {
     Pending = 0,
     Confirmed = 1,
-    Processing = 2,
-    Shipped = 3,
-    Delivered = 4,
-    Completed = 5,
-    Cancelled = 6,
-    Refunded = 7
+    InProduction = 2,
+    ReadyToPack = 3,
+    Packed = 4,
+    HandedOverToCarrier = 5,
+    Delivered = 6,
+    Completed = 7,
+    Cancelled = 8,
+    Refunded = 9
 }
 public class Order
 {

@@ -12,7 +12,7 @@ public class Stock
 
     public required int QuantityReserved { get; set; }
 
-    public int QuantityAvailable { get; private set; }
+    public int QuantityAvailable { get; }
 
     public string? Notes { get; set; }
 

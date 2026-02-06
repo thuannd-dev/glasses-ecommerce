@@ -1,6 +1,7 @@
 using System;
 using Domain;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace Persistence;
 
@@ -1131,6 +1132,96 @@ public class DbInitializer
 
             await context.Stocks.AddRangeAsync(stocks);
             await context.SaveChangesAsync();
+
+            // Seed Addresses for users
+            if (!context.Addresses.Any())
+            {
+                var addresses = new List<Address>();
+                for (int i = 0; i < users.Count; i++)
+                {
+                    addresses.Add(new Address
+                    {
+                        UserId = users[i].Id,
+                        RecipientName = $"{users[i].DisplayName}",
+                        RecipientPhone = "0123456789",
+                        Venue = $"{100 + i} Main Street",
+                        Ward = "Ward 1",
+                        District = "District 1",
+                        City = "Ho Chi Minh",
+                        PostalCode = "70000",
+                        IsDefault = true,
+                        IsDeleted = false
+                    });
+                }
+
+                await context.Addresses.AddRangeAsync(addresses);
+                await context.SaveChangesAsync();
+            }
+
+            // Seed Orders with Pending status
+            // Check if we have Pending orders from seeding (check for exactly 5 orders)
+            var pendingOrderCount = await context.Orders.Where(o => o.OrderStatus == OrderStatus.Pending).CountAsync();
+            if (pendingOrderCount == 0)
+            {
+                var addresses = await context.Addresses.Where(a => !a.IsDeleted).ToListAsync();
+                
+                // Make sure we have addresses to work with
+                if (addresses.Count > 0)
+                {
+                    var selectedVariants = variants.Take(6).ToList(); // Use first 6 variants for variety
+
+                    var orders = new List<Order>();
+                    for (int i = 0; i < 5; i++)
+                    {
+                        decimal totalAmount = 0;
+
+                        // Create order first
+                        var order = new Order
+                        {
+                            AddressId = addresses[i % addresses.Count].Id,
+                            UserId = addresses[i % addresses.Count].UserId,
+                            OrderType = OrderType.ReadyStock,
+                            OrderSource = OrderSource.Online,
+                            OrderStatus = OrderStatus.Pending,
+                            TotalAmount = 0, // Will calculate after
+                            ShippingFee = 10.00m,
+                            CreatedAt = DateTime.UtcNow.AddHours(-(5 - i))
+                        };
+
+                        // Calculate total before adding items
+                        for (int j = 0; j < 3; j++)
+                        {
+                            var variant = selectedVariants[j];
+                            int quantity = j + 1; // quantities: 1, 2, 3
+                            decimal itemTotal = variant.Price * quantity;
+                            totalAmount += itemTotal;
+                        }
+
+                        // Set calculated total
+                        order.TotalAmount = totalAmount;
+
+                        // Create 3 items for this order
+                        for (int j = 0; j < 3; j++)
+                        {
+                            var variant = selectedVariants[j];
+                            int quantity = j + 1; // quantities: 1, 2, 3
+
+                            order.OrderItems.Add(new OrderItem
+                            {
+                                OrderId = order.Id,
+                                ProductVariantId = variant.Id,
+                                Quantity = quantity,
+                                UnitPrice = variant.Price
+                            });
+                        }
+
+                        orders.Add(order);
+                    }
+
+                    await context.Orders.AddRangeAsync(orders);
+                    await context.SaveChangesAsync();
+                }
+            }
         }
     }
 
