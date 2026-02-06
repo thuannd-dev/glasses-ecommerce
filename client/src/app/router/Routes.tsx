@@ -25,8 +25,12 @@ import ProfilePage from "../../features/Customer/profile/ProfilePage";
 import RequireRole from "./RequireRole";
 import SalesDashboard from "../../features/sales/SalesDashboard";
 import OperationsDashboard from "../../features/Operations/OperationsDashboard";
-import ManagerDashboard from "../../features/Manager/ManagerDashboard";
+import ManagerDashboard from "../../features/manager copy/ManagerDashboard";
 import AdminDashboard from "../../features/Admin/AdminDashboard";
+import InboundApprovalPage from "../../features/inbound-approval/InboundApprovalPage";
+import AfterSalesApprovalPage from "../../features/after-sales-approval/AfterSalesApprovalPage";
+import OrdersPage from "../../features/orders/OrdersPage";
+import ProductsPage from "../../features/products/ProductsPage";
 export const router = createBrowserRouter([
   // ======================
   // HOME (NO NAVBAR)
@@ -66,10 +70,11 @@ export const router = createBrowserRouter([
         element: <RequireRole allowedRoles={["Operations"]} />,
         children: [{ path: "operations", element: <OperationsDashboard /> }],
       },
-      {
-        element: <RequireRole allowedRoles={["Manager"]} />,
-        children: [{ path: "manager", element: <ManagerDashboard /> }],
-      },
+      { path: "manager", element: <ManagerDashboard /> },
+      { path: "inbound-approval", element: <InboundApprovalPage /> },
+      { path: "after-sales-approval", element: <AfterSalesApprovalPage /> },
+      { path: "products", element: <ProductsPage /> },
+      { path: "orders", element: <OrdersPage /> },
       {
         element: <RequireRole allowedRoles={["Admin"]} />,
         children: [{ path: "admin", element: <AdminDashboard /> }],

@@ -10,7 +10,7 @@ function App() {
   const location = useLocation();
 
   const isHome = location.pathname === "/";
-  const isDashboard = ["/sales", "/operations", "/manager", "/admin"].some((p) =>
+  const isDashboard = ["/sales", "/operations", "/manager", "/admin", "/products", "/orders", "/inbound-approval", "/after-sales-approval"].some((p) =>
     location.pathname.startsWith(p),
   );
 
