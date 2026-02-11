@@ -82,3 +82,173 @@ type ProductsQueryParams = {
   /** Default: 1 */
   sortOrder?: number;
 };
+
+/** Cart DTOs used by /api/carts endpoints */
+type CartItemDto = {
+  id: string;
+  cartId: string;
+  productVariantId: string;
+  quantity: number;
+  sku: string;
+  price: number;
+  compareAtPrice: number | null;
+  color: string | null;
+  size: string | null;
+  material: string | null;
+  quantityAvailable: number;
+  isInStock: boolean;
+  productId: string;
+  productName: string;
+  productImageUrl: string;
+  subtotal: number;
+};
+
+type CartDto = {
+  id: string;
+  items: CartItemDto[];
+  totalQuantity: number;
+  totalAmount: number;
+};
+
+type AddCartItemPayload = {
+  /** Product variant ID to add to cart */
+  productVariantId: string;
+  /** Quantity to add */
+  quantity: number;
+};
+
+type UpdateCartItemPayload = {
+  /** Cart item ID */
+  id: string;
+  /** New quantity */
+  quantity: number;
+};
+
+/** Products & categories DTOs used by /api/products and /api/categories */
+type ApiProductItem = {
+  id: string;
+  productName: string;
+  type: string | number;
+  brand: string;
+  description: string | null;
+  minPrice: number;
+  maxPrice: number;
+  totalQuantityAvailable: number;
+  firstImage: {
+    id: string;
+    imageUrl: string;
+    altText: string | null;
+    displayOrder: number;
+    modelUrl: string | null;
+  } | null;
+  category: {
+    id: string;
+    name: string;
+    slug: string;
+    description: string | null;
+  };
+};
+
+type ProductDetailApi = {
+  id: string;
+  productName: string;
+  type: number;
+  description: string | null;
+  brand: string | null;
+  status: number;
+  createdAt: string;
+  category: {
+    id: string;
+    name: string;
+    slug: string;
+    description: string | null;
+  };
+  variants: Array<{
+    id: string;
+    sku: string;
+    variantName: string | null;
+    color: string | null;
+    size: string | null;
+    material: string | null;
+    frameWidth: number | null;
+    lensWidth: number | null;
+    bridgeWidth: number | null;
+    templeLength: number | null;
+    price: number;
+    compareAtPrice: number | null;
+    isActive: boolean;
+    quantityAvailable: number;
+    images: Array<{
+      id: string;
+      imageUrl: string;
+      altText: string | null;
+      displayOrder: number;
+      modelUrl: string | null;
+    }>;
+  }>;
+  images: Array<{
+    id: string;
+    imageUrl: string;
+    altText: string | null;
+    displayOrder: number;
+    modelUrl: string | null;
+  }>;
+};
+
+type ProductsApiResponse = {
+  items: ApiProductItem[];
+  totalCount: number;
+  pageNumber: number;
+  pageSize: number;
+  totalPages?: number;
+  hasPreviousPage?: boolean;
+  hasNextPage?: boolean;
+};
+
+type CategoryDto = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+};
+
+/** View model for product detail page */
+type ProductDetailView = {
+  id: string;
+  name: string;
+  brand: string | null;
+  description: string | null;
+  status: string;
+  createdAt: string;
+  categoryName: string;
+  categorySlug: string;
+  categoryDescription: string | null;
+  price: number;
+  compareAtPrice: number | null;
+  sku: string;
+  color: string | null;
+  size: string | null;
+  material: string | null;
+  frameWidth: number | null;
+  lensWidth: number | null;
+  bridgeWidth: number | null;
+  templeLength: number | null;
+  quantityAvailable: number;
+  images: string[];
+  variants: Array<{
+    id: string;
+    sku: string;
+    variantName: string | null;
+    color: string | null;
+    size: string | null;
+    material: string | null;
+    frameWidth: number | null;
+    lensWidth: number | null;
+    bridgeWidth: number | null;
+    templeLength: number | null;
+    price: number;
+    compareAtPrice: number | null;
+    quantityAvailable: number;
+    images: string[];
+  }>;
+};

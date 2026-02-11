@@ -4,10 +4,11 @@ import {
     Button,
     CircularProgress,
 } from "@mui/material";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 
 import { useProducts, useCategories } from "../../lib/hooks/useProducts";
+import { useDebouncedValue } from "../../lib/hooks/useDebouncedValue";
 import type { FiltersState, SortKey, Product } from "./types";
 
 import { CollectionTopBar } from "./components/CollectionPageComponents/CollectionTopBar";
@@ -24,6 +25,9 @@ const FOOT_H = 0;
 
 /** mỗi trang 8 sản phẩm (theo API pagination) */
 const PAGE_SIZE = 8;
+
+/** Debounce giá trước khi gửi API (tránh gọi liên tục khi kéo slider) */
+const PRICE_DEBOUNCE_MS = 400;
 
 /* ================== helpers ================== */
 function defaultFilters(initialKeyword: string): FiltersState {
@@ -60,6 +64,10 @@ export default function CollectionPage() {
 
     /** scroll top */
     const topRef = useRef<HTMLDivElement | null>(null);
+
+    /** Giá debounce → chỉ gửi API 1 lần sau khi user thả tay kéo slider */
+    const debouncedMinPrice = useDebouncedValue(filters.minPrice, PRICE_DEBOUNCE_MS);
+    const debouncedMaxPrice = useDebouncedValue(filters.maxPrice, PRICE_DEBOUNCE_MS);
 
     /* ================== map sort -> API sortBy/sortOrder ================== */
     const sortBy = sort === "featured" ? 0 : 1;
@@ -138,28 +146,25 @@ export default function CollectionPage() {
             pageSize: PAGE_SIZE,
             categoryIds,
             search: filters.keyword.trim() || undefined,
-            minPrice: filters.minPrice ?? undefined,
-            maxPrice: filters.maxPrice ?? undefined,
+            minPrice: debouncedMinPrice ?? undefined,
+            maxPrice: debouncedMaxPrice ?? undefined,
             brand: filters.brand ?? undefined,
             sortBy,
             sortOrder,
         },
         {
-            // Chỉ fetch khi đã có categories (để có categoryIds đúng) → totalCount đúng theo category
-            enabled: !categorySlug || categoriesList.length > 0,
+            // Chỉ fetch khi có categoryIds (khi filter) hoặc không cần filter → totalCount đúng theo category
+            enabled:
+                (filters.glassesTypes.length === 0 && !categorySlug) ||
+                !!(categoryIds && categoryIds.length > 0),
         },
     );
 
-    // Lọc client-side bổ sung theo type (Eyeglasses / Sunglasses) nếu cần
-    const pageProducts: Product[] = useMemo(() => {
-        const list = Array.isArray(apiProducts) ? apiProducts : [];
-        if (!filters.glassesTypes.length) return list;
-        return list.filter(
-            (p) => p.glassesType && filters.glassesTypes.includes(p.glassesType),
-        );
-    }, [apiProducts, filters.glassesTypes]);
+    // API đã filter theo categoryIds → dùng trực tiếp, không lọc client để tránh trang thừa
+    const pageProducts: Product[] = Array.isArray(apiProducts) ? apiProducts : [];
 
-    const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
+    const totalPages =
+        totalItems <= 0 ? 0 : Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
 
     /* ================== sync filters.keyword with URL search param ================== */
     useEffect(() => {
@@ -171,10 +176,23 @@ export default function CollectionPage() {
         );
     }, [searchParams, setFilters]);
 
-    /* ================== reset page khi đổi category/sort/filters ================== */
+    /* ================== reset page khi đổi category/sort/filters (dùng debounced price để tránh reset mỗi lần kéo) ================== */
     useEffect(() => {
         setPage(1);
-    }, [category, sort, filters]);
+    }, [
+        category,
+        sort,
+        filters.keyword,
+        filters.brand,
+        filters.glassesTypes,
+        filters.shapes,
+        filters.colors,
+        filters.frameSizes,
+        filters.materials,
+        filters.genders,
+        debouncedMinPrice,
+        debouncedMaxPrice,
+    ]);
 
     const handleChangePage = (nextPage: number) => {
         setPage(nextPage);
@@ -235,20 +253,7 @@ export default function CollectionPage() {
                 justifyContent="space-between"
                 gap={2}
             >
-                <CollectionTopBar
-                    totalItems={totalItems}
-                    categoryLabel={
-                        filters.glassesTypes.length === 1
-                            ? filters.glassesTypes[0] === "eyeglasses"
-                                ? "eyeglasses"
-                                : filters.glassesTypes[0] === "sunglasses"
-                                  ? "sunglasses"
-                                  : null
-                            : null
-                    }
-                    sort={sort}
-                    setSort={setSort}
-                />
+                <CollectionTopBar sort={sort} setSort={setSort} />
 
                 <Button
                     variant="outlined"
@@ -318,7 +323,12 @@ export default function CollectionPage() {
                 <FiltersSidebar
                     filters={filters}
                     setFilters={setFilters}
-                    onReset={() => setFilters(defaultFilters(initialKeyword))}
+                    onReset={() => {
+                        setFilters(defaultFilters(initialKeyword));
+                        setOpenFilter(false);
+                    }}
+                    onApply={() => setOpenFilter(false)}
+                    categories={categoriesList}
                     stickyTop={0}
                 />
             </Drawer>

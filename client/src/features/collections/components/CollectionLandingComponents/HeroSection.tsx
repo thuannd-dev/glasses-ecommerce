@@ -8,8 +8,8 @@ const CHIN_OFFSET = 20;
 
 // NOTE: sau này gắn API thì thay IMAGES bằng props/data từ store
 const IMAGES = [
-    "https://images.unsplash.com/photo-1520975916090-3105956dac38?auto=format&fit=crop&w=1600&q=80",
-    "https://images.unsplash.com/photo-1511499767150-a48a237f0083?auto=format&fit=crop&w=1600&q=80",
+    "https://images.unsplash.com/photo-1755519024831-6833a37098ad?q=80&w=774&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    "https://images.unsplash.com/photo-1711878502624-5a65b38eec5c?w=700&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTg0fHxleWVnbGFzc2VzJTIwZmFzaGlvbnxlbnwwfDF8MHx8fDA%3D",
     "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=1920&q=80",
 ] as const;
 

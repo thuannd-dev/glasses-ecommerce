@@ -40,17 +40,17 @@ interface OrderCardProps {
 function getStatusLabel(status: OrderStatus) {
     switch (status) {
         case "PENDING":
-            return { label: "Đã đặt", color: "info" as const };
+            return { label: "Pending", color: "info" as const };
         case "PROCESSING":
-            return { label: "Đang xử lý", color: "warning" as const };
+            return { label: "Processing", color: "warning" as const };
         case "SHIPPING":
-            return { label: "Đang giao", color: "warning" as const };
+            return { label: "Shipping", color: "warning" as const };
         case "COMPLETED":
-            return { label: "Hoàn thành", color: "success" as const };
+            return { label: "Completed", color: "success" as const };
         case "CANCELLED":
-            return { label: "Đã hủy", color: "error" as const };
+            return { label: "Cancelled", color: "error" as const };
         default:
-            return { label: "Không rõ", color: "default" as const };
+            return { label: "Unknown", color: "default" as const };
     }
 }
 
@@ -156,7 +156,7 @@ export default function OrderCard({
                                 color="error"
                                 size="small"
                             >
-                                Hủy đơn
+                                Cancel order
                             </Button>
                         )}
                     </Stack>

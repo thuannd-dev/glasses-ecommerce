@@ -42,7 +42,7 @@ export const useAccount = () => {
       await agent.post("/account/register", creds);
     },
     onSuccess: async (_data, variables) => {
-      toast.success("Đăng ký thành công! Đang đăng nhập…");
+      toast.success("Registration successful! Signing you in…");
       try {
         await agent.post("/login?useCookies=true", {
           email: variables.email,
@@ -51,7 +51,7 @@ export const useAccount = () => {
         queryClient.invalidateQueries({ queryKey: ["user"] });
         navigate("/auth/redirect");
       } catch {
-        toast.info("Đăng ký thành công. Vui lòng đăng nhập.");
+        toast.info("Registration successful. Please sign in.");
         navigate("/login");
       }
     },
@@ -67,7 +67,6 @@ export const useAccount = () => {
     },
     onSuccess: () => {
       queryClient.removeQueries({ queryKey: ["user"] });
-      queryClient.removeQueries({ queryKey: ["activities"] });
       queryClient.removeQueries({ queryKey: ["cart"] });
       navigate("/");
     },

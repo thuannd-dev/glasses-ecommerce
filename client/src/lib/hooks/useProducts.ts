@@ -1,97 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import agent from "../api/agent";
+import { productsQueryParamsSchema } from "../schemas/productsQuerySchema";
 import type { Product } from "../../features/collections/types";
-
-/** Item trả về từ GET /api/products (list) */
-export interface ApiProductItem {
-  id: string;
-  productName: string;
-  type: string | number;
-  brand: string;
-  description: string | null;
-  minPrice: number;
-  maxPrice: number;
-  totalQuantityAvailable: number;
-  firstImage: {
-    id: string;
-    imageUrl: string;
-    altText: string | null;
-    displayOrder: number;
-    modelUrl: string | null;
-  } | null;
-  category: {
-    id: string;
-    name: string;
-    slug: string;
-    description: string | null;
-  };
-}
-
-/** Item trả về từ GET /api/products/{id} (detail) */
-export interface ProductDetailApi {
-  id: string;
-  productName: string;
-  type: number;
-  description: string | null;
-  brand: string | null;
-  status: number;
-  createdAt: string;
-  category: {
-    id: string;
-    name: string;
-    slug: string;
-    description: string | null;
-  };
-  variants: Array<{
-    id: string;
-    sku: string;
-    variantName: string | null;
-    color: string | null;
-    size: string | null;
-    material: string | null;
-    frameWidth: number | null;
-    lensWidth: number | null;
-    bridgeWidth: number | null;
-    templeLength: number | null;
-    price: number;
-    compareAtPrice: number | null;
-    isActive: boolean;
-    quantityAvailable: number;
-    images: Array<{
-      id: string;
-      imageUrl: string;
-      altText: string | null;
-      displayOrder: number;
-      modelUrl: string | null;
-    }>;
-  }>;
-  images: Array<{
-    id: string;
-    imageUrl: string;
-    altText: string | null;
-    displayOrder: number;
-    modelUrl: string | null;
-  }>;
-}
-
-/** Response shape từ GET /api/products (list) */
-export interface ProductsApiResponse {
-  items: ApiProductItem[];
-  totalCount: number;
-  pageNumber: number;
-  pageSize: number;
-  totalPages?: number;
-  hasPreviousPage?: boolean;
-  hasNextPage?: boolean;
-}
-
-/** Category từ GET /api/categories */
-export interface CategoryDto {
-  id: string;
-  name: string;
-  slug: string;
-  description: string | null;
-}
 
 function mapApiItemToProduct(item: ApiProductItem): Product {
   const categorySlug = item.category?.slug ?? "";
@@ -119,47 +29,6 @@ function mapApiItemToProduct(item: ApiProductItem): Product {
           ? "sunglasses"
           : undefined,
   };
-}
-
-/** View model chi tiết dùng cho ProductDetailPage */
-export interface ProductDetailView {
-  id: string;
-  name: string;
-  brand: string | null;
-  description: string | null;
-  status: string;
-  createdAt: string;
-  categoryName: string;
-  categorySlug: string;
-  categoryDescription: string | null;
-  price: number;
-  compareAtPrice: number | null;
-  sku: string;
-  color: string | null;
-  size: string | null;
-  material: string | null;
-  frameWidth: number | null;
-  lensWidth: number | null;
-  bridgeWidth: number | null;
-  templeLength: number | null;
-  quantityAvailable: number;
-  images: string[];
-  variants: Array<{
-    id: string;
-    sku: string;
-    variantName: string | null;
-    color: string | null;
-    size: string | null;
-    material: string | null;
-    frameWidth: number | null;
-    lensWidth: number | null;
-    bridgeWidth: number | null;
-    templeLength: number | null;
-    price: number;
-    compareAtPrice: number | null;
-    quantityAvailable: number;
-    images: string[];
-  }>;
 }
 
 function mapDetailApiToView(api: ProductDetailApi): ProductDetailView {
@@ -255,18 +124,20 @@ function mapDetailApiToView(api: ProductDetailApi): ProductDetailView {
 }
 
 function buildProductsParams(params: ProductsQueryParams): Record<string, unknown> {
+  const parsed = productsQueryParamsSchema.safeParse(params);
+  const p = parsed.success ? parsed.data : {};
   const result: Record<string, unknown> = {};
-  if (params.pageNumber != null) result.pageNumber = params.pageNumber;
-  if (params.pageSize != null) result.pageSize = params.pageSize;
-  if (params.categoryIds?.length) result.categoryIds = params.categoryIds;
-  if (params.brand != null && params.brand !== "") result.brand = params.brand;
-  if (params.status != null && params.status !== "") result.status = params.status;
-  if (params.type != null && params.type !== "") result.type = params.type;
-  if (params.minPrice != null) result.minPrice = params.minPrice;
-  if (params.maxPrice != null) result.maxPrice = params.maxPrice;
-  if (params.search != null && params.search !== "") result.search = params.search;
-  if (params.sortBy != null) result.sortBy = params.sortBy;
-  if (params.sortOrder != null) result.sortOrder = params.sortOrder;
+  if (p.pageNumber != null) result.pageNumber = p.pageNumber;
+  if (p.pageSize != null) result.pageSize = p.pageSize;
+  if (p.categoryIds?.length) result.categoryIds = p.categoryIds;
+  if (p.brand != null && p.brand !== "") result.brand = p.brand;
+  if (p.status != null && p.status !== "") result.status = p.status;
+  if (p.type != null && p.type !== "") result.type = p.type;
+  if (p.minPrice != null) result.minPrice = p.minPrice;
+  if (p.maxPrice != null) result.maxPrice = p.maxPrice;
+  if (p.search != null && p.search !== "") result.search = p.search;
+  if (p.sortBy != null) result.sortBy = p.sortBy;
+  if (p.sortOrder != null) result.sortOrder = p.sortOrder;
   return result;
 }
 

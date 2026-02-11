@@ -10,11 +10,12 @@ import {
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import type { Dispatch, SetStateAction } from "react";
+import { useNavigate } from "react-router-dom";
 import type { FiltersState } from "../../types";
 
-// Các brand và type lấy từ dữ liệu mẫu API
 const BRANDS = ["Ray-Ban", "Oakley", "Warby Parker", "Mykita"];
-const TYPES = [
+
+const FALLBACK_TYPES = [
     { label: "Eyeglasses", value: "eyeglasses" },
     { label: "Sunglasses", value: "sunglasses" },
 ] as const;
@@ -23,13 +24,37 @@ export function FiltersSidebar({
     filters,
     setFilters,
     onReset,
+    onApply,
+    categories,
     stickyTop = 88,
 }: {
     filters: FiltersState;
     setFilters: Dispatch<SetStateAction<FiltersState>>;
     onReset: () => void;
+    /** Gọi khi bấm NARROW DOWN – đóng drawer / áp dụng lọc */
+    onApply?: () => void;
+    /** Categories từ API – dùng cho Type (Eyeglasses/Sunglasses) */
+    categories?: { id: string; name: string; slug: string }[];
     stickyTop?: number;
 }) {
+    const navigate = useNavigate();
+
+    const typeOptions =
+        categories && categories.length > 0
+            ? categories.map((c) => ({ label: c.name, value: c.slug }))
+            : FALLBACK_TYPES;
+
+    const handleTypeSelect = (slug: string) => {
+        const active = filters.glassesTypes.includes(slug as "eyeglasses" | "sunglasses");
+        const next = active ? [] : [slug];
+        setFilters((prev) => ({ ...prev, glassesTypes: next as ("eyeglasses" | "sunglasses")[] }));
+        if (active) {
+            navigate("/collections");
+        } else {
+            navigate(`/collections/${slug}`);
+        }
+    };
+
     return (
         <Box
             sx={{
@@ -118,17 +143,13 @@ export function FiltersSidebar({
                     </AccordionSummary>
                     <AccordionDetails sx={{ pt: 0 }}>
                         <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-                            {TYPES.map((t) => {
-                                const active = filters.glassesTypes.includes(t.value);
+                            {typeOptions.map((t) => {
+                                const { label, value } = t;
+                                const active = filters.glassesTypes.includes(value as "eyeglasses" | "sunglasses");
                                 return (
                                     <Box
-                                        key={t.value}
-                                        onClick={() =>
-                                            setFilters((prev) => ({
-                                                ...prev,
-                                                glassesTypes: active ? [] : [t.value],
-                                            }))
-                                        }
+                                        key={value}
+                                        onClick={() => handleTypeSelect(value)}
                                         sx={{
                                             px: 1.4,
                                             py: 0.7,
@@ -143,7 +164,7 @@ export function FiltersSidebar({
                                             fontSize: 13,
                                         }}
                                     >
-                                        {t.label}
+                                        {label}
                                     </Box>
                                 );
                             })}
@@ -200,6 +221,7 @@ export function FiltersSidebar({
             <Box sx={{ mt: 1.5, display: "grid", gap: 1.2 }}>
                 <Button
                     variant="contained"
+                    onClick={onApply}
                     sx={{
                         bgcolor: "#111827",
                         borderRadius: 2,

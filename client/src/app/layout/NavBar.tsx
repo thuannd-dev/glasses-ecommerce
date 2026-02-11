@@ -25,6 +25,7 @@ import { alpha } from "@mui/material/styles";
 import { useStore } from "../../lib/hooks/useStore";
 import { useAccount } from "../../lib/hooks/useAccount";
 import { useCart } from "../../lib/hooks/useCart";
+import { useCategories } from "../../lib/hooks/useProducts";
 import UserMenu from "./UserMenu";
 import CartDropdown from "../components/cart/CartDropdown";
 
@@ -62,7 +63,7 @@ const SEARCH_BOX_SX = {
 
 const ICON_SX = { color: "rgba(17,24,39,0.75)" } as const;
 
-const MENU_ITEMS = [
+const FALLBACK_MENU_ITEMS = [
   { label: "Eyeglasses", to: "/collections/eyeglasses" },
   { label: "Sunglasses", to: "/collections/sunglasses" },
   { label: "Lens", to: "/collections/lens" },
@@ -73,9 +74,20 @@ const NavBar = observer(function NavBar() {
   const { uiStore } = useStore();
   const { currentUser } = useAccount();
   const { cart } = useCart();
+  const { categories } = useCategories();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
+
+  const menuItems = useMemo(() => {
+    if (categories.length > 0) {
+      return categories.map((c) => ({
+        label: c.name,
+        to: `/collections/${c.slug}`,
+      }));
+    }
+    return FALLBACK_MENU_ITEMS.map((m) => ({ label: m.label, to: m.to }));
+  }, [categories]);
 
   // Sync navbar search with current URL query (?search=...)
   useEffect(() => {
@@ -108,7 +120,7 @@ const NavBar = observer(function NavBar() {
 
   const menu = useMemo(
     () =>
-      MENU_ITEMS.map((item) => (
+      menuItems.map((item) => (
         <Button
           key={item.to}
           component={NavLink}
@@ -118,7 +130,7 @@ const NavBar = observer(function NavBar() {
           {item.label}
         </Button>
       )),
-    []
+    [menuItems]
   );
 
   return (

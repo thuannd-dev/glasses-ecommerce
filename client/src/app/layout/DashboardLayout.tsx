@@ -132,7 +132,9 @@ export default function DashboardLayout() {
               <LogoutIcon />
             </ListItemIcon>
             <ListItemText
-              primary={logoutUser.isPending ? "Đang đăng xuất…" : "Đăng xuất"}
+              primary={
+                logoutUser.isPending ? "Signing out…" : "Sign out"
+              }
               primaryTypographyProps={{ fontWeight: 600 }}
             />
           </ListItemButton>

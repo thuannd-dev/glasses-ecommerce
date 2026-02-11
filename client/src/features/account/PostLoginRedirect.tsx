@@ -48,7 +48,7 @@ export default function PostLoginRedirect() {
     >
       <CircularProgress size={40} />
       <Typography variant="body2" color="text.secondary">
-        Đang chuyển hướng…
+        Redirecting…
       </Typography>
     </Box>
   );
