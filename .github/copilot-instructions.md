@@ -29,3 +29,23 @@
 - Use AsNoTracking and projection for read-only queries.
 - Use AsSplitQuery for queries with multiple collections.
 - Apply optimizations only when they fit the query intent and data volume.
+
+
+# Business Rules
+
+- Read through all the classes in the Domain folder to understand the business rules
+
+# API DESIGN – CURRENT USER RESOURCE PATTERN
+
+- Always resolve the current user's identity exclusively from authentication claims
+  (HttpContext.User), never from route, query, or request body.
+
+- Use a UserAccessor (Infrastructure layer) as the single abstraction for accessing
+  the current user context (UserId, roles, email, etc.).
+
+- NEVER trust client-supplied identifiers (userId) for self-service resources.
+
+- Prefer `/api/me/...` endpoints over `/api/users/{id}` for authenticated user data.
+
+- `/api/users/{id}` endpoints are allowed ONLY for privileged roles
+  (e.g. Admin, Manager) and MUST enforce role- or policy-based authorization.
