@@ -7,9 +7,14 @@ public sealed class AddItemToCartValidator : AbstractValidator<AddItemToCart.Com
 {
     public AddItemToCartValidator()
     {
-        RuleFor(x => x.AddCartItemDto)
-            .NotNull()
-            .WithMessage("Request data is required.")
-            .SetValidator(new AddCartItemValidator());
+        RuleFor(x => x.AddCartItemDto.ProductVariantId)
+            .NotEmpty()
+            .WithMessage("Product variant ID is required.");
+
+        RuleFor(x => x.AddCartItemDto.Quantity)
+            .GreaterThan(0)
+            .WithMessage("Quantity must be greater than 0.")
+            .LessThanOrEqualTo(999)
+            .WithMessage("Quantity cannot exceed 999 items.");
     }
 }

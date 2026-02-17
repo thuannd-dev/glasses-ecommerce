@@ -22,18 +22,13 @@ public sealed class CartsController : BaseApiController
         return HandleResult(await Mediator.Send(new AddItemToCart.Command { AddCartItemDto = dto }, cancellationToken));
     }
 
-    [HttpPut("items/{id:guid}")]
+    [HttpPut("items/{id}")]
     public async Task<IActionResult> UpdateItem(Guid id, UpdateCartItemDto dto, CancellationToken cancellationToken)
     {
-        UpdateCartItem.Command command = new() 
-        { 
-            CartItemId = id, 
-            UpdateCartItemDto = dto 
-        };
-        return HandleResult(await Mediator.Send(command, cancellationToken));
+        return HandleResult(await Mediator.Send(new UpdateCartItem.Command { CartItemId = id, UpdateCartItemDto = dto }, cancellationToken));
     }
 
-    [HttpDelete("items/{id:guid}")]
+    [HttpDelete("items/{id}")]
     public async Task<IActionResult> RemoveItem(Guid id, CancellationToken cancellationToken)
     {
         return HandleResult(await Mediator.Send(new RemoveCartItem.Command { CartItemId = id }, cancellationToken));
