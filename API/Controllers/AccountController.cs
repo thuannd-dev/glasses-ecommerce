@@ -40,6 +40,10 @@ public class AccountController(SignInManager<User> signInManager) : BaseApiContr
 
         if (!roleResult.Succeeded)
         {
+            // Roll back: remove the user that was just created
+            // to prevent orphaned records that block re-registration
+            await signInManager.UserManager.DeleteAsync(user);
+
             foreach (var error in roleResult.Errors)
             {
                 ModelState.AddModelError(error.Code, error.Description);
