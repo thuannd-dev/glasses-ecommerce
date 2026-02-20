@@ -488,3 +488,6 @@ API/appsettings.json
 
 client/.env.development
 client/.env.production
+.ai-instructions.md
+.agent/workflows/agent-rule.md
+.agent

@@ -1,13 +1,17 @@
-using Application.Carts.DTOs;
+using Application.Carts.Commands;
 using FluentValidation;
 
 namespace Application.Carts.Validators;
 
-public sealed class UpdateCartItemDtoValidator : AbstractValidator<UpdateCartItemDto>
+public sealed class UpdateCartItemValidator : AbstractValidator<UpdateCartItem.Command>
 {
-    public UpdateCartItemDtoValidator()
+    public UpdateCartItemValidator()
     {
-        RuleFor(x => x.Quantity)
+        RuleFor(x => x.CartItemId)
+            .NotEmpty()
+            .WithMessage("Cart item ID is required.");
+
+        RuleFor(x => x.UpdateCartItemDto.Quantity)
             .GreaterThan(0)
             .WithMessage("Quantity must be greater than 0.")
             .LessThanOrEqualTo(999)

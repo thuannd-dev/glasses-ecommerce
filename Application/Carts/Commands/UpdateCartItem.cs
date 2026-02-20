@@ -62,7 +62,7 @@ public sealed class UpdateCartItem
             }
 
             // Check stock availability for new quantity
-            if (cartItem.ProductVariant.Stock == null 
+            if (cartItem.ProductVariant.Stock == null
                 || cartItem.ProductVariant.Stock.QuantityAvailable < request.UpdateCartItemDto.Quantity)
             {
                 return Result<CartItemDto>.Failure(

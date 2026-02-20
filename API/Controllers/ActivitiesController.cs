@@ -1,13 +1,14 @@
 using System;
-using Application.Activities.Queries;
 using Application.Activities.Commands;
+using Application.Activities.DTOs;
+using Application.Activities.Queries;
 using Domain;
 using MediatR;
-using Microsoft.AspNetCore.Mvc;
-using Application.Activities.DTOs;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
+
 [Route("api/activities")]
 public class ActivitiesController : BaseApiController
 {
@@ -56,7 +57,7 @@ public class ActivitiesController : BaseApiController
     [HttpPost("{id}/attend")]
     public async Task<ActionResult> Attend(Guid id)
     {
-        return HandleResult(await Mediator.Send(new UpdateAttendance.Command {Id = id}));
+        return HandleResult(await Mediator.Send(new UpdateAttendance.Command { Id = id }));
     }
 
 }

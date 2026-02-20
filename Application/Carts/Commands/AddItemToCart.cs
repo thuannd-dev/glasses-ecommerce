@@ -67,7 +67,7 @@ public sealed class AddItemToCart
 
             // Check if item already exists in cart
             CartItem? existingItem = await context.CartItems
-                .FirstOrDefaultAsync(ci => ci.CartId == cart.Id 
+                .FirstOrDefaultAsync(ci => ci.CartId == cart.Id
                     && ci.ProductVariantId == request.AddCartItemDto.ProductVariantId, cancellationToken);
 
             if (existingItem != null)
@@ -106,7 +106,7 @@ public sealed class AddItemToCart
 
             // Use ProjectTo for optimal performance - only select needed data
             CartItemDto? cartItemDto = await context.CartItems
-                .Where(ci => ci.CartId == cart.Id 
+                .Where(ci => ci.CartId == cart.Id
                     && ci.ProductVariantId == request.AddCartItemDto.ProductVariantId)
                 .ProjectTo<CartItemDto>(mapper.ConfigurationProvider)
                 .FirstOrDefaultAsync(cancellationToken);
