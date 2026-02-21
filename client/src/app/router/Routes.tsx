@@ -20,7 +20,7 @@ import ServerError from "../../features/errors/ServerError";
 import CartPage from "../../features/cart/CartPage";
 
 import CheckoutPage from "../../features/checkout/CheckoutPage";
-import OrderSuccessPage from "../../features/checkout/OrderSuccessPage";
+import OrderSuccessPage from "../../features/collections/OrderSuccessPage";
 import ProfilePage from "../../features/Customer/profile/ProfilePage";
 import RequireRole from "./RequireRole";
 import SalesDashboard from "../../features/sales/SalesDashboard";

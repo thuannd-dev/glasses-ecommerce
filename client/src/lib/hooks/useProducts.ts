@@ -3,6 +3,7 @@ import agent from "../api/agent";
 import { productsQueryParamsSchema } from "../schemas/productsQuerySchema";
 import type { Product } from "../../features/collections/types";
 
+// Chuyển 1 item từ API (productName, category.slug...) sang dạng Product dùng ở UI (name, category, glassesType)
 function mapApiItemToProduct(item: ApiProductItem): Product {
   const categorySlug = item.category?.slug ?? "";
   const category: Product["category"] =
@@ -31,19 +32,16 @@ function mapApiItemToProduct(item: ApiProductItem): Product {
   };
 }
 
+// Chuyển response chi tiết sản phẩm từ API sang dạng view (ảnh đã sort, mainVariant, giá từ variant)
 function mapDetailApiToView(api: ProductDetailApi): ProductDetailView {
   const apiImages = Array.isArray(api.images) ? api.images : [];
   const apiVariants = Array.isArray(api.variants) ? api.variants : [];
 
-  // Sắp xếp ảnh sản phẩm theo displayOrder để lấy ảnh hero ổn định
   const sortedProductImages = apiImages
     .slice()
     .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
 
   const heroUrl = sortedProductImages[0]?.imageUrl;
-
-  // Ưu tiên chọn variant có ảnh trùng với heroUrl,
-  // nếu không có thì fallback isActive hoặc variant đầu tiên
   const mainVariant =
     (heroUrl &&
       apiVariants.find((v) =>
@@ -55,8 +53,6 @@ function mapDetailApiToView(api: ProductDetailApi): ProductDetailView {
     apiVariants[0];
 
   const price = mainVariant?.price ?? 0;
-
-  // Sắp xếp ảnh của mainVariant theo displayOrder trước khi map ra URL
   const variantImages = Array.isArray(mainVariant?.images)
     ? mainVariant.images
         .slice()
@@ -89,7 +85,6 @@ function mapDetailApiToView(api: ProductDetailApi): ProductDetailView {
       : [],
   }));
 
-  // Đảm bảo mainVariant luôn đứng đầu danh sách variants
   const variants =
     mainVariant?.id
       ? [...variantsMapped].sort((a, b) =>
@@ -123,6 +118,7 @@ function mapDetailApiToView(api: ProductDetailApi): ProductDetailView {
   };
 }
 
+// Chuẩn hóa params (validate bằng schema) rồi bỏ vào object chỉ chứa field có giá trị để gửi query string
 function buildProductsParams(params: ProductsQueryParams): Record<string, unknown> {
   const parsed = productsQueryParamsSchema.safeParse(params);
   const p = parsed.success ? parsed.data : {};
@@ -155,8 +151,8 @@ export function useProducts(
     error,
     refetch,
   } = useQuery({
-    queryKey: ["products", queryParams],
-    enabled: options?.enabled !== false,
+    queryKey: ["products", queryParams], // params đổi thì queryKey đổi → tự gọi lại API
+    enabled: options?.enabled !== false, // false thì không gọi (vd. chưa chọn type)
     queryFn: async () => {
       const response = await agent.get<ProductsApiResponse>("/products", {
         params: queryParams,
@@ -164,12 +160,9 @@ export function useProducts(
       const data = response.data;
       const rawItems = data?.items;
       const items = Array.isArray(rawItems)
-        ? rawItems.map(mapApiItemToProduct)
+        ? rawItems.map(mapApiItemToProduct) // map từng item API → Product
         : [];
-      return {
-        ...data,
-        items,
-      };
+      return { ...data, items };
     },
   });
 
@@ -188,7 +181,6 @@ export function useProducts(
   };
 }
 
-/** Lấy danh sách category từ GET /api/categories */
 export function useCategories() {
   const {
     data,
@@ -211,7 +203,28 @@ export function useCategories() {
   };
 }
 
-/** Lấy chi tiết sản phẩm từ GET /api/products/{id} */
+export function useBrands() {
+  const {
+    data,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: ["brands"],
+    queryFn: async () => {
+      const response = await agent.get<string[]>("/brands");
+      return response.data;
+    },
+  });
+
+  return {
+    brands: Array.isArray(data) ? data : [],
+    isLoading,
+    isError,
+    error,
+  };
+}
+
 export function useProductDetail(id?: string) {
   const {
     data,
@@ -219,8 +232,8 @@ export function useProductDetail(id?: string) {
     isError,
     error,
   } = useQuery({
-    queryKey: ["product", id],
-    enabled: !!id,
+    queryKey: ["product", id], // id đổi thì gọi lại
+    enabled: !!id, // không gọi khi chưa có id
     queryFn: async () => {
       const response = await agent.get<ProductDetailApi>(`/products/${id}`);
       return mapDetailApiToView(response.data);

@@ -11,14 +11,31 @@ import {
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import type { Dispatch, SetStateAction } from "react";
 import { useNavigate } from "react-router-dom";
-import type { FiltersState } from "../../types";
+import type { FiltersState, GlassesType } from "../../types";
 
-const BRANDS = ["Ray-Ban", "Oakley", "Warby Parker", "Mykita"];
+/** Category trả về từ GET /api/categories – khớp với category trong response list sản phẩm */
+export type CategoryOption = {
+    id: string;
+    name: string;
+    slug: string;
+    description?: string | null;
+};
 
-const FALLBACK_TYPES = [
+const FALLBACK_TYPES: { label: string; value: GlassesType }[] = [
     { label: "Eyeglasses", value: "eyeglasses" },
     { label: "Sunglasses", value: "sunglasses" },
-] as const;
+];
+
+const CHIP_SX = {
+    px: 1.4,
+    py: 0.7,
+    borderRadius: 2,
+    border: "1px solid rgba(17,24,39,0.18)",
+    fontWeight: 900,
+    cursor: "pointer",
+    userSelect: "none" as const,
+    fontSize: 13,
+};
 
 export function FiltersSidebar({
     filters,
@@ -26,6 +43,7 @@ export function FiltersSidebar({
     onReset,
     onApply,
     categories,
+    brands,
     stickyTop = 88,
 }: {
     filters: FiltersState;
@@ -33,25 +51,48 @@ export function FiltersSidebar({
     onReset: () => void;
     /** Gọi khi bấm NARROW DOWN – đóng drawer / áp dụng lọc */
     onApply?: () => void;
-    /** Categories từ API – dùng cho Type (Eyeglasses/Sunglasses) */
-    categories?: { id: string; name: string; slug: string }[];
+    /** Categories từ GET /api/categories – dùng cho Type (Eyeglasses/Sunglasses) */
+    categories?: CategoryOption[];
+    /** Brands từ GET /api/brands – dùng cho bộ lọc Brand */
+    brands?: string[];
     stickyTop?: number;
 }) {
     const navigate = useNavigate();
 
     const typeOptions =
         categories && categories.length > 0
-            ? categories.map((c) => ({ label: c.name, value: c.slug }))
+            ? categories.map((c) => ({
+                  label: c.name,
+                  value: c.slug.toLowerCase() as GlassesType,
+              }))
             : FALLBACK_TYPES;
 
+    const isAllActive = filters.glassesTypes.length === 0;
+
     const handleTypeSelect = (slug: string) => {
-        const active = filters.glassesTypes.includes(slug as "eyeglasses" | "sunglasses");
-        const next = active ? [] : [slug];
-        setFilters((prev) => ({ ...prev, glassesTypes: next as ("eyeglasses" | "sunglasses")[] }));
+        const normalized = slug.toLowerCase() as GlassesType;
+        const active = filters.glassesTypes.includes(normalized);
+        const next = active ? [] : [normalized];
+        setFilters((prev) => ({ ...prev, glassesTypes: next }));
         if (active) {
             navigate("/collections");
         } else {
-            navigate(`/collections/${slug}`);
+            navigate(`/collections/${slug.toLowerCase()}`);
+        }
+    };
+
+    const handleAllType = () => {
+        setFilters((prev) => ({ ...prev, glassesTypes: [] }));
+        navigate("/collections/all");
+    };
+
+    const handleChipKeyDown = (
+        e: React.KeyboardEvent,
+        onClick: () => void,
+    ) => {
+        if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onClick();
         }
     };
 
@@ -143,25 +184,39 @@ export function FiltersSidebar({
                     </AccordionSummary>
                     <AccordionDetails sx={{ pt: 0 }}>
                         <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+                            <Box
+                                role="button"
+                                tabIndex={0}
+                                onClick={handleAllType}
+                                onKeyDown={(e) =>
+                                    handleChipKeyDown(e, handleAllType)
+                                }
+                                sx={{
+                                    ...CHIP_SX,
+                                    bgcolor: isAllActive ? "#111827" : "#fff",
+                                    color: isAllActive ? "#fff" : "#111827",
+                                }}
+                            >
+                                All
+                            </Box>
                             {typeOptions.map((t) => {
                                 const { label, value } = t;
-                                const active = filters.glassesTypes.includes(value as "eyeglasses" | "sunglasses");
+                                const active = filters.glassesTypes.includes(value);
                                 return (
                                     <Box
                                         key={value}
+                                        role="button"
+                                        tabIndex={0}
                                         onClick={() => handleTypeSelect(value)}
+                                        onKeyDown={(e) =>
+                                            handleChipKeyDown(e, () =>
+                                                handleTypeSelect(value),
+                                            )
+                                        }
                                         sx={{
-                                            px: 1.4,
-                                            py: 0.7,
-                                            borderRadius: 2,
-                                            border:
-                                                "1px solid rgba(17,24,39,0.18)",
+                                            ...CHIP_SX,
                                             bgcolor: active ? "#111827" : "#fff",
                                             color: active ? "#fff" : "#111827",
-                                            fontWeight: 900,
-                                            cursor: "pointer",
-                                            userSelect: "none",
-                                            fontSize: 13,
                                         }}
                                     >
                                         {label}
@@ -172,7 +227,7 @@ export function FiltersSidebar({
                     </AccordionDetails>
                 </Accordion>
 
-                {/* Brand (từ data API) */}
+                {/* Brand */}
                 <Accordion
                     disableGutters
                     elevation={0}
@@ -183,29 +238,31 @@ export function FiltersSidebar({
                     </AccordionSummary>
                     <AccordionDetails sx={{ pt: 0 }}>
                         <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-                            {BRANDS.map((b) => {
+                            {(brands ?? []).map((b) => {
                                 const active = filters.brand === b;
                                 return (
                                     <Box
                                         key={b}
+                                        role="button"
+                                        tabIndex={0}
                                         onClick={() =>
                                             setFilters((prev) => ({
                                                 ...prev,
                                                 brand: prev.brand === b ? null : b,
                                             }))
                                         }
+                                        onKeyDown={(e) =>
+                                            handleChipKeyDown(e, () =>
+                                                setFilters((prev) => ({
+                                                    ...prev,
+                                                    brand: prev.brand === b ? null : b,
+                                                })),
+                                            )
+                                        }
                                         sx={{
-                                            px: 1.4,
-                                            py: 0.7,
-                                            borderRadius: 2,
-                                            border:
-                                                "1px solid rgba(17,24,39,0.18)",
+                                            ...CHIP_SX,
                                             bgcolor: active ? "#111827" : "#fff",
                                             color: active ? "#fff" : "#111827",
-                                            fontWeight: 900,
-                                            cursor: "pointer",
-                                            userSelect: "none",
-                                            fontSize: 13,
                                         }}
                                     >
                                         {b}

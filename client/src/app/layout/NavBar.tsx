@@ -179,7 +179,7 @@ const NavBar = observer(function NavBar() {
               >
                 <Search sx={{ fontSize: 18, color: "rgba(17,24,39,0.55)" }} />
                 <InputBase
-                  placeholder="Search eyeglasses, sunglasses, lens..."
+                  placeholder="Search by brand or product name..."
                   sx={{ flex: 1, fontSize: 13.5 }}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
