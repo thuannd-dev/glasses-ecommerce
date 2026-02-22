@@ -42,7 +42,7 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
     {
         base.OnModelCreating(builder);
 
-        builder.Entity<ActivityAttendee>(x => x.HasKey(a => new {a.ActivityId, a.UserId}));
+        builder.Entity<ActivityAttendee>(x => x.HasKey(a => new { a.ActivityId, a.UserId }));
 
         builder.Entity<ActivityAttendee>()
             .HasOne(x => x.User)
@@ -79,14 +79,14 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
             //Indexes
             entity.HasIndex(e => e.UserId)
                 .HasDatabaseName("IX_Address_UserId");
-            
+
             entity.HasIndex(e => new { e.UserId, e.IsDefault })
                 .HasDatabaseName("IX_Address_UserId_IsDefault");
-            
+
             entity.HasIndex(e => new { e.UserId, e.IsDeleted })
                 .HasDatabaseName("IX_Address_UserId_IsDeleted")
                 .HasFilter("[IsDeleted] = 0");
- 
+
         });
 
         // PRODUCT CATEGORY ENTITY CONFIGURATION
@@ -101,7 +101,7 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
             entity.HasIndex(e => e.Slug)
                 .IsUnique()
                 .HasDatabaseName("IX_ProductCategory_Slug");
-            
+
             entity.HasIndex(e => e.IsActive)
                 .HasDatabaseName("IX_ProductCategory_IsActive")
                 .HasFilter("[IsActive] = 1");
@@ -122,16 +122,16 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
             //Indexes
             entity.HasIndex(e => e.CategoryId)
                 .HasDatabaseName("IX_Product_CategoryId");
-            
+
             entity.HasIndex(e => e.Status)
                 .HasDatabaseName("IX_Product_Status");
-            
+
             entity.HasIndex(e => e.Brand)
                 .HasDatabaseName("IX_Product_Brand");
-            
+
             entity.HasIndex(e => new { e.CategoryId, e.Status })
                 .HasDatabaseName("IX_Product_CategoryId_Status");
-            
+
             entity.HasIndex(e => e.CreatedAt)
                 .HasDatabaseName("IX_Product_CreatedAt");
 
@@ -174,34 +174,36 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
             entity.Property(e => e.TotalAmount).HasColumnType("decimal(10,2)");
             entity.Property(e => e.ShippingFee).HasColumnType("decimal(10,2)");
             entity.Property(e => e.CustomerNote).HasMaxLength(500);
+            entity.Property(e => e.WalkInCustomerName).HasMaxLength(100);
+            entity.Property(e => e.WalkInCustomerPhone).HasMaxLength(20);
             entity.Property(e => e.DepositAmount).HasColumnType("decimal(10,2)");
             entity.Property(e => e.RemainingAmount).HasColumnType("decimal(10,2)");
 
             //Indexes
             entity.HasIndex(e => e.UserId)
                 .HasDatabaseName("IX_Order_UserId");
-            
+
             entity.HasIndex(e => e.AddressId)
                 .HasDatabaseName("IX_Order_AddressId");
-            
+
             entity.HasIndex(e => e.OrderStatus)
                 .HasDatabaseName("IX_Order_OrderStatus");
-            
+
             entity.HasIndex(e => e.OrderType)
                 .HasDatabaseName("IX_Order_OrderType");
-            
+
             entity.HasIndex(e => e.OrderSource)
                 .HasDatabaseName("IX_Order_OrderSource");
-            
+
             entity.HasIndex(e => new { e.UserId, e.OrderStatus })
                 .HasDatabaseName("IX_Order_UserId_OrderStatus");
-            
+
             entity.HasIndex(e => e.CreatedAt)
                 .HasDatabaseName("IX_Order_CreatedAt");
-            
+
             entity.HasIndex(e => e.CreatedBySalesStaff)
                 .HasDatabaseName("IX_Order_CreatedBySalesStaff");
-            
+
             entity.HasIndex(e => e.CancellationDeadline)
                 .HasDatabaseName("IX_Order_CancellationDeadline");
 
@@ -256,25 +258,25 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
             entity.Property(pv => pv.TempleLength).HasColumnType("decimal(5,2)");
             entity.Property(pv => pv.Price).HasColumnType("decimal(10,2)");
             entity.Property(pv => pv.CompareAtPrice).HasColumnType("decimal(10,2)");
-            
+
             //Indexes
             entity.HasIndex(e => e.ProductId)
                 .HasDatabaseName("IX_ProductVariant_ProductId");
-            
+
             entity.HasIndex(e => e.SKU)
                 .IsUnique()
                 .HasDatabaseName("IX_ProductVariant_SKU");
-            
+
             entity.HasIndex(e => e.IsActive)
                 .HasDatabaseName("IX_ProductVariant_IsActive")
                 .HasFilter("[IsActive] = 1");
-            
+
             entity.HasIndex(e => new { e.ProductId, e.IsActive })
                 .HasDatabaseName("IX_ProductVariant_ProductId_IsActive");
-            
+
             entity.HasIndex(e => e.Color)
                 .HasDatabaseName("IX_ProductVariant_Color");
-            
+
             entity.HasIndex(e => e.Size)
                 .HasDatabaseName("IX_ProductVariant_Size");
 
@@ -320,16 +322,16 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
             //Indexes
             entity.HasIndex(e => e.ProductId)
                 .HasDatabaseName("IX_ProductImage_ProductId");
-            
+
             entity.HasIndex(e => e.ProductVariantId)
                 .HasDatabaseName("IX_ProductImage_ProductVariantId");
-            
+
             entity.HasIndex(e => new { e.ProductId, e.DisplayOrder })
                 .HasDatabaseName("IX_ProductImage_ProductId_DisplayOrder");
-            
+
             entity.HasIndex(e => new { e.ProductVariantId, e.DisplayOrder })
                 .HasDatabaseName("IX_ProductImage_ProductVariantId_DisplayOrder");
-            
+
             entity.HasIndex(e => e.IsDeleted)
                 .HasDatabaseName("IX_ProductImage_IsDeleted")
                 .HasFilter("[IsDeleted] = 0");
@@ -346,7 +348,7 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
         });
 
 
-         //STOCK ENTITY CONFIGURATION
+        //STOCK ENTITY CONFIGURATION
         builder.Entity<Stock>(entity =>
         {
             //Relationships
@@ -372,10 +374,10 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
             entity.HasIndex(e => e.ProductVariantId)
                 .IsUnique()
                 .HasDatabaseName("IX_Stock_ProductVariantId");
-            
+
             entity.HasIndex(e => e.UpdatedAt)
                 .HasDatabaseName("IX_Stock_UpdatedAt");
-            
+
             entity.HasIndex(e => e.UpdatedBy)
                 .HasDatabaseName("IX_Stock_UpdatedBy");
 
@@ -389,7 +391,7 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
                     "[QuantityReserved] <= [QuantityOnHand]"
                 );
             });
-        
+
         });
 
         // InventoryTransaction ENTITY CONFIGURATION 
@@ -422,25 +424,25 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
             //Indexes
             entity.HasIndex(e => e.UserId)
                 .HasDatabaseName("IX_InventoryTransaction_UserId");
-            
+
             entity.HasIndex(e => e.ProductVariantId)
                 .HasDatabaseName("IX_InventoryTransaction_ProductVariantId");
-            
+
             entity.HasIndex(e => e.TransactionType)
                 .HasDatabaseName("IX_InventoryTransaction_TransactionType");
-            
+
             entity.HasIndex(e => e.Status)
                 .HasDatabaseName("IX_InventoryTransaction_Status");
-            
+
             entity.HasIndex(e => new { e.ReferenceType, e.ReferenceId })
                 .HasDatabaseName("IX_InventoryTransaction_Reference");
-            
+
             entity.HasIndex(e => e.CreatedAt)
                 .HasDatabaseName("IX_InventoryTransaction_CreatedAt");
-            
+
             entity.HasIndex(e => e.CreatedBy)
                 .HasDatabaseName("IX_InventoryTransaction_CreatedBy");
-            
+
             entity.HasIndex(e => e.ApprovedAt)
                 .HasDatabaseName("IX_InventoryTransaction_ApprovedAt");
 
@@ -484,7 +486,8 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
         });
 
         //// InboundRecord ENTITY CONFIGURATION 
-        builder.Entity<InboundRecord>(entity =>{
+        builder.Entity<InboundRecord>(entity =>
+        {
             //Relationships
             entity.HasOne(e => e.Creator)
                 .WithMany()
@@ -504,19 +507,19 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
             //Indexes
             entity.HasIndex(e => e.SourceType)
                 .HasDatabaseName("IX_InboundRecord_SourceType");
-            
+
             entity.HasIndex(e => e.Status)
                 .HasDatabaseName("IX_InboundRecord_Status");
-            
+
             entity.HasIndex(e => e.CreatedAt)
                 .HasDatabaseName("IX_InboundRecord_CreatedAt");
-            
+
             entity.HasIndex(e => e.CreatedBy)
                 .HasDatabaseName("IX_InboundRecord_CreatedBy");
-            
+
             entity.HasIndex(e => e.ApprovedAt)
                 .HasDatabaseName("IX_InboundRecord_ApprovedAt");
-            
+
             entity.HasIndex(e => e.ApprovedBy)
                 .HasDatabaseName("IX_InboundRecord_ApprovedBy");
 
@@ -562,7 +565,7 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
             //Indexes
             entity.HasIndex(e => e.InboundRecordId)
                 .HasDatabaseName("IX_InboundRecordItem_InboundRecordId");
-            
+
             entity.HasIndex(e => e.ProductVariantId)
                 .HasDatabaseName("IX_InboundRecordItem_ProductVariantId");
 
@@ -598,16 +601,16 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
                 .IsUnique()
                 .HasFilter("[Status] = 1")
                 .HasDatabaseName("UX_Cart_User_Active");
-            
+
             entity.HasIndex(e => e.Status)
                 .HasDatabaseName("IX_Cart_Status");
-            
+
             entity.HasIndex(e => new { e.UserId, e.Status })
                 .HasDatabaseName("IX_Cart_UserId_Status");
-            
+
             entity.HasIndex(e => e.CreatedAt)
                 .HasDatabaseName("IX_Cart_CreatedAt");
-            
+
             entity.HasIndex(e => e.UpdatedAt)
                 .HasDatabaseName("IX_Cart_UpdatedAt");
 
@@ -638,10 +641,10 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
             //Indexes
             entity.HasIndex(e => e.CartId)
                 .HasDatabaseName("IX_CartItem_CartId");
-            
+
             entity.HasIndex(e => e.ProductVariantId)
                 .HasDatabaseName("IX_CartItem_ProductVariantId");
-            
+
             entity.HasIndex(e => new { e.CartId, e.ProductVariantId })
                 .IsUnique()
                 .HasDatabaseName("UX_CartItem_Cart_ProductVariant");
@@ -676,10 +679,10 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
 
             entity.HasIndex(e => new { e.IsActive, e.ValidFrom, e.ValidTo })
                 .HasDatabaseName("IX_Promotion_Active_ValidPeriod");
-            
+
             entity.HasIndex(e => e.PromotionType)
                 .HasDatabaseName("IX_Promotion_PromotionType");
-            
+
             entity.HasIndex(e => new { e.PromotionType, e.ValidFrom, e.ValidTo })
                 .HasDatabaseName("IX_Promotion_Type_ValidPeriod");
 
@@ -689,9 +692,9 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
                 t.HasCheckConstraint(
                     "CK_Promotion_DiscountValue",
                     "DiscountValue >= 0"
-                );      
+                );
 
-                t.HasCheckConstraint(   
+                t.HasCheckConstraint(
                     "CK_Promotion_DiscountValue_ByType",
                     @"
                     (PromotionType = 0 AND DiscountValue > 0 AND DiscountValue <= 100)
@@ -707,7 +710,7 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
 
                 t.HasCheckConstraint(
                     "CK_Promotion_ValidPeriod",
-                    "ValidTo > ValidFrom"   
+                    "ValidTo > ValidFrom"
                 );
 
                 t.HasCheckConstraint(
@@ -715,7 +718,7 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
                     "[PromotionType] IN (0, 1, 2)"
                 );
             });
-        }); 
+        });
 
         // PROMO USAGE LOG ENTITY CONFIGURATION
         builder.Entity<PromoUsageLog>(entity =>
@@ -757,7 +760,7 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
                     "DiscountApplied >= 0"
                 );
             });
-        });     
+        });
 
         //ORDER ITEM ENTITY CONFIGURATION
         builder.Entity<OrderItem>(entity =>
@@ -780,10 +783,10 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
             //Indexes
             entity.HasIndex(e => e.OrderId)
                 .HasDatabaseName("IX_OrderItem_OrderId");
-            
+
             entity.HasIndex(e => e.ProductVariantId)
                 .HasDatabaseName("IX_OrderItem_ProductVariantId");
-            
+
             entity.HasIndex(e => new { e.OrderId, e.ProductVariantId })
                 .IsUnique()
                 .HasDatabaseName("UX_OrderItem_Order_ProductVariant");
@@ -801,7 +804,7 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
                     "UnitPrice >= 0"
                 );
             });
-        });  
+        });
 
         //ORDER STATUS HISTORY ENTITY CONFIGURATION
         builder.Entity<OrderStatusHistory>(entity =>
@@ -825,13 +828,21 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
 
             entity.Property(osh => osh.Notes).HasMaxLength(500);
 
+            entity.HasOne(osh => osh.ChangedByUser)
+                .WithMany()
+                .HasForeignKey(osh => osh.ChangedBy)
+                .OnDelete(DeleteBehavior.Restrict);
+
             // Indexes
             entity.HasIndex(e => e.OrderId)
                 .HasDatabaseName("IX_OrderStatusHistory_OrderId");
-            
+
+            entity.HasIndex(e => e.ChangedBy)
+                .HasDatabaseName("IX_OrderStatusHistory_ChangedBy");
+
             entity.HasIndex(e => e.CreatedAt)
                 .HasDatabaseName("IX_OrderStatusHistory_CreatedAt");
-            
+
             entity.HasIndex(e => new { e.OrderId, e.CreatedAt })
                 .HasDatabaseName("IX_OrderStatusHistory_OrderId_CreatedAt");
 
@@ -867,7 +878,7 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
 
             entity.HasIndex(e => e.VerifiedBy)
                 .HasDatabaseName("IX_Prescription_VerifiedBy");
-            
+
             entity.HasIndex(e => e.CreatedAt)
                 .HasDatabaseName("IX_Prescription_CreatedAt");
 
@@ -903,7 +914,7 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
             // Indexes
             entity.HasIndex(e => e.PrescriptionId)
                 .HasDatabaseName("IX_PrescriptionDetail_PrescriptionId");
-            
+
             //1 prescription chỉ có 1 detail cho left eye và 1 detail cho right eye
             entity.HasIndex(e => new { e.PrescriptionId, e.Eye })
                 .IsUnique()
@@ -975,10 +986,10 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
 
             entity.HasIndex(e => e.PaymentStatus)
                 .HasDatabaseName("IX_Payment_PaymentStatus");
-            
+
             entity.HasIndex(e => e.TransactionId)
                 .HasDatabaseName("IX_Payment_TransactionId");
-            
+
             entity.HasIndex(e => e.PaymentAt)
                 .HasDatabaseName("IX_Payment_PaymentAt");
 
@@ -1030,6 +1041,10 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
                     (
                         PaymentMethod IN (2,3) AND TransactionId IS NOT NULL
                     )
+                    OR
+                    (
+                        PaymentMethod = 4
+                    )
                     "
                 );
 
@@ -1058,7 +1073,7 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
 
             entity.HasIndex(e => e.RefundStatus)
                 .HasDatabaseName("IX_Refund_RefundStatus");
-            
+
             entity.HasIndex(e => e.RefundAt)
                 .HasDatabaseName("IX_Refund_RefundAt");
 
@@ -1085,7 +1100,7 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
                 .WithOne(o => o.ShipmentInfo)
                 .HasForeignKey<ShipmentInfo>(si => si.OrderId)
                 .OnDelete(DeleteBehavior.Cascade);
-            
+
             entity.HasOne(si => si.Creator)
                 .WithMany()
                 .HasForeignKey(si => si.CreatedBy)
@@ -1103,19 +1118,19 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
             entity.HasIndex(e => e.OrderId)
                 .IsUnique()
                 .HasDatabaseName("UX_ShipmentInfo_OrderId");
-            
+
             entity.HasIndex(e => e.ActualDeliveryAt)
                 .HasDatabaseName("IX_ShipmentInfo_DeliveredAt");
-            
+
             entity.HasIndex(e => e.TrackingCode)
                 .HasDatabaseName("IX_ShipmentInfo_TrackingCode");
-            
+
             entity.HasIndex(e => e.CarrierName)
                 .HasDatabaseName("IX_ShipmentInfo_CarrierName");
-            
+
             entity.HasIndex(e => e.ShippedAt)
                 .HasDatabaseName("IX_ShipmentInfo_ShippedAt");
-            
+
             entity.HasIndex(e => e.CreatedBy)
                 .HasDatabaseName("IX_ShipmentInfo_CreatedBy");
 

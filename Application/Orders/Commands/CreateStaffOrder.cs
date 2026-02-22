@@ -1,0 +1,301 @@
+using Application.Core;
+using Application.Interfaces;
+using Application.Orders.DTOs;
+using Domain;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
+using Persistence;
+
+namespace Application.Orders.Commands;
+
+public sealed class CreateStaffOrder
+{
+    public sealed class Command : IRequest<Result<StaffOrderDto>>
+    {
+        public required CreateStaffOrderDto Dto { get; set; }
+    }
+
+    internal sealed class Handler(
+        AppDbContext context,
+        IUserAccessor userAccessor) : IRequestHandler<Command, Result<StaffOrderDto>>
+    {
+        public async Task<Result<StaffOrderDto>> Handle(Command request, CancellationToken ct)
+        {
+            var dto = request.Dto;
+            Guid staffUserId = userAccessor.GetUserId();
+
+            // 1. Validate OrderSource + Address logic
+            if (dto.OrderSource == OrderSource.Online && dto.AddressId == null)
+            {
+                return Result<StaffOrderDto>.Failure("Address is required for online orders.", 400);
+            }
+
+            if (dto.OrderSource == OrderSource.Online && dto.AddressId != null)
+            {
+                bool addressExists = await context.Addresses
+                    .AnyAsync(a => a.Id == dto.AddressId && !a.IsDeleted, ct);
+                if (!addressExists)
+                    return Result<StaffOrderDto>.Failure("Address not found.", 404);
+            }
+
+            // 2. Validate Prescription requirement
+            if (dto.OrderType == OrderType.Prescription && dto.Prescription == null)
+            {
+                return Result<StaffOrderDto>.Failure("Prescription details are required for prescription orders.", 400);
+            }
+
+            // 3. Validate items and stock
+            if (dto.Items.Count == 0)
+            {
+                return Result<StaffOrderDto>.Failure("Order must have at least one item.", 400);
+            }
+
+            var variantIds = dto.Items.Select(i => i.ProductVariantId).ToList();
+            var variants = await context.ProductVariants
+                .Include(pv => pv.Stock)
+                .Include(pv => pv.Product)
+                .Where(pv => variantIds.Contains(pv.Id))
+                .ToListAsync(ct);
+
+            if (variants.Count != variantIds.Distinct().Count())
+            {
+                return Result<StaffOrderDto>.Failure("One or more product variants not found.", 404);
+            }
+
+            // Validate stock for ReadyStock orders
+            if (dto.OrderType == OrderType.ReadyStock)
+            {
+                foreach (var item in dto.Items)
+                {
+                    var variant = variants.First(v => v.Id == item.ProductVariantId);
+                    if (!variant.IsActive)
+                        return Result<StaffOrderDto>.Failure($"Product variant '{variant.VariantName}' is not available.", 400);
+
+                    if (variant.Stock == null || variant.Stock.QuantityAvailable < item.Quantity)
+                        return Result<StaffOrderDto>.Failure(
+                            $"Insufficient stock for '{variant.VariantName}'. Available: {variant.Stock?.QuantityAvailable ?? 0}.", 400);
+                }
+            }
+
+            // 4. Calculate totals
+            decimal totalAmount = 0;
+            var orderItems = new List<OrderItem>();
+
+            foreach (var item in dto.Items)
+            {
+                var variant = variants.First(v => v.Id == item.ProductVariantId);
+                var unitPrice = variant.Price;
+                totalAmount += unitPrice * item.Quantity;
+
+                orderItems.Add(new OrderItem
+                {
+                    ProductVariantId = item.ProductVariantId,
+                    Quantity = item.Quantity,
+                    UnitPrice = unitPrice,
+                    OrderId = Guid.Empty // Will be set after order creation
+                });
+            }
+
+            decimal shippingFee = dto.OrderSource == OrderSource.Offline ? 0 : 0; // TODO: Calculate shipping fee for online orders
+
+            // 5. Handle promotion
+            Promotion? promotion = null;
+            decimal discountApplied = 0;
+
+            if (!string.IsNullOrWhiteSpace(dto.PromoCode))
+            {
+                var now = DateTime.UtcNow;
+                promotion = await context.Promotions
+                    .FirstOrDefaultAsync(p => p.PromoCode == dto.PromoCode
+                        && p.IsActive
+                        && p.ValidFrom <= now
+                        && p.ValidTo >= now, ct);
+
+                if (promotion == null)
+                    return Result<StaffOrderDto>.Failure("Invalid or expired promo code.", 400);
+
+                // Check usage limit
+                if (promotion.UsageLimit.HasValue)
+                {
+                    int usedCount = await context.PromoUsageLogs
+                        .CountAsync(l => l.PromotionId == promotion.Id, ct);
+                    if (usedCount >= promotion.UsageLimit.Value)
+                        return Result<StaffOrderDto>.Failure("Promo code usage limit reached.", 400);
+                }
+
+                // Check min order amount
+                // Note: Add MinOrderAmount check here if field is added to Promotion entity
+
+                // Calculate discount
+                discountApplied = promotion.PromotionType switch
+                {
+                    PromotionType.Percentage => Math.Round(totalAmount * promotion.DiscountValue / 100, 2),
+                    PromotionType.FixedAmount => promotion.DiscountValue,
+                    _ => 0
+                };
+
+                // Cap discount at max discount value
+                if (promotion.MaxDiscountValue.HasValue && discountApplied > promotion.MaxDiscountValue.Value)
+                    discountApplied = promotion.MaxDiscountValue.Value;
+
+                // Discount cannot exceed order total
+                if (discountApplied > totalAmount)
+                    discountApplied = totalAmount;
+            }
+
+            // 6. Create Order
+            var order = new Order
+            {
+                OrderSource = dto.OrderSource,
+                OrderType = dto.OrderType,
+                OrderStatus = OrderStatus.Pending,
+                UserId = null, // Staff-created order, no customer account
+                CreatedBySalesStaff = staffUserId,
+                AddressId = dto.OrderSource == OrderSource.Offline ? null : dto.AddressId,
+                TotalAmount = totalAmount,
+                ShippingFee = shippingFee,
+                CustomerNote = dto.CustomerNote,
+                WalkInCustomerName = dto.WalkInCustomerName,
+                WalkInCustomerPhone = dto.WalkInCustomerPhone,
+                CancellationDeadline = dto.OrderType == OrderType.Prescription
+                    ? DateTime.UtcNow.AddHours(24)
+                    : null,
+            };
+
+            context.Orders.Add(order);
+
+            // 7. Assign OrderId to items and add
+            foreach (var item in orderItems)
+            {
+                item.OrderId = order.Id;
+            }
+            context.OrderItems.AddRange(orderItems);
+
+            // 8. Reserve stock for ReadyStock orders
+            if (dto.OrderType == OrderType.ReadyStock)
+            {
+                foreach (var item in dto.Items)
+                {
+                    var stock = variants.First(v => v.Id == item.ProductVariantId).Stock!;
+                    stock.QuantityReserved += item.Quantity;
+                    stock.UpdatedAt = DateTime.UtcNow;
+                    stock.UpdatedBy = staffUserId;
+                }
+            }
+
+            // 9. Create Payment
+            var payment = new Payment
+            {
+                OrderId = order.Id,
+                PaymentMethod = dto.PaymentMethod,
+                Amount = totalAmount + shippingFee - discountApplied,
+                PaymentStatus = dto.PaymentMethod == PaymentMethod.Cash
+                    ? PaymentStatus.Completed
+                    : PaymentStatus.Pending,
+                PaymentAt = dto.PaymentMethod == PaymentMethod.Cash
+                    ? DateTime.UtcNow
+                    : null,
+                PaymentType = PaymentType.Full,
+            };
+            context.Payments.Add(payment);
+
+            // 10. Create Promo Usage Log
+            if (promotion != null && discountApplied > 0)
+            {
+                order.ApplyPromotion(new PromoUsageLog
+                {
+                    OrderId = order.Id,
+                    PromotionId = promotion.Id,
+                    DiscountApplied = discountApplied,
+                    UsedAt = DateTime.UtcNow,
+                });
+            }
+
+            // 11. Create Prescription
+            if (dto.OrderType == OrderType.Prescription && dto.Prescription != null)
+            {
+                var prescription = new Prescription
+                {
+                    OrderId = order.Id,
+                    IsVerified = false,
+                };
+
+                context.Prescriptions.Add(prescription);
+
+                foreach (var detail in dto.Prescription.Details)
+                {
+                    context.PrescriptionDetails.Add(new PrescriptionDetail
+                    {
+                        PrescriptionId = prescription.Id,
+                        Eye = detail.Eye,
+                        SPH = detail.SPH,
+                        CYL = detail.CYL,
+                        AXIS = detail.AXIS,
+                        PD = detail.PD,
+                        ADD = detail.ADD,
+                    });
+                }
+            }
+
+            // 12. Create initial status history
+            context.OrderStatusHistories.Add(new OrderStatusHistory
+            {
+                OrderId = order.Id,
+                FromStatus = OrderStatus.Pending,
+                ToStatus = OrderStatus.Pending,
+                Notes = $"Order created by staff ({dto.OrderSource})",
+                ChangedBy = staffUserId,
+            });
+
+            // 13. Save
+            bool success = await context.SaveChangesAsync(ct) > 0;
+
+            if (!success)
+                return Result<StaffOrderDto>.Failure("Failed to create order.", 500);
+
+            // 14. Build response
+            var response = new StaffOrderDto
+            {
+                Id = order.Id,
+                OrderSource = order.OrderSource.ToString(),
+                OrderType = order.OrderType.ToString(),
+                OrderStatus = order.OrderStatus.ToString(),
+                TotalAmount = order.TotalAmount,
+                ShippingFee = order.ShippingFee,
+                FinalAmount = totalAmount + shippingFee - discountApplied,
+                DiscountApplied = discountApplied > 0 ? discountApplied : null,
+                CustomerNote = order.CustomerNote,
+                WalkInCustomerName = order.WalkInCustomerName,
+                WalkInCustomerPhone = order.WalkInCustomerPhone,
+                CreatedBySalesStaff = order.CreatedBySalesStaff,
+                UserId = order.UserId,
+                CreatedAt = order.CreatedAt,
+                Items = orderItems.Select(oi =>
+                {
+                    var variant = variants.First(v => v.Id == oi.ProductVariantId);
+                    return new OrderItemOutputDto
+                    {
+                        Id = oi.Id,
+                        ProductVariantId = oi.ProductVariantId,
+                        Sku = variant.SKU,
+                        VariantName = variant.VariantName,
+                        ProductName = variant.Product?.ProductName,
+                        Quantity = oi.Quantity,
+                        UnitPrice = oi.UnitPrice,
+                        TotalPrice = oi.Quantity * oi.UnitPrice,
+                    };
+                }).ToList(),
+                Payment = new OrderPaymentDto
+                {
+                    Id = payment.Id,
+                    PaymentMethod = payment.PaymentMethod.ToString(),
+                    PaymentStatus = payment.PaymentStatus.ToString(),
+                    Amount = payment.Amount,
+                    PaymentAt = payment.PaymentAt,
+                },
+            };
+
+            return Result<StaffOrderDto>.Success(response);
+        }
+    }
+}
