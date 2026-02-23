@@ -1,56 +1,57 @@
-using Application.Orders.DTOs;
+using Application.Orders.Commands;
 using Domain;
 using FluentValidation;
 
 namespace Application.Orders.Validators;
 
-public class CreateStaffOrderValidator : AbstractValidator<CreateStaffOrderDto>
+public sealed class CreateStaffOrderValidator : AbstractValidator<CreateStaffOrder.Command>
 {
     public CreateStaffOrderValidator()
     {
-        RuleFor(x => x.OrderSource)
+        RuleFor(x => x.Dto.OrderSource)
             .IsInEnum()
             .Must(x => x != OrderSource.Unknown)
             .WithMessage("OrderSource must be Online or Offline.");
 
-        RuleFor(x => x.OrderType)
+        RuleFor(x => x.Dto.OrderType)
             .IsInEnum()
             .Must(x => x != OrderType.Unknown)
             .WithMessage("OrderType must be ReadyStock, PreOrder, or Prescription.");
 
-        RuleFor(x => x.Items)
+        RuleFor(x => x.Dto.Items)
             .NotEmpty().WithMessage("Order must have at least one item.");
 
-        RuleForEach(x => x.Items).ChildRules(item =>
+        RuleForEach(x => x.Dto.Items).ChildRules(item =>
         {
             item.RuleFor(i => i.ProductVariantId)
                 .NotEmpty().WithMessage("ProductVariantId is required.");
             item.RuleFor(i => i.Quantity)
-                .GreaterThan(0).WithMessage("Quantity must be greater than 0.");
+                .GreaterThan(0).WithMessage("Quantity must be greater than 0.")
+                .LessThanOrEqualTo(999).WithMessage("Quantity cannot exceed 999 items.");
         });
 
-        RuleFor(x => x.PaymentMethod)
+        RuleFor(x => x.Dto.PaymentMethod)
             .IsInEnum()
             .WithMessage("Invalid payment method.");
 
         // Online orders require address
-        RuleFor(x => x.AddressId)
+        RuleFor(x => x.Dto.AddressId)
             .NotEmpty()
-            .When(x => x.OrderSource == OrderSource.Online)
+            .When(x => x.Dto.OrderSource == OrderSource.Online)
             .WithMessage("Address is required for online orders.");
 
         // Prescription orders require prescription details
-        RuleFor(x => x.Prescription)
+        RuleFor(x => x.Dto.Prescription)
             .NotNull()
-            .When(x => x.OrderType == OrderType.Prescription)
+            .When(x => x.Dto.OrderType == OrderType.Prescription)
             .WithMessage("Prescription details are required for prescription orders.");
 
-        When(x => x.Prescription != null, () =>
+        When(x => x.Dto.Prescription != null, () =>
         {
-            RuleFor(x => x.Prescription!.Details)
+            RuleFor(x => x.Dto.Prescription!.Details)
                 .NotEmpty().WithMessage("Prescription must have at least one eye detail.");
 
-            RuleForEach(x => x.Prescription!.Details).ChildRules(detail =>
+            RuleForEach(x => x.Dto.Prescription!.Details).ChildRules(detail =>
             {
                 detail.RuleFor(d => d.Eye)
                     .IsInEnum()
@@ -90,16 +91,16 @@ public class CreateStaffOrderValidator : AbstractValidator<CreateStaffOrderDto>
             });
         });
 
-        RuleFor(x => x.WalkInCustomerName)
+        RuleFor(x => x.Dto.WalkInCustomerName)
             .MaximumLength(100)
-            .When(x => x.WalkInCustomerName != null);
+            .When(x => x.Dto.WalkInCustomerName != null);
 
-        RuleFor(x => x.WalkInCustomerPhone)
+        RuleFor(x => x.Dto.WalkInCustomerPhone)
             .MaximumLength(20)
-            .When(x => x.WalkInCustomerPhone != null);
+            .When(x => x.Dto.WalkInCustomerPhone != null);
 
-        RuleFor(x => x.CustomerNote)
+        RuleFor(x => x.Dto.CustomerNote)
             .MaximumLength(500)
-            .When(x => x.CustomerNote != null);
+            .When(x => x.Dto.CustomerNote != null);
     }
 }

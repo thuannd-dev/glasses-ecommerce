@@ -1,6 +1,8 @@
 using Application.Core;
 using Application.Interfaces;
 using Application.Orders.DTOs;
+using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using Domain;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -17,6 +19,7 @@ public sealed class CreateStaffOrder
 
     internal sealed class Handler(
         AppDbContext context,
+        IMapper mapper,
         IUserAccessor userAccessor) : IRequestHandler<Command, Result<StaffOrderDto>>
     {
         public async Task<Result<StaffOrderDto>> Handle(Command request, CancellationToken ct)
@@ -253,49 +256,13 @@ public sealed class CreateStaffOrder
             if (!success)
                 return Result<StaffOrderDto>.Failure("Failed to create order.", 500);
 
-            // 14. Build response
-            var response = new StaffOrderDto
-            {
-                Id = order.Id,
-                OrderSource = order.OrderSource.ToString(),
-                OrderType = order.OrderType.ToString(),
-                OrderStatus = order.OrderStatus.ToString(),
-                TotalAmount = order.TotalAmount,
-                ShippingFee = order.ShippingFee,
-                FinalAmount = totalAmount + shippingFee - discountApplied,
-                DiscountApplied = discountApplied > 0 ? discountApplied : null,
-                CustomerNote = order.CustomerNote,
-                WalkInCustomerName = order.WalkInCustomerName,
-                WalkInCustomerPhone = order.WalkInCustomerPhone,
-                CreatedBySalesStaff = order.CreatedBySalesStaff,
-                UserId = order.UserId,
-                CreatedAt = order.CreatedAt,
-                Items = orderItems.Select(oi =>
-                {
-                    var variant = variants.First(v => v.Id == oi.ProductVariantId);
-                    return new OrderItemOutputDto
-                    {
-                        Id = oi.Id,
-                        ProductVariantId = oi.ProductVariantId,
-                        Sku = variant.SKU,
-                        VariantName = variant.VariantName,
-                        ProductName = variant.Product?.ProductName,
-                        Quantity = oi.Quantity,
-                        UnitPrice = oi.UnitPrice,
-                        TotalPrice = oi.Quantity * oi.UnitPrice,
-                    };
-                }).ToList(),
-                Payment = new OrderPaymentDto
-                {
-                    Id = payment.Id,
-                    PaymentMethod = payment.PaymentMethod.ToString(),
-                    PaymentStatus = payment.PaymentStatus.ToString(),
-                    Amount = payment.Amount,
-                    PaymentAt = payment.PaymentAt,
-                },
-            };
+            // 14. Re-query with ProjectTo for consistent response
+            var result = await context.Orders
+                .Where(o => o.Id == order.Id)
+                .ProjectTo<StaffOrderDto>(mapper.ConfigurationProvider)
+                .FirstAsync(ct);
 
-            return Result<StaffOrderDto>.Success(response);
+            return Result<StaffOrderDto>.Success(result);
         }
     }
 }
