@@ -113,13 +113,13 @@ const mockShipments: ShipmentDto[] = [
     createdAt: "2024-02-09T09:00:00Z",
     shippedAt: "2024-02-09T14:00:00Z",
     trackingEvents: [
-      { date: "2024-02-09T14:00:00Z", status: "picked", location: "TP.HCM", description: "Đã lấy hàng" },
-      { date: "2024-02-10T08:00:00Z", status: "in_transit", location: "Bình Dương", description: "Đang vận chuyển" },
+      { date: "2024-02-09T14:00:00Z", status: "picked", location: "TP.HCM", description: "Picked up" },
+      { date: "2024-02-10T08:00:00Z", status: "in_transit", location: "Bình Dương", description: "In transit" },
     ],
   },
 ];
 
-// In-memory store để mock API có thể cập nhật
+// In-memory store for mock API updates
 let ordersStore = [...mockOrders];
 let shipmentsStore = [...mockShipments];
 

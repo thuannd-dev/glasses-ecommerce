@@ -1,17 +1,17 @@
-/** Loại đơn: thường | pre-order | prescription */
+/** Order type: standard | pre-order | prescription */
 export type OrderType = "standard" | "pre-order" | "prescription";
 
-/** Trạng thái xử lý đơn (theo từng loại đơn) */
+/** Order status (by type) */
 export type OrderStatus =
-  | "pending"           // Chờ xử lý
-  | "confirmed"         // Đã xác nhận
-  | "processing"        // Đang xử lý (đóng gói / gia công)
-  | "ready_to_ship"     // Sẵn sàng gửi
-  | "shipped"           // Đã gửi
-  | "delivered"         // Đã giao
-  | "received"          // Pre-order: đã nhận hàng về kho
-  | "lens_ordered"     // Prescription: đã đặt tròng
-  | "lens_fitting"      // Prescription: đang lắp tròng / làm kính
+  | "pending"
+  | "confirmed"
+  | "processing"
+  | "ready_to_ship"
+  | "shipped"
+  | "delivered"
+  | "received"
+  | "lens_ordered"
+  | "lens_fitting"
   | "cancelled";
 
 export type ShipmentStatus = "created" | "picked" | "in_transit" | "delivered";
@@ -23,7 +23,7 @@ export interface OrderItemDto {
   sku: string;
   quantity: number;
   price: number;
-  prescriptionId?: string; // Có nếu đơn prescription
+  prescriptionId?: string;
 }
 
 export interface OrderDto {
@@ -37,9 +37,9 @@ export interface OrderDto {
   shippingAddress: string;
   items: OrderItemDto[];
   totalAmount: number;
-  /** Pre-order: ngày dự kiến hàng về */
+  /** Pre-order: expected stock date */
   expectedStockDate?: string;
-  /** Prescription: trạng thái gia công (lắp tròng / làm kính) */
+  /** Prescription: fabrication status */
   prescriptionStatus?: "lens_ordered" | "lens_fitting" | "ready";
   shipmentId?: string;
   trackingNumber?: string;
@@ -56,7 +56,7 @@ export interface ShipmentDto {
   createdAt: string;
   shippedAt?: string;
   deliveredAt?: string;
-  /** Lịch sử tracking */
+  /** Tracking history */
   trackingEvents?: TrackingEventDto[];
 }
 
@@ -83,6 +83,6 @@ export interface UpdateTrackingPayload {
 export interface UpdateOrderStatusPayload {
   orderId: string;
   status: OrderStatus;
-  /** Pre-order: cập nhật kho sau khi nhận hàng */
-  receivedQuantity?: Record<string, number>; // variantId -> quantity
+  /** Pre-order: update stock after receiving */
+  receivedQuantity?: Record<string, number>;
 }
