@@ -8,15 +8,15 @@ using Persistence;
 
 namespace Application.Orders.Commands;
 
-public class UpdateOrderStatus
+public sealed class UpdateOrderStatus
 {
-    public class Command : IRequest<Result<Unit>>
+    public sealed class Command : IRequest<Result<Unit>>
     {
         public required Guid OrderId { get; set; }
         public required UpdateOrderStatusDto Dto { get; set; }
     }
 
-    public class Handler(AppDbContext context, IUserAccessor userAccessor)
+    internal sealed class Handler(AppDbContext context, IUserAccessor userAccessor)
         : IRequestHandler<Command, Result<Unit>>
     {
         public async Task<Result<Unit>> Handle(Command request, CancellationToken ct)

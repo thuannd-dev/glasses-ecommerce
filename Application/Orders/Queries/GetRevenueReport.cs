@@ -8,16 +8,16 @@ using Persistence;
 namespace Application.Orders.Queries;
 
 //Báo cáo doanh thu — filter theo OrderSource và khoảng thời gian
-public class GetRevenueReport
+public sealed class GetRevenueReport
 {
-    public class Query : IRequest<Result<RevenueReportDto>>
+    public sealed class Query : IRequest<Result<RevenueReportDto>>
     {
         public OrderSource? Source { get; set; }
         public DateTime? FromDate { get; set; }
         public DateTime? ToDate { get; set; }
     }
 
-    public class Handler(AppDbContext context)
+    internal sealed class Handler(AppDbContext context)
         : IRequestHandler<Query, Result<RevenueReportDto>>
     {
         public async Task<Result<RevenueReportDto>> Handle(Query request, CancellationToken ct)

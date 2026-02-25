@@ -9,14 +9,14 @@ using Persistence;
 
 namespace Application.Orders.Queries;
 
-public class GetMyOrderDetail
+public sealed class GetMyOrderDetail
 {
-    public class Query : IRequest<Result<CustomerOrderDto>>
+    public sealed class Query : IRequest<Result<CustomerOrderDto>>
     {
         public required Guid Id { get; set; }
     }
 
-    public class Handler(AppDbContext context, IMapper mapper, IUserAccessor userAccessor)
+    internal sealed class Handler(AppDbContext context, IMapper mapper, IUserAccessor userAccessor)
         : IRequestHandler<Query, Result<CustomerOrderDto>>
     {
         public async Task<Result<CustomerOrderDto>> Handle(Query request, CancellationToken ct)

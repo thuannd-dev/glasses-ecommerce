@@ -9,11 +9,11 @@ using Persistence;
 
 namespace Application.Orders.Queries;
 
-public class GetMyOrders
+public sealed class GetMyOrders
 {
-    public class Query : IRequest<Result<List<CustomerOrderListDto>>> { }
+    public sealed class Query : IRequest<Result<List<CustomerOrderListDto>>> { }
 
-    public class Handler(AppDbContext context, IMapper mapper, IUserAccessor userAccessor)
+    internal sealed class Handler(AppDbContext context, IMapper mapper, IUserAccessor userAccessor)
         : IRequestHandler<Query, Result<List<CustomerOrderListDto>>>
     {
         public async Task<Result<List<CustomerOrderListDto>>> Handle(Query request, CancellationToken ct)
