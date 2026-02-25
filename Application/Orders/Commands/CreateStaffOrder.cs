@@ -1,3 +1,4 @@
+using System.Data;
 using Application.Core;
 using Application.Interfaces;
 using Application.Orders.DTOs;
@@ -6,6 +7,7 @@ using AutoMapper.QueryableExtensions;
 using Domain;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Persistence;
 
 namespace Application.Orders.Commands;
@@ -24,6 +26,10 @@ public sealed class CreateStaffOrder
     {
         public async Task<Result<StaffOrderDto>> Handle(Command request, CancellationToken ct)
         {
+            // Use RepeatableRead to prevent promo usage limit race condition
+            await using IDbContextTransaction transaction =
+                await context.Database.BeginTransactionAsync(IsolationLevel.RepeatableRead, ct);
+
             CreateStaffOrderDto dto = request.Dto;
             Guid staffUserId = userAccessor.GetUserId();
 
@@ -255,6 +261,8 @@ public sealed class CreateStaffOrder
 
             if (!success)
                 return Result<StaffOrderDto>.Failure("Failed to create order.", 500);
+
+            await transaction.CommitAsync(ct);
 
             // 14. Re-query with ProjectTo for consistent response
             StaffOrderDto result = await context.Orders

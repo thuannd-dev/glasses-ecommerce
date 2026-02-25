@@ -1,3 +1,4 @@
+using System.Data;
 using Application.Core;
 using Application.Interfaces;
 using Application.Orders.DTOs;
@@ -6,6 +7,7 @@ using AutoMapper.QueryableExtensions;
 using Domain;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Persistence;
 
 namespace Application.Orders.Commands;
@@ -25,6 +27,10 @@ public sealed class Checkout
     {
         public async Task<Result<CustomerOrderDto>> Handle(Command request, CancellationToken ct)
         {
+            // Use RepeatableRead to prevent promo usage limit race condition
+            await using IDbContextTransaction transaction =
+                await context.Database.BeginTransactionAsync(IsolationLevel.RepeatableRead, ct);
+
             CheckoutDto dto = request.Dto;
             Guid userId = userAccessor.GetUserId();
 
@@ -232,6 +238,8 @@ public sealed class Checkout
 
             if (!success)
                 return Result<CustomerOrderDto>.Failure("Failed to place order.", 500);
+
+            await transaction.CommitAsync(ct);
 
             // 15. Re-query with ProjectTo
             CustomerOrderDto result = await context.Orders
