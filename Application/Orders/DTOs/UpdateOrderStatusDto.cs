@@ -7,4 +7,5 @@ public sealed class UpdateOrderStatusDto
 {
     public required OrderStatus NewStatus { get; set; }
     public string? Notes { get; set; }
+    public ShipmentInputDto? Shipment { get; set; }
 }

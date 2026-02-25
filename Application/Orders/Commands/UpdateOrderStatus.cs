@@ -81,6 +81,22 @@ public sealed class UpdateOrderStatus
                 }
             }
 
+            // If shipping, create shipment info
+            if (newStatus == OrderStatus.Shipped && request.Dto.Shipment != null)
+            {
+                context.Set<ShipmentInfo>().Add(new ShipmentInfo
+                {
+                    OrderId = order.Id,
+                    CarrierName = request.Dto.Shipment.CarrierName,
+                    TrackingCode = request.Dto.Shipment.TrackingCode,
+                    TrackingUrl = request.Dto.Shipment.TrackingUrl,
+                    EstimatedDeliveryAt = request.Dto.Shipment.EstimatedDeliveryAt,
+                    ShippingNotes = request.Dto.Shipment.ShippingNotes,
+                    ShippedAt = DateTime.UtcNow,
+                    CreatedBy = staffUserId,
+                });
+            }
+
             order.OrderStatus = newStatus;
             order.UpdatedAt = DateTime.UtcNow;
 

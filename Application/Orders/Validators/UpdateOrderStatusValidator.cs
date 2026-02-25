@@ -26,6 +26,25 @@ public sealed class UpdateOrderStatusValidator : AbstractValidator<UpdateOrderSt
                 .MaximumLength(500)
                 .When(x => x.Dto.Notes != null);
 
+            // Shipment is required when transitioning to Shipped
+            When(x => x.Dto.NewStatus == OrderStatus.Shipped, () =>
+            {
+                RuleFor(x => x.Dto.Shipment)
+                    .NotNull().WithMessage("Shipment info is required when shipping an order.");
+
+                When(x => x.Dto.Shipment != null, () =>
+                {
+                    RuleFor(x => x.Dto.Shipment!.CarrierName)
+                        .IsInEnum()
+                        .Must(c => c != ShippingCarrier.Unknown)
+                        .WithMessage("Valid shipping carrier is required.");
+
+                    RuleFor(x => x.Dto.Shipment!.ShippingNotes)
+                        .MaximumLength(500)
+                        .When(x => x.Dto.Shipment!.ShippingNotes != null);
+                });
+            });
+
         });
     }
 }
