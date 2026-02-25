@@ -18,7 +18,9 @@ public sealed class StaffOrdersController : BaseApiController
         // OrderSource có thể là Online hoặc Offline
         // Offline → không cần address, shippingFee = 0
         // Online → bắt buộc addressId
-        // UserId = null (khách vãng lai), thay bằng WalkInCustomerName + WalkInCustomerPhone
+        // UserId (optional):
+        //   - Có → on-behalf order, link customer account, validate address thuộc customer
+        //   - Null → walk-in, dùng WalkInCustomerName + WalkInCustomerPhone
         // CreatedBySalesStaff = staffUserId
         // Payment Cash → PaymentStatus = Completed ngay
         return HandleResult(await Mediator.Send(new CreateStaffOrder.Command { Dto = dto }, ct));
@@ -51,7 +53,7 @@ public sealed class StaffOrdersController : BaseApiController
     [HttpGet("reports/revenue")]
     public async Task<IActionResult> GetRevenueReport(
         [FromQuery] OrderSource? source,
-        [FromQuery] DateTime? fromDate, 
+        [FromQuery] DateTime? fromDate,
         [FromQuery] DateTime? toDate,
         CancellationToken ct)
     {

@@ -41,10 +41,21 @@ public sealed class CreateStaffOrder
 
             if (dto.OrderSource == OrderSource.Online && dto.AddressId != null)
             {
-                bool addressExists = await context.Addresses
-                    .AnyAsync(a => a.Id == dto.AddressId && !a.IsDeleted, ct);
-                if (!addressExists)
-                    return Result<StaffOrderDto>.Failure("Address not found.", 404);
+                // If UserId provided → validate address belongs to that customer
+                if (dto.UserId.HasValue)
+                {
+                    bool addressBelongsToUser = await context.Addresses
+                        .AnyAsync(a => a.Id == dto.AddressId && a.UserId == dto.UserId && !a.IsDeleted, ct);
+                    if (!addressBelongsToUser)
+                        return Result<StaffOrderDto>.Failure("Address not found or does not belong to the specified customer.", 404);
+                }
+                else
+                {
+                    bool addressExists = await context.Addresses
+                        .AnyAsync(a => a.Id == dto.AddressId && !a.IsDeleted, ct);
+                    if (!addressExists)
+                        return Result<StaffOrderDto>.Failure("Address not found.", 404);
+                }
             }
 
             // 2. Validate Prescription requirement
@@ -158,7 +169,7 @@ public sealed class CreateStaffOrder
                 OrderSource = dto.OrderSource,
                 OrderType = dto.OrderType,
                 OrderStatus = OrderStatus.Pending,
-                UserId = null, // Staff-created order, no customer account
+                UserId = dto.UserId, // null = walk-in, Guid = on-behalf registered customer
                 CreatedBySalesStaff = staffUserId,
                 AddressId = dto.OrderSource == OrderSource.Offline ? null : dto.AddressId,
                 TotalAmount = totalAmount,
