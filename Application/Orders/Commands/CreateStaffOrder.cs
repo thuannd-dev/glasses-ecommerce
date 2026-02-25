@@ -6,6 +6,7 @@ using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Domain;
 using MediatR;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Persistence;
@@ -70,9 +71,19 @@ public sealed class CreateStaffOrder
                 return Result<StaffOrderDto>.Failure("Order must have at least one item.", 400);
             }
 
-            List<Guid> variantIds = dto.Items.Select(i => i.ProductVariantId).ToList();
+            // Merge duplicate ProductVariantId entries to prevent DB unique constraint violation
+            // and ensure aggregate stock check is correct
+            List<OrderItemInputDto> mergedItems = dto.Items
+                .GroupBy(i => i.ProductVariantId)
+                .Select(g => new OrderItemInputDto
+                {
+                    ProductVariantId = g.Key,
+                    Quantity = g.Sum(i => i.Quantity),
+                })
+                .ToList();
+
+            List<Guid> variantIds = mergedItems.Select(i => i.ProductVariantId).ToList();
             List<ProductVariant> variants = await context.ProductVariants
-                .Include(pv => pv.Stock)
                 .Include(pv => pv.Product)
                 .Where(pv => variantIds.Contains(pv.Id))
                 .ToListAsync(ct);
@@ -82,10 +93,20 @@ public sealed class CreateStaffOrder
                 return Result<StaffOrderDto>.Failure("One or more product variants not found.", 404);
             }
 
+            // Load stocks with UPDLOCK to prevent race condition on reservation
+            string paramList = string.Join(", ", variantIds.Select((_, i) => $"@p{i}"));
+            object[] sqlParams = variantIds
+                .Select((id, i) => (object)new SqlParameter($"@p{i}", id)).ToArray();
+
+            await context.Stocks
+                .FromSqlRaw($"SELECT * FROM Stocks WITH (UPDLOCK) WHERE ProductVariantId IN ({paramList})", sqlParams)
+                .ToListAsync(ct);
+            // EF Core relationship fixup auto-links variant.Stock
+
             // Validate stock for ReadyStock orders
             if (dto.OrderType == OrderType.ReadyStock)
             {
-                foreach (OrderItemInputDto item in dto.Items)
+                foreach (OrderItemInputDto item in mergedItems)
                 {
                     ProductVariant variant = variants.First(v => v.Id == item.ProductVariantId);
                     if (!variant.IsActive)
@@ -101,7 +122,7 @@ public sealed class CreateStaffOrder
             decimal totalAmount = 0;
             List<OrderItem> orderItems = new List<OrderItem>();
 
-            foreach (OrderItemInputDto item in dto.Items)
+            foreach (OrderItemInputDto item in mergedItems)
             {
                 ProductVariant variant = variants.First(v => v.Id == item.ProductVariantId);
                 decimal unitPrice = variant.Price;
@@ -194,7 +215,7 @@ public sealed class CreateStaffOrder
             // 8. Reserve stock for ReadyStock orders
             if (dto.OrderType == OrderType.ReadyStock)
             {
-                foreach (OrderItemInputDto item in dto.Items)
+                foreach (OrderItemInputDto item in mergedItems)
                 {
                     Stock stock = variants.First(v => v.Id == item.ProductVariantId).Stock!;
                     stock.QuantityReserved += item.Quantity;

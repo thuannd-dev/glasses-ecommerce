@@ -78,9 +78,9 @@ public sealed class CreateSomething
 
 **Common mistakes to avoid:**
 
--  `public class Handler` → Must be `internal sealed class Handler`
--  `public class CreateSomething` → Must be `public sealed class CreateSomething`
--  `public class Command` → Must be `public sealed class Command`
+- `public class Handler` → Must be `internal sealed class Handler`
+- `public class CreateSomething` → Must be `public sealed class CreateSomething`
+- `public class Command` → Must be `public sealed class Command`
 
 **Reference modules:** Carts (AddItemToCart.cs), Addresses (CreateAddress.cs)
 
@@ -98,6 +98,26 @@ public sealed class CreateSomething
 
 - Use `public sealed class` for validators.
 - Access DTO fields through the Command: `RuleFor(x => x.Dto.FieldName)`.
+- **Always add a Dto null guard** before any rules that access `x.Dto.*` properties.
+  Without this, a null Dto causes `NullReferenceException` instead of a validation error.
+
+  ```csharp
+  public sealed class SomeValidator : AbstractValidator<SomeCommand.Command>
+  {
+      public SomeValidator()
+      {
+          RuleFor(x => x.Dto)
+              .NotNull().WithMessage("Request body is required.");
+
+          When(x => x.Dto != null, () =>
+          {
+              RuleFor(x => x.Dto.FieldName)
+                  .NotEmpty().WithMessage("...");
+              // ... all other x.Dto.* rules go here
+          });
+      }
+  }
+  ```
 
 # EF Core performance guidelines:
 

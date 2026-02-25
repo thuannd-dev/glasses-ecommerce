@@ -43,6 +43,7 @@ public sealed class StaffOrdersController : BaseApiController
     [HttpPut("{id}/status")]
     public async Task<IActionResult> UpdateOrderStatus(Guid id, UpdateOrderStatusDto dto, CancellationToken ct)
     {
+        // Staff có thể cập nhật bất kỳ đơn nào (cả đơn online của customer lẫn đơn staff khác tạo)
         // Nếu Cancelled → release stock (QuantityReserved -= quantity)
         // Nếu Completed → deduct stock (QuantityOnHand -= quantity, QuantityReserved -= quantity)
         // Ghi OrderStatusHistory (from → to, notes, changedBy)

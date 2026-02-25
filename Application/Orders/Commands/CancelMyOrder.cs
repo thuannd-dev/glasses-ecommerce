@@ -26,6 +26,7 @@ public sealed class CancelMyOrder
             Guid userId = userAccessor.GetUserId();
 
             Order? order = await context.Orders
+                .Include(o => o.ShipmentInfo)
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.ProductVariant)
                         .ThenInclude(pv => pv!.Stock)

@@ -129,7 +129,8 @@ public class MappingProfiles : Profile
             .ForMember(d => d.SalesStaffName, o => o.MapFrom(s =>
                 s.SalesStaff != null ? s.SalesStaff.DisplayName : null))
             .ForMember(d => d.Items, o => o.MapFrom(s => s.OrderItems))
-            .ForMember(d => d.Payment, o => o.MapFrom(s => s.Payments.FirstOrDefault()));
+            .ForMember(d => d.Payment, o => o.MapFrom(s => s.Payments.FirstOrDefault()))
+            .ForMember(d => d.Prescription, o => o.MapFrom(s => s.Prescription));
 
         CreateMap<OrderItem, OrderItemOutputDto>()
             .ForMember(d => d.Sku, o => o.MapFrom(s =>
@@ -162,7 +163,8 @@ public class MappingProfiles : Profile
                     ? (decimal?)s.PromoUsageLogs.Sum(p => p.DiscountApplied)
                     : null))
             .ForMember(d => d.Items, o => o.MapFrom(s => s.OrderItems))
-            .ForMember(d => d.Payment, o => o.MapFrom(s => s.Payments.FirstOrDefault()));
+            .ForMember(d => d.Payment, o => o.MapFrom(s => s.Payments.FirstOrDefault()))
+            .ForMember(d => d.Prescription, o => o.MapFrom(s => s.Prescription));
 
         CreateMap<Order, CustomerOrderListDto>()
             .ForMember(d => d.OrderType, o => o.MapFrom(s => s.OrderType.ToString()))

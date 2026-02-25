@@ -6,6 +6,7 @@ using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Domain;
 using MediatR;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Persistence;
@@ -54,13 +55,22 @@ public sealed class Checkout
             // 3. Validate variants and stock
             List<Guid> variantIds = cart.Items.Select(i => i.ProductVariantId).ToList();
             List<ProductVariant> variants = await context.ProductVariants
-                .Include(pv => pv.Stock)
                 .Include(pv => pv.Product)
                 .Where(pv => variantIds.Contains(pv.Id))
                 .ToListAsync(ct);
 
             if (variants.Count != variantIds.Distinct().Count())
                 return Result<CustomerOrderDto>.Failure("One or more products are no longer available.", 400);
+
+            // Load stocks with UPDLOCK to prevent race condition on reservation
+            string paramList = string.Join(", ", variantIds.Select((_, i) => $"@p{i}"));
+            object[] sqlParams = variantIds
+                .Select((id, i) => (object)new SqlParameter($"@p{i}", id)).ToArray();
+
+            await context.Stocks
+                .FromSqlRaw($"SELECT * FROM Stocks WITH (UPDLOCK) WHERE ProductVariantId IN ({paramList})", sqlParams)
+                .ToListAsync(ct);
+            // EF Core relationship fixup auto-links variant.Stock
 
             if (dto.OrderType == OrderType.ReadyStock)
             {

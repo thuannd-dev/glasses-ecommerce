@@ -24,8 +24,7 @@ public sealed class UpdateOrderStatus
             Guid staffUserId = userAccessor.GetUserId();
 
             Order? order = await context.Orders
-                .FirstOrDefaultAsync(o => o.Id == request.OrderId
-                    && o.CreatedBySalesStaff == staffUserId, ct);
+                .FirstOrDefaultAsync(o => o.Id == request.OrderId, ct);
 
             if (order == null)
                 return Result<Unit>.Failure("Order not found.", 404);
