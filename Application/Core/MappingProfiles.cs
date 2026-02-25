@@ -3,6 +3,7 @@ using Application.Activities.DTOs;
 using Application.Addresses.DTOs;
 using Application.Carts.DTOs;
 using Application.Categories.DTOs;
+using Application.Orders.DTOs;
 using Application.Products.DTOs;
 using Application.Profiles.DTOs;
 using AutoMapper;
@@ -103,5 +104,73 @@ public class MappingProfiles : Profile
             .ForMember(dest => dest.UserId, opt => opt.Ignore())
             .ForMember(dest => dest.IsDeleted, opt => opt.Ignore())
             .ForMember(dest => dest.DeletedAt, opt => opt.Ignore());
+
+        // Order mappings
+        CreateMap<Order, StaffOrderListDto>()
+            .ForMember(d => d.OrderSource, o => o.MapFrom(s => s.OrderSource.ToString()))
+            .ForMember(d => d.OrderType, o => o.MapFrom(s => s.OrderType.ToString()))
+            .ForMember(d => d.OrderStatus, o => o.MapFrom(s => s.OrderStatus.ToString()))
+            .ForMember(d => d.FinalAmount, o => o.MapFrom(s =>
+                s.TotalAmount + s.ShippingFee - s.PromoUsageLogs.Sum(p => p.DiscountApplied)))
+            .ForMember(d => d.SalesStaffName, o => o.MapFrom(s =>
+                s.SalesStaff != null ? s.SalesStaff.DisplayName : null))
+            .ForMember(d => d.ItemCount, o => o.MapFrom(s => s.OrderItems.Count));
+
+        CreateMap<Order, StaffOrderDto>()
+            .ForMember(d => d.OrderSource, o => o.MapFrom(s => s.OrderSource.ToString()))
+            .ForMember(d => d.OrderType, o => o.MapFrom(s => s.OrderType.ToString()))
+            .ForMember(d => d.OrderStatus, o => o.MapFrom(s => s.OrderStatus.ToString()))
+            .ForMember(d => d.FinalAmount, o => o.MapFrom(s =>
+                s.TotalAmount + s.ShippingFee - s.PromoUsageLogs.Sum(p => p.DiscountApplied)))
+            .ForMember(d => d.DiscountApplied, o => o.MapFrom(s =>
+                s.PromoUsageLogs.Sum(p => p.DiscountApplied) > 0
+                    ? (decimal?)s.PromoUsageLogs.Sum(p => p.DiscountApplied)
+                    : null))
+            .ForMember(d => d.SalesStaffName, o => o.MapFrom(s =>
+                s.SalesStaff != null ? s.SalesStaff.DisplayName : null))
+            .ForMember(d => d.Items, o => o.MapFrom(s => s.OrderItems))
+            .ForMember(d => d.Payment, o => o.MapFrom(s => s.Payments.FirstOrDefault()))
+            .ForMember(d => d.Prescription, o => o.MapFrom(s => s.Prescription));
+
+        CreateMap<OrderItem, OrderItemOutputDto>()
+            .ForMember(d => d.Sku, o => o.MapFrom(s =>
+                s.ProductVariant != null ? s.ProductVariant.SKU : null))
+            .ForMember(d => d.VariantName, o => o.MapFrom(s =>
+                s.ProductVariant != null ? s.ProductVariant.VariantName : null))
+            .ForMember(d => d.ProductName, o => o.MapFrom(s =>
+                s.ProductVariant != null && s.ProductVariant.Product != null
+                    ? s.ProductVariant.Product.ProductName : null))
+            .ForMember(d => d.TotalPrice, o => o.MapFrom(s => s.Quantity * s.UnitPrice));
+
+        CreateMap<Payment, OrderPaymentDto>()
+            .ForMember(d => d.PaymentMethod, o => o.MapFrom(s => s.PaymentMethod.ToString()))
+            .ForMember(d => d.PaymentStatus, o => o.MapFrom(s => s.PaymentStatus.ToString()));
+
+        CreateMap<Prescription, OrderPrescriptionDto>();
+
+        CreateMap<PrescriptionDetail, PrescriptionDetailOutputDto>()
+            .ForMember(d => d.Eye, o => o.MapFrom(s => s.Eye.ToString()));
+
+        // Customer order mappings
+        CreateMap<Order, CustomerOrderDto>()
+            .ForMember(d => d.OrderSource, o => o.MapFrom(s => s.OrderSource.ToString()))
+            .ForMember(d => d.OrderType, o => o.MapFrom(s => s.OrderType.ToString()))
+            .ForMember(d => d.OrderStatus, o => o.MapFrom(s => s.OrderStatus.ToString()))
+            .ForMember(d => d.FinalAmount, o => o.MapFrom(s =>
+                s.TotalAmount + s.ShippingFee - s.PromoUsageLogs.Sum(p => p.DiscountApplied)))
+            .ForMember(d => d.DiscountApplied, o => o.MapFrom(s =>
+                s.PromoUsageLogs.Sum(p => p.DiscountApplied) > 0
+                    ? (decimal?)s.PromoUsageLogs.Sum(p => p.DiscountApplied)
+                    : null))
+            .ForMember(d => d.Items, o => o.MapFrom(s => s.OrderItems))
+            .ForMember(d => d.Payment, o => o.MapFrom(s => s.Payments.FirstOrDefault()))
+            .ForMember(d => d.Prescription, o => o.MapFrom(s => s.Prescription));
+
+        CreateMap<Order, CustomerOrderListDto>()
+            .ForMember(d => d.OrderType, o => o.MapFrom(s => s.OrderType.ToString()))
+            .ForMember(d => d.OrderStatus, o => o.MapFrom(s => s.OrderStatus.ToString()))
+            .ForMember(d => d.FinalAmount, o => o.MapFrom(s =>
+                s.TotalAmount + s.ShippingFee - s.PromoUsageLogs.Sum(p => p.DiscountApplied)))
+            .ForMember(d => d.ItemCount, o => o.MapFrom(s => s.OrderItems.Count));
     }
 }

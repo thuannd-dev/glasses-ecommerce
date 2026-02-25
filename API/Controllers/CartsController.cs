@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace API.Controllers;
 
 [Authorize]
-[Route("api/carts")]
+[Route("api/me/cart")]
 public sealed class CartsController : BaseApiController
 {
     [HttpGet]
