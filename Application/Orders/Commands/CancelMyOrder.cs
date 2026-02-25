@@ -49,7 +49,8 @@ public sealed class CancelMyOrder
             {
                 if (item.ProductVariant?.Stock != null)
                 {
-                    item.ProductVariant.Stock.QuantityReserved -= item.Quantity;
+                    item.ProductVariant.Stock.QuantityReserved =
+                        Math.Max(0, item.ProductVariant.Stock.QuantityReserved - item.Quantity);
                     item.ProductVariant.Stock.UpdatedAt = DateTime.UtcNow;
                     item.ProductVariant.Stock.UpdatedBy = userId;
                 }
