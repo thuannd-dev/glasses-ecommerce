@@ -69,3 +69,14 @@ The canonical API reference is:
 - Reuse the same controller structure, request/response DTO patterns, MediatR usage, validation, and error handling.
 - Do NOT introduce new patterns, abstractions, or optimizations.
 - Consistency with Activities API is mandatory.
+
+# DTO File Conventions
+
+- **One class per file** — each DTO class must be in its own `.cs` file.
+  Do NOT put multiple classes in the same file, even if they are related (e.g. `PrescriptionInputDto` and `PrescriptionDetailInputDto` must be in separate files).
+- **File name = class name** — `MyDto.cs` contains only `class MyDto`.
+- **Description comment** — add a single-line `//` comment directly above the class declaration describing what the DTO is for, e.g.:
+  ```csharp
+  //Dto Request để add item
+  public sealed class AddCartItemDto
+  ```

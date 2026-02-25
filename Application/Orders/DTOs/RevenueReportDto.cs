@@ -19,13 +19,3 @@ public sealed class RevenueReportDto
 
     public List<RevenueBySourceDto> BySource { get; set; } = [];
 }
-
-//Dto Response cho doanh thu theo từng kênh bán hàng
-public sealed class RevenueBySourceDto
-{
-    public string? Source { get; set; }
-    public int OrderCount { get; set; }
-    public decimal Revenue { get; set; }
-    public decimal Discount { get; set; }
-    public decimal NetRevenue { get; set; }
-}
