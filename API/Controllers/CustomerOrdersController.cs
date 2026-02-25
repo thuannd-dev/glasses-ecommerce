@@ -40,11 +40,11 @@ public sealed class CustomerOrdersController : BaseApiController
     }
 
     [HttpPut("{id}/cancel")]
-    public async Task<IActionResult> CancelOrder(Guid id, CancellationToken ct)
+    public async Task<IActionResult> CancelOrder(Guid id, CancelMyOrderDto dto, CancellationToken ct)
     {
         // Chỉ cancel được nếu order.CanBeCancelled(now) trả true
         // Domain logic check: status chưa Cancelled/Completed/Refunded
         return HandleResult(await Mediator.Send(
-            new CancelMyOrder.Command { OrderId = id }, ct));
+            new CancelMyOrder.Command { OrderId = id, Dto = dto }, ct));
     }
 }

@@ -1,5 +1,6 @@
 using Application.Core;
 using Application.Interfaces;
+using Application.Orders.DTOs;
 using Domain;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -13,7 +14,7 @@ public sealed class CancelMyOrder
     public sealed class Command : IRequest<Result<Unit>>
     {
         public required Guid OrderId { get; set; }
-        public string? Reason { get; set; }
+        public CancelMyOrderDto? Dto { get; set; }
     }
 
     internal sealed class Handler(
@@ -62,7 +63,7 @@ public sealed class CancelMyOrder
                 OrderId = order.Id,
                 FromStatus = oldStatus,
                 ToStatus = OrderStatus.Cancelled,
-                Notes = request.Reason ?? "Cancelled by customer",
+                Notes = request.Dto?.Reason ?? "Cancelled by customer",
                 ChangedBy = userId,
             });
 
