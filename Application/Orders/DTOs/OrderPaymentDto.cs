@@ -1,5 +1,6 @@
 namespace Application.Orders.DTOs;
 
+//Dto Response cho thông tin thanh toán (dùng chung cho staff và customer)
 public sealed class OrderPaymentDto
 {
     public Guid Id { get; set; }

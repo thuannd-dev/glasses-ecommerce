@@ -2,6 +2,7 @@ using Domain;
 
 namespace Application.Orders.DTOs;
 
+//Dto Request để staff tạo đơn hàng (offline + on-behalf online)
 public sealed class CreateStaffOrderDto
 {
     public required OrderSource OrderSource { get; set; } // Online or Offline

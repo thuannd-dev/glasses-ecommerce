@@ -1,6 +1,7 @@
 using Application.Orders.Commands;
 using Application.Orders.DTOs;
 using Application.Orders.Queries;
+using Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -33,5 +34,16 @@ public sealed class StaffOrdersController : BaseApiController
     {
         return HandleResult(await Mediator.Send(
             new UpdateOrderStatus.Command { OrderId = id, Dto = dto }, ct));
+    }
+
+    [HttpGet("reports/revenue")]
+    public async Task<IActionResult> GetRevenueReport(
+        [FromQuery] OrderSource? source,
+        [FromQuery] DateTime? fromDate,
+        [FromQuery] DateTime? toDate,
+        CancellationToken ct)
+    {
+        return HandleResult(await Mediator.Send(
+            new GetRevenueReport.Query { Source = source, FromDate = fromDate, ToDate = toDate }, ct));
     }
 }

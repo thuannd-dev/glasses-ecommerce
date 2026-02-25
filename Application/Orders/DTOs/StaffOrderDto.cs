@@ -1,5 +1,6 @@
 namespace Application.Orders.DTOs;
 
+//Dto Response chi tiết đơn hàng cho staff (bao gồm thông tin walk-in, staff name)
 public sealed class StaffOrderDto
 {
     public Guid Id { get; set; }

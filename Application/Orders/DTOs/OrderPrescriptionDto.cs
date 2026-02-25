@@ -1,5 +1,6 @@
 namespace Application.Orders.DTOs;
 
+//Dto Response cho thông tin đơn thuốc (dùng chung cho staff và customer)
 public sealed class OrderPrescriptionDto
 {
     public Guid Id { get; set; }

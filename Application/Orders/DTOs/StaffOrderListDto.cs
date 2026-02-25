@@ -1,5 +1,6 @@
 namespace Application.Orders.DTOs;
 
+//Dto Response danh sách đơn hàng cho staff (lightweight, không có items/payment)
 public sealed class StaffOrderListDto
 {
     public Guid Id { get; set; }
