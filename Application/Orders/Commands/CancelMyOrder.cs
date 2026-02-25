@@ -24,7 +24,7 @@ public sealed class CancelMyOrder
         {
             Guid userId = userAccessor.GetUserId();
 
-            var order = await context.Orders
+            Order? order = await context.Orders
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.ProductVariant)
                         .ThenInclude(pv => pv!.Stock)
@@ -41,10 +41,10 @@ public sealed class CancelMyOrder
             if (order.OrderStatus is OrderStatus.Cancelled or OrderStatus.Completed or OrderStatus.Refunded)
                 return Result<Unit>.Failure($"Cannot cancel an order with status '{order.OrderStatus}'.", 400);
 
-            var oldStatus = order.OrderStatus;
+            OrderStatus oldStatus = order.OrderStatus;
 
             // Release reserved stock
-            foreach (var item in order.OrderItems)
+            foreach (OrderItem item in order.OrderItems)
             {
                 if (item.ProductVariant?.Stock != null)
                 {

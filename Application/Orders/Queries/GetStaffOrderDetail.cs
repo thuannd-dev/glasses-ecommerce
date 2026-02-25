@@ -23,7 +23,7 @@ public sealed class GetStaffOrderDetail
         {
             Guid staffUserId = userAccessor.GetUserId();
 
-            var order = await context.Orders
+            StaffOrderDto? order = await context.Orders
                 .Where(o => o.Id == request.Id && o.CreatedBySalesStaff == staffUserId)
                 .ProjectTo<StaffOrderDto>(mapper.ConfigurationProvider)
                 .FirstOrDefaultAsync(ct);

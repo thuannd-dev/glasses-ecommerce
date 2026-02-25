@@ -24,7 +24,7 @@ public sealed class CreateStaffOrder
     {
         public async Task<Result<StaffOrderDto>> Handle(Command request, CancellationToken ct)
         {
-            var dto = request.Dto;
+            CreateStaffOrderDto dto = request.Dto;
             Guid staffUserId = userAccessor.GetUserId();
 
             // 1. Validate OrderSource + Address logic
@@ -53,8 +53,8 @@ public sealed class CreateStaffOrder
                 return Result<StaffOrderDto>.Failure("Order must have at least one item.", 400);
             }
 
-            var variantIds = dto.Items.Select(i => i.ProductVariantId).ToList();
-            var variants = await context.ProductVariants
+            List<Guid> variantIds = dto.Items.Select(i => i.ProductVariantId).ToList();
+            List<ProductVariant> variants = await context.ProductVariants
                 .Include(pv => pv.Stock)
                 .Include(pv => pv.Product)
                 .Where(pv => variantIds.Contains(pv.Id))
@@ -68,9 +68,9 @@ public sealed class CreateStaffOrder
             // Validate stock for ReadyStock orders
             if (dto.OrderType == OrderType.ReadyStock)
             {
-                foreach (var item in dto.Items)
+                foreach (OrderItemInputDto item in dto.Items)
                 {
-                    var variant = variants.First(v => v.Id == item.ProductVariantId);
+                    ProductVariant variant = variants.First(v => v.Id == item.ProductVariantId);
                     if (!variant.IsActive)
                         return Result<StaffOrderDto>.Failure($"Product variant '{variant.VariantName}' is not available.", 400);
 
@@ -82,12 +82,12 @@ public sealed class CreateStaffOrder
 
             // 4. Calculate totals
             decimal totalAmount = 0;
-            var orderItems = new List<OrderItem>();
+            List<OrderItem> orderItems = new List<OrderItem>();
 
-            foreach (var item in dto.Items)
+            foreach (OrderItemInputDto item in dto.Items)
             {
-                var variant = variants.First(v => v.Id == item.ProductVariantId);
-                var unitPrice = variant.Price;
+                ProductVariant variant = variants.First(v => v.Id == item.ProductVariantId);
+                decimal unitPrice = variant.Price;
                 totalAmount += unitPrice * item.Quantity;
 
                 orderItems.Add(new OrderItem
@@ -107,7 +107,7 @@ public sealed class CreateStaffOrder
 
             if (!string.IsNullOrWhiteSpace(dto.PromoCode))
             {
-                var now = DateTime.UtcNow;
+                DateTime now = DateTime.UtcNow;
                 promotion = await context.Promotions
                     .FirstOrDefaultAsync(p => p.PromoCode == dto.PromoCode
                         && p.IsActive
@@ -147,7 +147,7 @@ public sealed class CreateStaffOrder
             }
 
             // 6. Create Order
-            var order = new Order
+            Order order = new Order
             {
                 OrderSource = dto.OrderSource,
                 OrderType = dto.OrderType,
@@ -168,7 +168,7 @@ public sealed class CreateStaffOrder
             context.Orders.Add(order);
 
             // 7. Assign OrderId to items and add
-            foreach (var item in orderItems)
+            foreach (OrderItem item in orderItems)
             {
                 item.OrderId = order.Id;
             }
@@ -177,9 +177,9 @@ public sealed class CreateStaffOrder
             // 8. Reserve stock for ReadyStock orders
             if (dto.OrderType == OrderType.ReadyStock)
             {
-                foreach (var item in dto.Items)
+                foreach (OrderItemInputDto item in dto.Items)
                 {
-                    var stock = variants.First(v => v.Id == item.ProductVariantId).Stock!;
+                    Stock stock = variants.First(v => v.Id == item.ProductVariantId).Stock!;
                     stock.QuantityReserved += item.Quantity;
                     stock.UpdatedAt = DateTime.UtcNow;
                     stock.UpdatedBy = staffUserId;
@@ -187,7 +187,7 @@ public sealed class CreateStaffOrder
             }
 
             // 9. Create Payment
-            var payment = new Payment
+            Payment payment = new Payment
             {
                 OrderId = order.Id,
                 PaymentMethod = dto.PaymentMethod,
@@ -217,7 +217,7 @@ public sealed class CreateStaffOrder
             // 11. Create Prescription
             if (dto.OrderType == OrderType.Prescription && dto.Prescription != null)
             {
-                var prescription = new Prescription
+                Prescription prescription = new Prescription
                 {
                     OrderId = order.Id,
                     IsVerified = false,
@@ -225,7 +225,7 @@ public sealed class CreateStaffOrder
 
                 context.Prescriptions.Add(prescription);
 
-                foreach (var detail in dto.Prescription.Details)
+                foreach (PrescriptionDetailInputDto detail in dto.Prescription.Details)
                 {
                     context.PrescriptionDetails.Add(new PrescriptionDetail
                     {
@@ -257,7 +257,7 @@ public sealed class CreateStaffOrder
                 return Result<StaffOrderDto>.Failure("Failed to create order.", 500);
 
             // 14. Re-query with ProjectTo for consistent response
-            var result = await context.Orders
+            StaffOrderDto result = await context.Orders
                 .Where(o => o.Id == order.Id)
                 .ProjectTo<StaffOrderDto>(mapper.ConfigurationProvider)
                 .FirstAsync(ct);

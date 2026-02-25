@@ -20,7 +20,7 @@ public sealed class GetMyOrders
         {
             Guid userId = userAccessor.GetUserId();
 
-            var orders = await context.Orders
+            List<CustomerOrderListDto> orders = await context.Orders
                 .Where(o => o.UserId == userId)
                 .OrderByDescending(o => o.CreatedAt)
                 .ProjectTo<CustomerOrderListDto>(mapper.ConfigurationProvider)

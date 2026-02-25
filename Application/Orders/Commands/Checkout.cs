@@ -25,11 +25,11 @@ public sealed class Checkout
     {
         public async Task<Result<CustomerOrderDto>> Handle(Command request, CancellationToken ct)
         {
-            var dto = request.Dto;
+            CheckoutDto dto = request.Dto;
             Guid userId = userAccessor.GetUserId();
 
             // 1. Get active cart with items
-            var cart = await context.Carts
+            Cart? cart = await context.Carts
                 .Include(c => c.Items)
                 .FirstOrDefaultAsync(c => c.UserId == userId
                     && c.Status == CartStatus.Active, ct);
@@ -46,8 +46,8 @@ public sealed class Checkout
                 return Result<CustomerOrderDto>.Failure("Address not found.", 404);
 
             // 3. Validate variants and stock
-            var variantIds = cart.Items.Select(i => i.ProductVariantId).ToList();
-            var variants = await context.ProductVariants
+            List<Guid> variantIds = cart.Items.Select(i => i.ProductVariantId).ToList();
+            List<ProductVariant> variants = await context.ProductVariants
                 .Include(pv => pv.Stock)
                 .Include(pv => pv.Product)
                 .Where(pv => variantIds.Contains(pv.Id))
@@ -58,9 +58,9 @@ public sealed class Checkout
 
             if (dto.OrderType == OrderType.ReadyStock)
             {
-                foreach (var cartItem in cart.Items)
+                foreach (CartItem cartItem in cart.Items)
                 {
-                    var variant = variants.First(v => v.Id == cartItem.ProductVariantId);
+                    ProductVariant variant = variants.First(v => v.Id == cartItem.ProductVariantId);
                     if (!variant.IsActive)
                         return Result<CustomerOrderDto>.Failure(
                             $"Product '{variant.VariantName}' is no longer available.", 400);
@@ -73,11 +73,11 @@ public sealed class Checkout
 
             // 4. Calculate totals
             decimal totalAmount = 0;
-            var orderItems = new List<OrderItem>();
+            List<OrderItem> orderItems = new List<OrderItem>();
 
-            foreach (var cartItem in cart.Items)
+            foreach (CartItem cartItem in cart.Items)
             {
-                var variant = variants.First(v => v.Id == cartItem.ProductVariantId);
+                ProductVariant variant = variants.First(v => v.Id == cartItem.ProductVariantId);
                 decimal unitPrice = variant.Price;
                 totalAmount += unitPrice * cartItem.Quantity;
 
@@ -98,7 +98,7 @@ public sealed class Checkout
 
             if (!string.IsNullOrWhiteSpace(dto.PromoCode))
             {
-                var now = DateTime.UtcNow;
+                DateTime now = DateTime.UtcNow;
                 promotion = await context.Promotions
                     .FirstOrDefaultAsync(p => p.PromoCode == dto.PromoCode
                         && p.IsActive
@@ -131,7 +131,7 @@ public sealed class Checkout
             }
 
             // 6. Create Order
-            var order = new Order
+            Order order = new Order
             {
                 OrderSource = OrderSource.Online,
                 OrderType = dto.OrderType,
@@ -148,7 +148,7 @@ public sealed class Checkout
             context.Orders.Add(order);
 
             // 7. Assign OrderId to items
-            foreach (var item in orderItems)
+            foreach (OrderItem item in orderItems)
             {
                 item.OrderId = order.Id;
             }
@@ -157,9 +157,9 @@ public sealed class Checkout
             // 8. Reserve stock
             if (dto.OrderType == OrderType.ReadyStock)
             {
-                foreach (var cartItem in cart.Items)
+                foreach (CartItem cartItem in cart.Items)
                 {
-                    var stock = variants.First(v => v.Id == cartItem.ProductVariantId).Stock!;
+                    Stock stock = variants.First(v => v.Id == cartItem.ProductVariantId).Stock!;
                     stock.QuantityReserved += cartItem.Quantity;
                     stock.UpdatedAt = DateTime.UtcNow;
                     stock.UpdatedBy = userId;
@@ -167,7 +167,7 @@ public sealed class Checkout
             }
 
             // 9. Create Payment
-            var payment = new Payment
+            Payment payment = new Payment
             {
                 OrderId = order.Id,
                 PaymentMethod = dto.PaymentMethod,
@@ -192,14 +192,14 @@ public sealed class Checkout
             // 11. Prescription
             if (dto.OrderType == OrderType.Prescription && dto.Prescription != null)
             {
-                var prescription = new Prescription
+                Prescription prescription = new Prescription
                 {
                     OrderId = order.Id,
                     IsVerified = false,
                 };
                 context.Prescriptions.Add(prescription);
 
-                foreach (var detail in dto.Prescription.Details)
+                foreach (PrescriptionDetailInputDto detail in dto.Prescription.Details)
                 {
                     context.PrescriptionDetails.Add(new PrescriptionDetail
                     {
@@ -234,7 +234,7 @@ public sealed class Checkout
                 return Result<CustomerOrderDto>.Failure("Failed to place order.", 500);
 
             // 15. Re-query with ProjectTo
-            var result = await context.Orders
+            CustomerOrderDto result = await context.Orders
                 .Where(o => o.Id == order.Id)
                 .ProjectTo<CustomerOrderDto>(mapper.ConfigurationProvider)
                 .FirstAsync(ct);

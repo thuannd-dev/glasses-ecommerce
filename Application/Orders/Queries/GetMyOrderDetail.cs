@@ -23,7 +23,7 @@ public sealed class GetMyOrderDetail
         {
             Guid userId = userAccessor.GetUserId();
 
-            var order = await context.Orders
+            CustomerOrderDto? order = await context.Orders
                 .Where(o => o.Id == request.Id && o.UserId == userId)
                 .ProjectTo<CustomerOrderDto>(mapper.ConfigurationProvider)
                 .FirstOrDefaultAsync(ct);

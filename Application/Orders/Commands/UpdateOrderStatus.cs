@@ -23,15 +23,15 @@ public sealed class UpdateOrderStatus
         {
             Guid staffUserId = userAccessor.GetUserId();
 
-            var order = await context.Orders
+            Order? order = await context.Orders
                 .FirstOrDefaultAsync(o => o.Id == request.OrderId
                     && o.CreatedBySalesStaff == staffUserId, ct);
 
             if (order == null)
                 return Result<Unit>.Failure("Order not found.", 404);
 
-            var oldStatus = order.OrderStatus;
-            var newStatus = request.Dto.NewStatus;
+            OrderStatus oldStatus = order.OrderStatus;
+            OrderStatus newStatus = request.Dto.NewStatus;
 
             // Validate status transition
             if (!IsValidTransition(oldStatus, newStatus))
@@ -41,13 +41,13 @@ public sealed class UpdateOrderStatus
             // If cancelling, release reserved stock
             if (newStatus == OrderStatus.Cancelled)
             {
-                var items = await context.OrderItems
+                List<OrderItem> items = await context.OrderItems
                     .Include(oi => oi.ProductVariant)
                         .ThenInclude(pv => pv!.Stock)
                     .Where(oi => oi.OrderId == order.Id)
                     .ToListAsync(ct);
 
-                foreach (var item in items)
+                foreach (OrderItem item in items)
                 {
                     if (item.ProductVariant?.Stock != null)
                     {
@@ -61,13 +61,13 @@ public sealed class UpdateOrderStatus
             // If completing, reduce on-hand stock
             if (newStatus == OrderStatus.Completed)
             {
-                var items = await context.OrderItems
+                List<OrderItem> items = await context.OrderItems
                     .Include(oi => oi.ProductVariant)
                         .ThenInclude(pv => pv!.Stock)
                     .Where(oi => oi.OrderId == order.Id)
                     .ToListAsync(ct);
 
-                foreach (var item in items)
+                foreach (OrderItem item in items)
                 {
                     if (item.ProductVariant?.Stock != null)
                     {
@@ -91,7 +91,7 @@ public sealed class UpdateOrderStatus
                 ChangedBy = staffUserId,
             });
 
-            var isSuccess = await context.SaveChangesAsync(ct) > 0;
+            bool isSuccess = await context.SaveChangesAsync(ct) > 0;
 
             if (!isSuccess)
                 return Result<Unit>.Failure("Failed to update order status.", 400);

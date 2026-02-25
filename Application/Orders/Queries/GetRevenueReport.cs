@@ -22,10 +22,10 @@ public sealed class GetRevenueReport
     {
         public async Task<Result<RevenueReportDto>> Handle(Query request, CancellationToken ct)
         {
-            var from = request.FromDate ?? DateTime.UtcNow.AddMonths(-1);
-            var to = request.ToDate ?? DateTime.UtcNow;
+            DateTime from = request.FromDate ?? DateTime.UtcNow.AddMonths(-1);
+            DateTime to = request.ToDate ?? DateTime.UtcNow;
 
-            var query = context.Orders
+            IQueryable<Order> query = context.Orders
                 .AsNoTracking()
                 .Where(o => o.CreatedAt >= from && o.CreatedAt <= to);
 
@@ -49,7 +49,7 @@ public sealed class GetRevenueReport
                 })
                 .ToListAsync(ct);
 
-            var result = new RevenueReportDto
+            RevenueReportDto result = new RevenueReportDto
             {
                 OrderSource = request.Source.HasValue && request.Source.Value != OrderSource.Unknown
                     ? request.Source.Value.ToString()
