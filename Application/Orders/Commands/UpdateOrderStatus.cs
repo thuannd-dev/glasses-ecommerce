@@ -82,9 +82,12 @@ public sealed class UpdateOrderStatus
                 }
             }
 
-            // If shipping, create shipment info
-            if (newStatus == OrderStatus.Shipped && request.Dto.Shipment != null)
+            // If shipping, require and create shipment info
+            if (newStatus == OrderStatus.Shipped)
             {
+                if (request.Dto.Shipment == null)
+                    return Result<Unit>.Failure("Shipment info is required when shipping an order.", 400);
+
                 if (order.ShipmentInfo != null)
                     return Result<Unit>.Failure("Shipment info already exists for this order.", 409);
 
