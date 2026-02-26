@@ -33,6 +33,10 @@ public sealed class RejectInbound
                 return Result<Unit>.Failure(
                     $"Cannot reject inbound record with status '{record.Status}'.", 400);
 
+            // Không cần self-rejection check (khác với ApproveInbound):
+            // Approve = tăng stock → cần separation of duties để tránh gian lận
+            // Reject = hủy phiếu → staff tự reject record sai của mình là flow hợp lệ
+
             record.Status = InboundRecordStatus.Rejected;
             record.RejectedAt = DateTime.UtcNow;
             record.RejectionReason = request.Dto.RejectionReason;

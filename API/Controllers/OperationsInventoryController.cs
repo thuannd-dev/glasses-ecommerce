@@ -11,7 +11,12 @@ namespace API.Controllers;
 [Route("api/operations/inventory")]
 public sealed class OperationsInventoryController : BaseApiController
 {
-    //record outbound transaction cho order (audit trail)
+    //**Record Outbound Transaction for Order (Audit Trail)**
+    // Ghi nhận xuất kho cho đơn hàng — tạo InventoryTransaction cho mỗi OrderItem
+    // Input: chỉ cần OrderId, số lượng lấy từ order items
+    // Chỉ cho phép khi order status = Confirmed/Processing/Shipped
+    // Chống duplicate: nếu đã ghi outbound cho order này rồi → trả lỗi 409
+    // Transaction auto-approved (Status = Completed) vì đã link với order
     [HttpPost("outbound")]
     public async Task<IActionResult> RecordOutbound(RecordOutboundDto dto, CancellationToken ct)
     {
@@ -19,7 +24,10 @@ public sealed class OperationsInventoryController : BaseApiController
             new RecordOutbound.Command { Dto = dto }, ct));
     }
 
-    //xem danh sách inventory transactions
+    //**Get Inventory Transactions (Audit Trail)**
+    // Xem lịch sử xuất/nhập kho — audit trail cho mọi biến động stock
+    // Filter theo transactionType (Inbound/Outbound/Adjustment), referenceType, productVariantId
+    // Phân trang với pageNumber, pageSize
     [HttpGet("transactions")]
     public async Task<IActionResult> GetTransactions(
         [FromQuery] int pageNumber = 1,
@@ -40,7 +48,11 @@ public sealed class OperationsInventoryController : BaseApiController
             }, ct));
     }
 
-    //tạo phiếu nhập kho
+    // Tạo phiếu nhập kho — status mặc định PendingApproval, chờ Manager duyệt
+    // Input: SourceType (Supplier/Return/Adjustment), Items[] (ProductVariantId, Quantity)
+    // Tự động merge duplicate ProductVariantId (cùng pattern CreateStaffOrder)
+    // Validate: tất cả ProductVariantId phải tồn tại
+    // Stock CHƯA được cập nhật — chỉ tạo record chờ duyệt
     [HttpPost("inbound")]
     public async Task<IActionResult> CreateInbound(CreateInboundDto dto, CancellationToken ct)
     {
@@ -48,7 +60,9 @@ public sealed class OperationsInventoryController : BaseApiController
             new CreateInbound.Command { Dto = dto }, ct));
     }
 
-    //xem danh sách phiếu nhập kho
+    // Xem danh sách phiếu nhập kho
+    // Filter theo status (PendingApproval/Approved/Rejected)
+    // Phân trang với pageNumber, pageSize
     [HttpGet("inbound")]
     public async Task<IActionResult> GetInboundRecords(
         [FromQuery] int pageNumber = 1,
@@ -65,7 +79,7 @@ public sealed class OperationsInventoryController : BaseApiController
             }, ct));
     }
 
-    //xem chi tiết phiếu nhập kho
+    // Xem chi tiết phiếu nhập kho — bao gồm danh sách items với VariantName, SKU, Quantity
     [HttpGet("inbound/{id}")]
     public async Task<IActionResult> GetInboundDetail(Guid id, CancellationToken ct)
     {
