@@ -14,14 +14,18 @@ public sealed class OperationsOrdersController : BaseApiController
     //get all orders for operations (no staff filter)
     [HttpGet]
     public async Task<IActionResult> GetOrders(
-        [FromQuery] OrderStatus? status,
-        [FromQuery] OrderType? orderType,
-        [FromQuery] OrderSource? orderSource,
-        CancellationToken ct)
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] OrderStatus? status = null,
+        [FromQuery] OrderType? orderType = null,
+        [FromQuery] OrderSource? orderSource = null,
+        CancellationToken ct = default)
     {
         return HandleResult(await Mediator.Send(
             new GetOperationsOrders.Query
             {
+                PageNumber = pageNumber,
+                PageSize = pageSize,
                 Status = status,
                 OrderType = orderType,
                 OrderSource = orderSource

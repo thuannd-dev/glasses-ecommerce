@@ -22,14 +22,18 @@ public sealed class OperationsInventoryController : BaseApiController
     //xem danh sách inventory transactions
     [HttpGet("transactions")]
     public async Task<IActionResult> GetTransactions(
-        [FromQuery] TransactionType? transactionType,
-        [FromQuery] ReferenceType? referenceType,
-        [FromQuery] Guid? productVariantId,
-        CancellationToken ct)
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] TransactionType? transactionType = null,
+        [FromQuery] ReferenceType? referenceType = null,
+        [FromQuery] Guid? productVariantId = null,
+        CancellationToken ct = default)
     {
         return HandleResult(await Mediator.Send(
             new GetInventoryTransactions.Query
             {
+                PageNumber = pageNumber,
+                PageSize = pageSize,
                 TransactionType = transactionType,
                 ReferenceType = referenceType,
                 ProductVariantId = productVariantId,
@@ -47,11 +51,18 @@ public sealed class OperationsInventoryController : BaseApiController
     //xem danh sách phiếu nhập kho
     [HttpGet("inbound")]
     public async Task<IActionResult> GetInboundRecords(
-        [FromQuery] InboundRecordStatus? status,
-        CancellationToken ct)
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] InboundRecordStatus? status = null,
+        CancellationToken ct = default)
     {
         return HandleResult(await Mediator.Send(
-            new GetInboundRecords.Query { Status = status }, ct));
+            new GetInboundRecords.Query
+            {
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                Status = status
+            }, ct));
     }
 
     //xem chi tiết phiếu nhập kho

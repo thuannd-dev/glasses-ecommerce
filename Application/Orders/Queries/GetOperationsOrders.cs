@@ -11,17 +11,19 @@ namespace Application.Orders.Queries;
 
 public sealed class GetOperationsOrders
 {
-    public sealed class Query : IRequest<Result<List<StaffOrderListDto>>>
+    public sealed class Query : IRequest<Result<PagedResult<StaffOrderListDto>>>
     {
+        public int PageNumber { get; set; } = 1;
+        public int PageSize { get; set; } = 10;
         public OrderStatus? Status { get; set; }
         public OrderType? OrderType { get; set; }
         public OrderSource? OrderSource { get; set; }
     }
 
     internal sealed class Handler(AppDbContext context, IMapper mapper)
-        : IRequestHandler<Query, Result<List<StaffOrderListDto>>>
+        : IRequestHandler<Query, Result<PagedResult<StaffOrderListDto>>>
     {
-        public async Task<Result<List<StaffOrderListDto>>> Handle(Query request, CancellationToken ct)
+        public async Task<Result<PagedResult<StaffOrderListDto>>> Handle(Query request, CancellationToken ct)
         {
             IQueryable<Order> query = context.Orders.AsNoTracking();
 
@@ -34,12 +36,24 @@ public sealed class GetOperationsOrders
             if (request.OrderSource.HasValue)
                 query = query.Where(o => o.OrderSource == request.OrderSource.Value);
 
+            int totalCount = await query.CountAsync(ct);
+
             List<StaffOrderListDto> orders = await query
                 .OrderByDescending(o => o.CreatedAt)
+                .Skip((request.PageNumber - 1) * request.PageSize)
+                .Take(request.PageSize)
                 .ProjectTo<StaffOrderListDto>(mapper.ConfigurationProvider)
                 .ToListAsync(ct);
 
-            return Result<List<StaffOrderListDto>>.Success(orders);
+            PagedResult<StaffOrderListDto> result = new()
+            {
+                Items = orders,
+                TotalCount = totalCount,
+                PageNumber = request.PageNumber,
+                PageSize = request.PageSize
+            };
+
+            return Result<PagedResult<StaffOrderListDto>>.Success(result);
         }
     }
 }

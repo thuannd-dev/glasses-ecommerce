@@ -14,11 +14,18 @@ public sealed class ManagerInventoryController : BaseApiController
     //xem danh sách phiếu nhập kho (reuse query — manager thấy tất cả)
     [HttpGet("inbound")]
     public async Task<IActionResult> GetInboundRecords(
-        [FromQuery] InboundRecordStatus? status,
-        CancellationToken ct)
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] InboundRecordStatus? status = null,
+        CancellationToken ct = default)
     {
         return HandleResult(await Mediator.Send(
-            new GetInboundRecords.Query { Status = status }, ct));
+            new GetInboundRecords.Query
+            {
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                Status = status
+            }, ct));
     }
 
     //xem chi tiết phiếu nhập kho (reuse query)

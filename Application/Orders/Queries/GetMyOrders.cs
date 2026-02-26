@@ -11,22 +11,40 @@ namespace Application.Orders.Queries;
 
 public sealed class GetMyOrders
 {
-    public sealed class Query : IRequest<Result<List<CustomerOrderListDto>>> { }
+    public sealed class Query : IRequest<Result<PagedResult<CustomerOrderListDto>>>
+    {
+        public int PageNumber { get; set; } = 1;
+        public int PageSize { get; set; } = 10;
+    }
 
     internal sealed class Handler(AppDbContext context, IMapper mapper, IUserAccessor userAccessor)
-        : IRequestHandler<Query, Result<List<CustomerOrderListDto>>>
+        : IRequestHandler<Query, Result<PagedResult<CustomerOrderListDto>>>
     {
-        public async Task<Result<List<CustomerOrderListDto>>> Handle(Query request, CancellationToken ct)
+        public async Task<Result<PagedResult<CustomerOrderListDto>>> Handle(Query request, CancellationToken ct)
         {
             Guid userId = userAccessor.GetUserId();
 
-            List<CustomerOrderListDto> orders = await context.Orders
-                .Where(o => o.UserId == userId)
+            IQueryable<Domain.Order> query = context.Orders
+                .Where(o => o.UserId == userId);
+
+            int totalCount = await query.CountAsync(ct);
+
+            List<CustomerOrderListDto> orders = await query
                 .OrderByDescending(o => o.CreatedAt)
+                .Skip((request.PageNumber - 1) * request.PageSize)
+                .Take(request.PageSize)
                 .ProjectTo<CustomerOrderListDto>(mapper.ConfigurationProvider)
                 .ToListAsync(ct);
 
-            return Result<List<CustomerOrderListDto>>.Success(orders);
+            PagedResult<CustomerOrderListDto> result = new()
+            {
+                Items = orders,
+                TotalCount = totalCount,
+                PageNumber = request.PageNumber,
+                PageSize = request.PageSize
+            };
+
+            return Result<PagedResult<CustomerOrderListDto>>.Success(result);
         }
     }
 }

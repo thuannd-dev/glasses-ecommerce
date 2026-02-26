@@ -25,10 +25,18 @@ public sealed class CustomerOrdersController : BaseApiController
 
     //get customer orders
     [HttpGet]
-    public async Task<IActionResult> GetMyOrders(CancellationToken ct)
+    public async Task<IActionResult> GetMyOrders(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10,
+        CancellationToken ct = default)
     {
         //Customer chỉ thấy đơn của mình (filter by UserId)
-        return HandleResult(await Mediator.Send(new GetMyOrders.Query(), ct));
+        return HandleResult(await Mediator.Send(
+            new GetMyOrders.Query
+            {
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            }, ct));
     }
 
     //get customer order detail
