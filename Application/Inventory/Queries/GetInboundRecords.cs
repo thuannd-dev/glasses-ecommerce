@@ -23,6 +23,10 @@ public sealed class GetInboundRecords
     {
         public async Task<Result<PagedResult<InboundRecordListDto>>> Handle(Query request, CancellationToken ct)
         {
+            if (request.PageNumber < 1 || request.PageSize < 1 || request.PageSize > 100)
+                return Result<PagedResult<InboundRecordListDto>>
+                    .Failure("Invalid pagination parameters.", 400);
+
             IQueryable<InboundRecord> query = context.InboundRecords.AsNoTracking();
 
             if (request.Status.HasValue)

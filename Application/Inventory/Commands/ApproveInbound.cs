@@ -45,8 +45,12 @@ public sealed class ApproveInbound
                 return Result<Unit>.Failure(
                     "Cannot approve an inbound record you created.", 400);
 
-            // 3. Load stocks with UPDLOCK to prevent race condition
-            List<Guid> variantIds = record.Items.Select(i => i.ProductVariantId).ToList();
+            // 3. Guard: record must have items
+            if (!record.Items.Any())
+                return Result<Unit>.Failure("Inbound record has no items to approve.", 400);
+
+            // 4. Load stocks with UPDLOCK to prevent race condition
+            List<Guid> variantIds = [.. record.Items.Select(i => i.ProductVariantId)];
             string paramList = string.Join(", ", variantIds.Select((_, i) => $"@p{i}"));
             object[] sqlParams = variantIds
                 .Select((id, i) => (object)new SqlParameter($"@p{i}", id)).ToArray();

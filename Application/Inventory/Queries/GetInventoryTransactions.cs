@@ -25,6 +25,10 @@ public sealed class GetInventoryTransactions
     {
         public async Task<Result<PagedResult<InventoryTransactionDto>>> Handle(Query request, CancellationToken ct)
         {
+            if (request.PageNumber < 1 || request.PageSize < 1 || request.PageSize > 100)
+                return Result<PagedResult<InventoryTransactionDto>>
+                    .Failure("Invalid pagination parameters.", 400);
+
             IQueryable<InventoryTransaction> query = context.InventoryTransactions.AsNoTracking();
 
             if (request.TransactionType.HasValue)

@@ -36,19 +36,23 @@ public sealed class GetProductList
         public decimal? MinPrice { get; set; }
         public decimal? MaxPrice { get; set; }
         public string? SearchTerm { get; set; }
-        
+
         [JsonConverter(typeof(JsonStringEnumConverter))]
         public SortByOption SortBy { get; set; } = SortByOption.CreatedAt;
-        
+
         [JsonConverter(typeof(JsonStringEnumConverter))]
         public SortOrderOption SortOrder { get; set; } = SortOrderOption.Desc;
     }
 
-    public sealed class Handler(AppDbContext context, IMapper mapper) 
+    public sealed class Handler(AppDbContext context, IMapper mapper)
         : IRequestHandler<Query, Result<PagedResult<ProductListDto>>>
     {
         public async Task<Result<PagedResult<ProductListDto>>> Handle(Query request, CancellationToken cancellationToken)
         {
+            if (request.PageNumber < 1 || request.PageSize < 1 || request.PageSize > 100)
+                return Result<PagedResult<ProductListDto>>
+                    .Failure("Invalid pagination parameters.", 400);
+
             var query = context.Products.AsQueryable();
 
             // Apply filters
@@ -69,9 +73,9 @@ public sealed class GetProductList
 
             // IMPORTANT: Ensure product has at least one active variant when needed
             // (required for price-based filtering and sorting to avoid default price edge cases)
-            if (statusFilter == ProductStatus.Active 
-                || request.MinPrice.HasValue 
-                || request.MaxPrice.HasValue 
+            if (statusFilter == ProductStatus.Active
+                || request.MinPrice.HasValue
+                || request.MaxPrice.HasValue
                 || request.SortBy == SortByOption.Price)
             {
                 query = query.Where(p => p.Variants.Any(v => v.IsActive));
@@ -89,7 +93,7 @@ public sealed class GetProductList
             if (!string.IsNullOrWhiteSpace(request.SearchTerm))
             {
                 string searchPattern = $"%{request.SearchTerm}%";
-                query = query.Where(p => 
+                query = query.Where(p =>
                     EF.Functions.Like(p.ProductName, searchPattern) ||
                     (p.Description != null && EF.Functions.Like(p.Description, searchPattern)) ||
                     (p.Brand != null && EF.Functions.Like(p.Brand, searchPattern))
@@ -99,7 +103,7 @@ public sealed class GetProductList
             // Price range filtering (based on active variant prices)
             if (request.MinPrice.HasValue || request.MaxPrice.HasValue)
             {
-                query = query.Where(p => p.Variants.Any(v => 
+                query = query.Where(p => p.Variants.Any(v =>
                     v.IsActive &&
                     (!request.MinPrice.HasValue || v.Price >= request.MinPrice.Value) &&
                     (!request.MaxPrice.HasValue || v.Price <= request.MaxPrice.Value)

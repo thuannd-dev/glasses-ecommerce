@@ -25,6 +25,10 @@ public sealed class GetOperationsOrders
     {
         public async Task<Result<PagedResult<StaffOrderListDto>>> Handle(Query request, CancellationToken ct)
         {
+            if (request.PageNumber < 1 || request.PageSize < 1 || request.PageSize > 100)
+                return Result<PagedResult<StaffOrderListDto>>
+                    .Failure("Invalid pagination parameters.", 400);
+
             IQueryable<Order> query = context.Orders.AsNoTracking();
 
             if (request.Status.HasValue)
