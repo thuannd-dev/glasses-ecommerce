@@ -185,5 +185,41 @@ public class MappingProfiles : Profile
             .ForMember(d => d.FinalAmount, o => o.MapFrom(s =>
                 s.TotalAmount + s.ShippingFee - s.PromoUsageLogs.Sum(p => p.DiscountApplied)))
             .ForMember(d => d.ItemCount, o => o.MapFrom(s => s.OrderItems.Count));
+
+        // Inventory transaction mappings
+        CreateMap<InventoryTransaction, Application.Inventory.DTOs.InventoryTransactionDto>()
+            .ForMember(d => d.TransactionType, o => o.MapFrom(s => s.TransactionType.ToString()))
+            .ForMember(d => d.ReferenceType, o => o.MapFrom(s => s.ReferenceType.ToString()))
+            .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()))
+            .ForMember(d => d.VariantName, o => o.MapFrom(s =>
+                s.ProductVariant != null ? s.ProductVariant.VariantName : null))
+            .ForMember(d => d.SKU, o => o.MapFrom(s =>
+                s.ProductVariant != null ? s.ProductVariant.SKU : null))
+            .ForMember(d => d.CreatedByName, o => o.MapFrom(s =>
+                s.Creator != null ? s.Creator.DisplayName : null));
+
+        // Inbound record list mappings
+        CreateMap<InboundRecord, Application.Inventory.DTOs.InboundRecordListDto>()
+            .ForMember(d => d.SourceType, o => o.MapFrom(s => s.SourceType.ToString()))
+            .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()))
+            .ForMember(d => d.CreatedByName, o => o.MapFrom(s =>
+                s.Creator != null ? s.Creator.DisplayName : null));
+
+        // Inbound record detail mappings
+        CreateMap<InboundRecord, Application.Inventory.DTOs.InboundRecordDto>()
+            .ForMember(d => d.SourceType, o => o.MapFrom(s => s.SourceType.ToString()))
+            .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()))
+            .ForMember(d => d.CreatedByName, o => o.MapFrom(s =>
+                s.Creator != null ? s.Creator.DisplayName : null))
+            .ForMember(d => d.ApprovedByName, o => o.MapFrom(s =>
+                s.Approver != null ? s.Approver.DisplayName : null))
+            .ForMember(d => d.Items, o => o.MapFrom(s => s.Items));
+
+        // Inbound record item mappings
+        CreateMap<InboundRecordItem, Application.Inventory.DTOs.InboundRecordItemDto>()
+            .ForMember(d => d.VariantName, o => o.MapFrom(s =>
+                s.ProductVariant != null ? s.ProductVariant.VariantName : null))
+            .ForMember(d => d.SKU, o => o.MapFrom(s =>
+                s.ProductVariant != null ? s.ProductVariant.SKU : null));
     }
 }
