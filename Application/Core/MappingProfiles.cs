@@ -130,7 +130,10 @@ public class MappingProfiles : Profile
                 s.SalesStaff != null ? s.SalesStaff.DisplayName : null))
             .ForMember(d => d.Items, o => o.MapFrom(s => s.OrderItems))
             .ForMember(d => d.Payment, o => o.MapFrom(s => s.Payments.FirstOrDefault()))
-            .ForMember(d => d.Prescription, o => o.MapFrom(s => s.Prescription));
+            .ForMember(d => d.Prescription, o => o.MapFrom(s => s.Prescription))
+            .ForMember(d => d.Shipment, o => o.MapFrom(s => s.ShipmentInfo))
+            .ForMember(d => d.StatusHistories, o => o.MapFrom(s =>
+                s.StatusHistories.OrderBy(h => h.CreatedAt)));
 
         CreateMap<OrderItem, OrderItemOutputDto>()
             .ForMember(d => d.Sku, o => o.MapFrom(s =>
@@ -148,6 +151,13 @@ public class MappingProfiles : Profile
 
         CreateMap<Prescription, OrderPrescriptionDto>();
 
+        CreateMap<OrderStatusHistory, OrderStatusHistoryDto>()
+            .ForMember(d => d.FromStatus, o => o.MapFrom(s => s.FromStatus.ToString()))
+            .ForMember(d => d.ToStatus, o => o.MapFrom(s => s.ToStatus.ToString()));
+
+        CreateMap<ShipmentInfo, ShipmentInfoDto>()
+            .ForMember(d => d.CarrierName, o => o.MapFrom(s => s.CarrierName.ToString()));
+
         CreateMap<PrescriptionDetail, PrescriptionDetailOutputDto>()
             .ForMember(d => d.Eye, o => o.MapFrom(s => s.Eye.ToString()));
 
@@ -164,7 +174,10 @@ public class MappingProfiles : Profile
                     : null))
             .ForMember(d => d.Items, o => o.MapFrom(s => s.OrderItems))
             .ForMember(d => d.Payment, o => o.MapFrom(s => s.Payments.FirstOrDefault()))
-            .ForMember(d => d.Prescription, o => o.MapFrom(s => s.Prescription));
+            .ForMember(d => d.Prescription, o => o.MapFrom(s => s.Prescription))
+            .ForMember(d => d.Shipment, o => o.MapFrom(s => s.ShipmentInfo))
+            .ForMember(d => d.StatusHistories, o => o.MapFrom(s =>
+                s.StatusHistories.OrderBy(h => h.CreatedAt)));
 
         CreateMap<Order, CustomerOrderListDto>()
             .ForMember(d => d.OrderType, o => o.MapFrom(s => s.OrderType.ToString()))

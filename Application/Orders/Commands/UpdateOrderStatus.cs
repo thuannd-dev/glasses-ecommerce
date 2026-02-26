@@ -24,6 +24,7 @@ public sealed class UpdateOrderStatus
             Guid staffUserId = userAccessor.GetUserId();
 
             Order? order = await context.Orders
+                .Include(o => o.ShipmentInfo)
                 .FirstOrDefaultAsync(o => o.Id == request.OrderId, ct);
 
             if (order == null)
@@ -79,6 +80,29 @@ public sealed class UpdateOrderStatus
                         item.ProductVariant.Stock.UpdatedBy = staffUserId;
                     }
                 }
+            }
+
+            // If shipping, require and create shipment info
+            if (newStatus == OrderStatus.Shipped)
+            {
+                if (request.Dto.Shipment == null)
+                    return Result<Unit>.Failure("Shipment info is required when shipping an order.", 400);
+
+                if (order.ShipmentInfo != null)
+                    return Result<Unit>.Failure("Shipment info already exists for this order.", 409);
+
+                context.Set<ShipmentInfo>().Add(new ShipmentInfo
+                {
+                    OrderId = order.Id,
+                    CarrierName = request.Dto.Shipment.CarrierName,
+                    TrackingCode = request.Dto.Shipment.TrackingCode,
+                    TrackingUrl = request.Dto.Shipment.TrackingUrl,
+                    EstimatedDeliveryAt = request.Dto.Shipment.EstimatedDeliveryAt,
+                    ShippingNotes = request.Dto.Shipment.ShippingNotes,
+                    ShippedAt = DateTime.UtcNow,
+                    CreatedBy = staffUserId,
+                    UpdatedAt = DateTime.UtcNow,
+                });
             }
 
             order.OrderStatus = newStatus;
