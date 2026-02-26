@@ -52,6 +52,9 @@ public sealed class UpdateOrderStatus
                     .Where(oi => oi.OrderId == order.Id)
                     .ToListAsync(ct);
 
+                if (items.Count == 0)
+                    return Result<Unit>.Failure("Order has no items.", 400);
+
                 // Lock stock rows with UPDLOCK
                 List<Guid> variantIds = items.Select(oi => oi.ProductVariantId).Distinct().ToList();
                 string paramList = string.Join(", ", variantIds.Select((_, i) => $"@p{i}"));
@@ -61,19 +64,22 @@ public sealed class UpdateOrderStatus
                 List<Stock> stocks = await context.Stocks
                     .FromSqlRaw($"SELECT * FROM Stocks WITH (UPDLOCK) WHERE ProductVariantId IN ({paramList})", sqlParams)
                     .ToListAsync(ct);
+                Dictionary<Guid, Stock> stockByVariant = stocks.ToDictionary(s => s.ProductVariantId);
 
                 if (newStatus == OrderStatus.Cancelled)
                 {
                     foreach (OrderItem item in items)
                     {
-                        Stock? stock = stocks.FirstOrDefault(s => s.ProductVariantId == item.ProductVariantId);
-                        if (stock != null)
-                        {
-                            stock.QuantityReserved =
-                                Math.Max(0, stock.QuantityReserved - item.Quantity);
-                            stock.UpdatedAt = DateTime.UtcNow;
-                            stock.UpdatedBy = staffUserId;
-                        }
+                        if (!stockByVariant.TryGetValue(item.ProductVariantId, out Stock? stock))
+                            return Result<Unit>.Failure(
+                                $"Stock record not found for product variant '{item.ProductVariantId}'.", 409);
+                        if (stock.QuantityReserved < item.Quantity)
+                            return Result<Unit>.Failure(
+                                $"Insufficient reserved stock for product variant '{item.ProductVariantId}'.", 409);
+
+                        stock.QuantityReserved -= item.Quantity;
+                        stock.UpdatedAt = DateTime.UtcNow;
+                        stock.UpdatedBy = staffUserId;
                     }
                 }
 
@@ -81,16 +87,17 @@ public sealed class UpdateOrderStatus
                 {
                     foreach (OrderItem item in items)
                     {
-                        Stock? stock = stocks.FirstOrDefault(s => s.ProductVariantId == item.ProductVariantId);
-                        if (stock != null)
-                        {
-                            stock.QuantityOnHand =
-                                Math.Max(0, stock.QuantityOnHand - item.Quantity);
-                            stock.QuantityReserved =
-                                Math.Max(0, stock.QuantityReserved - item.Quantity);
-                            stock.UpdatedAt = DateTime.UtcNow;
-                            stock.UpdatedBy = staffUserId;
-                        }
+                        if (!stockByVariant.TryGetValue(item.ProductVariantId, out Stock? stock))
+                            return Result<Unit>.Failure(
+                                $"Stock record not found for product variant '{item.ProductVariantId}'.", 409);
+                        if (stock.QuantityOnHand < item.Quantity || stock.QuantityReserved < item.Quantity)
+                            return Result<Unit>.Failure(
+                                $"Insufficient stock for product variant '{item.ProductVariantId}'.", 409);
+
+                        stock.QuantityOnHand -= item.Quantity;
+                        stock.QuantityReserved -= item.Quantity;
+                        stock.UpdatedAt = DateTime.UtcNow;
+                        stock.UpdatedBy = staffUserId;
                     }
                 }
             }

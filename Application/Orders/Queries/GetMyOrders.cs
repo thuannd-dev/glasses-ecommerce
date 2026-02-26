@@ -29,6 +29,7 @@ public sealed class GetMyOrders
             Guid userId = userAccessor.GetUserId();
 
             IQueryable<Domain.Order> query = context.Orders
+                .AsNoTracking()
                 .Where(o => o.UserId == userId);
 
             int totalCount = await query.CountAsync(ct);

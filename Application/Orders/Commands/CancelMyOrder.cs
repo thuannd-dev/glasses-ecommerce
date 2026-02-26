@@ -1,9 +1,12 @@
+using System.Data;
 using Application.Core;
 using Application.Interfaces;
 using Application.Orders.DTOs;
 using Domain;
 using MediatR;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Persistence;
 
 namespace Application.Orders.Commands;
@@ -23,13 +26,13 @@ public sealed class CancelMyOrder
     {
         public async Task<Result<Unit>> Handle(Command request, CancellationToken ct)
         {
+            await using IDbContextTransaction transaction =
+                await context.Database.BeginTransactionAsync(IsolationLevel.RepeatableRead, ct);
+
             Guid userId = userAccessor.GetUserId();
 
             Order? order = await context.Orders
                 .Include(o => o.ShipmentInfo)
-                .Include(o => o.OrderItems)
-                    .ThenInclude(oi => oi.ProductVariant)
-                        .ThenInclude(pv => pv!.Stock)
                 .FirstOrDefaultAsync(o => o.Id == request.OrderId
                     && o.UserId == userId, ct);
 
@@ -45,15 +48,38 @@ public sealed class CancelMyOrder
 
             OrderStatus oldStatus = order.OrderStatus;
 
-            // Release reserved stock
-            foreach (OrderItem item in order.OrderItems)
+            // Load order items
+            List<OrderItem> items = await context.OrderItems
+                .Where(oi => oi.OrderId == order.Id)
+                .ToListAsync(ct);
+
+            if (items.Count > 0)
             {
-                if (item.ProductVariant?.Stock != null)
+                // Lock stock rows with UPDLOCK
+                List<Guid> variantIds = items.Select(oi => oi.ProductVariantId).Distinct().ToList();
+                string paramList = string.Join(", ", variantIds.Select((_, i) => $"@p{i}"));
+                object[] sqlParams = variantIds
+                    .Select((id, i) => (object)new SqlParameter($"@p{i}", id)).ToArray();
+
+                List<Stock> stocks = await context.Stocks
+                    .FromSqlRaw($"SELECT * FROM Stocks WITH (UPDLOCK) WHERE ProductVariantId IN ({paramList})", sqlParams)
+                    .ToListAsync(ct);
+
+                Dictionary<Guid, Stock> stockByVariant = stocks.ToDictionary(s => s.ProductVariantId);
+
+                // Release reserved stock
+                foreach (OrderItem item in items)
                 {
-                    item.ProductVariant.Stock.QuantityReserved =
-                        Math.Max(0, item.ProductVariant.Stock.QuantityReserved - item.Quantity);
-                    item.ProductVariant.Stock.UpdatedAt = DateTime.UtcNow;
-                    item.ProductVariant.Stock.UpdatedBy = userId;
+                    if (!stockByVariant.TryGetValue(item.ProductVariantId, out Stock? stock))
+                        return Result<Unit>.Failure(
+                            $"Stock record not found for product variant '{item.ProductVariantId}'.", 409);
+                    if (stock.QuantityReserved < item.Quantity)
+                        return Result<Unit>.Failure(
+                            $"Insufficient reserved stock for product variant '{item.ProductVariantId}'.", 409);
+
+                    stock.QuantityReserved -= item.Quantity;
+                    stock.UpdatedAt = DateTime.UtcNow;
+                    stock.UpdatedBy = userId;
                 }
             }
 
@@ -73,6 +99,8 @@ public sealed class CancelMyOrder
 
             if (!success)
                 return Result<Unit>.Failure("Failed to cancel order.", 400);
+
+            await transaction.CommitAsync(ct);
 
             return Result<Unit>.Success(Unit.Value);
         }

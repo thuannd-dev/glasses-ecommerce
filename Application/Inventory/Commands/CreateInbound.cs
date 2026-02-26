@@ -32,7 +32,10 @@ public sealed class CreateInbound
                 {
                     ProductVariantId = g.Key,
                     Quantity = g.Sum(i => i.Quantity),
-                    Notes = string.Join("; ", g.Where(i => i.Notes != null).Select(i => i.Notes!)),
+                    Notes = g.Where(i => !string.IsNullOrWhiteSpace(i.Notes))
+                              .Select(i => i.Notes!)
+                              .DefaultIfEmpty(null)
+                              .Aggregate((a, b) => $"{a}; {b}"),
                 })];
 
             // 2. Validate all product variants exist

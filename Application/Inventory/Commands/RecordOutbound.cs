@@ -1,9 +1,11 @@
+using System.Data;
 using Application.Core;
 using Application.Interfaces;
 using Application.Inventory.DTOs;
 using Domain;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Persistence;
 
 namespace Application.Inventory.Commands;
@@ -20,6 +22,11 @@ public sealed class RecordOutbound
     {
         public async Task<Result<Unit>> Handle(Command request, CancellationToken ct)
         {
+            // RepeatableRead ensures the duplicate check + insert is atomic
+            // The AnyAsync places a range lock, blocking concurrent inserts
+            await using IDbContextTransaction transaction =
+                await context.Database.BeginTransactionAsync(IsolationLevel.RepeatableRead, ct);
+
             Guid staffUserId = userAccessor.GetUserId();
 
             // 1. Validate order exists
@@ -71,6 +78,8 @@ public sealed class RecordOutbound
 
             if (!success)
                 return Result<Unit>.Failure("Failed to record outbound.", 500);
+
+            await transaction.CommitAsync(ct);
 
             return Result<Unit>.Success(Unit.Value);
         }
