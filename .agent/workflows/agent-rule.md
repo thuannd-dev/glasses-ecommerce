@@ -172,3 +172,91 @@ The canonical API reference is:
   //Dto Request để add item
   public sealed class AddCartItemDto
   ```
+
+# Concurrency & Invariant Enforcement Rules
+
+## Fail-fast over silent correction
+
+For invalid input (pagination params, missing entities, bad enum values), always return an explicit `Result.Failure(..., 4xx)` rather than silently correcting/clamping:
+
+```csharp
+// WRONG — hides bad input from the caller
+int pageSize = Math.Clamp(request.PageSize, 1, 100);
+
+// CORRECT
+if (request.PageNumber < 1 || request.PageSize < 1 || request.PageSize > 100)
+    return Result<PagedResult<T>>.Failure("Invalid pagination parameters.", 400);
+```
+
+## Guard empty collections with early return before SQL `IN (...)`
+
+Never use `if/else { list = [] }` fallback. Use early-return guard:
+
+```csharp
+// WRONG
+List<Stock> stocks;
+if (variantIds.Count == 0) stocks = [];
+else stocks = await context.Stocks.FromSqlRaw(...).ToListAsync(ct);
+
+// CORRECT — follow ApproveInbound.cs pattern
+if (items.Count == 0)
+    return Result<Unit>.Failure("Order has no items.", 400);
+List<Stock> stocks = await context.Stocks.FromSqlRaw(...).ToListAsync(ct);
+```
+
+## Strict stock invariants — never skip or clamp
+
+Stock adjustment code must fail explicitly, never skip or clamp:
+
+```csharp
+// WRONG
+Stock? stock = stocks.FirstOrDefault(s => s.ProductVariantId == item.ProductVariantId);
+if (stock != null)
+    stock.QuantityReserved = Math.Max(0, stock.QuantityReserved - item.Quantity);
+
+// CORRECT
+Dictionary<Guid, Stock> stockByVariant = stocks.ToDictionary(s => s.ProductVariantId);
+if (!stockByVariant.TryGetValue(item.ProductVariantId, out Stock? stock))
+    return Result<Unit>.Failure($"Stock record not found for variant '{item.ProductVariantId}'.", 409);
+if (stock.QuantityReserved < item.Quantity)
+    return Result<Unit>.Failure($"Insufficient reserved stock for variant '{item.ProductVariantId}'.", 409);
+stock.QuantityReserved -= item.Quantity;
+```
+
+## Proactively scan sibling files when fixing a pattern
+
+When fixing a bug in one handler, immediately grep the entire codebase for the same pattern and fix all occurrences in the same response. Do not wait to be asked. Common patterns to scan:
+
+- `Math.Max(0,` on stock fields
+- `stock != null` silent-skip
+- missing `AsNoTracking()` on read-only queries
+- missing `RepeatableRead` transaction on read-then-write
+
+## `await using` is sufficient for transaction rollback
+
+`await using IDbContextTransaction` auto-rollbacks on `DisposeAsync()` if `CommitAsync()` was never called. Do NOT add explicit `RollbackAsync()` before each `return` failure — it's redundant boilerplate and can shadow exceptions.
+
+## Always apply `AsNoTracking()` on read-only list queries
+
+All list queries using `ProjectTo<T>` must include `.AsNoTracking()`:
+
+```csharp
+IQueryable<Order> query = context.Orders.AsNoTracking();
+```
+
+## Use `IsNullOrWhiteSpace` for optional string fields
+
+Never use `!= null` to check optional strings. Use `IsNullOrWhiteSpace` to treat `""` and whitespace the same as `null`:
+
+```csharp
+// WRONG — "" passes through
+Notes = string.Join("; ", g.Where(i => i.Notes != null).Select(i => i.Notes!))
+
+// CORRECT
+Notes = g.Where(i => !string.IsNullOrWhiteSpace(i.Notes))
+          .Select(i => i.Notes!)
+          .DefaultIfEmpty(null)
+          .Aggregate((a, b) => $"{a}; {b}"),
+// and at storage:
+Notes = string.IsNullOrWhiteSpace(item.Notes) ? null : item.Notes,
+```
