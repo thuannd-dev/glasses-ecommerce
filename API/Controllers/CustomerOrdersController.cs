@@ -36,6 +36,7 @@ public sealed class CustomerOrdersController : BaseApiController
     public async Task<IActionResult> GetMyOrderDetail(Guid id, CancellationToken ct)
     {
         //Customer chỉ thấy đơn của mình (filter by UserId)
+        //Response bao gồm: items, payment, prescription, shipment, statusHistories
         return HandleResult(await Mediator.Send(new GetMyOrderDetail.Query { Id = id }, ct));
     }
 

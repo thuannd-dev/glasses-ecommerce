@@ -39,6 +39,16 @@ public sealed class UpdateOrderStatusValidator : AbstractValidator<UpdateOrderSt
                         .Must(c => c != ShippingCarrier.Unknown)
                         .WithMessage("Valid shipping carrier is required.");
 
+                    RuleFor(x => x.Dto.Shipment!.TrackingCode)
+                        .NotEmpty().WithMessage("Tracking code is required.")
+                        .MaximumLength(100);
+
+                    RuleFor(x => x.Dto.Shipment!.TrackingUrl)
+                        .MaximumLength(500)
+                        .Must(url => Uri.TryCreate(url, UriKind.Absolute, out _))
+                        .WithMessage("Tracking URL must be a valid URL.")
+                        .When(x => !string.IsNullOrEmpty(x.Dto.Shipment!.TrackingUrl));
+
                     RuleFor(x => x.Dto.Shipment!.ShippingNotes)
                         .MaximumLength(500)
                         .When(x => x.Dto.Shipment!.ShippingNotes != null);

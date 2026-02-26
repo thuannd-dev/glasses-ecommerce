@@ -37,6 +37,7 @@ public sealed class StaffOrdersController : BaseApiController
     public async Task<IActionResult> GetOrderDetail(Guid id, CancellationToken ct)
     {
         //Staff chỉ thấy đơn mình tạo (filter by CreatedBySalesStaff)
+        //Response bao gồm: items, payment, prescription, shipment, statusHistories
         return HandleResult(await Mediator.Send(new GetStaffOrderDetail.Query { Id = id }, ct));
     }
 
@@ -44,6 +45,7 @@ public sealed class StaffOrdersController : BaseApiController
     public async Task<IActionResult> UpdateOrderStatus(Guid id, UpdateOrderStatusDto dto, CancellationToken ct)
     {
         // Staff có thể cập nhật bất kỳ đơn nào (cả đơn online của customer lẫn đơn staff khác tạo)
+        // Nếu Shipped → bắt buộc gửi kèm Shipment (carrierName, trackingCode, ...)
         // Nếu Cancelled → release stock (QuantityReserved -= quantity)
         // Nếu Completed → deduct stock (QuantityOnHand -= quantity, QuantityReserved -= quantity)
         // Ghi OrderStatusHistory (from → to, notes, changedBy)
