@@ -49,6 +49,48 @@ export function useCollectionPage() {
 
   const categorySlug = (category || "").toLowerCase();
 
+  // Tính ra danh sách categoryIds để gửi lên API, dựa trên slug trên URL và filters.glassesTypes
+  let categoryIds: string[] | undefined;
+
+  if (categorySlug !== "all") {
+    const hasGlassesTypeFilter = filters.glassesTypes.length > 0;
+
+    const wantedNamesOrSlugs = hasGlassesTypeFilter
+      ? filters.glassesTypes.map((t) => String(t).toLowerCase())
+      : categorySlug
+        ? [categorySlug]
+        : [];
+
+    if (wantedNamesOrSlugs.length > 0 && categoriesList.length > 0) {
+      const matched = categoriesList.filter((c) => {
+        const nameLower = c.name.toLowerCase();
+        const slugLower = c.slug.toLowerCase();
+        return (
+          wantedNamesOrSlugs.includes(nameLower) || wantedNamesOrSlugs.includes(slugLower)
+        );
+      });
+
+      if (matched.length > 0) {
+        categoryIds = matched.map((c) => c.id);
+      } else if (categorySlug) {
+        const fallbackSlug =
+          categorySlug === "glasses"
+            ? "eyeglasses"
+            : categorySlug === "fashion"
+              ? "sunglasses"
+              : categorySlug;
+
+        const fallback = categoriesList.find((c) => {
+          const nameLower = c.name.toLowerCase();
+          const slugLower = c.slug.toLowerCase();
+          return nameLower === fallbackSlug || slugLower === fallbackSlug;
+        });
+
+        categoryIds = fallback ? [fallback.id] : undefined;
+      }
+    }
+  }
+
   useEffect(() => {
     if (categorySlug === "all") {
       setFilters((prev) =>
@@ -67,37 +109,6 @@ export function useCollectionPage() {
     }
   }, [categorySlug]);
 
-  const categoryIds = (() => {
-    if (categorySlug === "all") return undefined;
-    const wantedNamesOrSlugs = filters.glassesTypes.length
-      ? filters.glassesTypes.map((t) => String(t).toLowerCase())
-      : categorySlug
-        ? [categorySlug]
-        : [];
-    if (wantedNamesOrSlugs.length === 0 || categoriesList.length === 0) return undefined;
-    const matched = categoriesList.filter((c) => {
-      const nameLower = c.name.toLowerCase();
-      const slugLower = c.slug.toLowerCase();
-      return (
-        wantedNamesOrSlugs.includes(nameLower) || wantedNamesOrSlugs.includes(slugLower)
-      );
-    });
-    if (matched.length === 0 && categorySlug) {
-      const fallbackSlug =
-        categorySlug === "glasses"
-          ? "eyeglasses"
-          : categorySlug === "fashion"
-            ? "sunglasses"
-            : categorySlug;
-      const fallback = categoriesList.find(
-        (c) =>
-          c.name.toLowerCase() === fallbackSlug || c.slug.toLowerCase() === fallbackSlug
-      );
-      return fallback ? [fallback.id] : undefined;
-    }
-    return matched.length > 0 ? matched.map((c) => c.id) : undefined;
-  })();
-
   const productsParams = {
     pageSize: PAGE_SIZE,
     categoryIds,
@@ -109,6 +120,13 @@ export function useCollectionPage() {
     sortOrder,
   };
 
+  const hasCategoryIds = !!(categoryIds && categoryIds.length > 0);
+  const hasGlassesTypeFilter = filters.glassesTypes.length > 0;
+  const isAllOrRootCategory = categorySlug === "all" || !categorySlug;
+
+  const enableQuery =
+    hasCategoryIds || (!hasGlassesTypeFilter && isAllOrRootCategory);
+
   const {
     products: apiProducts,
     totalCount: totalItems,
@@ -116,26 +134,23 @@ export function useCollectionPage() {
   } = useProducts(
     { ...productsParams, pageNumber: page },
     {
-      enabled:
-        (filters.glassesTypes.length === 0 &&
-          (categorySlug === "all" || !categorySlug)) ||
-        !!(categoryIds && categoryIds.length > 0),
+      enabled: enableQuery,
     }
   );
 
   const rawProducts: Product[] = Array.isArray(apiProducts) ? apiProducts : [];
   const pageProducts =
-    filters.glassesTypes.length > 0
+    hasGlassesTypeFilter && rawProducts.length > 0
       ? rawProducts.filter(
           (p) => p.glassesType && filters.glassesTypes.includes(p.glassesType)
         )
       : rawProducts;
 
+  const isFirstPage = page === 1;
+  const isShortFirstPage = pageProducts.length < PAGE_SIZE;
+
   const needMergePage2 =
-    !!(categoryIds && categoryIds.length > 0) &&
-    page === 1 &&
-    pageProducts.length < PAGE_SIZE &&
-    totalItems > pageProducts.length;
+    hasCategoryIds && isFirstPage && isShortFirstPage && totalItems > pageProducts.length;
 
   const { products: apiPage2 } = useProducts(
     { ...productsParams, pageNumber: 2 },
@@ -157,10 +172,7 @@ export function useCollectionPage() {
   const effectiveTotal =
     needMergePage2 && mergedProducts.length > 0
       ? mergedProducts.length
-      : categoryIds &&
-          categoryIds.length > 0 &&
-          page === 1 &&
-          pageProducts.length < PAGE_SIZE
+      : hasCategoryIds && isFirstPage && isShortFirstPage
         ? pageProducts.length
         : totalItems;
 

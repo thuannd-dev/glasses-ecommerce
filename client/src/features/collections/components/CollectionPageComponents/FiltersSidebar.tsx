@@ -9,7 +9,7 @@ import {
     Typography,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import type { Dispatch, SetStateAction } from "react";
+import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
 import { useNavigate } from "react-router-dom";
 import type { FiltersState, GlassesType } from "../../types";
 
@@ -86,15 +86,21 @@ export function FiltersSidebar({
         navigate("/collections/all");
     };
 
-    const handleChipKeyDown = (
-        e: React.KeyboardEvent,
-        onClick: () => void,
-    ) => {
+    const handleChipKeyDown = (e: React.KeyboardEvent, onClick: () => void) => {
         if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
             onClick();
         }
     };
+
+    const [priceRange, setPriceRange] = useState<[number, number]>([
+        filters.minPrice ?? 0,
+        filters.maxPrice ?? 2000,
+    ]);
+
+    useEffect(() => {
+        setPriceRange([filters.minPrice ?? 0, filters.maxPrice ?? 2000]);
+    }, [filters.minPrice, filters.maxPrice]);
 
     return (
         <Box
@@ -138,12 +144,12 @@ export function FiltersSidebar({
                     <AccordionDetails sx={{ pt: 0 }}>
                         <Box sx={{ px: 0.5, pb: 1 }}>
                             <Slider
-                                value={[
-                                    filters.minPrice ?? 0,
-                                    filters.maxPrice ?? 2000,
-                                ]}
+                                value={priceRange}
                                 onChange={(_, value) => {
-                                    const [min, max] = value as number[];
+                                    setPriceRange(value as [number, number]);
+                                }}
+                                onChangeCommitted={(_, value) => {
+                                    const [min, max] = value as [number, number];
                                     setFilters((prev) => ({
                                         ...prev,
                                         minPrice: min === 0 ? null : min,

@@ -16,6 +16,20 @@ import {
 import { useOperations } from "../context/OperationsContext";
 import { SummaryCard } from "../components";
 import { ORDER_STATUS_LABEL, ORDER_TYPE_LABEL, formatDate } from "../constants";
+import type { OrderStatus } from "../types";
+
+const STATUS_COLORS: Record<OrderStatus, { bg: string; color: string }> = {
+  pending: { bg: "rgba(25,118,210,0.08)", color: "#1565c0" },
+  confirmed: { bg: "rgba(25,118,210,0.08)", color: "#1565c0" },
+  processing: { bg: "rgba(255,152,0,0.12)", color: "#ef6c00" },
+  ready_to_ship: { bg: "rgba(2,136,209,0.12)", color: "#0277bd" },
+  shipped: { bg: "rgba(46,125,50,0.12)", color: "#2e7d32" },
+  delivered: { bg: "rgba(46,125,50,0.12)", color: "#2e7d32" },
+  received: { bg: "rgba(63,81,181,0.10)", color: "#3949ab" },
+  lens_ordered: { bg: "rgba(123,31,162,0.10)", color: "#7b1fa2" },
+  lens_fitting: { bg: "rgba(94,53,177,0.12)", color: "#5e35b1" },
+  cancelled: { bg: "rgba(211,47,47,0.10)", color: "#c62828" },
+};
 
 export function OverviewScreen() {
   const { orders, ordersLoading, shipments, shipmentsLoading } = useOperations();
@@ -213,14 +227,8 @@ export function OverviewScreen() {
                         sx={{
                           fontWeight: 600,
                           borderRadius: 1,
-                          bgcolor:
-                            order.status === "shipped" || order.status === "delivered"
-                              ? "rgba(46,125,50,0.12)"
-                              : "rgba(25,118,210,0.12)",
-                          color:
-                            order.status === "shipped" || order.status === "delivered"
-                              ? "#2e7d32"
-                              : "#1976d2",
+                          bgcolor: STATUS_COLORS[order.status].bg,
+                          color: STATUS_COLORS[order.status].color,
                         }}
                       />
                     </TableCell>
