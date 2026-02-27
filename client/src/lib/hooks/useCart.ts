@@ -35,7 +35,7 @@ export function useCart() {
     queryKey: ["cart"],
     enabled: shouldLoadCart,
     queryFn: async () => {
-      const res = await agent.get<CartDto>("/carts");
+      const res = await agent.get<CartDto>("/me/cart");
       const data = res.data;
       const items: CartItemDto[] = data.items ?? [];
       const totalQuantity =
@@ -66,7 +66,7 @@ export function useCart() {
         toast.error(msg);
         throw new Error(msg);
       }
-      const res = await agent.post<CartDto>("/carts/items", parsed.data);
+      const res = await agent.post<CartDto>("/me/cart/items", parsed.data);
       return res.data;
     },
     onSuccess: () => {
@@ -88,7 +88,7 @@ export function useCart() {
         throw new Error(msg);
       }
       const { id, quantity } = parsed.data;
-      const res = await agent.put<CartDto>(`/carts/items/${id}`, { quantity });
+      const res = await agent.put<CartDto>(`/me/cart/items/${id}`, { quantity });
       return res.data;
     },
     onMutate: async ({ id, quantity }) => {
@@ -142,7 +142,7 @@ export function useCart() {
   // ===== DEL /api/carts/items/{id} ===== (optimistic remove)
   const removeItemMutation = useMutation({
     mutationFn: async (id: string) => {
-      await agent.delete(`/carts/items/${id}`);
+      await agent.delete(`/me/cart/items/${id}`);
     },
     onMutate: async (id: string) => {
       await queryClient.cancelQueries({ queryKey: ["cart"] });
@@ -184,7 +184,7 @@ export function useCart() {
   // ===== DEL /api/carts =====
   const clearCartMutation = useMutation({
     mutationFn: async () => {
-      await agent.delete("/carts");
+      await agent.delete("/me/cart");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cart"] });
