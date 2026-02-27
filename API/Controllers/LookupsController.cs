@@ -25,6 +25,12 @@ public sealed class LookupsController : BaseApiController
             EyeType = GetEnumValues<EyeType>(),
             CartStatus = GetEnumValues<CartStatus>(),
             PromotionType = GetEnumValues<PromotionType>(),
+            ShippingCarrier = GetEnumValues<ShippingCarrier>(),
+            SourceType = GetEnumValues<SourceType>(),
+            InboundRecordStatus = GetEnumValues<InboundRecordStatus>(),
+            TransactionType = GetEnumValues<TransactionType>(),
+            ReferenceType = GetEnumValues<ReferenceType>(),
+            InventoryTransactionStatus = GetEnumValues<InventoryTransactionStatus>(),
         });
     }
 

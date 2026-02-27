@@ -27,10 +27,18 @@ public sealed class StaffOrdersController : BaseApiController
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetOrders(CancellationToken ct)
+    public async Task<IActionResult> GetOrders(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10,
+        CancellationToken ct = default)
     {
         //Staff chỉ thấy đơn mình tạo (filter by CreatedBySalesStaff)
-        return HandleResult(await Mediator.Send(new GetStaffOrders.Query(), ct));
+        return HandleResult(await Mediator.Send(
+            new GetStaffOrders.Query
+            {
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            }, ct));
     }
 
     [HttpGet("{id}")]
