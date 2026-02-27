@@ -30,17 +30,24 @@ public sealed class CreateStaffOrder
             CreateStaffOrderDto dto = request.Dto;
             Guid staffUserId = userAccessor.GetUserId();
 
-            return await context.Database.CreateExecutionStrategy().ExecuteAsync<Result<StaffOrderDto>>(async () =>
+            // ExecuteAsync returns only the new Order ID after commit.
+            // The re-query (ProjectTo) runs OUTSIDE the retry scope so a transient failure
+            // there cannot retry the whole transaction and create duplicate orders.
+            Result<Guid> transactionResult = await context.Database
+                .CreateExecutionStrategy().ExecuteAsync<Result<Guid>>(async () =>
             {
-                // Use RepeatableRead to prevent promo usage limit race condition
+                // Clear stale change-tracker state so each retry attempt starts fresh.
+                context.ChangeTracker.Clear();
+
+                // Serializable prevents phantom reads on the promo usage CountAsync + insert:
+                // two concurrent requests could both read usedCount < limit under RepeatableRead,
+                // then both insert, exceeding the limit. Serializable blocks the second reader.
                 await using IDbContextTransaction transaction =
-                    await context.Database.BeginTransactionAsync(IsolationLevel.RepeatableRead, ct);
+                    await context.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
 
                 // 1. Validate OrderSource + Address logic
                 if (dto.OrderSource == OrderSource.Online && dto.AddressId == null)
-                {
-                    return Result<StaffOrderDto>.Failure("Address is required for online orders.", 400);
-                }
+                    return Result<Guid>.Failure("Address is required for online orders.", 400);
 
                 if (dto.OrderSource == OrderSource.Online && dto.AddressId != null)
                 {
@@ -50,28 +57,24 @@ public sealed class CreateStaffOrder
                         bool addressBelongsToUser = await context.Addresses
                             .AnyAsync(a => a.Id == dto.AddressId && a.UserId == dto.UserId && !a.IsDeleted, ct);
                         if (!addressBelongsToUser)
-                            return Result<StaffOrderDto>.Failure("Address not found or does not belong to the specified customer.", 404);
+                            return Result<Guid>.Failure("Address not found or does not belong to the specified customer.", 404);
                     }
                     else
                     {
                         bool addressExists = await context.Addresses
                             .AnyAsync(a => a.Id == dto.AddressId && !a.IsDeleted, ct);
                         if (!addressExists)
-                            return Result<StaffOrderDto>.Failure("Address not found.", 404);
+                            return Result<Guid>.Failure("Address not found.", 404);
                     }
                 }
 
                 // 2. Validate Prescription requirement
                 if (dto.OrderType == OrderType.Prescription && dto.Prescription == null)
-                {
-                    return Result<StaffOrderDto>.Failure("Prescription details are required for prescription orders.", 400);
-                }
+                    return Result<Guid>.Failure("Prescription details are required for prescription orders.", 400);
 
                 // 3. Validate items and stock
                 if (dto.Items.Count == 0)
-                {
-                    return Result<StaffOrderDto>.Failure("Order must have at least one item.", 400);
-                }
+                    return Result<Guid>.Failure("Order must have at least one item.", 400);
 
                 // Merge duplicate ProductVariantId entries to prevent DB unique constraint violation
                 // and ensure aggregate stock check is correct
@@ -91,9 +94,7 @@ public sealed class CreateStaffOrder
                     .ToListAsync(ct);
 
                 if (variants.Count != variantIds.Distinct().Count())
-                {
-                    return Result<StaffOrderDto>.Failure("One or more product variants not found.", 404);
-                }
+                    return Result<Guid>.Failure("One or more product variants not found.", 404);
 
                 // Load stocks with UPDLOCK to prevent race condition on reservation
                 string paramList = string.Join(", ", variantIds.Select((_, i) => $"@p{i}"));
@@ -112,10 +113,10 @@ public sealed class CreateStaffOrder
                     {
                         ProductVariant variant = variants.First(v => v.Id == item.ProductVariantId);
                         if (!variant.IsActive)
-                            return Result<StaffOrderDto>.Failure($"Product variant '{variant.VariantName}' is not available.", 400);
+                            return Result<Guid>.Failure($"Product variant '{variant.VariantName}' is not available.", 400);
 
                         if (variant.Stock == null || variant.Stock.QuantityAvailable < item.Quantity)
-                            return Result<StaffOrderDto>.Failure(
+                            return Result<Guid>.Failure(
                                 $"Insufficient stock for '{variant.VariantName}'. Available: {variant.Stock?.QuantityAvailable ?? 0}.", 400);
                     }
                 }
@@ -155,7 +156,7 @@ public sealed class CreateStaffOrder
                             && p.ValidTo >= now, ct);
 
                     if (promotion == null)
-                        return Result<StaffOrderDto>.Failure("Invalid or expired promo code.", 400);
+                        return Result<Guid>.Failure("Invalid or expired promo code.", 400);
 
                     // Check usage limit
                     if (promotion.UsageLimit.HasValue)
@@ -163,7 +164,7 @@ public sealed class CreateStaffOrder
                         int usedCount = await context.PromoUsageLogs
                             .CountAsync(l => l.PromotionId == promotion.Id, ct);
                         if (usedCount >= promotion.UsageLimit.Value)
-                            return Result<StaffOrderDto>.Failure("Promo code usage limit reached.", 400);
+                            return Result<Guid>.Failure("Promo code usage limit reached.", 400);
                     }
 
                     // Check min order amount
@@ -294,18 +295,25 @@ public sealed class CreateStaffOrder
                 bool success = await context.SaveChangesAsync(ct) > 0;
 
                 if (!success)
-                    return Result<StaffOrderDto>.Failure("Failed to create order.", 500);
+                    return Result<Guid>.Failure("Failed to create order.", 500);
 
                 await transaction.CommitAsync(ct);
 
-                // 14. Re-query with ProjectTo for consistent response
-                StaffOrderDto result = await context.Orders
-                    .Where(o => o.Id == order.Id)
-                    .ProjectTo<StaffOrderDto>(mapper.ConfigurationProvider)
-                    .FirstAsync(ct);
-
-                return Result<StaffOrderDto>.Success(result);
+                // Return only the ID — re-query happens outside the retry scope.
+                return Result<Guid>.Success(order.Id);
             });
+
+            if (!transactionResult.IsSuccess)
+                return Result<StaffOrderDto>.Failure(transactionResult.Error!, transactionResult.Code);
+
+            // 14. Re-query with ProjectTo for consistent response (outside retry delegate).
+            // If this fails it does NOT retry the transaction.
+            StaffOrderDto result = await context.Orders
+                .Where(o => o.Id == transactionResult.Value)
+                .ProjectTo<StaffOrderDto>(mapper.ConfigurationProvider)
+                .FirstAsync(ct);
+
+            return Result<StaffOrderDto>.Success(result);
         }
     }
 }

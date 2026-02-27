@@ -26,10 +26,14 @@ public sealed class RecordOutbound
 
             return await context.Database.CreateExecutionStrategy().ExecuteAsync(async () =>
             {
-                // RepeatableRead ensures the duplicate check + insert is atomic
-                // The AnyAsync places a range lock, blocking concurrent inserts
+                // Clear stale change-tracker state so each retry attempt starts fresh.
+                context.ChangeTracker.Clear();
+
+                // Serializable prevents phantom reads: two concurrent requests can both pass
+                // AnyAsync (no outbound yet) under RepeatableRead, then both insert.
+                // Serializable holds a range lock that blocks the second request's insert.
                 await using IDbContextTransaction transaction =
-                    await context.Database.BeginTransactionAsync(IsolationLevel.RepeatableRead, ct);
+                    await context.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
 
                 // 1. Validate order exists
                 Order? order = await context.Orders

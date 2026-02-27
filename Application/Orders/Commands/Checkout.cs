@@ -31,11 +31,22 @@ public sealed class Checkout
             CheckoutDto dto = request.Dto;
             Guid userId = userAccessor.GetUserId();
 
-            return await context.Database.CreateExecutionStrategy().ExecuteAsync<Result<CustomerOrderDto>>(async () =>
+            // ExecuteAsync returns only the new Order ID after commit.
+            // The re-query (ProjectTo) runs OUTSIDE the retry scope so a transient failure
+            // there cannot retry the whole transaction and create a duplicate order or
+            // see "Cart is empty" because the cart was already marked Converted.
+            Result<Guid> transactionResult = await context.Database
+                .CreateExecutionStrategy().ExecuteAsync<Result<Guid>>(async () =>
             {
-                // Use RepeatableRead to prevent promo usage limit race condition
+                // Clear stale change-tracker state so each retry attempt starts fresh.
+                context.ChangeTracker.Clear();
+
+                // Serializable prevents phantom reads on the promo usage CountAsync + insert:
+                // two concurrent requests could both read usedCount < limit under RepeatableRead,
+                // then both insert, exceeding the limit. Serializable also serializes the
+                // duplicate-cart-checkout edge case.
                 await using IDbContextTransaction transaction =
-                    await context.Database.BeginTransactionAsync(IsolationLevel.RepeatableRead, ct);
+                    await context.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
 
                 // 1. Get active cart with items
                 Cart? cart = await context.Carts
@@ -44,7 +55,7 @@ public sealed class Checkout
                         && c.Status == CartStatus.Active, ct);
 
                 if (cart == null || cart.Items.Count == 0)
-                    return Result<CustomerOrderDto>.Failure("Cart is empty.", 400);
+                    return Result<Guid>.Failure("Cart is empty.", 400);
 
                 // 2. Validate address
                 bool addressExists = await context.Addresses
@@ -52,17 +63,24 @@ public sealed class Checkout
                         && a.UserId == userId && !a.IsDeleted, ct);
 
                 if (!addressExists)
-                    return Result<CustomerOrderDto>.Failure("Address not found.", 404);
+                    return Result<Guid>.Failure("Address not found.", 404);
 
-                // 3. Validate variants and stock
-                List<Guid> variantIds = cart.Items.Select(i => i.ProductVariantId).ToList();
+                // 3. Aggregate cart items by variant to get correct per-variant totals.
+                // A cart can have multiple rows for the same variant; checking each row
+                // individually could let per-row quantities pass while the aggregate exceeds stock.
+                var mergedItems = cart.Items
+                    .GroupBy(i => i.ProductVariantId)
+                    .Select(g => new { ProductVariantId = g.Key, Quantity = g.Sum(i => i.Quantity) })
+                    .ToList();
+
+                List<Guid> variantIds = mergedItems.Select(i => i.ProductVariantId).ToList();
                 List<ProductVariant> variants = await context.ProductVariants
                     .Include(pv => pv.Product)
                     .Where(pv => variantIds.Contains(pv.Id))
                     .ToListAsync(ct);
 
                 if (variants.Count != variantIds.Distinct().Count())
-                    return Result<CustomerOrderDto>.Failure("One or more products are no longer available.", 400);
+                    return Result<Guid>.Failure("One or more products are no longer available.", 400);
 
                 // Load stocks with UPDLOCK to prevent race condition on reservation
                 string paramList = string.Join(", ", variantIds.Select((_, i) => $"@p{i}"));
@@ -76,33 +94,33 @@ public sealed class Checkout
 
                 if (dto.OrderType == OrderType.ReadyStock)
                 {
-                    foreach (CartItem cartItem in cart.Items)
+                    foreach (var mergedItem in mergedItems)
                     {
-                        ProductVariant variant = variants.First(v => v.Id == cartItem.ProductVariantId);
+                        ProductVariant variant = variants.First(v => v.Id == mergedItem.ProductVariantId);
                         if (!variant.IsActive)
-                            return Result<CustomerOrderDto>.Failure(
+                            return Result<Guid>.Failure(
                                 $"Product '{variant.VariantName}' is no longer available.", 400);
 
-                        if (variant.Stock == null || variant.Stock.QuantityAvailable < cartItem.Quantity)
-                            return Result<CustomerOrderDto>.Failure(
+                        if (variant.Stock == null || variant.Stock.QuantityAvailable < mergedItem.Quantity)
+                            return Result<Guid>.Failure(
                                 $"Insufficient stock for '{variant.VariantName}'. Available: {variant.Stock?.QuantityAvailable ?? 0}.", 400);
                     }
                 }
 
-                // 4. Calculate totals
+                // 4. Calculate totals (use mergedItems for order items too)
                 decimal totalAmount = 0;
                 List<OrderItem> orderItems = new List<OrderItem>();
 
-                foreach (CartItem cartItem in cart.Items)
+                foreach (var mergedItem in mergedItems)
                 {
-                    ProductVariant variant = variants.First(v => v.Id == cartItem.ProductVariantId);
+                    ProductVariant variant = variants.First(v => v.Id == mergedItem.ProductVariantId);
                     decimal unitPrice = variant.Price;
-                    totalAmount += unitPrice * cartItem.Quantity;
+                    totalAmount += unitPrice * mergedItem.Quantity;
 
                     orderItems.Add(new OrderItem
                     {
-                        ProductVariantId = cartItem.ProductVariantId,
-                        Quantity = cartItem.Quantity,
+                        ProductVariantId = mergedItem.ProductVariantId,
+                        Quantity = mergedItem.Quantity,
                         UnitPrice = unitPrice,
                         OrderId = Guid.Empty,
                     });
@@ -124,14 +142,14 @@ public sealed class Checkout
                             && p.ValidTo >= now, ct);
 
                     if (promotion == null)
-                        return Result<CustomerOrderDto>.Failure("Invalid or expired promo code.", 400);
+                        return Result<Guid>.Failure("Invalid or expired promo code.", 400);
 
                     if (promotion.UsageLimit.HasValue)
                     {
                         int usedCount = await context.PromoUsageLogs
                             .CountAsync(l => l.PromotionId == promotion.Id, ct);
                         if (usedCount >= promotion.UsageLimit.Value)
-                            return Result<CustomerOrderDto>.Failure("Promo code usage limit reached.", 400);
+                            return Result<Guid>.Failure("Promo code usage limit reached.", 400);
                     }
 
                     discountApplied = promotion.PromotionType switch
@@ -172,13 +190,13 @@ public sealed class Checkout
                 }
                 context.OrderItems.AddRange(orderItems);
 
-                // 8. Reserve stock
+                // 8. Reserve stock (ReadyStock only — only this type reserves on create)
                 if (dto.OrderType == OrderType.ReadyStock)
                 {
-                    foreach (CartItem cartItem in cart.Items)
+                    foreach (var mergedItem in mergedItems)
                     {
-                        Stock stock = variants.First(v => v.Id == cartItem.ProductVariantId).Stock!;
-                        stock.QuantityReserved += cartItem.Quantity;
+                        Stock stock = variants.First(v => v.Id == mergedItem.ProductVariantId).Stock!;
+                        stock.QuantityReserved += mergedItem.Quantity;
                         stock.UpdatedAt = DateTime.UtcNow;
                         stock.UpdatedBy = userId;
                     }
@@ -249,18 +267,25 @@ public sealed class Checkout
                 bool success = await context.SaveChangesAsync(ct) > 0;
 
                 if (!success)
-                    return Result<CustomerOrderDto>.Failure("Failed to place order.", 500);
+                    return Result<Guid>.Failure("Failed to place order.", 500);
 
                 await transaction.CommitAsync(ct);
 
-                // 15. Re-query with ProjectTo
-                CustomerOrderDto result = await context.Orders
-                    .Where(o => o.Id == order.Id)
-                    .ProjectTo<CustomerOrderDto>(mapper.ConfigurationProvider)
-                    .FirstAsync(ct);
-
-                return Result<CustomerOrderDto>.Success(result);
+                // Return only the ID — re-query happens outside the retry scope.
+                return Result<Guid>.Success(order.Id);
             });
+
+            if (!transactionResult.IsSuccess)
+                return Result<CustomerOrderDto>.Failure(transactionResult.Error!, transactionResult.Code);
+
+            // 15. Re-query with ProjectTo (outside retry delegate).
+            // If this fails it does NOT retry the transaction.
+            CustomerOrderDto result = await context.Orders
+                .Where(o => o.Id == transactionResult.Value)
+                .ProjectTo<CustomerOrderDto>(mapper.ConfigurationProvider)
+                .FirstAsync(ct);
+
+            return Result<CustomerOrderDto>.Success(result);
         }
     }
 }

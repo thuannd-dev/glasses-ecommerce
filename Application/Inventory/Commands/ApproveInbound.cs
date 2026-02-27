@@ -28,6 +28,10 @@ public sealed class ApproveInbound
             // Wrap everything in ExecuteAsync so the strategy can retry the entire unit of work.
             return await context.Database.CreateExecutionStrategy().ExecuteAsync(async () =>
             {
+                // Clear any stale tracked state from a previous (failed) attempt so that
+                // retried stock mutations and InventoryTransaction inserts start fresh.
+                context.ChangeTracker.Clear();
+
                 // Use RepeatableRead to prevent race condition on stock updates
                 await using IDbContextTransaction transaction =
                     await context.Database.BeginTransactionAsync(IsolationLevel.RepeatableRead, ct);
@@ -61,7 +65,20 @@ public sealed class ApproveInbound
                 if (!record.Items.Any())
                     return Result<Unit>.Failure("Inbound record has no items to approve.", 400);
 
-                // 4. Load stocks with UPDLOCK to prevent race condition
+                // 4. Map SourceType → ReferenceType once (depends only on the record, not per-item)
+                ReferenceType? referenceType = record.SourceType switch
+                {
+                    SourceType.Supplier => ReferenceType.Supplier,
+                    SourceType.Return => ReferenceType.Return,
+                    SourceType.Adjustment => ReferenceType.Adjustment,
+                    _ => (ReferenceType?)null
+                };
+
+                if (referenceType is null)
+                    return Result<Unit>.Failure(
+                        $"Unsupported source type '{record.SourceType}'.", 400);
+
+                // 5. Load stocks with UPDLOCK to prevent race condition
                 List<Guid> variantIds = [.. record.Items.Select(i => i.ProductVariantId)];
                 string paramList = string.Join(", ", variantIds.Select((_, i) => $"@p{i}"));
                 object[] sqlParams = variantIds
@@ -71,7 +88,7 @@ public sealed class ApproveInbound
                     .FromSqlRaw($"SELECT * FROM Stocks WITH (UPDLOCK) WHERE ProductVariantId IN ({paramList})", sqlParams)
                     .ToListAsync(ct);
 
-                // 4. Update stock for each item
+                // 6. Update stock for each item
                 Dictionary<Guid, Stock> stockByVariant = stocks.ToDictionary(s => s.ProductVariantId);
 
                 foreach (InboundRecordItem item in record.Items)
@@ -89,19 +106,6 @@ public sealed class ApproveInbound
                     stock.UpdatedAt = DateTime.UtcNow;
                     stock.UpdatedBy = managerUserId;
 
-                    // 5. Map SourceType → ReferenceType
-                    ReferenceType? refType = record.SourceType switch
-                    {
-                        SourceType.Supplier => ReferenceType.Supplier,
-                        SourceType.Return => ReferenceType.Return,
-                        SourceType.Adjustment => ReferenceType.Adjustment,
-                        _ => null
-                    };
-
-                    if (refType is null)
-                        return Result<Unit>.Failure(
-                            $"Unsupported source type '{record.SourceType}'.", 400);
-
                     // Create inventory transaction for audit
                     context.InventoryTransactions.Add(new InventoryTransaction
                     {
@@ -109,7 +113,7 @@ public sealed class ApproveInbound
                         ProductVariantId = item.ProductVariantId,
                         TransactionType = TransactionType.Inbound,
                         Quantity = item.Quantity,
-                        ReferenceType = refType.Value,
+                        ReferenceType = referenceType.Value,
                         ReferenceId = record.Id,
                         Status = InventoryTransactionStatus.Completed,
                         Notes = $"Inbound approved from record #{record.Id}",

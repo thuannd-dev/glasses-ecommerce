@@ -30,6 +30,9 @@ public sealed class CancelMyOrder
 
             return await context.Database.CreateExecutionStrategy().ExecuteAsync(async () =>
             {
+                // Clear stale change-tracker state so each retry attempt starts fresh.
+                context.ChangeTracker.Clear();
+
                 await using IDbContextTransaction transaction =
                     await context.Database.BeginTransactionAsync(IsolationLevel.RepeatableRead, ct);
 
@@ -50,38 +53,41 @@ public sealed class CancelMyOrder
 
                 OrderStatus oldStatus = order.OrderStatus;
 
-                // Load order items
-                List<OrderItem> items = await context.OrderItems
-                    .Where(oi => oi.OrderId == order.Id)
-                    .ToListAsync(ct);
-
-                if (items.Count > 0)
+                // Only ReadyStock orders reserve stock on creation — skip stock release for other types.
+                if (order.OrderType == OrderType.ReadyStock)
                 {
-                    // Lock stock rows with UPDLOCK
-                    List<Guid> variantIds = items.Select(oi => oi.ProductVariantId).Distinct().ToList();
-                    string paramList = string.Join(", ", variantIds.Select((_, i) => $"@p{i}"));
-                    object[] sqlParams = variantIds
-                        .Select((id, i) => (object)new SqlParameter($"@p{i}", id)).ToArray();
-
-                    List<Stock> stocks = await context.Stocks
-                        .FromSqlRaw($"SELECT * FROM Stocks WITH (UPDLOCK) WHERE ProductVariantId IN ({paramList})", sqlParams)
+                    List<OrderItem> items = await context.OrderItems
+                        .Where(oi => oi.OrderId == order.Id)
                         .ToListAsync(ct);
 
-                    Dictionary<Guid, Stock> stockByVariant = stocks.ToDictionary(s => s.ProductVariantId);
-
-                    // Release reserved stock
-                    foreach (OrderItem item in items)
+                    if (items.Count > 0)
                     {
-                        if (!stockByVariant.TryGetValue(item.ProductVariantId, out Stock? stock))
-                            return Result<Unit>.Failure(
-                                $"Stock record not found for product variant '{item.ProductVariantId}'.", 409);
-                        if (stock.QuantityReserved < item.Quantity)
-                            return Result<Unit>.Failure(
-                                $"Insufficient reserved stock for product variant '{item.ProductVariantId}'.", 409);
+                        // Lock stock rows with UPDLOCK
+                        List<Guid> variantIds = items.Select(oi => oi.ProductVariantId).Distinct().ToList();
+                        string paramList = string.Join(", ", variantIds.Select((_, i) => $"@p{i}"));
+                        object[] sqlParams = variantIds
+                            .Select((id, i) => (object)new SqlParameter($"@p{i}", id)).ToArray();
 
-                        stock.QuantityReserved -= item.Quantity;
-                        stock.UpdatedAt = DateTime.UtcNow;
-                        stock.UpdatedBy = userId;
+                        List<Stock> stocks = await context.Stocks
+                            .FromSqlRaw($"SELECT * FROM Stocks WITH (UPDLOCK) WHERE ProductVariantId IN ({paramList})", sqlParams)
+                            .ToListAsync(ct);
+
+                        Dictionary<Guid, Stock> stockByVariant = stocks.ToDictionary(s => s.ProductVariantId);
+
+                        // Release reserved stock
+                        foreach (OrderItem item in items)
+                        {
+                            if (!stockByVariant.TryGetValue(item.ProductVariantId, out Stock? stock))
+                                return Result<Unit>.Failure(
+                                    $"Stock record not found for product variant '{item.ProductVariantId}'.", 409);
+                            if (stock.QuantityReserved < item.Quantity)
+                                return Result<Unit>.Failure(
+                                    $"Insufficient reserved stock for product variant '{item.ProductVariantId}'.", 409);
+
+                            stock.QuantityReserved -= item.Quantity;
+                            stock.UpdatedAt = DateTime.UtcNow;
+                            stock.UpdatedBy = userId;
+                        }
                     }
                 }
 

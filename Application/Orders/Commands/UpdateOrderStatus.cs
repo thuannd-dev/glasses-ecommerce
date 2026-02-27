@@ -28,6 +28,9 @@ public sealed class UpdateOrderStatus
 
             return await context.Database.CreateExecutionStrategy().ExecuteAsync(async () =>
             {
+                // Clear stale change-tracker state so each retry attempt starts fresh.
+                context.ChangeTracker.Clear();
+
                 // Use RepeatableRead to prevent race condition on stock updates
                 await using IDbContextTransaction transaction =
                     await context.Database.BeginTransactionAsync(IsolationLevel.RepeatableRead, ct);
@@ -47,8 +50,9 @@ public sealed class UpdateOrderStatus
                     return Result<Unit>.Failure(
                         $"Cannot transition from '{oldStatus}' to '{newStatus}'.", 400);
 
-                // If cancelling or completing, load stocks with UPDLOCK to prevent race condition
-                if (newStatus == OrderStatus.Cancelled || newStatus == OrderStatus.Completed)
+                // Only ReadyStock orders reserve stock on creation — only they need stock adjustments on cancel/complete.
+                if (order.OrderType == OrderType.ReadyStock &&
+                    (newStatus == OrderStatus.Cancelled || newStatus == OrderStatus.Completed))
                 {
                     List<OrderItem> items = await context.OrderItems
                         .Where(oi => oi.OrderId == order.Id)

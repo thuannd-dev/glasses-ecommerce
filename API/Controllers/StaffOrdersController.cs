@@ -54,8 +54,8 @@ public sealed class StaffOrdersController : BaseApiController
     {
         // Staff có thể cập nhật bất kỳ đơn nào (cả đơn online của customer lẫn đơn staff khác tạo)
         // Nếu Shipped → bắt buộc gửi kèm Shipment (carrierName, trackingCode, ...)
-        // Nếu Cancelled → release stock (QuantityReserved -= quantity)
-        // Nếu Completed → deduct stock (QuantityOnHand -= quantity, QuantityReserved -= quantity)
+        // Nếu Cancelled → release stock (QuantityReserved -= quantity) CHỈ áp dụng cho đơn ReadyStock
+        // Nếu Completed → deduct stock (QuantityOnHand -= quantity, QuantityReserved -= quantity) CHỈ áp dụng cho đơn ReadyStock
         // Ghi OrderStatusHistory (from → to, notes, changedBy)
         return HandleResult(await Mediator.Send(
             new UpdateOrderStatus.Command { OrderId = id, Dto = dto }, ct));
