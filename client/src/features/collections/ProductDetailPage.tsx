@@ -13,12 +13,9 @@ import {
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import { NavLink, useNavigate, useParams } from "react-router-dom";
-import { useMemo, useState } from "react";
+import { NavLink, useNavigate } from "react-router-dom";
 
-import { useProductDetail } from "../../lib/hooks/useProducts";
-import { cartStore } from "../../lib/stores/cartStore";
-import { useCart } from "../../lib/hooks/useCart";
+import { useProductDetailPage } from "./hooks/useProductDetailPage";
 import { RelatedProductsCarousel } from "./components/ProductDetailPageComponents/RelatedProductsCarousel";
 
 const NAV_H = 56;
@@ -27,53 +24,17 @@ const GAP_BOTTOM = 56;
 const FOOT_H = 0;
 
 export default function ProductDetailPage() {
-    const { id } = useParams<{ id: string }>();
     const nav = useNavigate();
-    const { product, isLoading } = useProductDetail(id);
-    const { addItem } = useCart();
-
-    const [activeVariantId, setActiveVariantId] = useState<string | null>(null);
-    const [activeImg, setActiveImg] = useState(0);
-
-    const currentVariant = useMemo(() => {
-        const variants = Array.isArray(product?.variants) ? product.variants : [];
-        if (!variants.length) return null;
-        const found = variants.find((v) => v.id === activeVariantId);
-        return found ?? variants[0];
-    }, [product, activeVariantId]);
-
-    const images = useMemo(() => {
-        if (currentVariant?.images?.length) {
-            return currentVariant.images.slice(0, 3);
-        }
-        const src = product?.images ?? [];
-        return src.slice(0, 3);
-    }, [currentVariant, product]);
-
-    // ================= ADD TO CART =================
-    const handleAddToCart = () => {
-        if (!product) return;
-
-        const variantId = currentVariant?.id ?? product.variants?.[0]?.id;
-        if (!variantId) return;
-
-        // 1) Cập nhật cart local (MobX) để UI phản hồi ngay
-        cartStore.addItem({
-            productId: product.id,
-            name: product.name,
-            image: images[0],
-            price: currentVariant?.price ?? product.price,
-        });
-
-        // 2) Gọi API cart để lưu trên server (sử dụng cookie session)
-        // API báo thiếu 'productVariantId' trên AddCartItemDto
-        // → gửi thẳng DTO: { productVariantId, quantity }
-        addItem({
-            productVariantId: variantId,
-            quantity: 1,
-        });
-    };
-    // =================================================
+    const {
+        product,
+        isLoading,
+        currentVariant,
+        images,
+        activeImg,
+        setActiveImg,
+        handleAddToCart,
+        handleVariantSelect,
+    } = useProductDetailPage();
 
     if (isLoading) {
         return (
@@ -316,10 +277,7 @@ export default function ProductDetailPage() {
                                             }}
                                         >
                                             <Box
-                                                onClick={() => {
-                                                    setActiveVariantId(v.id);
-                                                    setActiveImg(0);
-                                                }}
+                                                onClick={() => handleVariantSelect(v.id)}
                                                 sx={{
                                                     width: 26,
                                                     height: 26,

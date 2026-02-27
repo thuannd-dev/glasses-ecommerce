@@ -1,98 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import agent from "../api/agent";
+import { productsQueryParamsSchema } from "../schemas/productsQuerySchema";
 import type { Product } from "../../features/collections/types";
 
-/** Item trả về từ GET /api/products (list) */
-export interface ApiProductItem {
-  id: string;
-  productName: string;
-  type: string | number;
-  brand: string;
-  description: string | null;
-  minPrice: number;
-  maxPrice: number;
-  totalQuantityAvailable: number;
-  firstImage: {
-    id: string;
-    imageUrl: string;
-    altText: string | null;
-    displayOrder: number;
-    modelUrl: string | null;
-  } | null;
-  category: {
-    id: string;
-    name: string;
-    slug: string;
-    description: string | null;
-  };
-}
-
-/** Item trả về từ GET /api/products/{id} (detail) */
-export interface ProductDetailApi {
-  id: string;
-  productName: string;
-  type: number;
-  description: string | null;
-  brand: string | null;
-  status: number;
-  createdAt: string;
-  category: {
-    id: string;
-    name: string;
-    slug: string;
-    description: string | null;
-  };
-  variants: Array<{
-    id: string;
-    sku: string;
-    variantName: string | null;
-    color: string | null;
-    size: string | null;
-    material: string | null;
-    frameWidth: number | null;
-    lensWidth: number | null;
-    bridgeWidth: number | null;
-    templeLength: number | null;
-    price: number;
-    compareAtPrice: number | null;
-    isActive: boolean;
-    quantityAvailable: number;
-    images: Array<{
-      id: string;
-      imageUrl: string;
-      altText: string | null;
-      displayOrder: number;
-      modelUrl: string | null;
-    }>;
-  }>;
-  images: Array<{
-    id: string;
-    imageUrl: string;
-    altText: string | null;
-    displayOrder: number;
-    modelUrl: string | null;
-  }>;
-}
-
-/** Response shape từ GET /api/products (list) */
-export interface ProductsApiResponse {
-  items: ApiProductItem[];
-  totalCount: number;
-  pageNumber: number;
-  pageSize: number;
-  totalPages?: number;
-  hasPreviousPage?: boolean;
-  hasNextPage?: boolean;
-}
-
-/** Category từ GET /api/categories */
-export interface CategoryDto {
-  id: string;
-  name: string;
-  slug: string;
-  description: string | null;
-}
-
+// Chuyển 1 item từ API (productName, category.slug...) sang dạng Product dùng ở UI (name, category, glassesType)
 function mapApiItemToProduct(item: ApiProductItem): Product {
   const categorySlug = item.category?.slug ?? "";
   const category: Product["category"] =
@@ -121,60 +32,16 @@ function mapApiItemToProduct(item: ApiProductItem): Product {
   };
 }
 
-/** View model chi tiết dùng cho ProductDetailPage */
-export interface ProductDetailView {
-  id: string;
-  name: string;
-  brand: string | null;
-  description: string | null;
-  status: string;
-  createdAt: string;
-  categoryName: string;
-  categorySlug: string;
-  categoryDescription: string | null;
-  price: number;
-  compareAtPrice: number | null;
-  sku: string;
-  color: string | null;
-  size: string | null;
-  material: string | null;
-  frameWidth: number | null;
-  lensWidth: number | null;
-  bridgeWidth: number | null;
-  templeLength: number | null;
-  quantityAvailable: number;
-  images: string[];
-  variants: Array<{
-    id: string;
-    sku: string;
-    variantName: string | null;
-    color: string | null;
-    size: string | null;
-    material: string | null;
-    frameWidth: number | null;
-    lensWidth: number | null;
-    bridgeWidth: number | null;
-    templeLength: number | null;
-    price: number;
-    compareAtPrice: number | null;
-    quantityAvailable: number;
-    images: string[];
-  }>;
-}
-
+// Chuyển response chi tiết sản phẩm từ API sang dạng view (ảnh đã sort, mainVariant, giá từ variant)
 function mapDetailApiToView(api: ProductDetailApi): ProductDetailView {
   const apiImages = Array.isArray(api.images) ? api.images : [];
   const apiVariants = Array.isArray(api.variants) ? api.variants : [];
 
-  // Sắp xếp ảnh sản phẩm theo displayOrder để lấy ảnh hero ổn định
   const sortedProductImages = apiImages
     .slice()
     .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
 
   const heroUrl = sortedProductImages[0]?.imageUrl;
-
-  // Ưu tiên chọn variant có ảnh trùng với heroUrl,
-  // nếu không có thì fallback isActive hoặc variant đầu tiên
   const mainVariant =
     (heroUrl &&
       apiVariants.find((v) =>
@@ -186,8 +53,6 @@ function mapDetailApiToView(api: ProductDetailApi): ProductDetailView {
     apiVariants[0];
 
   const price = mainVariant?.price ?? 0;
-
-  // Sắp xếp ảnh của mainVariant theo displayOrder trước khi map ra URL
   const variantImages = Array.isArray(mainVariant?.images)
     ? mainVariant.images
         .slice()
@@ -220,7 +85,6 @@ function mapDetailApiToView(api: ProductDetailApi): ProductDetailView {
       : [],
   }));
 
-  // Đảm bảo mainVariant luôn đứng đầu danh sách variants
   const variants =
     mainVariant?.id
       ? [...variantsMapped].sort((a, b) =>
@@ -254,19 +118,22 @@ function mapDetailApiToView(api: ProductDetailApi): ProductDetailView {
   };
 }
 
+// Chuẩn hóa params (validate bằng schema) rồi bỏ vào object chỉ chứa field có giá trị để gửi query string
 function buildProductsParams(params: ProductsQueryParams): Record<string, unknown> {
+  const parsed = productsQueryParamsSchema.safeParse(params);
+  const p = parsed.success ? parsed.data : {};
   const result: Record<string, unknown> = {};
-  if (params.pageNumber != null) result.pageNumber = params.pageNumber;
-  if (params.pageSize != null) result.pageSize = params.pageSize;
-  if (params.categoryIds?.length) result.categoryIds = params.categoryIds;
-  if (params.brand != null && params.brand !== "") result.brand = params.brand;
-  if (params.status != null && params.status !== "") result.status = params.status;
-  if (params.type != null && params.type !== "") result.type = params.type;
-  if (params.minPrice != null) result.minPrice = params.minPrice;
-  if (params.maxPrice != null) result.maxPrice = params.maxPrice;
-  if (params.search != null && params.search !== "") result.search = params.search;
-  if (params.sortBy != null) result.sortBy = params.sortBy;
-  if (params.sortOrder != null) result.sortOrder = params.sortOrder;
+  if (p.pageNumber != null) result.pageNumber = p.pageNumber;
+  if (p.pageSize != null) result.pageSize = p.pageSize;
+  if (p.categoryIds?.length) result.categoryIds = p.categoryIds;
+  if (p.brand != null && p.brand !== "") result.brand = p.brand;
+  if (p.status != null && p.status !== "") result.status = p.status;
+  if (p.type != null && p.type !== "") result.type = p.type;
+  if (p.minPrice != null) result.minPrice = p.minPrice;
+  if (p.maxPrice != null) result.maxPrice = p.maxPrice;
+  if (p.search != null && p.search !== "") result.search = p.search;
+  if (p.sortBy != null) result.sortBy = p.sortBy;
+  if (p.sortOrder != null) result.sortOrder = p.sortOrder;
   return result;
 }
 
@@ -284,8 +151,8 @@ export function useProducts(
     error,
     refetch,
   } = useQuery({
-    queryKey: ["products", queryParams],
-    enabled: options?.enabled !== false,
+    queryKey: ["products", queryParams], // params đổi thì queryKey đổi → tự gọi lại API
+    enabled: options?.enabled !== false, // false thì không gọi (vd. chưa chọn type)
     queryFn: async () => {
       const response = await agent.get<ProductsApiResponse>("/products", {
         params: queryParams,
@@ -293,12 +160,9 @@ export function useProducts(
       const data = response.data;
       const rawItems = data?.items;
       const items = Array.isArray(rawItems)
-        ? rawItems.map(mapApiItemToProduct)
+        ? rawItems.map(mapApiItemToProduct) // map từng item API → Product
         : [];
-      return {
-        ...data,
-        items,
-      };
+      return { ...data, items };
     },
   });
 
@@ -317,7 +181,6 @@ export function useProducts(
   };
 }
 
-/** Lấy danh sách category từ GET /api/categories */
 export function useCategories() {
   const {
     data,
@@ -340,7 +203,28 @@ export function useCategories() {
   };
 }
 
-/** Lấy chi tiết sản phẩm từ GET /api/products/{id} */
+export function useBrands() {
+  const {
+    data,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: ["brands"],
+    queryFn: async () => {
+      const response = await agent.get<string[]>("/brands");
+      return response.data;
+    },
+  });
+
+  return {
+    brands: Array.isArray(data) ? data : [],
+    isLoading,
+    isError,
+    error,
+  };
+}
+
 export function useProductDetail(id?: string) {
   const {
     data,
@@ -348,8 +232,8 @@ export function useProductDetail(id?: string) {
     isError,
     error,
   } = useQuery({
-    queryKey: ["product", id],
-    enabled: !!id,
+    queryKey: ["product", id], // id đổi thì gọi lại
+    enabled: !!id, // không gọi khi chưa có id
     queryFn: async () => {
       const response = await agent.get<ProductDetailApi>(`/products/${id}`);
       return mapDetailApiToView(response.data);

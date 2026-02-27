@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import {
   Box,
   IconButton,
@@ -16,6 +16,11 @@ import PointOfSaleIcon from "@mui/icons-material/PointOfSale";
 import LocalShippingIcon from "@mui/icons-material/LocalShipping";
 import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
+import Inventory2Outlined from "@mui/icons-material/Inventory2Outlined";
+import AddBoxOutlined from "@mui/icons-material/AddBoxOutlined";
+import TrackChangesOutlined from "@mui/icons-material/TrackChangesOutlined";
+import ScheduleOutlined from "@mui/icons-material/ScheduleOutlined";
+import VisibilityOutlined from "@mui/icons-material/VisibilityOutlined";
 import { useAccount } from "../../lib/hooks/useAccount";
 
 const SIDEBAR_WIDTH = 260;
@@ -25,6 +30,15 @@ const DASHBOARD_LINKS: { path: string; label: string; role: string; icon: React.
   { path: "/operations", label: "Operations", role: "Operations", icon: <LocalShippingIcon /> },
   { path: "/manager", label: "Manager", role: "Manager", icon: <ManageAccountsIcon /> },
   { path: "/admin", label: "Admin", role: "Admin", icon: <AdminPanelSettingsIcon /> },
+];
+
+const OPERATIONS_SUB_LINKS: { path: string; label: string; icon: React.ReactNode }[] = [
+  { path: "/operations/overview", label: "Overview", icon: <LocalShippingIcon /> },
+  { path: "/operations/pack", label: "Packing", icon: <Inventory2Outlined /> },
+  { path: "/operations/create-shipment", label: "Create shipment", icon: <AddBoxOutlined /> },
+  { path: "/operations/tracking", label: "Update tracking", icon: <TrackChangesOutlined /> },
+  { path: "/operations/pre-order", label: "Pre-order", icon: <ScheduleOutlined /> },
+  { path: "/operations/prescription", label: "Prescription", icon: <VisibilityOutlined /> },
 ];
 
 export default function DashboardLayout() {
@@ -60,7 +74,7 @@ export default function DashboardLayout() {
         <IconButton
           onClick={() => setSidebarOpen((o) => !o)}
           sx={{ color: "rgba(0,0,0,0.7)" }}
-          aria-label={sidebarOpen ? "Đóng sidebar" : "Mở sidebar"}
+          aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
         >
           {sidebarOpen ? <ChevronLeftIcon /> : <MenuIcon />}
         </IconButton>
@@ -89,29 +103,70 @@ export default function DashboardLayout() {
         }}
       >
         <List sx={{ pt: 2, px: 1 }}>
-          {visibleLinks.map(({ path, label, icon }) => (
-            <ListItemButton
-              key={path}
-              component={NavLink}
-              to={path}
-              sx={{
-                borderRadius: 2,
-                mb: 0.5,
-                color: "rgba(0,0,0,0.7)",
-                "&.active": {
-                  bgcolor: "rgba(25,118,210,0.12)",
-                  color: "primary.main",
-                },
-                "&:hover": {
-                  bgcolor: "rgba(0,0,0,0.04)",
-                  color: "rgba(0,0,0,0.9)",
-                },
-              }}
-            >
-              <ListItemIcon sx={{ minWidth: 40, color: "inherit" }}>{icon}</ListItemIcon>
-              <ListItemText primary={label} primaryTypographyProps={{ fontWeight: 600 }} />
-            </ListItemButton>
-          ))}
+          {visibleLinks.map(({ path, label, icon }) =>
+            path === "/operations" ? (
+              <Fragment key="operations">
+                <Typography
+                  sx={{
+                    fontSize: 11,
+                    letterSpacing: 4,
+                    textTransform: "uppercase",
+                    color: "text.secondary",
+                    px: 2,
+                    py: 1,
+                    mt: 1,
+                  }}
+                >
+                  Operations
+                </Typography>
+                {OPERATIONS_SUB_LINKS.map((sub) => (
+                  <ListItemButton
+                    key={sub.path}
+                    component={NavLink}
+                    to={sub.path}
+                    sx={{
+                      borderRadius: 2,
+                      mb: 0.5,
+                      color: "rgba(0,0,0,0.7)",
+                      "&.active": {
+                        bgcolor: "rgba(25,118,210,0.12)",
+                        color: "primary.main",
+                      },
+                      "&:hover": {
+                        bgcolor: "rgba(0,0,0,0.04)",
+                        color: "rgba(0,0,0,0.9)",
+                      },
+                    }}
+                  >
+                    <ListItemIcon sx={{ minWidth: 40, color: "inherit" }}>{sub.icon}</ListItemIcon>
+                    <ListItemText primary={sub.label} primaryTypographyProps={{ fontWeight: 600 }} />
+                  </ListItemButton>
+                ))}
+              </Fragment>
+            ) : (
+              <ListItemButton
+                key={path}
+                component={NavLink}
+                to={path}
+                sx={{
+                  borderRadius: 2,
+                  mb: 0.5,
+                  color: "rgba(0,0,0,0.7)",
+                  "&.active": {
+                    bgcolor: "rgba(25,118,210,0.12)",
+                    color: "primary.main",
+                  },
+                  "&:hover": {
+                    bgcolor: "rgba(0,0,0,0.04)",
+                    color: "rgba(0,0,0,0.9)",
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: 40, color: "inherit" }}>{icon}</ListItemIcon>
+                <ListItemText primary={label} primaryTypographyProps={{ fontWeight: 600 }} />
+              </ListItemButton>
+            )
+          )}
         </List>
 
         <Box sx={{ flex: 1 }} />
@@ -132,7 +187,9 @@ export default function DashboardLayout() {
               <LogoutIcon />
             </ListItemIcon>
             <ListItemText
-              primary={logoutUser.isPending ? "Đang đăng xuất…" : "Đăng xuất"}
+              primary={
+                logoutUser.isPending ? "Signing out…" : "Sign out"
+              }
               primaryTypographyProps={{ fontWeight: 600 }}
             />
           </ListItemButton>

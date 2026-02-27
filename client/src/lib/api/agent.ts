@@ -41,9 +41,20 @@ agent.interceptors.response.use(
           toast.error(data);
         }
         break;
-      case 401:
-        toast.error("Unauthorised");
+      case 401: {
+        const url: string | undefined = error.config?.url;
+        const isLoginRequest = url?.includes("/login");
+        const isCartRequest = url?.includes("/carts");
+
+        if (isLoginRequest) {
+          toast.error("Wrong password or invalid email");
+        } else if (isCartRequest) {
+          toast.error("Please log in before adding items to your cart.");
+        } else {
+          toast.error("You are not authorized. Please sign in again.");
+        }
         break;
+      }
       case 404:
         router.navigate("/not-found");
         break;

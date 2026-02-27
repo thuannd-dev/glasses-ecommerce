@@ -161,6 +161,31 @@ export default function HomePage() {
           transition: "background-image 700ms ease",
         }}
       >
+        {/* Login button – top right */}
+        <Button
+          component={RouterLink}
+          to="/login"
+          variant="outlined"
+          sx={{
+            position: "absolute",
+            top: 24,
+            right: { xs: 24, md: 48 },
+            zIndex: 4,
+            color: "white",
+            borderColor: "rgba(255,255,255,.5)",
+            fontWeight: 700,
+            borderRadius: "999px",
+            px: 2.5,
+            py: 1,
+            "&:hover": {
+              borderColor: "white",
+              bgcolor: "rgba(255,255,255,.1)",
+            },
+          }}
+        >
+          Login
+        </Button>
+
         {/* Overlay glow */}
         <Box
           sx={{
@@ -258,7 +283,7 @@ export default function HomePage() {
 
               <Button
                 component={RouterLink}
-                to="/activities"
+                to="/collections/glasses"
                 variant="outlined"
                 size="large"
                 sx={{

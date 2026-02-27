@@ -20,11 +20,19 @@ import ServerError from "../../features/errors/ServerError";
 import CartPage from "../../features/cart/CartPage";
 
 import CheckoutPage from "../../features/checkout/CheckoutPage";
-import OrderSuccessPage from "../../features/checkout/OrderSuccessPage";
+import OrderSuccessPage from "../../features/collections/OrderSuccessPage";
 import ProfilePage from "../../features/Customer/profile/ProfilePage";
 import RequireRole from "./RequireRole";
 import SalesDashboard from "../../features/sales/SalesDashboard";
-import OperationsDashboard from "../../features/Operations/OperationsDashboard";
+import OperationsLayout from "../../features/Operations/OperationsLayout";
+import {
+  OverviewScreen,
+  PackScreen,
+  CreateShipmentScreen,
+  TrackingScreen,
+  PreOrderScreen,
+  PrescriptionScreen,
+} from "../../features/Operations/screens";
 import ManagerDashboard from "../../features/Manager/ManagerDashboard";
 import AdminDashboard from "../../features/Admin/AdminDashboard";
 export const router = createBrowserRouter([
@@ -64,7 +72,21 @@ export const router = createBrowserRouter([
       },
       {
         element: <RequireRole allowedRoles={["Operations"]} />,
-        children: [{ path: "operations", element: <OperationsDashboard /> }],
+        children: [
+          {
+            path: "operations",
+            element: <OperationsLayout />,
+            children: [
+              { index: true, element: <Navigate to="/operations/overview" replace /> },
+              { path: "overview", element: <OverviewScreen /> },
+              { path: "pack", element: <PackScreen /> },
+              { path: "create-shipment", element: <CreateShipmentScreen /> },
+              { path: "tracking", element: <TrackingScreen /> },
+              { path: "pre-order", element: <PreOrderScreen /> },
+              { path: "prescription", element: <PrescriptionScreen /> },
+            ],
+          },
+        ],
       },
       {
         element: <RequireRole allowedRoles={["Manager"]} />,

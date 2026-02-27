@@ -2,46 +2,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-toastify";
 
 import agent from "../api/agent";
+import {
+  addCartItemSchema,
+  updateCartItemSchema,
+} from "../schemas/cartSchema";
 import { useAccount } from "./useAccount";
-
-export interface CartItemDto {
-  id: string;
-  cartId: string;
-  productVariantId: string;
-  quantity: number;
-  sku: string;
-  price: number;
-  compareAtPrice: number | null;
-  color: string | null;
-  size: string | null;
-  material: string | null;
-  quantityAvailable: number;
-  isInStock: boolean;
-  productId: string;
-  productName: string;
-  productImageUrl: string;
-  subtotal: number;
-}
-
-export interface CartDto {
-  id: string;
-  items: CartItemDto[];
-  totalQuantity: number;
-  totalAmount: number;
-}
-
-// Payload cho các mutation.
-// POST /api/carts/items đã dùng body { productVariantId, quantity }
-export type AddCartItemPayload = {
-  productVariantId: string;
-  quantity: number;
-};
-
-// PUT /api/carts/items/{id} dùng body { quantity }
-export type UpdateCartItemPayload = {
-  id: string;
-  quantity: number;
-};
 
 /**
  * Hook quản lý Cart sử dụng API:
@@ -94,21 +59,35 @@ export function useCart() {
   // ===== POST /api/carts/items =====
   const addItemMutation = useMutation({
     mutationFn: async (payload: AddCartItemPayload) => {
-      const res = await agent.post<CartDto>("/carts/items", payload);
+      const parsed = addCartItemSchema.safeParse(payload);
+      if (!parsed.success) {
+        const msg =
+          parsed.error.issues[0]?.message ?? "Invalid cart item payload";
+        toast.error(msg);
+        throw new Error(msg);
+      }
+      const res = await agent.post<CartDto>("/carts/items", parsed.data);
       return res.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cart"] });
     },
     onError: () => {
-      toast.error("Không thêm được sản phẩm vào giỏ hàng.");
+      toast.error("Failed to add item to cart.");
     },
   });
 
   // ===== PUT /api/carts/items/{id} ===== (optimistic update)
   const updateItemMutation = useMutation({
     mutationFn: async (payload: UpdateCartItemPayload) => {
-      const { id, quantity } = payload;
+      const parsed = updateCartItemSchema.safeParse(payload);
+      if (!parsed.success) {
+        const msg =
+          parsed.error.issues[0]?.message ?? "Invalid cart item payload";
+        toast.error(msg);
+        throw new Error(msg);
+      }
+      const { id, quantity } = parsed.data;
       const res = await agent.put<CartDto>(`/carts/items/${id}`, { quantity });
       return res.data;
     },
@@ -153,7 +132,7 @@ export function useCart() {
       if (context?.previous) {
         queryClient.setQueryData(["cart"], context.previous);
       }
-      toast.error("Không cập nhật được giỏ hàng.");
+      toast.error("Failed to update cart.");
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["cart"] });
@@ -195,7 +174,7 @@ export function useCart() {
       if (context?.previous) {
         queryClient.setQueryData(["cart"], context.previous);
       }
-      toast.error("Không xóa được sản phẩm khỏi giỏ hàng.");
+      toast.error("Failed to remove item from cart.");
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["cart"] });
@@ -211,7 +190,7 @@ export function useCart() {
       queryClient.invalidateQueries({ queryKey: ["cart"] });
     },
     onError: () => {
-      toast.error("Không xóa được giỏ hàng.");
+      toast.error("Failed to clear cart.");
     },
   });
 

@@ -11,10 +11,13 @@ import {
     Radio,
     Button,
     Chip,
+    Snackbar,
+    Alert,
 } from "@mui/material";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { cartStore } from "../../lib/stores/cartStore";
 import { useNavigate } from "react-router-dom";
+import AddressAutocomplete from "../../app/shared/components/AddressAutocomplete";
 
 /* ================== utils ================== */
 function money(v: number) {
@@ -24,6 +27,12 @@ function money(v: number) {
 function generateOrderCode() {
     const rand = Math.floor(100000 + Math.random() * 900000);
     return `ORD-${new Date().getFullYear()}-${rand}`;
+}
+
+/** Vietnam phone: 10 digits, optional +84 or 0 prefix */
+function isValidVietnamPhone(phone: string): boolean {
+    const cleaned = phone.replace(/\D/g, "");
+    return /^(0|84)?[35789][0-9]{8}$/.test(cleaned) && cleaned.length >= 10;
 }
 
 /* ================== types ================== */
@@ -37,6 +46,7 @@ interface ShippingAddress {
     district: string;
     city: string;
     postalCode?: string;
+    orderNote?: string;
 }
 
 interface PlainOrderItem {
@@ -63,55 +73,102 @@ export default function CheckoutPage() {
         district: "",
         city: "",
         postalCode: "",
+        orderNote: "",
     });
+    const [addressSearch, setAddressSearch] = useState("");
 
     /* ===== Payment ===== */
     const [paymentMethod, setPaymentMethod] =
         useState<PaymentMethod>("COD");
 
+    /* ===== UI ===== */
+    const [submitting, setSubmitting] = useState(false);
+    const [snackbar, setSnackbar] = useState<{
+        open: boolean;
+        message: string;
+        severity: "error" | "info" | "success";
+    }>({ open: false, message: "", severity: "error" });
+
     /* ===== Derived ===== */
     const totalAmount = cartStore.totalPrice;
+    const isEmptyCart = cartStore.items.length === 0;
+
+    /* ===== Empty cart guard ===== */
+    useEffect(() => {
+        if (isEmptyCart) {
+            setSnackbar({
+                open: true,
+                message: "Your cart is empty. Add items before checkout.",
+                severity: "info",
+            });
+        }
+    }, [isEmptyCart]);
 
     /* ================== submit ================== */
-    const handlePlaceOrder = () => {
-        if (
-            !address.recipientName ||
-            !address.recipientPhone ||
-            !address.venue
-        ) {
-            alert("Please fill all required shipping information");
+    const handlePlaceOrder = async () => {
+        if (isEmptyCart) {
+            setSnackbar({
+                open: true,
+                message: "Your cart is empty.",
+                severity: "error",
+            });
+            return;
+        }
+        if (!address.recipientName || !address.recipientPhone || !address.venue) {
+            setSnackbar({
+                open: true,
+                message: "Please fill all required shipping information.",
+                severity: "error",
+            });
+            return;
+        }
+        if (!isValidVietnamPhone(address.recipientPhone)) {
+            setSnackbar({
+                open: true,
+                message: "Please enter a valid Vietnam phone number (10 digits).",
+                severity: "error",
+            });
             return;
         }
 
-        /* ===== CONVERT MOBX → PLAIN JS (CỰC QUAN TRỌNG) ===== */
-        const plainItems: PlainOrderItem[] = cartStore.items.map(
-            (item) => ({
-                productId: item.productId,
-                name: item.name,
-                price: item.price,
-                quantity: item.quantity,
-            })
-        );
+        setSubmitting(true);
+        try {
+            const plainItems: PlainOrderItem[] = cartStore.items.map(
+                (item) => ({
+                    productId: item.productId,
+                    name: item.name,
+                    price: item.price,
+                    quantity: item.quantity,
+                })
+            );
 
-        /* ===== DATA GỬI SANG ORDER SUCCESS ===== */
-        const orderData = {
-            orderCode,
-            orderStatus,
-            totalAmount,
-            paymentMethod,
-            address,
-            items: plainItems, // ✅ plain array
-            createdAt: new Date().toISOString(),
-        };
+            const orderData = {
+                orderCode,
+                orderStatus,
+                totalAmount,
+                paymentMethod,
+                address,
+                items: plainItems,
+                createdAt: new Date().toISOString(),
+            };
 
-        // TODO: API create order
-        // await api.createOrder(orderData)
+            // TODO: API create order
+            // await api.createOrder(orderData)
 
-        cartStore.clear();
+            cartStore.clear();
 
-        navigate("/order-success", {
-            state: orderData, // ✅ cloneable
-        });
+            navigate("/order-success", {
+                state: orderData,
+            });
+        } catch {
+            setSnackbar({
+                open: true,
+                message: "Failed to place order. Please try again.",
+                severity: "error",
+            });
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     return (
@@ -127,11 +184,12 @@ export default function CheckoutPage() {
                     }}
                 >
                     {/* ===== HEADER ===== */}
-                    <Typography fontWeight={900} fontSize={26}>
-                        Checkout
-                    </Typography>
-
-                    <Typography
+                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 1 }}>
+                        <Box>
+                            <Typography fontWeight={900} fontSize={26}>
+                                Checkout
+                            </Typography>
+                            <Typography
                         component="div" // tránh <div> nằm trong <p> gây hydration warning
                         fontSize={14}
                         color="rgba(17,24,39,0.65)"
@@ -144,6 +202,23 @@ export default function CheckoutPage() {
                             sx={{ fontWeight: 700, ml: 1 }}
                         />
                     </Typography>
+                        </Box>
+                        <Button
+                            variant="outlined"
+                            onClick={() => navigate("/cart")}
+                            sx={{
+                                color: "#111827",
+                                borderColor: "#111827",
+                                borderRadius: "9999px",
+                                "&:hover": {
+                                    borderColor: "#111827",
+                                    bgcolor: "rgba(17,24,39,0.04)",
+                                },
+                            }}
+                        >
+                            Back to Cart
+                        </Button>
+                    </Box>
 
                     <Grid container spacing={4} mt={2}>
                         {/* ===== LEFT ===== */}
@@ -168,17 +243,35 @@ export default function CheckoutPage() {
 
                                 <Grid container spacing={2}>
                                     <Grid item xs={12}>
+                                        <AddressAutocomplete
+                                            value={addressSearch}
+                                            onChange={setAddressSearch}
+                                            onSelectAddress={(a) => {
+                                                setAddress((prev) => ({
+                                                    ...prev,
+                                                    venue: a.venue,
+                                                    ward: a.ward,
+                                                    district: a.district,
+                                                    city: a.city,
+                                                    postalCode: a.postalCode ?? "",
+                                                }));
+                                            }}
+                                            label="Search shipping address"
+                                            placeholder="Enter house number, street, district, city..."
+                                        />
+                                    </Grid>
+
+                                    <Grid item xs={12}>
                                         <TextField
                                             label="Recipient name"
                                             fullWidth
                                             required
                                             value={address.recipientName}
                                             onChange={(e) =>
-                                                setAddress({
-                                                    ...address,
-                                                    recipientName:
-                                                        e.target.value,
-                                                })
+                                                setAddress((prev) => ({
+                                                    ...prev,
+                                                    recipientName: e.target.value,
+                                                }))
                                             }
                                         />
                                     </Grid>
@@ -190,11 +283,21 @@ export default function CheckoutPage() {
                                             required
                                             value={address.recipientPhone}
                                             onChange={(e) =>
-                                                setAddress({
-                                                    ...address,
-                                                    recipientPhone:
-                                                        e.target.value,
-                                                })
+                                                setAddress((prev) => ({
+                                                    ...prev,
+                                                    recipientPhone: e.target.value,
+                                                }))
+                                            }
+                                            placeholder="e.g. 0912345678"
+                                            error={
+                                                !!address.recipientPhone &&
+                                                !isValidVietnamPhone(address.recipientPhone)
+                                            }
+                                            helperText={
+                                                address.recipientPhone &&
+                                                !isValidVietnamPhone(address.recipientPhone)
+                                                    ? "Enter a valid Vietnam phone (10 digits)"
+                                                    : undefined
                                             }
                                         />
                                     </Grid>
@@ -206,10 +309,10 @@ export default function CheckoutPage() {
                                             required
                                             value={address.venue}
                                             onChange={(e) =>
-                                                setAddress({
-                                                    ...address,
+                                                setAddress((prev) => ({
+                                                    ...prev,
                                                     venue: e.target.value,
-                                                })
+                                                }))
                                             }
                                         />
                                     </Grid>
@@ -220,10 +323,10 @@ export default function CheckoutPage() {
                                             fullWidth
                                             value={address.ward}
                                             onChange={(e) =>
-                                                setAddress({
-                                                    ...address,
+                                                setAddress((prev) => ({
+                                                    ...prev,
                                                     ward: e.target.value,
-                                                })
+                                                }))
                                             }
                                         />
                                     </Grid>
@@ -234,10 +337,10 @@ export default function CheckoutPage() {
                                             fullWidth
                                             value={address.district}
                                             onChange={(e) =>
-                                                setAddress({
-                                                    ...address,
+                                                setAddress((prev) => ({
+                                                    ...prev,
                                                     district: e.target.value,
-                                                })
+                                                }))
                                             }
                                         />
                                     </Grid>
@@ -248,11 +351,42 @@ export default function CheckoutPage() {
                                             fullWidth
                                             value={address.city}
                                             onChange={(e) =>
-                                                setAddress({
-                                                    ...address,
+                                                setAddress((prev) => ({
+                                                    ...prev,
                                                     city: e.target.value,
-                                                })
+                                                }))
                                             }
+                                        />
+                                    </Grid>
+
+                                    <Grid item xs={12} md={4}>
+                                        <TextField
+                                            label="Postal code"
+                                            fullWidth
+                                            value={address.postalCode ?? ""}
+                                            onChange={(e) =>
+                                                setAddress((prev) => ({
+                                                    ...prev,
+                                                    postalCode: e.target.value,
+                                                }))
+                                            }
+                                        />
+                                    </Grid>
+
+                                    <Grid item xs={12}>
+                                        <TextField
+                                            label="Order note (optional)"
+                                            fullWidth
+                                            multiline
+                                            rows={2}
+                                            value={address.orderNote ?? ""}
+                                            onChange={(e) =>
+                                                setAddress((prev) => ({
+                                                    ...prev,
+                                                    orderNote: e.target.value,
+                                                }))
+                                            }
+                                            placeholder="Delivery instructions, special requests..."
                                         />
                                     </Grid>
                                 </Grid>
@@ -350,6 +484,7 @@ export default function CheckoutPage() {
                                 <Button
                                     fullWidth
                                     variant="contained"
+                                    disabled={submitting || isEmptyCart}
                                     sx={{
                                         mt: 2,
                                         bgcolor: "#111827",
@@ -361,11 +496,29 @@ export default function CheckoutPage() {
                                     }}
                                     onClick={handlePlaceOrder}
                                 >
-                                    Place Order
+                                    {submitting ? "Placing order..." : "Place Order"}
                                 </Button>
                             </Paper>
                         </Grid>
                     </Grid>
+
+                    <Snackbar
+                        open={snackbar.open}
+                        autoHideDuration={5000}
+                        onClose={() =>
+                            setSnackbar((prev) => ({ ...prev, open: false }))
+                        }
+                        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+                    >
+                        <Alert
+                            severity={snackbar.severity}
+                            onClose={() =>
+                                setSnackbar((prev) => ({ ...prev, open: false }))
+                            }
+                        >
+                            {snackbar.message}
+                        </Alert>
+                    </Snackbar>
                 </Box>
             )}
         </Observer>

@@ -48,7 +48,7 @@ export default function TestErrors() {
           Server error
         </Button>
         <Button onClick={() => handleError("buggy/unauthorised")}>
-          Unauthorised
+          401 Unauthorized
         </Button>
       </ButtonGroup>
 
