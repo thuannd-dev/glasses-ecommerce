@@ -31,6 +31,9 @@ public sealed class Checkout
             CheckoutDto dto = request.Dto;
             Guid userId = userAccessor.GetUserId();
 
+            // idempotency: generate ID upfront so a post-commit retry does not create a duplicate order.
+            Guid orderId = Guid.CreateVersion7(TimeProvider.System.GetUtcNow());
+
             // ExecuteAsync returns only the new Order ID after commit.
             // The re-query (ProjectTo) runs OUTSIDE the retry scope so a transient failure
             // there cannot retry the whole transaction and create a duplicate order or
@@ -40,6 +43,12 @@ public sealed class Checkout
             {
                 // Clear stale change-tracker state so each retry attempt starts fresh.
                 context.ChangeTracker.Clear();
+
+                // VERIFY SUCCEEDED:
+                // If this is a retry and the previous attempt actually committed the DB transaction
+                // before connection dropped, the order will already exist. We can safely return.
+                if (await context.Orders.AnyAsync(o => o.Id == orderId, ct))
+                    return Result<Guid>.Success(orderId);
 
                 // Serializable prevents phantom reads on the promo usage CountAsync + insert:
                 // two concurrent requests could both read usedCount < limit under RepeatableRead,
@@ -169,6 +178,7 @@ public sealed class Checkout
                 // 6. Create Order
                 Order order = new Order
                 {
+                    Id = orderId, // explicitly assigned from outside retry scope
                     OrderSource = OrderSource.Online,
                     OrderType = dto.OrderType,
                     OrderStatus = OrderStatus.Pending,
