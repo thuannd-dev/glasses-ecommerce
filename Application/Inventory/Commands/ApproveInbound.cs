@@ -60,29 +60,35 @@ public sealed class ApproveInbound
                 .ToListAsync(ct);
 
             // 4. Update stock for each item
+            Dictionary<Guid, Stock> stockByVariant = stocks.ToDictionary(s => s.ProductVariantId);
+
             foreach (InboundRecordItem item in record.Items)
             {
-                Stock? stock = stocks.FirstOrDefault(s => s.ProductVariantId == item.ProductVariantId);
+                if (item.Quantity <= 0)
+                    return Result<Unit>.Failure(
+                        $"Item quantity must be positive for product variant '{item.ProductVariantId}'.", 400);
 
-                if (stock == null)
-                {
+                if (!stockByVariant.TryGetValue(item.ProductVariantId, out Stock? stock))
                     return Result<Unit>.Failure(
                         $"Stock record not found for product variant '{item.ProductVariantId}'. " +
                         "Ensure stock records exist before approving inbound.", 400);
-                }
 
                 stock.QuantityOnHand += item.Quantity;
                 stock.UpdatedAt = DateTime.UtcNow;
                 stock.UpdatedBy = managerUserId;
 
                 // 5. Map SourceType → ReferenceType
-                ReferenceType refType = record.SourceType switch
+                ReferenceType? refType = record.SourceType switch
                 {
                     SourceType.Supplier => ReferenceType.Supplier,
                     SourceType.Return => ReferenceType.Return,
                     SourceType.Adjustment => ReferenceType.Adjustment,
-                    _ => ReferenceType.Supplier
+                    _ => null
                 };
+
+                if (refType is null)
+                    return Result<Unit>.Failure(
+                        $"Unsupported source type '{record.SourceType}'.", 400);
 
                 // Create inventory transaction for audit
                 context.InventoryTransactions.Add(new InventoryTransaction
@@ -91,7 +97,7 @@ public sealed class ApproveInbound
                     ProductVariantId = item.ProductVariantId,
                     TransactionType = TransactionType.Inbound,
                     Quantity = item.Quantity,
-                    ReferenceType = refType,
+                    ReferenceType = refType.Value,
                     ReferenceId = record.Id,
                     Status = InventoryTransactionStatus.Completed,
                     Notes = $"Inbound approved from record #{record.Id}",

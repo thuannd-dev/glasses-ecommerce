@@ -56,6 +56,9 @@ public sealed class RecordOutbound
                 return Result<Unit>.Failure("Outbound already recorded for this order.", 409);
 
             // 4. Create inventory transactions for each order item
+            if (order.OrderItems.Count == 0)
+                return Result<Unit>.Failure("Order has no items to record outbound.", 400);
+
             foreach (OrderItem item in order.OrderItems)
             {
                 context.InventoryTransactions.Add(new InventoryTransaction
