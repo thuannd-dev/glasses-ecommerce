@@ -26,83 +26,86 @@ public sealed class CancelMyOrder
     {
         public async Task<Result<Unit>> Handle(Command request, CancellationToken ct)
         {
-            await using IDbContextTransaction transaction =
-                await context.Database.BeginTransactionAsync(IsolationLevel.RepeatableRead, ct);
-
             Guid userId = userAccessor.GetUserId();
 
-            Order? order = await context.Orders
-                .Include(o => o.ShipmentInfo)
-                .FirstOrDefaultAsync(o => o.Id == request.OrderId
-                    && o.UserId == userId, ct);
-
-            if (order == null)
-                return Result<Unit>.Failure("Order not found.", 404);
-
-            // Check if order can be cancelled using domain logic
-            if (!order.CanBeCancelled(DateTime.UtcNow))
-                return Result<Unit>.Failure("This order can no longer be cancelled.", 400);
-
-            if (order.OrderStatus is OrderStatus.Cancelled or OrderStatus.Completed or OrderStatus.Refunded)
-                return Result<Unit>.Failure($"Cannot cancel an order with status '{order.OrderStatus}'.", 400);
-
-            OrderStatus oldStatus = order.OrderStatus;
-
-            // Load order items
-            List<OrderItem> items = await context.OrderItems
-                .Where(oi => oi.OrderId == order.Id)
-                .ToListAsync(ct);
-
-            if (items.Count > 0)
+            return await context.Database.CreateExecutionStrategy().ExecuteAsync(async () =>
             {
-                // Lock stock rows with UPDLOCK
-                List<Guid> variantIds = items.Select(oi => oi.ProductVariantId).Distinct().ToList();
-                string paramList = string.Join(", ", variantIds.Select((_, i) => $"@p{i}"));
-                object[] sqlParams = variantIds
-                    .Select((id, i) => (object)new SqlParameter($"@p{i}", id)).ToArray();
+                await using IDbContextTransaction transaction =
+                    await context.Database.BeginTransactionAsync(IsolationLevel.RepeatableRead, ct);
 
-                List<Stock> stocks = await context.Stocks
-                    .FromSqlRaw($"SELECT * FROM Stocks WITH (UPDLOCK) WHERE ProductVariantId IN ({paramList})", sqlParams)
+                Order? order = await context.Orders
+                    .Include(o => o.ShipmentInfo)
+                    .FirstOrDefaultAsync(o => o.Id == request.OrderId
+                        && o.UserId == userId, ct);
+
+                if (order == null)
+                    return Result<Unit>.Failure("Order not found.", 404);
+
+                // Check if order can be cancelled using domain logic
+                if (!order.CanBeCancelled(DateTime.UtcNow))
+                    return Result<Unit>.Failure("This order can no longer be cancelled.", 400);
+
+                if (order.OrderStatus is OrderStatus.Cancelled or OrderStatus.Completed or OrderStatus.Refunded)
+                    return Result<Unit>.Failure($"Cannot cancel an order with status '{order.OrderStatus}'.", 400);
+
+                OrderStatus oldStatus = order.OrderStatus;
+
+                // Load order items
+                List<OrderItem> items = await context.OrderItems
+                    .Where(oi => oi.OrderId == order.Id)
                     .ToListAsync(ct);
 
-                Dictionary<Guid, Stock> stockByVariant = stocks.ToDictionary(s => s.ProductVariantId);
-
-                // Release reserved stock
-                foreach (OrderItem item in items)
+                if (items.Count > 0)
                 {
-                    if (!stockByVariant.TryGetValue(item.ProductVariantId, out Stock? stock))
-                        return Result<Unit>.Failure(
-                            $"Stock record not found for product variant '{item.ProductVariantId}'.", 409);
-                    if (stock.QuantityReserved < item.Quantity)
-                        return Result<Unit>.Failure(
-                            $"Insufficient reserved stock for product variant '{item.ProductVariantId}'.", 409);
+                    // Lock stock rows with UPDLOCK
+                    List<Guid> variantIds = items.Select(oi => oi.ProductVariantId).Distinct().ToList();
+                    string paramList = string.Join(", ", variantIds.Select((_, i) => $"@p{i}"));
+                    object[] sqlParams = variantIds
+                        .Select((id, i) => (object)new SqlParameter($"@p{i}", id)).ToArray();
 
-                    stock.QuantityReserved -= item.Quantity;
-                    stock.UpdatedAt = DateTime.UtcNow;
-                    stock.UpdatedBy = userId;
+                    List<Stock> stocks = await context.Stocks
+                        .FromSqlRaw($"SELECT * FROM Stocks WITH (UPDLOCK) WHERE ProductVariantId IN ({paramList})", sqlParams)
+                        .ToListAsync(ct);
+
+                    Dictionary<Guid, Stock> stockByVariant = stocks.ToDictionary(s => s.ProductVariantId);
+
+                    // Release reserved stock
+                    foreach (OrderItem item in items)
+                    {
+                        if (!stockByVariant.TryGetValue(item.ProductVariantId, out Stock? stock))
+                            return Result<Unit>.Failure(
+                                $"Stock record not found for product variant '{item.ProductVariantId}'.", 409);
+                        if (stock.QuantityReserved < item.Quantity)
+                            return Result<Unit>.Failure(
+                                $"Insufficient reserved stock for product variant '{item.ProductVariantId}'.", 409);
+
+                        stock.QuantityReserved -= item.Quantity;
+                        stock.UpdatedAt = DateTime.UtcNow;
+                        stock.UpdatedBy = userId;
+                    }
                 }
-            }
 
-            order.OrderStatus = OrderStatus.Cancelled;
-            order.UpdatedAt = DateTime.UtcNow;
+                order.OrderStatus = OrderStatus.Cancelled;
+                order.UpdatedAt = DateTime.UtcNow;
 
-            context.OrderStatusHistories.Add(new OrderStatusHistory
-            {
-                OrderId = order.Id,
-                FromStatus = oldStatus,
-                ToStatus = OrderStatus.Cancelled,
-                Notes = request.Dto?.Reason ?? "Cancelled by customer",
-                ChangedBy = userId,
+                context.OrderStatusHistories.Add(new OrderStatusHistory
+                {
+                    OrderId = order.Id,
+                    FromStatus = oldStatus,
+                    ToStatus = OrderStatus.Cancelled,
+                    Notes = request.Dto?.Reason ?? "Cancelled by customer",
+                    ChangedBy = userId,
+                });
+
+                bool success = await context.SaveChangesAsync(ct) > 0;
+
+                if (!success)
+                    return Result<Unit>.Failure("Failed to cancel order.", 400);
+
+                await transaction.CommitAsync(ct);
+
+                return Result<Unit>.Success(Unit.Value);
             });
-
-            bool success = await context.SaveChangesAsync(ct) > 0;
-
-            if (!success)
-                return Result<Unit>.Failure("Failed to cancel order.", 400);
-
-            await transaction.CommitAsync(ct);
-
-            return Result<Unit>.Success(Unit.Value);
         }
     }
 }

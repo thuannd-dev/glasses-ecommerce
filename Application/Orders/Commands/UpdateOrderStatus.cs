@@ -24,127 +24,130 @@ public sealed class UpdateOrderStatus
     {
         public async Task<Result<Unit>> Handle(Command request, CancellationToken ct)
         {
-            // Use RepeatableRead to prevent race condition on stock updates
-            await using IDbContextTransaction transaction =
-                await context.Database.BeginTransactionAsync(IsolationLevel.RepeatableRead, ct);
-
             Guid staffUserId = userAccessor.GetUserId();
 
-            Order? order = await context.Orders
-                .Include(o => o.ShipmentInfo)
-                .FirstOrDefaultAsync(o => o.Id == request.OrderId, ct);
-
-            if (order == null)
-                return Result<Unit>.Failure("Order not found.", 404);
-
-            OrderStatus oldStatus = order.OrderStatus;
-            OrderStatus newStatus = request.Dto.NewStatus;
-
-            // Validate status transition
-            if (!IsValidTransition(oldStatus, newStatus))
-                return Result<Unit>.Failure(
-                    $"Cannot transition from '{oldStatus}' to '{newStatus}'.", 400);
-
-            // If cancelling or completing, load stocks with UPDLOCK to prevent race condition
-            if (newStatus == OrderStatus.Cancelled || newStatus == OrderStatus.Completed)
+            return await context.Database.CreateExecutionStrategy().ExecuteAsync(async () =>
             {
-                List<OrderItem> items = await context.OrderItems
-                    .Where(oi => oi.OrderId == order.Id)
-                    .ToListAsync(ct);
+                // Use RepeatableRead to prevent race condition on stock updates
+                await using IDbContextTransaction transaction =
+                    await context.Database.BeginTransactionAsync(IsolationLevel.RepeatableRead, ct);
 
-                if (items.Count == 0)
-                    return Result<Unit>.Failure("Order has no items.", 400);
+                Order? order = await context.Orders
+                    .Include(o => o.ShipmentInfo)
+                    .FirstOrDefaultAsync(o => o.Id == request.OrderId, ct);
 
-                // Lock stock rows with UPDLOCK
-                List<Guid> variantIds = items.Select(oi => oi.ProductVariantId).Distinct().ToList();
-                string paramList = string.Join(", ", variantIds.Select((_, i) => $"@p{i}"));
-                object[] sqlParams = variantIds
-                    .Select((id, i) => (object)new SqlParameter($"@p{i}", id)).ToArray();
+                if (order == null)
+                    return Result<Unit>.Failure("Order not found.", 404);
 
-                List<Stock> stocks = await context.Stocks
-                    .FromSqlRaw($"SELECT * FROM Stocks WITH (UPDLOCK) WHERE ProductVariantId IN ({paramList})", sqlParams)
-                    .ToListAsync(ct);
-                Dictionary<Guid, Stock> stockByVariant = stocks.ToDictionary(s => s.ProductVariantId);
+                OrderStatus oldStatus = order.OrderStatus;
+                OrderStatus newStatus = request.Dto.NewStatus;
 
-                if (newStatus == OrderStatus.Cancelled)
+                // Validate status transition
+                if (!IsValidTransition(oldStatus, newStatus))
+                    return Result<Unit>.Failure(
+                        $"Cannot transition from '{oldStatus}' to '{newStatus}'.", 400);
+
+                // If cancelling or completing, load stocks with UPDLOCK to prevent race condition
+                if (newStatus == OrderStatus.Cancelled || newStatus == OrderStatus.Completed)
                 {
-                    foreach (OrderItem item in items)
-                    {
-                        if (!stockByVariant.TryGetValue(item.ProductVariantId, out Stock? stock))
-                            return Result<Unit>.Failure(
-                                $"Stock record not found for product variant '{item.ProductVariantId}'.", 409);
-                        if (stock.QuantityReserved < item.Quantity)
-                            return Result<Unit>.Failure(
-                                $"Insufficient reserved stock for product variant '{item.ProductVariantId}'.", 409);
+                    List<OrderItem> items = await context.OrderItems
+                        .Where(oi => oi.OrderId == order.Id)
+                        .ToListAsync(ct);
 
-                        stock.QuantityReserved -= item.Quantity;
-                        stock.UpdatedAt = DateTime.UtcNow;
-                        stock.UpdatedBy = staffUserId;
+                    if (items.Count == 0)
+                        return Result<Unit>.Failure("Order has no items.", 400);
+
+                    // Lock stock rows with UPDLOCK
+                    List<Guid> variantIds = items.Select(oi => oi.ProductVariantId).Distinct().ToList();
+                    string paramList = string.Join(", ", variantIds.Select((_, i) => $"@p{i}"));
+                    object[] sqlParams = variantIds
+                        .Select((id, i) => (object)new SqlParameter($"@p{i}", id)).ToArray();
+
+                    List<Stock> stocks = await context.Stocks
+                        .FromSqlRaw($"SELECT * FROM Stocks WITH (UPDLOCK) WHERE ProductVariantId IN ({paramList})", sqlParams)
+                        .ToListAsync(ct);
+                    Dictionary<Guid, Stock> stockByVariant = stocks.ToDictionary(s => s.ProductVariantId);
+
+                    if (newStatus == OrderStatus.Cancelled)
+                    {
+                        foreach (OrderItem item in items)
+                        {
+                            if (!stockByVariant.TryGetValue(item.ProductVariantId, out Stock? stock))
+                                return Result<Unit>.Failure(
+                                    $"Stock record not found for product variant '{item.ProductVariantId}'.", 409);
+                            if (stock.QuantityReserved < item.Quantity)
+                                return Result<Unit>.Failure(
+                                    $"Insufficient reserved stock for product variant '{item.ProductVariantId}'.", 409);
+
+                            stock.QuantityReserved -= item.Quantity;
+                            stock.UpdatedAt = DateTime.UtcNow;
+                            stock.UpdatedBy = staffUserId;
+                        }
+                    }
+
+                    if (newStatus == OrderStatus.Completed)
+                    {
+                        foreach (OrderItem item in items)
+                        {
+                            if (!stockByVariant.TryGetValue(item.ProductVariantId, out Stock? stock))
+                                return Result<Unit>.Failure(
+                                    $"Stock record not found for product variant '{item.ProductVariantId}'.", 409);
+                            if (stock.QuantityOnHand < item.Quantity || stock.QuantityReserved < item.Quantity)
+                                return Result<Unit>.Failure(
+                                    $"Insufficient stock for product variant '{item.ProductVariantId}'.", 409);
+
+                            stock.QuantityOnHand -= item.Quantity;
+                            stock.QuantityReserved -= item.Quantity;
+                            stock.UpdatedAt = DateTime.UtcNow;
+                            stock.UpdatedBy = staffUserId;
+                        }
                     }
                 }
 
-                if (newStatus == OrderStatus.Completed)
+                // If shipping, require and create shipment info
+                if (newStatus == OrderStatus.Shipped)
                 {
-                    foreach (OrderItem item in items)
+                    if (request.Dto.Shipment == null)
+                        return Result<Unit>.Failure("Shipment info is required when shipping an order.", 400);
+
+                    if (order.ShipmentInfo != null)
+                        return Result<Unit>.Failure("Shipment info already exists for this order.", 409);
+
+                    context.Set<ShipmentInfo>().Add(new ShipmentInfo
                     {
-                        if (!stockByVariant.TryGetValue(item.ProductVariantId, out Stock? stock))
-                            return Result<Unit>.Failure(
-                                $"Stock record not found for product variant '{item.ProductVariantId}'.", 409);
-                        if (stock.QuantityOnHand < item.Quantity || stock.QuantityReserved < item.Quantity)
-                            return Result<Unit>.Failure(
-                                $"Insufficient stock for product variant '{item.ProductVariantId}'.", 409);
-
-                        stock.QuantityOnHand -= item.Quantity;
-                        stock.QuantityReserved -= item.Quantity;
-                        stock.UpdatedAt = DateTime.UtcNow;
-                        stock.UpdatedBy = staffUserId;
-                    }
+                        OrderId = order.Id,
+                        CarrierName = request.Dto.Shipment.CarrierName,
+                        TrackingCode = request.Dto.Shipment.TrackingCode,
+                        TrackingUrl = request.Dto.Shipment.TrackingUrl,
+                        EstimatedDeliveryAt = request.Dto.Shipment.EstimatedDeliveryAt,
+                        ShippingNotes = request.Dto.Shipment.ShippingNotes,
+                        ShippedAt = DateTime.UtcNow,
+                        CreatedBy = staffUserId,
+                        UpdatedAt = DateTime.UtcNow,
+                    });
                 }
-            }
 
-            // If shipping, require and create shipment info
-            if (newStatus == OrderStatus.Shipped)
-            {
-                if (request.Dto.Shipment == null)
-                    return Result<Unit>.Failure("Shipment info is required when shipping an order.", 400);
+                order.OrderStatus = newStatus;
+                order.UpdatedAt = DateTime.UtcNow;
 
-                if (order.ShipmentInfo != null)
-                    return Result<Unit>.Failure("Shipment info already exists for this order.", 409);
-
-                context.Set<ShipmentInfo>().Add(new ShipmentInfo
+                context.OrderStatusHistories.Add(new OrderStatusHistory
                 {
                     OrderId = order.Id,
-                    CarrierName = request.Dto.Shipment.CarrierName,
-                    TrackingCode = request.Dto.Shipment.TrackingCode,
-                    TrackingUrl = request.Dto.Shipment.TrackingUrl,
-                    EstimatedDeliveryAt = request.Dto.Shipment.EstimatedDeliveryAt,
-                    ShippingNotes = request.Dto.Shipment.ShippingNotes,
-                    ShippedAt = DateTime.UtcNow,
-                    CreatedBy = staffUserId,
-                    UpdatedAt = DateTime.UtcNow,
+                    FromStatus = oldStatus,
+                    ToStatus = newStatus,
+                    Notes = request.Dto.Notes,
+                    ChangedBy = staffUserId,
                 });
-            }
 
-            order.OrderStatus = newStatus;
-            order.UpdatedAt = DateTime.UtcNow;
+                bool isSuccess = await context.SaveChangesAsync(ct) > 0;
 
-            context.OrderStatusHistories.Add(new OrderStatusHistory
-            {
-                OrderId = order.Id,
-                FromStatus = oldStatus,
-                ToStatus = newStatus,
-                Notes = request.Dto.Notes,
-                ChangedBy = staffUserId,
+                if (!isSuccess)
+                    return Result<Unit>.Failure("Failed to update order status.", 400);
+
+                await transaction.CommitAsync(ct);
+
+                return Result<Unit>.Success(Unit.Value);
             });
-
-            bool isSuccess = await context.SaveChangesAsync(ct) > 0;
-
-            if (!isSuccess)
-                return Result<Unit>.Failure("Failed to update order status.", 400);
-
-            await transaction.CommitAsync(ct);
-
-            return Result<Unit>.Success(Unit.Value);
         }
 
         private static bool IsValidTransition(OrderStatus from, OrderStatus to)
