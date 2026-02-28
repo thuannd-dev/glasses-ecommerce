@@ -48,8 +48,8 @@ public sealed class OperationsOrdersController : BaseApiController
     //**Update Order Status for Operations**
     // Cập nhật trạng thái đơn hàng — reuse handler chung với Sales
     // Nếu Shipped → bắt buộc gửi kèm Shipment (carrierName, trackingCode, ...)
-    // Nếu Cancelled → release stock (QuantityReserved -= quantity)
-    // Nếu Completed → deduct stock (QuantityOnHand -= quantity, QuantityReserved -= quantity)
+    // Nếu Cancelled → release stock (QuantityReserved -= quantity) CHỈ áp dụng cho đơn ReadyStock
+    // Nếu Completed → deduct stock (QuantityOnHand -= quantity, QuantityReserved -= quantity) CHỈ áp dụng cho đơn ReadyStock
     // Ghi OrderStatusHistory (from → to, notes, changedBy)
     [HttpPut("{id}/status")]
     public async Task<IActionResult> UpdateOrderStatus(Guid id, UpdateOrderStatusDto dto, CancellationToken ct)
