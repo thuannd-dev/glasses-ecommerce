@@ -293,30 +293,21 @@ public sealed class Checkout
 
                 if (unselectedItems.Count > 0)
                 {
-                    // Remove unselected items from the original cart so it only reflects what was ordered
-                    foreach (var item in unselectedItems)
-                    {
-                        cart.Items.Remove(item);
-                        context.CartItems.Remove(item); // Avoid orphaned items or DB conflicts
-                    }
-
                     // Create a new active cart for the remaining items NOW (since the old one is no longer Active)
                     Cart newActiveCart = new Cart
                     {
                         UserId = userId,
                         Status = CartStatus.Active
                     };
+                    context.Carts.Add(newActiveCart);
 
+                    // Move unselected items to the new cart, preserving their existing IDs
                     foreach (var item in unselectedItems)
                     {
-                        newActiveCart.Items.Add(new CartItem
-                        {
-                            CartId = newActiveCart.Id,
-                            ProductVariantId = item.ProductVariantId,
-                            Quantity = item.Quantity
-                        });
+                        cart.Items.Remove(item);
+                        item.CartId = newActiveCart.Id;
+                        newActiveCart.Items.Add(item);
                     }
-                    context.Carts.Add(newActiveCart);
 
                     // The second SaveChanges happens below
                 }
