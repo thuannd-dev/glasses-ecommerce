@@ -71,9 +71,9 @@ public sealed class Checkout
                     .ToList();
 
                 if (selectedItems.Count == 0)
-                    return Result<Guid>.Failure("No items selected for checkout.", 400);
+                    return Result<Guid>.Failure("None of the selected items exist in your cart.", 400);
 
-                if (selectedItems.Count != dto.SelectedCartItemIds.Distinct().Count())
+                if (selectedItems.Count != dto.SelectedCartItemIds.Count)
                     return Result<Guid>.Failure("One or more selected items do not exist in your cart.", 400);
 
                 // 2. Validate address
@@ -282,6 +282,15 @@ public sealed class Checkout
 
                 // 13. Cart Split Logic for Partial Checkout
                 var unselectedItems = cart.Items.Except(selectedItems).ToList();
+
+                // Mark original (now holding only ordered items) as Converted FIRST
+                cart.Status = CartStatus.Converted;
+
+                // Save immediately to release the "Active" unique constraint for this user
+                bool success = await context.SaveChangesAsync(ct) > 0;
+                if (!success)
+                    return Result<Guid>.Failure("Failed to process cart status.", 500);
+
                 if (unselectedItems.Count > 0)
                 {
                     // Remove unselected items from the original cart so it only reflects what was ordered
@@ -291,7 +300,7 @@ public sealed class Checkout
                         context.CartItems.Remove(item); // Avoid orphaned items or DB conflicts
                     }
 
-                    // Create a new active cart for the remaining items
+                    // Create a new active cart for the remaining items NOW (since the old one is no longer Active)
                     Cart newActiveCart = new Cart
                     {
                         UserId = userId,
@@ -308,15 +317,14 @@ public sealed class Checkout
                         });
                     }
                     context.Carts.Add(newActiveCart);
+
+                    // The second SaveChanges happens below
                 }
 
-                // Mark original (now holding only ordered items) as Converted
-                cart.Status = CartStatus.Converted;
-
                 // 14. Save
-                bool success = await context.SaveChangesAsync(ct) > 0;
+                bool finalSuccess = await context.SaveChangesAsync(ct) > 0;
 
-                if (!success)
+                if (!finalSuccess)
                     return Result<Guid>.Failure("Failed to place order.", 500);
 
                 await transaction.CommitAsync(ct);
