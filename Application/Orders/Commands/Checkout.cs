@@ -66,6 +66,16 @@ public sealed class Checkout
                 if (cart == null || cart.Items.Count == 0)
                     return Result<Guid>.Failure("Cart is empty.", 400);
 
+                var selectedItems = cart.Items
+                    .Where(i => dto.SelectedCartItemIds.Contains(i.Id))
+                    .ToList();
+
+                if (selectedItems.Count == 0)
+                    return Result<Guid>.Failure("No items selected for checkout.", 400);
+
+                if (selectedItems.Count != dto.SelectedCartItemIds.Distinct().Count())
+                    return Result<Guid>.Failure("One or more selected items do not exist in your cart.", 400);
+
                 // 2. Validate address
                 bool addressExists = await context.Addresses
                     .AnyAsync(a => a.Id == dto.AddressId
@@ -77,7 +87,7 @@ public sealed class Checkout
                 // 3. Aggregate cart items by variant to get correct per-variant totals.
                 // A cart can have multiple rows for the same variant; checking each row
                 // individually could let per-row quantities pass while the aggregate exceeds stock.
-                var mergedItems = cart.Items
+                var mergedItems = selectedItems
                     .GroupBy(i => i.ProductVariantId)
                     .Select(g => new { ProductVariantId = g.Key, Quantity = g.Sum(i => i.Quantity) })
                     .ToList();
@@ -270,7 +280,37 @@ public sealed class Checkout
                     ChangedBy = userId,
                 });
 
-                // 13. Clear cart after checkout
+                // 13. Cart Split Logic for Partial Checkout
+                var unselectedItems = cart.Items.Except(selectedItems).ToList();
+                if (unselectedItems.Count > 0)
+                {
+                    // Remove unselected items from the original cart so it only reflects what was ordered
+                    foreach (var item in unselectedItems)
+                    {
+                        cart.Items.Remove(item);
+                        context.CartItems.Remove(item); // Avoid orphaned items or DB conflicts
+                    }
+
+                    // Create a new active cart for the remaining items
+                    Cart newActiveCart = new Cart
+                    {
+                        UserId = userId,
+                        Status = CartStatus.Active
+                    };
+
+                    foreach (var item in unselectedItems)
+                    {
+                        newActiveCart.Items.Add(new CartItem
+                        {
+                            CartId = newActiveCart.Id,
+                            ProductVariantId = item.ProductVariantId,
+                            Quantity = item.Quantity
+                        });
+                    }
+                    context.Carts.Add(newActiveCart);
+                }
+
+                // Mark original (now holding only ordered items) as Converted
                 cart.Status = CartStatus.Converted;
 
                 // 14. Save

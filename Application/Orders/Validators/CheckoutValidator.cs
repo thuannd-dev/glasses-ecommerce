@@ -13,6 +13,8 @@ public sealed class CheckoutValidator : AbstractValidator<Checkout.Command>
 
         When(x => x.Dto != null, () =>
         {
+            RuleFor(x => x.Dto.SelectedCartItemIds)
+                .NotEmpty().WithMessage("You must select at least one item to checkout.");
 
             RuleFor(x => x.Dto.AddressId)
                 .NotEmpty().WithMessage("Address is required.");
