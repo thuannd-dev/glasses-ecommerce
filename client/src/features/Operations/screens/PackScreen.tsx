@@ -4,8 +4,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { useOperations } from "../context/OperationsContext";
 import { OrderCard, SummaryCard } from "../components";
-import type { OrderType } from "../types";
-import type { OrderDto } from "../types";
+import type { OrderType, OrderDto } from "../../../lib/types";
 import { isSameDay } from "date-fns";
 
 function filterAndSortOrders(

@@ -13,15 +13,7 @@ import ShoppingCartOutlinedIcon from "@mui/icons-material/ShoppingCartOutlined";
 import { NavLink } from "react-router-dom";
 
 import { useCart } from "../../lib/hooks/useCart";
-
-function money(v: number) {
-    return v.toLocaleString("en-US", {
-        style: "currency",
-        currency: "USD",
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    });
-}
+import { formatMoney } from "../../lib/utils/format";
 
 export default function CartPage() {
     const { cart, isLoading, updateItem, removeItem } = useCart();
@@ -161,7 +153,7 @@ export default function CartPage() {
                                             fontWeight={700}
                                             mt={0.5}
                                         >
-                                            {money(item.price)}
+                                            {formatMoney(item.price)}
                                         </Typography>
 
                                         {/* Quantity controls dưới giá */}
@@ -259,7 +251,7 @@ export default function CartPage() {
                             >
                                 <Typography fontSize={14}>Subtotal</Typography>
                                 <Typography fontWeight={700}>
-                                    {money(totalAmount)}
+                                    {formatMoney(totalAmount)}
                                 </Typography>
                             </Box>
 
@@ -270,7 +262,7 @@ export default function CartPage() {
                                 fontSize={20}
                                 mb={2}
                             >
-                                Total: {money(totalAmount)}
+                                Total: {formatMoney(totalAmount)}
                             </Typography>
 
                             <Button

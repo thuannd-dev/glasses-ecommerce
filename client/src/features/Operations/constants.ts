@@ -1,5 +1,4 @@
-import type { OrderType, OrderStatus } from "./types";
-import type { ShipmentDto } from "./types";
+import type { OrderType, OrderStatus, ShipmentDto } from "../../lib/types";
 
 export const ORDER_TYPE_LABEL: Record<OrderType, string> = {
   standard: "Standard",

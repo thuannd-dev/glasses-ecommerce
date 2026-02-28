@@ -8,17 +8,8 @@ import {
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import SearchIcon from "@mui/icons-material/Search";
 import { NavLink } from "react-router-dom";
-import type { Product } from "../../types";
-
-function formatMoneyUSD(v: number | undefined | null) {
-    if (v == null || typeof v !== "number") return "$—";
-    return v.toLocaleString("en-US", {
-        style: "currency",
-        currency: "USD",
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    });
-}
+import type { Product } from "../../../../lib/types";
+import { formatMoney } from "../../../../lib/utils/format";
 
 export function ProductCard({ p }: { p: Product }) {
     return (
@@ -155,7 +146,7 @@ export function ProductCard({ p }: { p: Product }) {
                     ) : null}
 
                     <Typography sx={{ mt: 1.2, fontWeight: 900, fontSize: 16 }}>
-                        {formatMoneyUSD(p.price)}
+                        {formatMoney(p.price)}
                     </Typography>
                 </Box>
             </CardActionArea>

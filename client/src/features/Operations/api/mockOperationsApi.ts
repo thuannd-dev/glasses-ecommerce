@@ -6,7 +6,7 @@ import type {
   CreateShipmentPayload,
   UpdateTrackingPayload,
   UpdateOrderStatusPayload,
-} from "../types";
+} from "../../../lib/types";
 
 const MOCK_DELAY_MS = 400;
 

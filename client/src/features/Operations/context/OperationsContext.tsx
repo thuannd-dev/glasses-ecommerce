@@ -7,7 +7,7 @@ import {
   useUpdateTracking,
 } from "../../../lib/hooks/useOperationsOrders";
 import { CreateShipmentDialog } from "../components";
-import type { OrderDto, ShipmentDto } from "../types";
+import type { OrderDto, ShipmentDto } from "../../../lib/types";
 
 type OperationsContextValue = {
   orders: OrderDto[];

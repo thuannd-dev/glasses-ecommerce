@@ -11,7 +11,7 @@ import {
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
 import { useNavigate } from "react-router-dom";
-import type { FiltersState, GlassesType } from "../../types";
+import type { FiltersState, GlassesType } from "../../../../lib/types";
 
 /** Category trả về từ GET /api/categories – khớp với category trong response list sản phẩm */
 export type CategoryOption = {

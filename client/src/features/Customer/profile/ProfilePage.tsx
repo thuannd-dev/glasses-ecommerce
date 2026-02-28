@@ -8,6 +8,7 @@ import {
 } from "@mui/material";
 import agent from "../../../lib/api/agent";
 import { useAccount } from "../../../lib/hooks/useAccount";
+import type { Profile } from "../../../lib/types/user";
 
 export default function ProfilePage() {
   const { currentUser } = useAccount();

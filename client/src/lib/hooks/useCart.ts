@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-toastify";
 
 import agent from "../api/agent";
+import type { CartDto, CartItemDto, AddCartItemPayload, UpdateCartItemPayload } from "../types/cart";
 import {
   addCartItemSchema,
   updateCartItemSchema,
@@ -189,7 +190,14 @@ export function useCart() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cart"] });
     },
-    onError: () => {
+    onError: (error: unknown) => {
+      // Swallow 404 (cart not found) to avoid noisy errors when backend already cleared cart.
+      const status =
+        typeof error === "object" && error && "response" in error
+          ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (error as any).response?.status
+          : undefined;
+      if (status === 404) return;
       toast.error("Failed to clear cart.");
     },
   });

@@ -9,6 +9,7 @@ import {
   Typography,
 } from "@mui/material";
 import { Link } from "react-router";
+import type { Profile } from "../../lib/types/user";
 
 type Props = {
   profile: Profile;

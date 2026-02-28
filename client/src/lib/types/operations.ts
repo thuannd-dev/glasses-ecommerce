@@ -37,9 +37,7 @@ export interface OrderDto {
   shippingAddress: string;
   items: OrderItemDto[];
   totalAmount: number;
-  /** Pre-order: expected stock date */
   expectedStockDate?: string;
-  /** Prescription: fabrication status */
   prescriptionStatus?: "lens_ordered" | "lens_fitting" | "ready";
   shipmentId?: string;
   trackingNumber?: string;
@@ -56,7 +54,6 @@ export interface ShipmentDto {
   createdAt: string;
   shippedAt?: string;
   deliveredAt?: string;
-  /** Tracking history */
   trackingEvents?: TrackingEventDto[];
 }
 
@@ -83,6 +80,5 @@ export interface UpdateTrackingPayload {
 export interface UpdateOrderStatusPayload {
   orderId: string;
   status: OrderStatus;
-  /** Pre-order: update stock after receiving */
   receivedQuantity?: Record<string, number>;
 }

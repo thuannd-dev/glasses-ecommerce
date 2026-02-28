@@ -1,7 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
 import agent from "../api/agent";
 import { productsQueryParamsSchema } from "../schemas/productsQuerySchema";
-import type { Product } from "../../features/collections/types";
+import type {
+  ApiProductItem,
+  ProductDetailApi,
+  ProductsApiResponse,
+  CategoryDto,
+  ProductDetailView,
+  ProductsQueryParams,
+} from "../types/product";
+import type { Product } from "../types/collections";
 
 // Chuyển 1 item từ API (productName, category.slug...) sang dạng Product dùng ở UI (name, category, glassesType)
 function mapApiItemToProduct(item: ApiProductItem): Product {

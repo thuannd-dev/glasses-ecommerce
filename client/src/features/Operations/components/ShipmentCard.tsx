@@ -1,7 +1,7 @@
 import { Box, Button, Chip, FormControl, InputLabel, MenuItem, Paper, Select, Typography } from "@mui/material";
 
 import { formatDate, SHIPMENT_STATUS_LABEL } from "../constants";
-import type { ShipmentDto } from "../types";
+import type { ShipmentDto } from "../../../lib/types";
 
 export function ShipmentCard({
   shipment,

@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from "react-router";
+import { createBrowserRouter, Navigate, Outlet } from "react-router";
 import App from "../layout/App";
 import AuthLayout from "../layout/AuthLayout";
 
@@ -21,6 +21,8 @@ import CartPage from "../../features/cart/CartPage";
 
 import CheckoutPage from "../../features/checkout/CheckoutPage";
 import OrderSuccessPage from "../../features/collections/OrderSuccessPage";
+import OrdersPage from "../../features/orders/OrdersPage";
+import OrderDetailPage from "../../features/orders/OrderDetailPage";
 import ProfilePage from "../../features/Customer/profile/ProfilePage";
 import RequireRole from "./RequireRole";
 import SalesDashboard from "../../features/sales/SalesDashboard";
@@ -121,13 +123,21 @@ export const router = createBrowserRouter([
       { path: "server-error", element: <ServerError /> },
       { path: "not-found", element: <NotFound /> },
 
-      // Fallback
-      { path: "*", element: <Navigate replace to="/not-found" /> },
-
-      //guest
+      // Guest / customer
       { path: "cart", element: <CartPage /> },
       { path: "checkout", element: <CheckoutPage /> },
       { path: "order-success", element: <OrderSuccessPage /> },
+      {
+        path: "orders",
+        element: <Outlet />,
+        children: [
+          { index: true, element: <OrdersPage /> },
+          { path: ":id", element: <OrderDetailPage /> },
+        ],
+      },
+
+      // Fallback — phải để cuối
+      { path: "*", element: <Navigate replace to="/not-found" /> },
     ],
   },
 ]);
