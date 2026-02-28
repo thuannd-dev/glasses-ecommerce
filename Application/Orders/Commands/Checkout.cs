@@ -66,6 +66,16 @@ public sealed class Checkout
                 if (cart == null || cart.Items.Count == 0)
                     return Result<Guid>.Failure("Cart is empty.", 400);
 
+                var selectedItems = cart.Items
+                    .Where(i => dto.SelectedCartItemIds.Contains(i.Id))
+                    .ToList();
+
+                if (selectedItems.Count == 0)
+                    return Result<Guid>.Failure("None of the selected items exist in your cart.", 400);
+
+                if (selectedItems.Count != dto.SelectedCartItemIds.Count)
+                    return Result<Guid>.Failure("One or more selected items do not exist in your cart.", 400);
+
                 // 2. Validate address
                 bool addressExists = await context.Addresses
                     .AnyAsync(a => a.Id == dto.AddressId
@@ -77,7 +87,7 @@ public sealed class Checkout
                 // 3. Aggregate cart items by variant to get correct per-variant totals.
                 // A cart can have multiple rows for the same variant; checking each row
                 // individually could let per-row quantities pass while the aggregate exceeds stock.
-                var mergedItems = cart.Items
+                var mergedItems = selectedItems
                     .GroupBy(i => i.ProductVariantId)
                     .Select(g => new { ProductVariantId = g.Key, Quantity = g.Sum(i => i.Quantity) })
                     .ToList();
@@ -270,14 +280,45 @@ public sealed class Checkout
                     ChangedBy = userId,
                 });
 
-                // 13. Clear cart after checkout
+                // 13. Cart Split Logic for Partial Checkout
+                var unselectedItems = cart.Items.Except(selectedItems).ToList();
+
+                // Mark original (now holding only ordered items) as Converted FIRST
                 cart.Status = CartStatus.Converted;
 
-                // 14. Save
+                // Save immediately to release the "Active" unique constraint for this user
                 bool success = await context.SaveChangesAsync(ct) > 0;
-
                 if (!success)
-                    return Result<Guid>.Failure("Failed to place order.", 500);
+                    return Result<Guid>.Failure("Failed to process cart status.", 500);
+
+                if (unselectedItems.Count > 0)
+                {
+                    // Create a new active cart for the remaining items NOW (since the old one is no longer Active)
+                    Cart newActiveCart = new Cart
+                    {
+                        UserId = userId,
+                        Status = CartStatus.Active
+                    };
+                    context.Carts.Add(newActiveCart);
+
+                    // Move unselected items to the new cart, preserving their existing IDs
+                    foreach (var item in unselectedItems)
+                    {
+                        cart.Items.Remove(item);
+                        item.CartId = newActiveCart.Id;
+                        newActiveCart.Items.Add(item);
+                    }
+
+                    // The second SaveChanges happens below
+                }
+
+                // 14. Save remaining split changes (only when there are any)
+                if (unselectedItems.Count > 0)
+                {
+                    bool finalSuccess = await context.SaveChangesAsync(ct) > 0;
+                    if (!finalSuccess)
+                        return Result<Guid>.Failure("Failed to place order.", 500);
+                }
 
                 await transaction.CommitAsync(ct);
 

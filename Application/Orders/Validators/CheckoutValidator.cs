@@ -13,6 +13,12 @@ public sealed class CheckoutValidator : AbstractValidator<Checkout.Command>
 
         When(x => x.Dto != null, () =>
         {
+            RuleFor(x => x.Dto.SelectedCartItemIds)
+                .NotEmpty().WithMessage("You must select at least one item to checkout.")
+                .Must(ids => ids != null && ids.All(id => id != Guid.Empty))
+                .WithMessage("One or more selected cart item IDs are invalid (empty GUID).")
+                .Must(ids => ids != null && ids.Count == ids.Distinct().Count())
+                .WithMessage("Duplicate cart item IDs are not allowed.");
 
             RuleFor(x => x.Dto.AddressId)
                 .NotEmpty().WithMessage("Address is required.");

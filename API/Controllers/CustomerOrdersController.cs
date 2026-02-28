@@ -10,16 +10,25 @@ namespace API.Controllers;
 [Route("api/me/orders")]
 public sealed class CustomerOrdersController : BaseApiController
 {
-    //checkout from cart
+    /// <summary>
+    /// Checkout selected items from the active cart.
+    /// </summary>
+    /// <remarks>
+    /// Supports **Partial Checkout**: 
+    /// If only some items are selected, the original cart is converted to an Order, 
+    /// and a new Active Cart is automatically generated containing the unselected items.
+    /// 
+    /// **Process:**
+    /// - Order (status = Pending, source = Online)
+    /// - OrderItem[] (from selected cart items)
+    /// - Payment (status = Pending, method from dto)
+    /// - PromoUsageLog (if promo is applied)
+    /// - Prescription + PrescriptionDetail[] (if OrderType = Prescription)
+    /// - OrderStatusHistory (Pending → Pending, "Order placed by customer")
+    /// </remarks>
     [HttpPost]
     public async Task<IActionResult> Checkout(CheckoutDto dto, CancellationToken ct)
     {
-        // Order (status = Pending, source = Online)
-        // OrderItem[] (từ cart items)
-        // Payment (status = Pending, method từ dto)
-        // PromoUsageLog (nếu có promo)
-        // Prescription + PrescriptionDetail[] (nếu OrderType = Prescription)
-        // OrderStatusHistory (Pending → Pending, "Order placed by customer")
         return HandleResult(await Mediator.Send(new Checkout.Command { Dto = dto }, ct));
     }
 

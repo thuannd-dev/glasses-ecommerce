@@ -16,6 +16,10 @@ public sealed class CartsController : BaseApiController
         return HandleResult(await Mediator.Send(new GetCart.Query(), cancellationToken));
     }
 
+    /// <summary>
+    /// Adds an item to the user's active cart.
+    /// If the user does not currently have an active cart, a new one is automatically created.
+    /// </summary>
     [HttpPost("items")]
     public async Task<IActionResult> AddItem(AddCartItemDto dto, CancellationToken cancellationToken)
     {

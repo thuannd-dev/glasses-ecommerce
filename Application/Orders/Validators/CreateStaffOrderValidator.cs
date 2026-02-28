@@ -26,7 +26,11 @@ public sealed class CreateStaffOrderValidator : AbstractValidator<CreateStaffOrd
                 .WithMessage("OrderType must be ReadyStock, PreOrder, or Prescription.");
 
             RuleFor(x => x.Dto.Items)
-                .NotEmpty().WithMessage("Order must have at least one item.");
+                .NotEmpty().WithMessage("Order must have at least one item.")
+                .Must(items => items != null && items.All(i => i != null && i.ProductVariantId != Guid.Empty))
+                .WithMessage("One or more items are null or have invalid (empty) product variant IDs.")
+                .Must(items => items != null && items.Where(i => i != null).Select(i => i.ProductVariantId).Distinct().Count() == items.Count(i => i != null))
+                .WithMessage("Duplicate product variant IDs are not allowed in the same order.");
 
             RuleForEach(x => x.Dto.Items).ChildRules(item =>
             {
