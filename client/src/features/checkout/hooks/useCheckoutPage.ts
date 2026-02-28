@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCart } from "../../../lib/hooks/useCart";
 import { useCreateAddress } from "../../../lib/hooks/useAddresses";
@@ -27,14 +27,26 @@ const initialSnackbar: CheckoutSnackbarState = {
 };
 
 export function useCheckoutPage() {
+  const location = useLocation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { cart, isLoading: cartLoading } = useCart();
   const createAddress = useCreateAddress();
   const createOrder = useCreateOrder();
 
-  const items = cart?.items ?? [];
-  const totalAmount = cart?.totalAmount ?? 0;
+  const selectedCartItemIds = (location.state as { selectedCartItemIds?: string[] } | null)?.selectedCartItemIds;
+  const cartItems = useMemo(() => cart?.items ?? [], [cart?.items]);
+  const items = useMemo(() => {
+    if (selectedCartItemIds != null && selectedCartItemIds.length > 0) {
+      const set = new Set(selectedCartItemIds);
+      return cartItems.filter((i) => set.has(i.id));
+    }
+    return cartItems;
+  }, [cartItems, selectedCartItemIds]);
+  const totalAmount = useMemo(
+    () => items.reduce((s, i) => s + (i.subtotal ?? i.price * i.quantity), 0),
+    [items],
+  );
   const isEmptyCart = items.length === 0;
 
   const [address, setAddress] = useState<CheckoutShippingForm>(initialAddress);

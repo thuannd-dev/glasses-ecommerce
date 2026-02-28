@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from "react";
 import {
     Box,
     Typography,
@@ -6,21 +7,56 @@ import {
     Grid,
     Paper,
     IconButton,
+    Checkbox,
+    FormControlLabel,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import RemoveIcon from "@mui/icons-material/Remove";
 import ShoppingCartOutlinedIcon from "@mui/icons-material/ShoppingCartOutlined";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 
 import { useCart } from "../../lib/hooks/useCart";
 import { formatMoney } from "../../lib/utils/format";
 
 export default function CartPage() {
+    const navigate = useNavigate();
     const { cart, isLoading, updateItem, removeItem } = useCart();
 
     const items = cart?.items ?? [];
-    const totalQuantity = cart?.totalQuantity ?? 0;
-    const totalAmount = cart?.totalAmount ?? 0;
+    const itemIds = useMemo(() => items.map((i) => i.id), [items]);
+
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set(itemIds));
+    useEffect(() => {
+        setSelectedIds((prev) => {
+            const next = new Set(prev);
+            itemIds.forEach((id) => next.add(id));
+            itemIds.forEach((id) => {
+                if (!items.some((i) => i.id === id)) next.delete(id);
+            });
+            return next;
+        });
+    }, [itemIds, items]);
+
+    const selectedItems = useMemo(
+        () => items.filter((i) => selectedIds.has(i.id)),
+        [items, selectedIds],
+    );
+    const totalQuantity = selectedItems.reduce((s, i) => s + i.quantity, 0);
+    const totalAmount = selectedItems.reduce((s, i) => s + (i.subtotal ?? i.price * i.quantity), 0);
+
+    const allSelected = items.length > 0 && selectedIds.size >= items.length;
+    const handleSelectAll = () => {
+        if (allSelected) setSelectedIds(new Set());
+        else setSelectedIds(new Set(itemIds));
+    };
+    const handleToggleItem = (id: string) => {
+        setSelectedIds((prev) => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    };
 
     const handleIncrease = (id: string, currentQty: number) => {
         updateItem({ id, quantity: currentQty + 1 });
@@ -33,6 +69,12 @@ export default function CartPage() {
         } else {
             updateItem({ id, quantity: next });
         }
+    };
+
+    const handleProceedToCheckout = () => {
+        const ids = selectedItems.map((i) => i.id);
+        if (ids.length === 0) return;
+        navigate("/checkout", { state: { selectedCartItemIds: ids } });
     };
 
     return (
@@ -121,6 +163,19 @@ export default function CartPage() {
                                 p: 3,
                             }}
                         >
+                            <Box sx={{ pb: 2, borderBottom: "1px solid rgba(17,24,39,0.08)" }}>
+                                <FormControlLabel
+                                    control={
+                                        <Checkbox
+                                            checked={allSelected}
+                                            indeterminate={selectedIds.size > 0 && selectedIds.size < items.length}
+                                            onChange={handleSelectAll}
+                                        />
+                                    }
+                                    label="Select all"
+                                    sx={{ fontWeight: 600 }}
+                                />
+                            </Box>
                             {items.map((item) => (
                                 <Box
                                     key={item.id}
@@ -131,6 +186,10 @@ export default function CartPage() {
                                         py: 2,
                                     }}
                                 >
+                                    <Checkbox
+                                        checked={selectedIds.has(item.id)}
+                                        onChange={() => handleToggleItem(item.id)}
+                                    />
                                     <Box
                                         component="img"
                                         src={item.productImageUrl ?? ""}
@@ -236,9 +295,9 @@ export default function CartPage() {
                                     mb: 1,
                                 }}
                             >
-                                <Typography fontSize={14}>Items</Typography>
+                                <Typography fontSize={14}>Selected</Typography>
                                 <Typography fontWeight={700}>
-                                    {totalQuantity}
+                                    {selectedItems.length} item(s) · {totalQuantity} pcs
                                 </Typography>
                             </Box>
 
@@ -266,10 +325,10 @@ export default function CartPage() {
                             </Typography>
 
                             <Button
-                                component={NavLink}
-                                to="/checkout"
                                 fullWidth
                                 variant="contained"
+                                disabled={selectedItems.length === 0}
+                                onClick={handleProceedToCheckout}
                                 sx={{
                                     bgcolor: "#111827",
                                     fontWeight: 900,
