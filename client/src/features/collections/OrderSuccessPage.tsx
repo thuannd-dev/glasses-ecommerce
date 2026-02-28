@@ -12,28 +12,30 @@ import { NavLink } from "react-router-dom";
 import { formatMoney } from "../../lib/utils/format";
 import { useOrderSuccessPage } from "./hooks/useOrderSuccessPage";
 
+const OrderNotFoundBlock = () => (
+  <Box sx={{ maxWidth: 800, mx: "auto", mt: 10, px: 2 }}>
+    <Typography fontWeight={900} fontSize={22}>
+      Order not found
+    </Typography>
+    <Typography color="rgba(17,24,39,0.65)" mt={1} mb={3}>
+      The order information is unavailable. Please return to shop.
+    </Typography>
+    <Button
+      component={NavLink}
+      to="/collections"
+      variant="contained"
+      sx={{ fontWeight: 900 }}
+    >
+      Continue shopping
+    </Button>
+  </Box>
+);
+
 export default function OrderSuccessPage() {
   const { order, address, hasState } = useOrderSuccessPage();
 
-  if (!hasState) {
-    return (
-      <Box sx={{ maxWidth: 800, mx: "auto", mt: 10, px: 2 }}>
-        <Typography fontWeight={900} fontSize={22}>
-          Order not found
-        </Typography>
-        <Typography color="rgba(17,24,39,0.65)" mt={1} mb={3}>
-          The order information is unavailable. Please return to shop.
-        </Typography>
-        <Button
-          component={NavLink}
-          to="/collections"
-          variant="contained"
-          sx={{ fontWeight: 900 }}
-        >
-          Continue shopping
-        </Button>
-      </Box>
-    );
+  if (!hasState || !order) {
+    return <OrderNotFoundBlock />;
   }
 
   return (
