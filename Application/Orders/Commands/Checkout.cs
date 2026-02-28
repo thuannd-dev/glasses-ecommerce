@@ -321,11 +321,13 @@ public sealed class Checkout
                     // The second SaveChanges happens below
                 }
 
-                // 14. Save
-                bool finalSuccess = await context.SaveChangesAsync(ct) > 0;
-
-                if (!finalSuccess)
-                    return Result<Guid>.Failure("Failed to place order.", 500);
+                // 14. Save remaining split changes (only when there are any)
+                if (unselectedItems.Count > 0)
+                {
+                    bool finalSuccess = await context.SaveChangesAsync(ct) > 0;
+                    if (!finalSuccess)
+                        return Result<Guid>.Failure("Failed to place order.", 500);
+                }
 
                 await transaction.CommitAsync(ct);
 
