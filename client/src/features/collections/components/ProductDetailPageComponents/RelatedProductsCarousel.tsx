@@ -4,7 +4,7 @@ import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 
 import { useProducts, useCategories } from "../../../../lib/hooks/useProducts";
-import type { Product } from "../../types";
+import type { Product } from "../../../../lib/types";
 import { ProductCard } from "../CollectionPageComponents/ProductCard";
 
 type Props = {

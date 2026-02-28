@@ -1,7 +1,6 @@
 import * as React from "react";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
-import { useState } from "react";
 import {
   Avatar,
   Divider,
@@ -9,26 +8,29 @@ import {
   ListItemIcon,
   ListItemText,
 } from "@mui/material";
+import { observer } from "mobx-react-lite";
 import { useAccount } from "../../lib/hooks/useAccount";
+import { useStore } from "../../lib/hooks/useStore";
 import { Link } from "react-router";
-import { Add, Logout, Person } from "@mui/icons-material";
+import { Logout, Person, ShoppingBag } from "@mui/icons-material";
 
-export default function UserMenu() {
+const UserMenu = observer(function UserMenu() {
+  const { uiStore } = useStore();
   const { currentUser, logoutUser } = useAccount();
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const anchorEl = uiStore.userMenuAnchor;
   const open = Boolean(anchorEl);
 
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    // Toggle: click avatar again to close dropdown
     if (open) {
-      setAnchorEl(null);
+      uiStore.setUserMenuAnchor(null);
     } else {
-      setAnchorEl(event.currentTarget);
+      uiStore.closeCart();
+      uiStore.setUserMenuAnchor(event.currentTarget);
     }
   };
 
   const handleClose = () => {
-    setAnchorEl(null);
+    uiStore.setUserMenuAnchor(null);
   };
 
   return (
@@ -90,17 +92,17 @@ export default function UserMenu() {
           },
         }}
       >
-        <MenuItem component={Link} to="/createActivity" onClick={handleClose}>
-          <ListItemIcon>
-            <Add />
-          </ListItemIcon>
-          <ListItemText>Create Activity</ListItemText>
-        </MenuItem>
         <MenuItem component={Link} to="/profile" onClick={handleClose}>
           <ListItemIcon>
             <Person />
           </ListItemIcon>
           <ListItemText>My profile</ListItemText>
+        </MenuItem>
+        <MenuItem component={Link} to="/orders" onClick={handleClose}>
+          <ListItemIcon>
+            <ShoppingBag />
+          </ListItemIcon>
+          <ListItemText>View my orders</ListItemText>
         </MenuItem>
         <Divider />
         <MenuItem
@@ -117,4 +119,6 @@ export default function UserMenu() {
       </Menu>
     </>
   );
-}
+});
+
+export default UserMenu;

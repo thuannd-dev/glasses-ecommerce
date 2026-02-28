@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-toastify";
 
 import agent from "../api/agent";
+import type { CartDto, CartItemDto, AddCartItemPayload, UpdateCartItemPayload } from "../types/cart";
 import {
   addCartItemSchema,
   updateCartItemSchema,
@@ -35,7 +36,7 @@ export function useCart() {
     queryKey: ["cart"],
     enabled: shouldLoadCart,
     queryFn: async () => {
-      const res = await agent.get<CartDto>("/carts");
+      const res = await agent.get<CartDto>("/me/cart");
       const data = res.data;
       const items: CartItemDto[] = data.items ?? [];
       const totalQuantity =
@@ -66,7 +67,7 @@ export function useCart() {
         toast.error(msg);
         throw new Error(msg);
       }
-      const res = await agent.post<CartDto>("/carts/items", parsed.data);
+      const res = await agent.post<CartDto>("/me/cart/items", parsed.data);
       return res.data;
     },
     onSuccess: () => {
@@ -88,7 +89,7 @@ export function useCart() {
         throw new Error(msg);
       }
       const { id, quantity } = parsed.data;
-      const res = await agent.put<CartDto>(`/carts/items/${id}`, { quantity });
+      const res = await agent.put<CartDto>(`/me/cart/items/${id}`, { quantity });
       return res.data;
     },
     onMutate: async ({ id, quantity }) => {
@@ -142,7 +143,7 @@ export function useCart() {
   // ===== DEL /api/carts/items/{id} ===== (optimistic remove)
   const removeItemMutation = useMutation({
     mutationFn: async (id: string) => {
-      await agent.delete(`/carts/items/${id}`);
+      await agent.delete(`/me/cart/items/${id}`);
     },
     onMutate: async (id: string) => {
       await queryClient.cancelQueries({ queryKey: ["cart"] });
@@ -184,12 +185,19 @@ export function useCart() {
   // ===== DEL /api/carts =====
   const clearCartMutation = useMutation({
     mutationFn: async () => {
-      await agent.delete("/carts");
+      await agent.delete("/me/cart");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cart"] });
     },
-    onError: () => {
+    onError: (error: unknown) => {
+      // Swallow 404 (cart not found) to avoid noisy errors when backend already cleared cart.
+      const status =
+        typeof error === "object" && error && "response" in error
+          ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (error as any).response?.status
+          : undefined;
+      if (status === 404) return;
       toast.error("Failed to clear cart.");
     },
   });

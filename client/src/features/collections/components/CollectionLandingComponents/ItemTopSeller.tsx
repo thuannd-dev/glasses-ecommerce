@@ -1,7 +1,7 @@
 import { Box, Typography, Button } from "@mui/material";
 import { useNavigate } from "react-router";
 import { useProducts } from "../../../../lib/hooks/useProducts";
-import type { Product } from "../../types";
+import type { Product } from "../../../../lib/types";
 
 export default function ItemTopSeller() {
   const navigate = useNavigate();

@@ -8,6 +8,7 @@ import {
   Typography,
 } from "@mui/material";
 import axios from "axios";
+import type { LocationIQAddress, LocationIQSuggestion } from "../../../lib/types/location";
 
 /** Map LocationIQ suggestion → venue, ward, district, city, postalCode */
 export function mapLocationToAddress(

@@ -3,7 +3,7 @@ import ExpandMore from "@mui/icons-material/ExpandMore";
 import ExpandLess from "@mui/icons-material/ExpandLess";
 
 import { ORDER_STATUS_LABEL, ORDER_TYPE_LABEL, formatDate } from "../constants";
-import type { OrderDto, OrderStatus } from "../types";
+import type { OrderDto, OrderStatus } from "../../../lib/types";
 
 export function OrderCard({
   order,

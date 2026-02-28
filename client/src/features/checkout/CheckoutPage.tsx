@@ -1,4 +1,3 @@
-import { Observer } from "mobx-react-lite";
 import {
     Box,
     Typography,
@@ -10,171 +9,36 @@ import {
     FormControlLabel,
     Radio,
     Button,
-    Chip,
     Snackbar,
     Alert,
 } from "@mui/material";
-import { useEffect, useMemo, useState } from "react";
-import { cartStore } from "../../lib/stores/cartStore";
 import { useNavigate } from "react-router-dom";
 import AddressAutocomplete from "../../app/shared/components/AddressAutocomplete";
+import { formatMoney } from "../../lib/utils/format";
+import { useCheckoutPage } from "./hooks/useCheckoutPage";
+import { isValidVietnamPhone } from "./utils";
 
-/* ================== utils ================== */
-function money(v: number) {
-    return v.toLocaleString("vi-VN") + "₫";
-}
-
-function generateOrderCode() {
-    const rand = Math.floor(100000 + Math.random() * 900000);
-    return `ORD-${new Date().getFullYear()}-${rand}`;
-}
-
-/** Vietnam phone: 10 digits, optional +84 or 0 prefix */
-function isValidVietnamPhone(phone: string): boolean {
-    const cleaned = phone.replace(/\D/g, "");
-    return /^(0|84)?[35789][0-9]{8}$/.test(cleaned) && cleaned.length >= 10;
-}
-
-/* ================== types ================== */
-type PaymentMethod = "COD" | "BANK" | "MOMO";
-
-interface ShippingAddress {
-    recipientName: string;
-    recipientPhone: string;
-    venue: string;
-    ward: string;
-    district: string;
-    city: string;
-    postalCode?: string;
-    orderNote?: string;
-}
-
-interface PlainOrderItem {
-    productId: string;
-    name: string;
-    price: number;
-    quantity: number;
-}
-
-/* ================== PAGE ================== */
 export default function CheckoutPage() {
     const navigate = useNavigate();
-
-    /* ===== Order ===== */
-    const orderCode = useMemo(() => generateOrderCode(), []);
-    const orderStatus = "PENDING";
-
-    /* ===== Address ===== */
-    const [address, setAddress] = useState<ShippingAddress>({
-        recipientName: "",
-        recipientPhone: "",
-        venue: "",
-        ward: "",
-        district: "",
-        city: "",
-        postalCode: "",
-        orderNote: "",
-    });
-    const [addressSearch, setAddressSearch] = useState("");
-
-    /* ===== Payment ===== */
-    const [paymentMethod, setPaymentMethod] =
-        useState<PaymentMethod>("COD");
-
-    /* ===== UI ===== */
-    const [submitting, setSubmitting] = useState(false);
-    const [snackbar, setSnackbar] = useState<{
-        open: boolean;
-        message: string;
-        severity: "error" | "info" | "success";
-    }>({ open: false, message: "", severity: "error" });
-
-    /* ===== Derived ===== */
-    const totalAmount = cartStore.totalPrice;
-    const isEmptyCart = cartStore.items.length === 0;
-
-    /* ===== Empty cart guard ===== */
-    useEffect(() => {
-        if (isEmptyCart) {
-            setSnackbar({
-                open: true,
-                message: "Your cart is empty. Add items before checkout.",
-                severity: "info",
-            });
-        }
-    }, [isEmptyCart]);
-
-    /* ================== submit ================== */
-    const handlePlaceOrder = async () => {
-        if (isEmptyCart) {
-            setSnackbar({
-                open: true,
-                message: "Your cart is empty.",
-                severity: "error",
-            });
-            return;
-        }
-        if (!address.recipientName || !address.recipientPhone || !address.venue) {
-            setSnackbar({
-                open: true,
-                message: "Please fill all required shipping information.",
-                severity: "error",
-            });
-            return;
-        }
-        if (!isValidVietnamPhone(address.recipientPhone)) {
-            setSnackbar({
-                open: true,
-                message: "Please enter a valid Vietnam phone number (10 digits).",
-                severity: "error",
-            });
-            return;
-        }
-
-        setSubmitting(true);
-        try {
-            const plainItems: PlainOrderItem[] = cartStore.items.map(
-                (item) => ({
-                    productId: item.productId,
-                    name: item.name,
-                    price: item.price,
-                    quantity: item.quantity,
-                })
-            );
-
-            const orderData = {
-                orderCode,
-                orderStatus,
-                totalAmount,
-                paymentMethod,
-                address,
-                items: plainItems,
-                createdAt: new Date().toISOString(),
-            };
-
-            // TODO: API create order
-            // await api.createOrder(orderData)
-
-            cartStore.clear();
-
-            navigate("/order-success", {
-                state: orderData,
-            });
-        } catch {
-            setSnackbar({
-                open: true,
-                message: "Failed to place order. Please try again.",
-                severity: "error",
-            });
-        } finally {
-            setSubmitting(false);
-        }
-    };
+    const {
+        items,
+        totalAmount,
+        isEmptyCart,
+        cartLoading,
+        address,
+        setAddress,
+        addressSearch,
+        setAddressSearch,
+        paymentMethod,
+        setPaymentMethod,
+        submitting,
+        snackbar,
+        setSnackbar,
+        handlePlaceOrder,
+    } = useCheckoutPage();
 
     return (
-        <Observer>
-            {() => (
-                <Box
+        <Box
                     sx={{
                         maxWidth: 1200,
                         mx: "auto",
@@ -189,19 +53,9 @@ export default function CheckoutPage() {
                             <Typography fontWeight={900} fontSize={26}>
                                 Checkout
                             </Typography>
-                            <Typography
-                        component="div" // tránh <div> nằm trong <p> gây hydration warning
-                        fontSize={14}
-                        color="rgba(17,24,39,0.65)"
-                        mt={0.5}
-                    >
-                        Order Code
-                        <Chip
-                            label={orderCode}
-                            size="small"
-                            sx={{ fontWeight: 700, ml: 1 }}
-                        />
-                    </Typography>
+                            <Typography fontSize={14} color="rgba(17,24,39,0.65)" mt={0.5}>
+                                {items.length > 0 && `${items.length} item(s) · ${formatMoney(totalAmount)}`}
+                            </Typography>
                         </Box>
                         <Button
                             variant="outlined"
@@ -413,7 +267,7 @@ export default function CheckoutPage() {
                                     value={paymentMethod}
                                     onChange={(e) =>
                                         setPaymentMethod(
-                                            e.target.value as PaymentMethod
+                                            e.target.value as "COD" | "BANK" | "MOMO"
                                         )
                                     }
                                 >
@@ -452,52 +306,94 @@ export default function CheckoutPage() {
 
                                 <Divider sx={{ my: 2 }} />
 
-                                {cartStore.items.map((item) => (
-                                    <Box
-                                        key={item.productId}
-                                        sx={{
-                                            display: "flex",
-                                            justifyContent: "space-between",
-                                            mb: 1,
-                                        }}
-                                    >
-                                        <Typography fontSize={14}>
-                                            {item.name} × {item.quantity}
+                                {cartLoading ? (
+                                    <Typography color="text.secondary">Loading cart...</Typography>
+                                ) : items.length === 0 ? (
+                                    <Typography color="text.secondary">Your cart is empty.</Typography>
+                                ) : (
+                                    <>
+                                        {items.map((item) => (
+                                            <Box
+                                                key={item.id}
+                                                sx={{
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    gap: 1.5,
+                                                    mb: 1.5,
+                                                }}
+                                            >
+                                                <Box
+                                                    sx={{
+                                                        width: 48,
+                                                        height: 48,
+                                                        borderRadius: 1.5,
+                                                        bgcolor: "rgba(17,24,39,0.06)",
+                                                        overflow: "hidden",
+                                                        flexShrink: 0,
+                                                    }}
+                                                >
+                                                    {item.productImageUrl ? (
+                                                        <Box
+                                                            component="img"
+                                                            src={item.productImageUrl}
+                                                            alt=""
+                                                            sx={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                                        />
+                                                    ) : (
+                                                        <Box
+                                                            sx={{
+                                                                width: "100%",
+                                                                height: "100%",
+                                                                display: "flex",
+                                                                alignItems: "center",
+                                                                justifyContent: "center",
+                                                            }}
+                                                        >
+                                                            <Typography fontSize={10} color="text.secondary">
+                                                                —
+                                                            </Typography>
+                                                        </Box>
+                                                    )}
+                                                </Box>
+                                                <Box sx={{ flex: 1, minWidth: 0 }}>
+                                                    <Typography fontSize={14}>
+                                                        {item.productName} × {item.quantity}
+                                                    </Typography>
+                                                </Box>
+                                                <Typography fontWeight={700}>
+                                                    {formatMoney(item.subtotal)}
+                                                </Typography>
+                                            </Box>
+                                        ))}
+
+                                        <Divider sx={{ my: 2 }} />
+
+                                        <Typography
+                                            fontWeight={900}
+                                            fontSize={20}
+                                        >
+                                            Total: {formatMoney(totalAmount)}
                                         </Typography>
-                                        <Typography fontWeight={700}>
-                                            {money(
-                                                item.price * item.quantity
-                                            )}
-                                        </Typography>
-                                    </Box>
-                                ))}
 
-                                <Divider sx={{ my: 2 }} />
-
-                                <Typography
-                                    fontWeight={900}
-                                    fontSize={20}
-                                >
-                                    Total: {money(totalAmount)}
-                                </Typography>
-
-                                <Button
-                                    fullWidth
-                                    variant="contained"
-                                    disabled={submitting || isEmptyCart}
-                                    sx={{
-                                        mt: 2,
-                                        bgcolor: "#111827",
-                                        fontWeight: 900,
-                                        py: 1.2,
-                                        "&:hover": {
-                                            bgcolor: "#0b1220",
-                                        },
-                                    }}
-                                    onClick={handlePlaceOrder}
-                                >
-                                    {submitting ? "Placing order..." : "Place Order"}
-                                </Button>
+                                        <Button
+                                            fullWidth
+                                            variant="contained"
+                                            disabled={submitting || isEmptyCart}
+                                            sx={{
+                                                mt: 2,
+                                                bgcolor: "#111827",
+                                                fontWeight: 900,
+                                                py: 1.2,
+                                                "&:hover": {
+                                                    bgcolor: "#0b1220",
+                                                },
+                                            }}
+                                            onClick={handlePlaceOrder}
+                                        >
+                                            {submitting ? "Placing order..." : "Place Order"}
+                                        </Button>
+                                    </>
+                                )}
                             </Paper>
                         </Grid>
                     </Grid>
@@ -520,7 +416,5 @@ export default function CheckoutPage() {
                         </Alert>
                     </Snackbar>
                 </Box>
-            )}
-        </Observer>
     );
 }

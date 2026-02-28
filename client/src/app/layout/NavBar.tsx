@@ -141,10 +141,10 @@ const NavBar = observer(function NavBar() {
             disableGutters
             sx={{
               minHeight: 56,
+              px: { xs: 1, md: 0 },
               display: "flex",
               alignItems: "center",
               gap: 2,
-              px: { xs: 1, md: 0 },
             }}
           >
             {/* Logo */}
@@ -207,7 +207,10 @@ const NavBar = observer(function NavBar() {
               <Box sx={{ position: "relative" }}>
                 <IconButton
                   sx={ICON_SX}
-                  onClick={() => uiStore.toggleCart()}
+                  onClick={() => {
+                    uiStore.closeUserMenu();
+                    uiStore.toggleCart();
+                  }}
                 >
                   <Badge
                     badgeContent={cart?.totalQuantity ?? 0}

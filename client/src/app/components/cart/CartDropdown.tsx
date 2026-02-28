@@ -9,15 +9,7 @@ import AddIcon from "@mui/icons-material/Add";
 import RemoveIcon from "@mui/icons-material/Remove";
 import { NavLink } from "react-router-dom";
 import { useCart } from "../../../lib/hooks/useCart";
-
-function money(v: number) {
-    return v.toLocaleString("en-US", {
-        style: "currency",
-        currency: "USD",
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    });
-}
+import { formatMoney } from "../../../lib/utils/format";
 
 export default function CartDropdown() {
     const { cart, isLoading, updateItem, removeItem } = useCart();
@@ -96,7 +88,7 @@ export default function CartDropdown() {
                                     {item.productName}
                                 </Typography>
                                 <Typography fontSize={12} color="text.secondary">
-                                    {money(item.price)}
+                                    {formatMoney(item.price)}
                                 </Typography>
 
                                 {/* Quantity controls dưới giá */}
@@ -152,7 +144,7 @@ export default function CartDropdown() {
 
             <Box sx={{ p: 2 }}>
                 <Typography fontWeight={900} mb={1}>
-                    Total: {money(totalAmount)}
+                    Total: {formatMoney(totalAmount)}
                 </Typography>
 
                 <Button

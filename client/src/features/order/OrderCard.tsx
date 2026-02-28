@@ -55,7 +55,12 @@ function getStatusLabel(status: OrderStatus) {
 }
 
 function formatPrice(price: number) {
-    return price.toLocaleString("vi-VN") + "₫";
+    return price.toLocaleString("en-US", {
+        style: "currency",
+        currency: "USD",
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    });
 }
 
 /* ================= COMPONENT ================= */

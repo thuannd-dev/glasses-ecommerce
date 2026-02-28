@@ -56,7 +56,7 @@ agent.interceptors.response.use(
         break;
       }
       case 404:
-        router.navigate("/not-found");
+        // Không redirect toàn cục — để từng trang/component xử lý (vd: OrderCard "Could not load", OrderDetailPage "Order not found")
         break;
       case 500:
         router.navigate("/server-error", { state: { error: data } });

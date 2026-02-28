@@ -3,7 +3,7 @@ import { useParams, useSearchParams } from "react-router-dom";
 
 import { useProducts, useCategories, useBrands } from "../../../lib/hooks/useProducts";
 import { useDebouncedValue } from "../../../lib/hooks/useDebouncedValue";
-import type { FiltersState, SortKey, Product } from "../types";
+import type { FiltersState, SortKey, Product } from "../../../lib/types";
 
 const PAGE_SIZE = 8;
 const PRICE_DEBOUNCE_MS = 400;

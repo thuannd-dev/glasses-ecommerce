@@ -16,7 +16,7 @@ import {
 import { useOperations } from "../context/OperationsContext";
 import { SummaryCard } from "../components";
 import { ORDER_STATUS_LABEL, ORDER_TYPE_LABEL, formatDate } from "../constants";
-import type { OrderStatus } from "../types";
+import type { OrderStatus } from "../../../lib/types";
 
 const STATUS_COLORS: Record<OrderStatus, { bg: string; color: string }> = {
   pending: { bg: "rgba(25,118,210,0.08)", color: "#1565c0" },

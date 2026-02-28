@@ -10,6 +10,7 @@ import {
   Typography,
 } from "@mui/material";
 import axios from "axios";
+import type { LocationIQSuggestion } from "../../../lib/types/location";
 
 type Props<T extends FieldValues> = { label: string } & UseControllerProps<T>;
 

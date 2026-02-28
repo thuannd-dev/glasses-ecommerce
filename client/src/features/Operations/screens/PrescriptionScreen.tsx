@@ -7,7 +7,7 @@ import { isSameDay } from "date-fns";
 
 import { useOperations } from "../context/OperationsContext";
 import { OrderCard, SummaryCard } from "../components";
-import type { OrderDto } from "../types";
+import type { OrderDto } from "../../../lib/types";
 
 function filterAndSortOrders(
   list: OrderDto[],

@@ -7,6 +7,9 @@ export class UiStore {
   // ===== CART DROPDOWN =====
   isCartOpen = false;
 
+  // ===== USER MENU (avatar) — đóng khi mở cart, cart đóng khi mở avatar =====
+  userMenuAnchor: HTMLElement | null = null;
+
   constructor() {
     makeAutoObservable(this);
   }
@@ -31,5 +34,13 @@ export class UiStore {
 
   closeCart() {
     this.isCartOpen = false;
+  }
+
+  setUserMenuAnchor(el: HTMLElement | null) {
+    this.userMenuAnchor = el;
+  }
+
+  closeUserMenu() {
+    this.userMenuAnchor = null;
   }
 }

@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { LoginSchema } from "../schemas/loginSchema";
 import agent from "../api/agent";
+import type { User } from "../types/user";
 import { useLocation, useNavigate } from "react-router";
 import type { RegisterSchema } from "../schemas/registerSchema";
 import { toast } from "react-toastify";

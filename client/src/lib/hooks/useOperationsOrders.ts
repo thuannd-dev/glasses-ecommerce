@@ -7,7 +7,13 @@ import {
   updateTracking as apiUpdateTracking,
   fetchShipments,
 } from "../../features/Operations/api";
-import type { OrderType, OrderStatus, CreateShipmentPayload, UpdateTrackingPayload, UpdateOrderStatusPayload } from "../../features/Operations/types";
+import type {
+  OrderType,
+  OrderStatus,
+  CreateShipmentPayload,
+  UpdateTrackingPayload,
+  UpdateOrderStatusPayload,
+} from "../types/operations";
 
 const QUERY_KEY_ORDERS = ["operations", "orders"];
 const QUERY_KEY_SHIPMENTS = ["operations", "shipments"];

@@ -12,7 +12,7 @@ import {
 } from "@mui/material";
 
 import { formatDate, ORDER_STATUS_LABEL, ORDER_TYPE_LABEL } from "../constants";
-import type { OrderDto } from "../types";
+import type { OrderDto } from "../../../lib/types";
 
 type CreateShipmentDialogProps = {
   open: boolean;

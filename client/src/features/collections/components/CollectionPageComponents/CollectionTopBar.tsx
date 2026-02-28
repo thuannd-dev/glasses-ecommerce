@@ -1,5 +1,5 @@
 import { Box, MenuItem, Select } from "@mui/material";
-import type { SortKey } from "../../types";
+import type { SortKey } from "../../../../lib/types";
 
 export function CollectionTopBar({
     sort,
