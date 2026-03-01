@@ -35,7 +35,7 @@ public class DbInitializer
             new() {DisplayName = "Manager User", UserName = "manager@test.com", Email = "manager@test.com"} ,
             new() {DisplayName = "Admin User", UserName = "admin@test.com", Email = "admin@test.com"} ,
         };
-        
+
         if (!userManager.Users.Any())
         {
             for (int i = 0; i < users.Count; i++)
@@ -46,7 +46,7 @@ public class DbInitializer
                 await userManager.CreateAsync(users[i], "Pa$$w0rd");
                 //don't need to save changes because DOC: Creates the specified user in the backing store with given password, as an asynchronous operation.
                 //backing store which means where the data is stored (database)
-                
+
                 // Assign role to user
                 await userManager.AddToRoleAsync(users[i], roles[i]);
             }
@@ -1130,6 +1130,53 @@ public class DbInitializer
             }
 
             await context.Stocks.AddRangeAsync(stocks);
+            await context.SaveChangesAsync();
+        }
+
+        // Seed Policy Configurations
+        if (!context.PolicyConfigurations.Any())
+        {
+            var policies = new List<PolicyConfiguration>
+            {
+                new()
+                {
+                    PolicyType = PolicyType.Return,
+                    PolicyName = "Default Return Policy",
+                    ReturnWindowDays = 7,
+                    WarrantyMonths = null,
+                    RefundAllowed = true,
+                    CustomizedLensRefundable = false,
+                    EvidenceRequired = true,
+                    IsActive = true,
+                    EffectiveFrom = DateTime.UtcNow
+                },
+                new()
+                {
+                    PolicyType = PolicyType.Warranty,
+                    PolicyName = "Standard Frame Warranty",
+                    ReturnWindowDays = null,
+                    WarrantyMonths = 6,
+                    RefundAllowed = false,
+                    CustomizedLensRefundable = true,
+                    EvidenceRequired = true,
+                    IsActive = true,
+                    EffectiveFrom = DateTime.UtcNow
+                },
+                new()
+                {
+                    PolicyType = PolicyType.Refund,
+                    PolicyName = "Refund Only Policy",
+                    ReturnWindowDays = null,
+                    WarrantyMonths = null,
+                    RefundAllowed = true,
+                    CustomizedLensRefundable = false,
+                    EvidenceRequired = true,
+                    IsActive = true,
+                    EffectiveFrom = DateTime.UtcNow
+                }
+            };
+
+            await context.PolicyConfigurations.AddRangeAsync(policies);
             await context.SaveChangesAsync();
         }
     }

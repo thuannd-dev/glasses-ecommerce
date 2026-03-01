@@ -134,6 +134,9 @@ public sealed class InspectReturn
                                 ReferenceType = ReferenceType.Return,
                                 ReferenceId = ticket.Id,
                                 Status = InventoryTransactionStatus.Completed,
+                                CreatedBy = staffId,
+                                ApprovedBy = staffId,
+                                ApprovedAt = DateTime.UtcNow,
                                 Notes = $"Return accepted from ticket #{ticket.Id}"
                             });
                         }
@@ -157,6 +160,9 @@ public sealed class InspectReturn
                                 ReferenceType = ReferenceType.Return,
                                 ReferenceId = ticket.Id,
                                 Status = InventoryTransactionStatus.Completed,
+                                CreatedBy = staffId,
+                                ApprovedBy = staffId,
+                                ApprovedAt = DateTime.UtcNow,
                                 Notes = $"Warranty replacement dispatched for ticket #{ticket.Id}"
                             });
                         }
