@@ -19,6 +19,14 @@ public enum AfterSalesTicketStatus
     Closed = 5
 }
 
+public enum TicketResolutionType
+{
+    RefundOnly = 1,        // CASE A — Refund ticket, no physical return
+    ReturnAndRefund = 2,   // CASE B — Return ticket, refund after Ops inspect
+    WarrantyRepair = 3,    // CASE C — Warranty ticket, Ops repairs
+    WarrantyReplace = 4    // CASE D — Warranty ticket, Ops replaces
+}
+
 public class AfterSalesTicket
 {
     public Guid Id { get; set; } = Guid.CreateVersion7(TimeProvider.System.GetUtcNow());
@@ -45,6 +53,15 @@ public class AfterSalesTicket
 
     public string? PolicyViolation { get; set; }
 
+    // Set by Staff when approving — determines which Ops workflow to execute
+    public TicketResolutionType? ResolutionType { get; set; }
+
+    // Free-text notes added by Staff when approving or rejecting
+    public string? StaffNotes { get; set; }
+
+    // Set by Operations Staff when physical goods are received (CASE B, C, D)
+    public DateTime? ReceivedAt { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public DateTime? ResolvedAt { get; set; }
@@ -54,7 +71,6 @@ public class AfterSalesTicket
     public OrderItem? OrderItem { get; set; }
     public User Customer { get; set; } = null!;
     public User? AssignedStaff { get; set; }
-
     public ICollection<TicketAttachment> Attachments { get; set; } = new List<TicketAttachment>();
 
 }

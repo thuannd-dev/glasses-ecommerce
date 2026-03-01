@@ -31,6 +31,13 @@ public sealed class LookupsController : BaseApiController
             TransactionType = GetEnumValues<TransactionType>(),
             ReferenceType = GetEnumValues<ReferenceType>(),
             InventoryTransactionStatus = GetEnumValues<InventoryTransactionStatus>(),
+
+            // After-Sales & Policies
+            AfterSalesTicketType = GetEnumValues<AfterSalesTicketType>(),
+            AfterSalesTicketStatus = GetEnumValues<AfterSalesTicketStatus>(),
+            TicketResolutionType = GetEnumValues<TicketResolutionType>(),
+            PolicyType = GetEnumValues<PolicyType>(),
+            RefundStatus = GetEnumValues<RefundStatus>(),
         });
     }
 

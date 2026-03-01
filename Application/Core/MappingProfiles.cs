@@ -1,6 +1,7 @@
 using System;
 using Application.Activities.DTOs;
 using Application.Addresses.DTOs;
+using Application.AfterSales.DTOs;
 using Application.Carts.DTOs;
 using Application.Categories.DTOs;
 using Application.Orders.DTOs;
@@ -221,5 +222,14 @@ public sealed class MappingProfiles : Profile
                 s.ProductVariant != null ? s.ProductVariant.VariantName : null))
             .ForMember(d => d.SKU, o => o.MapFrom(s =>
                 s.ProductVariant != null ? s.ProductVariant.SKU : null));
+
+        // AfterSales mappings
+        CreateMap<TicketAttachment, TicketAttachmentDto>();
+
+        CreateMap<AfterSalesTicket, TicketListDto>();
+
+        CreateMap<AfterSalesTicket, TicketDetailDto>()
+            .ForMember(d => d.Attachments, o => o.MapFrom(s =>
+                s.Attachments.Where(a => a.DeletedAt == null).OrderBy(a => a.CreatedAt)));
     }
 }

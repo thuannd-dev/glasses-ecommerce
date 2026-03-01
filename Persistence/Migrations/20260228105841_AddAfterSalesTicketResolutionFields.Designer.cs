@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Persistence;
 
@@ -11,9 +12,11 @@ using Persistence;
 namespace Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260228105841_AddAfterSalesTicketResolutionFields")]
+    partial class AddAfterSalesTicketResolutionFields
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -248,8 +251,6 @@ namespace Persistence.Migrations
 
                     b.ToTable("AfterSalesTickets", t =>
                         {
-                            t.HasCheckConstraint("CK_AfterSalesTicket_ResolutionType", "[ResolutionType] IS NULL OR [ResolutionType] IN (1, 2, 3, 4)");
-
                             t.HasCheckConstraint("CK_AfterSalesTicket_TicketStatus", "[TicketStatus] IN (1, 2, 3, 4, 5)");
 
                             t.HasCheckConstraint("CK_AfterSalesTicket_TicketType", "[TicketType] IN (0, 1, 2, 3)");
