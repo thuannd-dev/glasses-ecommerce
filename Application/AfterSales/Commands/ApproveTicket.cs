@@ -34,7 +34,7 @@ public sealed class ApproveTicket
                 context.ChangeTracker.Clear();
 
                 await using IDbContextTransaction transaction =
-                    await context.Database.BeginTransactionAsync(IsolationLevel.RepeatableRead, ct);
+                    await context.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
 
                 AfterSalesTicket? ticket = await context.AfterSalesTickets
                     .FromSql($"SELECT * FROM AfterSalesTickets WITH (UPDLOCK) WHERE Id = {request.TicketId}")

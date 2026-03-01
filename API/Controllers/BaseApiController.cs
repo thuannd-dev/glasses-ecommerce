@@ -21,11 +21,19 @@ namespace API.Controllers
 
         protected ActionResult HandleResult<T>(Result<T> result)
         {
-            if (!result.IsSuccess && result.Code == 404) return NotFound();
+            if (!result.IsSuccess)
+            {
+                return result.Code switch
+                {
+                    404 => NotFound(result.Error),
+                    409 => Conflict(result.Error),
+                    500 => StatusCode(StatusCodes.Status500InternalServerError, result.Error),
+                    503 => StatusCode(StatusCodes.Status503ServiceUnavailable, result.Error),
+                    _ => BadRequest(result.Error)
+                };
+            }
 
-            // if (!result.IsSuccess && result.Code == 400) return BadRequest(result.Error);
-
-            if(result.IsSuccess && result.Value != null) return Ok(result.Value);
+            if (result.IsSuccess && result.Value != null) return Ok(result.Value);
 
             return BadRequest(result.Error);
         }

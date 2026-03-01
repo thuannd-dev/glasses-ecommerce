@@ -117,7 +117,7 @@ public sealed class SubmitTicket
                 .AsNoTracking()
                 .AnyAsync(t =>
                     t.OrderId == request.Dto.OrderId &&
-                    t.OrderItemId == request.Dto.OrderItemId &&
+                    (request.Dto.OrderItemId == null ? t.OrderItemId == null : t.OrderItemId == request.Dto.OrderItemId) &&
                     t.TicketType == request.Dto.TicketType &&
                     t.TicketStatus != AfterSalesTicketStatus.Rejected &&
                     t.TicketStatus != AfterSalesTicketStatus.Resolved &&
@@ -127,7 +127,13 @@ public sealed class SubmitTicket
                 return Result<TicketDetailDto>.Failure(
                     "An open ticket of this type already exists for this order item.", 409);
 
-            // 7. Build ticket entity
+            // 7. Halt and Return 400 if Policy Violation occurs
+            if (policyViolation != null)
+            {
+                return Result<TicketDetailDto>.Failure(policyViolation, 400);
+            }
+
+            // 8. Build ticket entity
             AfterSalesTicket ticket = new()
             {
                 OrderId = request.Dto.OrderId,
@@ -140,11 +146,8 @@ public sealed class SubmitTicket
                     : request.Dto.RequestedAction,
                 RefundAmount = request.Dto.RefundAmount,
                 IsRequiredEvidence = policy.EvidenceRequired,
-                PolicyViolation = policyViolation,
-                // Auto-set to Rejected if policy is violated; otherwise Pending
-                TicketStatus = policyViolation != null
-                    ? AfterSalesTicketStatus.Rejected
-                    : AfterSalesTicketStatus.Pending
+                PolicyViolation = null,
+                TicketStatus = AfterSalesTicketStatus.Pending
             };
 
             // 8. Attach evidence files
