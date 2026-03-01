@@ -48,8 +48,17 @@ public sealed class SubmitTicket
                         "The specified order item does not belong to this order.", 400);
             }
 
-            // 3. Load active policy — enum values are aligned (Return=1, Warranty=2, Refund=3)
-            PolicyType policyType = (PolicyType)request.Dto.TicketType;
+            // 3. Load active policy — map TicketType to PolicyType explicitly to avoid enum divergence issues
+            PolicyType policyType = request.Dto.TicketType switch
+            {
+                AfterSalesTicketType.Return => PolicyType.Return,
+                AfterSalesTicketType.Warranty => PolicyType.Warranty,
+                AfterSalesTicketType.Refund => PolicyType.Refund,
+                _ => PolicyType.Unknown
+            };
+
+            if (policyType == PolicyType.Unknown)
+                return Result<TicketDetailDto>.Failure("Invalid ticket type specified.", 400);
 
             PolicyConfiguration? policy = await context.PolicyConfigurations
                 .AsNoTracking()
@@ -89,7 +98,7 @@ public sealed class SubmitTicket
                 if (deliveredAt == null)
                     policyViolation = "Order delivery date could not be verified.";
                 else if (policy.WarrantyMonths.HasValue &&
-                         (DateTime.UtcNow - deliveredAt.Value).TotalDays / 30 > policy.WarrantyMonths.Value)
+                         DateTime.UtcNow > deliveredAt.Value.AddMonths(policy.WarrantyMonths.Value))
                     policyViolation =
                         $"Warranty period of {policy.WarrantyMonths} month(s) has expired.";
             }

@@ -27,6 +27,9 @@ public sealed class GetOpsTickets
             if (request.PageNumber < 1 || request.PageSize < 1 || request.PageSize > 100)
                 return Result<PagedResult<TicketListDto>>.Failure("Invalid pagination parameters.", 400);
 
+            if (request.ResolutionType == TicketResolutionType.RefundOnly)
+                return Result<PagedResult<TicketListDto>>.Failure("Operations team does not handle 'RefundOnly' tickets.", 400);
+
             // Ops only sees InProgress tickets that require physical handling (not RefundOnly)
             IQueryable<AfterSalesTicket> query = context.AfterSalesTickets
                 .AsNoTracking()

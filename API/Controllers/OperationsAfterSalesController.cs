@@ -33,11 +33,12 @@ public sealed class OperationsAfterSalesController : BaseApiController
 
     /// <summary>
     /// Get full detail of a specific ticket.
+    /// Only returns InProgress tickets that require physical handling (excludes RefundOnly).
     /// </summary>
     [HttpGet("{id}")]
     public async Task<IActionResult> GetTicketDetail(Guid id, CancellationToken ct)
     {
-        return HandleResult(await Mediator.Send(new GetStaffTicketDetail.Query { Id = id }, ct));
+        return HandleResult(await Mediator.Send(new GetOpsTicketDetail.Query { Id = id }, ct));
     }
 
     /// <summary>
