@@ -103,11 +103,12 @@ public sealed class SubmitTicket
                         "Customized prescription lenses are non-refundable under the current policy.";
             }
 
-            // 6. Duplicate open ticket check (same order + same type, not closed/rejected/resolved)
+            // 6. Duplicate open ticket check (same order + same item + same type, not closed/rejected/resolved)
             bool duplicateExists = await context.AfterSalesTickets
                 .AsNoTracking()
                 .AnyAsync(t =>
                     t.OrderId == request.Dto.OrderId &&
+                    t.OrderItemId == request.Dto.OrderItemId &&
                     t.TicketType == request.Dto.TicketType &&
                     t.TicketStatus != AfterSalesTicketStatus.Rejected &&
                     t.TicketStatus != AfterSalesTicketStatus.Resolved &&
@@ -115,7 +116,7 @@ public sealed class SubmitTicket
 
             if (duplicateExists)
                 return Result<TicketDetailDto>.Failure(
-                    "An open ticket of this type already exists for this order.", 409);
+                    "An open ticket of this type already exists for this order item.", 409);
 
             // 7. Build ticket entity
             AfterSalesTicket ticket = new()
