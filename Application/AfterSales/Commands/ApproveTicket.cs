@@ -28,7 +28,6 @@ public sealed class ApproveTicket
             Guid staffId = userAccessor.GetUserId();
 
             AfterSalesTicket? ticket = await context.AfterSalesTickets
-                .Include(t => t.Order)
                 .FirstOrDefaultAsync(t => t.Id == request.TicketId, ct);
 
             if (ticket == null)

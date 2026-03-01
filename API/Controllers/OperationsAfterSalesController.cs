@@ -55,7 +55,7 @@ public sealed class OperationsAfterSalesController : BaseApiController
     /// CASE B (ReturnAndRefund, accepted): restores stock + creates Refund record.
     /// CASE D (WarrantyReplace, accepted): deducts stock for replacement unit.
     /// CASE C (WarrantyRepair, accepted): resolves ticket, no stock change.
-    /// If rejected: ticket is closed with no stock or refund impact.
+    /// If rejected: ticket is closed and marked as Rejected with no stock or refund impact.
     /// </summary>
     [HttpPut("{id}/inspect")]
     public async Task<IActionResult> InspectReturn(Guid id, InspectReturnDto dto, CancellationToken ct)

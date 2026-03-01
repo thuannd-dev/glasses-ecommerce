@@ -59,7 +59,7 @@ public sealed class InspectReturn
                     return Result<TicketDetailDto>.Failure(
                         "This ticket does not require physical inspection.", 400);
 
-                // If rejected by Ops: close without stock changes
+                // If rejected by Ops: close the ticket change status to rejected without stock changes
                 if (!request.Dto.IsAccepted)
                 {
                     ticket.TicketStatus = AfterSalesTicketStatus.Rejected;

@@ -1206,6 +1206,11 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
                     "CK_AfterSalesTicket_TicketStatus",
                     "[TicketStatus] IN (1, 2, 3, 4, 5)"
                 );
+
+                t.HasCheckConstraint(
+                    "CK_AfterSalesTicket_ResolutionType",
+                    "[ResolutionType] IS NULL OR [ResolutionType] IN (1, 2, 3, 4)"
+                );
             });
         });
 

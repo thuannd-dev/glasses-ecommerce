@@ -139,7 +139,8 @@ public sealed class SubmitTicket
             };
 
             // 8. Attach evidence files
-            foreach (TicketAttachmentInputDto attachment in request.Dto.Attachments)
+            List<TicketAttachmentInputDto> attachments = request.Dto.Attachments ?? [];
+            foreach (TicketAttachmentInputDto attachment in attachments)
             {
                 ticket.Attachments.Add(new TicketAttachment
                 {
