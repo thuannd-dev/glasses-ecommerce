@@ -179,9 +179,13 @@ public sealed class InspectReturn
                         decimal refundAmount = ticket.RefundAmount
                             ?? scopedItems.Sum(i => i.UnitPrice * i.Quantity);
 
-                        if (refundAmount > payment.Amount)
+                        decimal existingRefunds = await context.Refunds
+                            .Where(r => r.PaymentId == payment.Id && r.RefundStatus != RefundStatus.Rejected)
+                            .SumAsync(r => r.Amount, ct);
+
+                        if (existingRefunds + refundAmount > payment.Amount)
                             return Result<TicketDetailDto>.Failure(
-                                $"Refund amount ({refundAmount:C}) exceeds original payment ({payment.Amount:C}).", 400);
+                                $"Cumulative refund amount ({(existingRefunds + refundAmount):C}) exceeds original payment ({payment.Amount:C}).", 400);
 
                         context.Refunds.Add(new Refund
                         {
