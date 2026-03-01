@@ -17,6 +17,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 
 import { useProductDetailPage } from "./hooks/useProductDetailPage";
 import { RelatedProductsCarousel } from "./components/ProductDetailPageComponents/RelatedProductsCarousel";
+import { SelectLensesDialog } from "./components/ProductDetailPageComponents/SelectLensesDialog";
 
 const NAV_H = 56;
 const GAP_TOP = 24;
@@ -34,6 +35,10 @@ export default function ProductDetailPage() {
         setActiveImg,
         handleAddToCart,
         handleVariantSelect,
+        isEyeglasses,
+        selectLensesOpen,
+        setSelectLensesOpen,
+        handleAddWithPrescription,
     } = useProductDetailPage();
 
     if (isLoading) {
@@ -311,20 +316,49 @@ export default function ProductDetailPage() {
 
                     {/* Actions */}
                     <Box sx={{ display: "flex", gap: 1.2, mt: 1 }}>
-                        <Button
-                            variant="contained"
-                            onClick={handleAddToCart}
-                            sx={{
-                                bgcolor: "#111827",
-                                borderRadius: 2,
-                                height: 46,
-                                px: 3,
-                                fontWeight: 900,
-                                "&:hover": { bgcolor: "#0b1220" },
-                            }}
-                        >
-                            Add to cart
-                        </Button>
+                        {isEyeglasses ? (
+                            <>
+                                <Button
+                                    variant="contained"
+                                    onClick={() => setSelectLensesOpen(true)}
+                                    sx={{
+                                        bgcolor: "#111827",
+                                        borderRadius: 2,
+                                        height: 46,
+                                        px: 3,
+                                        fontWeight: 900,
+                                        "&:hover": { bgcolor: "#0b1220" },
+                                    }}
+                                >
+                                    Select lenses
+                                </Button>
+                                <SelectLensesDialog
+                                    open={selectLensesOpen}
+                                    onClose={() => setSelectLensesOpen(false)}
+                                    productName={product.name}
+                                    variantLabel={currentVariant?.variantName ?? currentVariant?.color ?? product.sku ?? ""}
+                                    productImageUrl={images[0] ?? ""}
+                                    price={currentVariant?.price ?? product.price}
+                                    onNonPrescription={handleAddToCart}
+                                    onPrescriptionConfirm={handleAddWithPrescription}
+                                />
+                            </>
+                        ) : (
+                            <Button
+                                variant="contained"
+                                onClick={handleAddToCart}
+                                sx={{
+                                    bgcolor: "#111827",
+                                    borderRadius: 2,
+                                    height: 46,
+                                    px: 3,
+                                    fontWeight: 900,
+                                    "&:hover": { bgcolor: "#0b1220" },
+                                }}
+                            >
+                                Add to cart
+                            </Button>
+                        )}
 
                         <Button
                             variant="outlined"

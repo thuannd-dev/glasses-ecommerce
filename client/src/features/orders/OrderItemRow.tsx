@@ -1,7 +1,9 @@
 import { Box, Typography } from "@mui/material";
 import { useProductDetail } from "../../lib/hooks/useProducts";
 import { formatMoney } from "../../lib/utils/format";
+import { PrescriptionDisplay } from "../../app/shared/components/PrescriptionDisplay";
 import { getOrderItemImage } from "./orderImageCache";
+import { getOrderPrescription } from "./orderPrescriptionCache";
 
 function getItemPrice(item: {
   totalPrice?: number;
@@ -117,6 +119,12 @@ export function OrderItemRow({ item, compact, orderId }: OrderItemRowProps) {
         <Typography fontSize={13} color="text.secondary">
           {variantName ? `${variantName} · Qty ${qty}` : `Qty ${qty}`}
         </Typography>
+        {orderId && productVariantId && (() => {
+          const prescription = getOrderPrescription(orderId, productVariantId);
+          return prescription ? (
+            <PrescriptionDisplay prescription={prescription} variant="inline" />
+          ) : null;
+        })()}
       </Box>
 
       <Typography fontSize={compact ? 14 : 15} fontWeight={700} sx={{ flexShrink: 0 }}>
