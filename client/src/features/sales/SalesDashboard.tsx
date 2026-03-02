@@ -72,9 +72,11 @@ export default function SalesDashboard() {
         <Typography sx={{ mt: 1, fontSize: 30, fontWeight: 900, color: "text.primary" }}>
           Welcome{currentUser?.displayName ? `, ${currentUser.displayName}` : ""}.
         </Typography>
-        <Typography sx={{ mt: 1, color: "text.secondary", maxWidth: 520, fontSize: 14 }}>
-          Track revenue, orders, and top performing products at a glance.
-        </Typography>
+        {showOverview && (
+          <Typography sx={{ mt: 1, color: "text.secondary", maxWidth: 520, fontSize: 14 }}>
+            Track revenue, orders, and top performing products at a glance.
+          </Typography>
+        )}
       </Box>
 
       {showOverview && (

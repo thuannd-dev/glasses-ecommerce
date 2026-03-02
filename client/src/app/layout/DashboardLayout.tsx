@@ -169,6 +169,8 @@ export default function DashboardLayout() {
                     key={sub.path}
                     component={NavLink}
                     to={sub.path}
+                    // only match exact for the root overview link
+                    end={sub.path === "/sales"}
                     sx={{
                       borderRadius: 2,
                       mb: 0.5,
