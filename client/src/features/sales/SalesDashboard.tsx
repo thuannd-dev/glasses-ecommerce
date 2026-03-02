@@ -7,14 +7,18 @@ import {
   LinearProgress,
   Select,
   MenuItem,
-  IconButton,
-  Collapse,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
 } from "@mui/material";
 import { useAccount } from "../../lib/hooks/useAccount";
 import { useState } from "react";
 import { useLocation } from "react-router";
 import { OperationsProvider, useOperations } from "../Operations/context/OperationsContext";
-import { OrderCard } from "../Operations/components/OrderCard";
+import { ORDER_TYPE_LABEL, ORDER_STATUS_LABEL } from "../Operations/constants";
 
 type Ticket = {
   id: string;
@@ -35,37 +39,6 @@ const SAMPLE_TICKETS: Ticket[] = [
   { id: "t5", ticketNumber: "TCK-2026-005", type: "refund", status: "pending", createdAt: "2026-02-10T08:45:00Z", customerName: "Hoàng Văn E", amount: 59.99, details: "Changed mind" },
 ];
 
-function TicketCard({ ticket, onChangeStatus }: { ticket: Ticket; onChangeStatus: (id: string, status: Ticket["status"]) => void }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <Paper elevation={0} sx={{ p: 2, borderRadius: 2, border: "1px solid rgba(0,0,0,0.06)" }}>
-      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <Box>
-          <Typography fontWeight={800}>{ticket.ticketNumber}</Typography>
-          <Typography fontSize={13} color="text.secondary">
-            {ticket.type.toUpperCase()} · {new Date(ticket.createdAt).toLocaleString()} · {ticket.customerName}
-          </Typography>
-        </Box>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <Typography fontWeight={700}>{ticket.amount ? `$${ticket.amount.toFixed(2)}` : "—"}</Typography>
-          <Select size="small" value={ticket.status} onChange={(e) => onChangeStatus(ticket.id, e.target.value as any)}>
-            <MenuItem value="pending">Pending</MenuItem>
-            <MenuItem value="processing">Processing</MenuItem>
-            <MenuItem value="completed">Completed</MenuItem>
-          </Select>
-          <IconButton onClick={() => setOpen((s) => !s)} size="small">
-            <Chip label="Details" size="small" />
-          </IconButton>
-        </Box>
-      </Box>
-      <Collapse in={open}>
-        <Box sx={{ mt: 2 }}>
-          <Typography fontSize={13} color="text.secondary">{ticket.details}</Typography>
-        </Box>
-      </Collapse>
-    </Paper>
-  );
-}
 
 export default function SalesDashboard() {
   const { currentUser } = useAccount();
@@ -310,13 +283,152 @@ export default function SalesDashboard() {
           <Typography fontSize={14} fontWeight={800} mb={2}>
             Return / Refund / Warranty Requests
           </Typography>
-          <Grid container spacing={2}>
-            {tickets.map((t) => (
-              <Grid item xs={12} md={6} key={t.id}>
-                <TicketCard ticket={t} onChangeStatus={handleChangeTicketStatus} />
-              </Grid>
-            ))}
-          </Grid>
+          <Paper
+            elevation={0}
+            sx={{ p: 3, borderRadius: 3, bgcolor: "#ffffff", border: "1px solid rgba(0,0,0,0.08)" }}
+          >
+            {tickets.length === 0 ? (
+              <Typography color="text.secondary">No requests yet.</Typography>
+            ) : (
+              <TableContainer sx={{ overflowX: "auto" }}>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell
+                        sx={{
+                          fontWeight: 700,
+                          fontSize: 12,
+                          textTransform: "uppercase",
+                          letterSpacing: 0.5,
+                          color: "text.secondary",
+                          bgcolor: "rgba(0,0,0,0.02)",
+                          borderBottom: "1px solid rgba(0,0,0,0.08)",
+                          py: 2,
+                          px: 3,
+                        }}
+                      >
+                        Ticket #
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          fontWeight: 700,
+                          fontSize: 12,
+                          textTransform: "uppercase",
+                          letterSpacing: 0.5,
+                          color: "text.secondary",
+                          bgcolor: "rgba(0,0,0,0.02)",
+                          borderBottom: "1px solid rgba(0,0,0,0.08)",
+                          py: 2,
+                          px: 3,
+                        }}
+                      >
+                        Type
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          fontWeight: 700,
+                          fontSize: 12,
+                          textTransform: "uppercase",
+                          letterSpacing: 0.5,
+                          color: "text.secondary",
+                          bgcolor: "rgba(0,0,0,0.02)",
+                          borderBottom: "1px solid rgba(0,0,0,0.08)",
+                          py: 2,
+                          px: 3,
+                        }}
+                      >
+                        Status
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          fontWeight: 700,
+                          fontSize: 12,
+                          textTransform: "uppercase",
+                          letterSpacing: 0.5,
+                          color: "text.secondary",
+                          bgcolor: "rgba(0,0,0,0.02)",
+                          borderBottom: "1px solid rgba(0,0,0,0.08)",
+                          py: 2,
+                          px: 3,
+                        }}
+                      >
+                        Date
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          fontWeight: 700,
+                          fontSize: 12,
+                          textTransform: "uppercase",
+                          letterSpacing: 0.5,
+                          color: "text.secondary",
+                          bgcolor: "rgba(0,0,0,0.02)",
+                          borderBottom: "1px solid rgba(0,0,0,0.08)",
+                          py: 2,
+                          px: 3,
+                        }}
+                      >
+                        Customer
+                      </TableCell>
+                      <TableCell
+                        align="right"
+                        sx={{
+                          fontWeight: 700,
+                          fontSize: 12,
+                          textTransform: "uppercase",
+                          letterSpacing: 0.5,
+                          color: "text.secondary",
+                          bgcolor: "rgba(0,0,0,0.02)",
+                          borderBottom: "1px solid rgba(0,0,0,0.08)",
+                          py: 2,
+                          px: 3,
+                        }}
+                      >
+                        Amount
+                      </TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {tickets.map((t) => (
+                      <TableRow
+                        key={t.id}
+                        hover
+                        sx={{
+                          "&:last-child td": { borderBottom: 0 },
+                          "& td": {
+                            borderBottom: "1px solid rgba(0,0,0,0.06)",
+                            py: 2,
+                            px: 3,
+                            fontSize: 14,
+                          },
+                        }}
+                      >
+                        <TableCell sx={{ fontWeight: 600 }}>{t.ticketNumber}</TableCell>
+                        <TableCell>{t.type.toUpperCase()}</TableCell>
+                        <TableCell>
+                          <Select
+                            size="small"
+                            value={t.status}
+                            onChange={(e) => handleChangeTicketStatus(t.id, e.target.value as any)}
+                          >
+                            <MenuItem value="pending">Pending</MenuItem>
+                            <MenuItem value="processing">Processing</MenuItem>
+                            <MenuItem value="completed">Completed</MenuItem>
+                          </Select>
+                        </TableCell>
+                        <TableCell sx={{ color: "text.secondary" }}>
+                          {new Date(t.createdAt).toLocaleString()}
+                        </TableCell>
+                        <TableCell>{t.customerName}</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 600 }}>
+                          {t.amount ? t.amount.toLocaleString("en-US", { style: "currency", currency: "USD" }) : "—"}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
+          </Paper>
         </Box>
       )}
     </Box>
@@ -324,28 +436,153 @@ export default function SalesDashboard() {
 }
 
 function OrdersTab() {
-  const { orders, ordersLoading, updateStatus, openCreateShipment, expandedOrderId, setExpandedOrderId } = useOperations();
+  const { orders, ordersLoading, updateStatus, openCreateShipment } = useOperations();
 
   return (
-    <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: "1px solid rgba(0,0,0,0.08)" }}>
+    <Paper elevation={0} sx={{ p: 3, borderRadius: 3, bgcolor: "#ffffff", border: "1px solid rgba(0,0,0,0.08)" }}>
       {ordersLoading ? (
         <LinearProgress sx={{ borderRadius: 1 }} />
       ) : orders.length === 0 ? (
         <Typography color="text.secondary">No orders yet.</Typography>
       ) : (
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-          {orders.map((order) => (
-            <OrderCard
-              key={order.id}
-              order={order}
-              expanded={expandedOrderId === order.id}
-              onToggleExpand={() => setExpandedOrderId(expandedOrderId === order.id ? null : order.id)}
-              onUpdateStatus={(status) => updateStatus.mutate({ orderId: order.id, status })}
-              onCreateShipment={() => openCreateShipment(order.id)}
-              canCreateShipment={order.status === "ready_to_ship" && !order.shipmentId}
-            />
-          ))}
-        </Box>
+        <TableContainer sx={{ overflowX: "auto" }}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell
+                  sx={{
+                    fontWeight: 700,
+                    fontSize: 12,
+                    textTransform: "uppercase",
+                    letterSpacing: 0.5,
+                    color: "text.secondary",
+                    bgcolor: "rgba(0,0,0,0.02)",
+                    borderBottom: "1px solid rgba(0,0,0,0.08)",
+                    py: 2,
+                    px: 3,
+                  }}
+                >
+                  Order #
+                </TableCell>
+                <TableCell
+                  sx={{
+                    fontWeight: 700,
+                    fontSize: 12,
+                    textTransform: "uppercase",
+                    letterSpacing: 0.5,
+                    color: "text.secondary",
+                    bgcolor: "rgba(0,0,0,0.02)",
+                    borderBottom: "1px solid rgba(0,0,0,0.08)",
+                    py: 2,
+                    px: 3,
+                  }}
+                >
+                  Type
+                </TableCell>
+                <TableCell
+                  sx={{
+                    fontWeight: 700,
+                    fontSize: 12,
+                    textTransform: "uppercase",
+                    letterSpacing: 0.5,
+                    color: "text.secondary",
+                    bgcolor: "rgba(0,0,0,0.02)",
+                    borderBottom: "1px solid rgba(0,0,0,0.08)",
+                    py: 2,
+                    px: 3,
+                  }}
+                >
+                  Status
+                </TableCell>
+                <TableCell
+                  sx={{
+                    fontWeight: 700,
+                    fontSize: 12,
+                    textTransform: "uppercase",
+                    letterSpacing: 0.5,
+                    color: "text.secondary",
+                    bgcolor: "rgba(0,0,0,0.02)",
+                    borderBottom: "1px solid rgba(0,0,0,0.08)",
+                    py: 2,
+                    px: 3,
+                  }}
+                >
+                  Date
+                </TableCell>
+                <TableCell
+                  sx={{
+                    fontWeight: 700,
+                    fontSize: 12,
+                    textTransform: "uppercase",
+                    letterSpacing: 0.5,
+                    color: "text.secondary",
+                    bgcolor: "rgba(0,0,0,0.02)",
+                    borderBottom: "1px solid rgba(0,0,0,0.08)",
+                    py: 2,
+                    px: 3,
+                  }}
+                >
+                  Customer
+                </TableCell>
+                <TableCell
+                  align="right"
+                  sx={{
+                    fontWeight: 700,
+                    fontSize: 12,
+                    textTransform: "uppercase",
+                    letterSpacing: 0.5,
+                    color: "text.secondary",
+                    bgcolor: "rgba(0,0,0,0.02)",
+                    borderBottom: "1px solid rgba(0,0,0,0.08)",
+                    py: 2,
+                    px: 3,
+                  }}
+                >
+                  Amount
+                </TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {orders.map((order) => (
+                <TableRow
+                  key={order.id}
+                  hover
+                  sx={{
+                    "&:last-child td": { borderBottom: 0 },
+                    "& td": {
+                      borderBottom: "1px solid rgba(0,0,0,0.06)",
+                      py: 2,
+                      px: 3,
+                      fontSize: 14,
+                    },
+                  }}
+                >
+                  <TableCell sx={{ fontWeight: 600 }}>{order.orderNumber}</TableCell>
+                  <TableCell>
+                    <Chip label={ORDER_TYPE_LABEL[order.orderType]} size="small" sx={{ fontWeight: 600, borderRadius: 1 }} />
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      label={ORDER_STATUS_LABEL[order.status]}
+                      size="small"
+                      sx={{
+                        fontWeight: 600,
+                        borderRadius: 1,
+                        bgcolor: order.status === "shipped" || order.status === "delivered" ? "rgba(46,125,50,0.12)" : "rgba(25,118,210,0.12)",
+                        color: order.status === "shipped" || order.status === "delivered" ? "#2e7d32" : "#1976d2",
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell sx={{ color: "text.secondary" }}>{new Date(order.createdAt).toLocaleString()}</TableCell>
+                  <TableCell>{order.customerName}</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 600 }}>
+                    {order.totalAmount.toLocaleString("en-US", { style: "currency", currency: "USD" })}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
     </Paper>
   );
