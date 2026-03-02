@@ -53,7 +53,7 @@ public sealed class GetProductList
                 return Result<PagedResult<ProductListDto>>
                     .Failure("Invalid pagination parameters.", 400);
 
-            var query = context.Products.AsQueryable();
+            IQueryable<Product> query = context.Products.AsNoTracking();
 
             // Apply filters
             if (request.CategoryIds != null && request.CategoryIds.Count > 0)
@@ -133,7 +133,6 @@ public sealed class GetProductList
                 .Skip((request.PageNumber - 1) * request.PageSize)
                 .Take(request.PageSize)
                 .ProjectTo<ProductListDto>(mapper.ConfigurationProvider)
-                .AsNoTracking()
                 .ToArrayAsync(cancellationToken);
 
             var pagedResult = new PagedResult<ProductListDto>

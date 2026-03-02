@@ -26,15 +26,15 @@ public sealed class GetProductDetail
         public async Task<Result<ProductDto>> Handle(Query request, CancellationToken cancellationToken)
         {
             // Query execution order:
-            // 1. Filter by ID (Where)
-            // 2. Split query hint to prevent Cartesian explosion (AsSplitQuery)
-            // 3. Project to DTO with only required columns (ProjectTo)
-            // 4. Disable change tracking for read-only operation (AsNoTracking)
-            var product = await context.Products
+            // 1. Disable change tracking for read-only operation (AsNoTracking)
+            // 2. Filter by ID (Where)
+            // 3. Split query hint to prevent Cartesian explosion (AsSplitQuery)
+            // 4. Project to DTO with only required columns (ProjectTo)
+            ProductDto? product = await context.Products
+                .AsNoTracking()
                 .Where(p => p.Id == request.Id)
                 .AsSplitQuery()
                 .ProjectTo<ProductDto>(mapper.ConfigurationProvider)
-                .AsNoTracking()
                 .FirstOrDefaultAsync(cancellationToken);
 
             if (product == null)

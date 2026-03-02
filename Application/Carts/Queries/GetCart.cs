@@ -24,10 +24,10 @@ public sealed class GetCart
             Guid userId = userAccessor.GetUserId();
 
             CartDto? cartDto = await context.Carts
+                .AsNoTracking()
                 .Where(c => c.UserId == userId && c.Status == CartStatus.Active)
                 .AsSplitQuery()
                 .ProjectTo<CartDto>(mapper.ConfigurationProvider)
-                .AsNoTracking()
                 .FirstOrDefaultAsync(cancellationToken);
 
             if (cartDto == null)
