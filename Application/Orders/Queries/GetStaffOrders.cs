@@ -30,7 +30,8 @@ public sealed class GetStaffOrders
 
             IQueryable<Domain.Order> query = context.Orders
                 .AsNoTracking()
-                .Where(o => o.CreatedBySalesStaff == staffUserId);
+                .Where(o => o.CreatedBySalesStaff == staffUserId ||
+                           (o.OrderSource == Domain.OrderSource.Online && o.OrderStatus == Domain.OrderStatus.Pending));
 
             int totalCount = await query.CountAsync(ct);
 
