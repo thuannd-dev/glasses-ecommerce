@@ -12,14 +12,15 @@ import { setPrescriptionByVariantId } from "../../cart/prescriptionCache";
 import type { PrescriptionData } from "../../../lib/types/prescription";
 import type { CartDto } from "../../../lib/types/cart";
 
-export function useProductDetailPage() {
+export function useProductDetailPage(initialVariantId?: string | null) {
   const { id } = useParams<{ id: string }>();
   const queryClient = useQueryClient();
   const { product, isLoading } = useProductDetail(id);
   const { cart, addItem, addItemAsync } = useCart();
-  const [selectLensesOpen, setSelectLensesOpen] = useState(false);
 
-  const [activeVariantId, setActiveVariantId] = useState<string | null>(null);
+  const [activeVariantId, setActiveVariantId] = useState<string | null>(
+    initialVariantId ?? null
+  );
   const [activeImg, setActiveImg] = useState(0);
 
   const currentVariant = useMemo(() => {
@@ -115,7 +116,6 @@ export function useProductDetailPage() {
       setCartItemPrescription(item.id, prescription);
     }
     setPrescriptionByVariantId(variantId, prescription);
-    setSelectLensesOpen(false);
   };
 
   const handleVariantSelect = (variantId: string) => {
@@ -137,8 +137,6 @@ export function useProductDetailPage() {
     handleAddToCart,
     handleVariantSelect,
     isEyeglasses,
-    selectLensesOpen,
-    setSelectLensesOpen,
     handleAddWithPrescription,
     addToCartPayload,
   };

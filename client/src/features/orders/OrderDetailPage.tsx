@@ -212,7 +212,11 @@ export default function OrderDetailPage() {
                 borderBottom: idx < items.length - 1 ? "1px solid rgba(17,24,39,0.06)" : "none",
               }}
             >
-              <OrderItemRow item={item as OrderItemRowProps["item"]} orderId={orderId} />
+              <OrderItemRow
+                item={item as OrderItemRowProps["item"]}
+                orderId={orderId}
+                showPrescriptionDetails
+              />
             </Box>
           ))}
         </Box>

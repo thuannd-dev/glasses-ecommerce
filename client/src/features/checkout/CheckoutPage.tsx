@@ -14,7 +14,6 @@ import {
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import AddressAutocomplete from "../../app/shared/components/AddressAutocomplete";
-import { PrescriptionDisplay } from "../../app/shared/components/PrescriptionDisplay";
 import { formatMoney } from "../../lib/utils/format";
 import { useCheckoutPage } from "./hooks/useCheckoutPage";
 import { isValidVietnamPhone } from "./utils";
@@ -362,10 +361,14 @@ export default function CheckoutPage() {
                                                         {item.productName} × {item.quantity}
                                                     </Typography>
                                                     {itemPrescriptions[item.id] && (
-                                                        <PrescriptionDisplay
-                                                            prescription={itemPrescriptions[item.id]}
-                                                            variant="inline"
-                                                        />
+                                                        <Typography
+                                                            fontSize={12}
+                                                            fontWeight={700}
+                                                            color="primary"
+                                                            sx={{ mt: 0.25 }}
+                                                        >
+                                                            Prescription
+                                                        </Typography>
                                                     )}
                                                 </Box>
                                                 <Typography fontWeight={700}>

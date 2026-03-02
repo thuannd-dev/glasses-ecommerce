@@ -17,7 +17,6 @@ import { NavLink, useNavigate } from "react-router-dom";
 
 import { useProductDetailPage } from "./hooks/useProductDetailPage";
 import { RelatedProductsCarousel } from "./components/ProductDetailPageComponents/RelatedProductsCarousel";
-import { SelectLensesDialog } from "./components/ProductDetailPageComponents/SelectLensesDialog";
 
 const NAV_H = 56;
 const GAP_TOP = 24;
@@ -36,9 +35,6 @@ export default function ProductDetailPage() {
         handleAddToCart,
         handleVariantSelect,
         isEyeglasses,
-        selectLensesOpen,
-        setSelectLensesOpen,
-        handleAddWithPrescription,
     } = useProductDetailPage();
 
     if (isLoading) {
@@ -316,11 +312,15 @@ export default function ProductDetailPage() {
 
                     {/* Actions */}
                     <Box sx={{ display: "flex", gap: 1.2, mt: 1 }}>
-                        {isEyeglasses ? (
+        {isEyeglasses ? (
                             <>
                                 <Button
                                     variant="contained"
-                                    onClick={() => setSelectLensesOpen(true)}
+                                    onClick={() =>
+                                        nav(`/product/${product.id}/lenses`, {
+                                            state: { variantId: currentVariant?.id ?? null },
+                                        })
+                                    }
                                     sx={{
                                         bgcolor: "#111827",
                                         borderRadius: 2,
@@ -332,16 +332,6 @@ export default function ProductDetailPage() {
                                 >
                                     Select lenses
                                 </Button>
-                                <SelectLensesDialog
-                                    open={selectLensesOpen}
-                                    onClose={() => setSelectLensesOpen(false)}
-                                    productName={product.name}
-                                    variantLabel={currentVariant?.variantName ?? currentVariant?.color ?? product.sku ?? ""}
-                                    productImageUrl={images[0] ?? ""}
-                                    price={currentVariant?.price ?? product.price}
-                                    onNonPrescription={handleAddToCart}
-                                    onPrescriptionConfirm={handleAddWithPrescription}
-                                />
                             </>
                         ) : (
                             <Button

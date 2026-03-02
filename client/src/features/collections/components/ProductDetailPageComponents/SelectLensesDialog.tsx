@@ -15,8 +15,6 @@ import {
     Checkbox,
     MenuItem,
 } from "@mui/material";
-import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
-import RemoveCircleOutlineIcon from "@mui/icons-material/RemoveCircleOutline";
 import type { PrescriptionData, PrescriptionDetailRow } from "../../../../lib/types/prescription";
 import { EYE_LABELS } from "../../../../lib/types/prescription";
 
@@ -25,16 +23,9 @@ const INITIAL_DETAILS: PrescriptionDetailRow[] = [
     { eye: 2, sph: null, cyl: null, axis: null, pd: null, add: null },
 ];
 
-type Step = "usage" | "form" | "confirm";
-type UsageType = "single_vision" | "non_prescription";
-
-const USAGE_OPTIONS: { id: UsageType; label: string; description: string; Icon: React.ElementType }[] = [
-    { id: "single_vision", label: "Single Vision", description: "Corrects for one distance (near or far). The most common prescription.", Icon: VisibilityOutlinedIcon },
-    { id: "non_prescription", label: "Non-prescription", description: "Style and protection.", Icon: RemoveCircleOutlineIcon },
-];
+type Step = "form" | "confirm";
 
 const STEP_LABELS: { key: Step | "lens" | "addons"; label: string }[] = [
-    { key: "usage", label: "Usage" },
     { key: "form", label: "Prescription" },
     { key: "lens", label: "Lens" },
     { key: "addons", label: "Add-Ons" },
@@ -67,26 +58,30 @@ const CYL_OPTIONS = buildCylOptions();
 type Props = {
     open: boolean;
     onClose: () => void;
+    /** When true, use full-page layout (for dedicated route) instead of small centered popup. */
+    fullPage?: boolean;
     productName: string;
     variantLabel: string;
     productImageUrl: string;
     price: number;
-    onNonPrescription: () => void;
+    onNonPrescription?: () => void;
     onPrescriptionConfirm: (prescription: PrescriptionData) => void;
+    /** Optional: click on EYEWEAR logo (e.g. go to collections). */
+    onLogoClick?: () => void;
 };
 
 export function SelectLensesDialog({
     open,
     onClose,
+    fullPage,
     productName,
     variantLabel,
     productImageUrl,
     price,
-    onNonPrescription,
     onPrescriptionConfirm,
+    onLogoClick,
 }: Props) {
-    const [step, setStep] = useState<Step>("usage");
-    const [usageType, setUsageType] = useState<UsageType | null>(null);
+    const [step, setStep] = useState<Step>("form");
     const [details, setDetails] = useState<PrescriptionDetailRow[]>(() =>
         INITIAL_DETAILS.map((d) => ({ ...d }))
     );
@@ -113,8 +108,7 @@ export function SelectLensesDialog({
 
     useEffect(() => {
         if (open) {
-            setStep("usage");
-            setUsageType(null);
+            setStep("form");
             setDetails(INITIAL_DETAILS.map((d) => ({ ...d })));
             setPdSingle("");
             setPdLeft("");
@@ -129,15 +123,6 @@ export function SelectLensesDialog({
                 row.eye === eye ? { ...row, [field]: value } : row
             )
         );
-    };
-
-    const handleUsageContinue = () => {
-        if (usageType === "non_prescription") {
-            onNonPrescription();
-            onClose();
-            return;
-        }
-        setStep("form");
     };
 
     const isPrescriptionFormValid = useMemo(() => {
@@ -160,30 +145,74 @@ export function SelectLensesDialog({
     const formatNum = (n: number | null) =>
         n == null ? "—" : Number.isInteger(n) ? String(n) : n.toFixed(2);
 
-    const usageLabel = usageType ? USAGE_OPTIONS.find((o) => o.id === usageType)?.label ?? "Single Vision" : "Single Vision";
+    const usageLabel = "Single Vision";
 
     return (
-        <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth PaperProps={{ sx: { borderRadius: 2 } }}>
+        <Dialog
+            open={open}
+            onClose={onClose}
+            fullScreen={!!fullPage}
+            hideBackdrop={!!fullPage}
+            maxWidth={fullPage ? false : "lg"}
+            fullWidth={!fullPage}
+            PaperProps={{
+                sx: fullPage
+                    ? { borderRadius: 0, width: "100%", height: "100%", maxWidth: "100%", m: 0 }
+                    : { borderRadius: 2 },
+            }}
+        >
             <DialogContent sx={{ p: 0, overflow: "hidden" }}>
-                <Box sx={{ display: "flex", flexDirection: { xs: "column", md: "row" }, minHeight: 480 }}>
-                    {/* Left: Product */}
+                <Box
+                    sx={{
+                        display: "flex",
+                        flexDirection: { xs: "column", md: "row" },
+                        minHeight: fullPage ? "100vh" : 520,
+                        width: "100%",
+                        boxSizing: "border-box",
+                        px: { xs: 2, md: 4 },
+                        py: { xs: 2, md: 3 },
+                        columnGap: { xs: 2, md: 6 },
+                        alignItems: "flex-start",
+                    }}
+                >
+                    {/* Left: Product summary */}
                     <Box
                         sx={{
-                            width: { md: 340 },
-                            flexShrink: 0,
-                            p: 3,
-                            borderRight: { md: "1px solid rgba(17,24,39,0.1)" },
+                            flexBasis: { xs: "auto", md: "45%" },
+                            maxWidth: { md: "45%" },
+                            pr: { xs: 0, md: 3 },
+                            pl: { xs: 0, md: 0 },
+                            py: 0,
+                            borderRight: { md: "none" },
                             bgcolor: "rgba(17,24,39,0.02)",
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "stretch",
                         }}
                     >
+                        <Typography
+                            onClick={onLogoClick}
+                            sx={{
+                                fontWeight: 900,
+                                letterSpacing: 2,
+                                fontSize: 26,
+                                color: "#111827",
+                                textTransform: "uppercase",
+                                mb: 0.75,
+                                cursor: onLogoClick ? "pointer" : "default",
+                            }}
+                        >
+                            EYEWEAR
+                        </Typography>
                         <Typography
                             component="button"
                             onClick={onClose}
                             sx={{
-                                display: "block",
-                                mb: 2,
-                                color: "primary.main",
+                                display: "inline-block",
+                                mb: 1.5,
+                                color: "#111827",
                                 fontSize: 14,
+                                fontWeight: 700,
                                 cursor: "pointer",
                                 border: "none",
                                 background: "none",
@@ -199,6 +228,8 @@ export function SelectLensesDialog({
                             alt={productName}
                             sx={{
                                 width: "100%",
+                                maxWidth: 520,
+                                mx: "auto",
                                 aspectRatio: "4/3",
                                 objectFit: "cover",
                                 borderRadius: 2,
@@ -206,28 +237,30 @@ export function SelectLensesDialog({
                                 mb: 2,
                             }}
                         />
-                        <Typography fontWeight={900} fontSize={18}>
+                        <Typography fontWeight={900} fontSize={22} sx={{ mt: 1, textAlign: "center" }}>
                             {productName}
                         </Typography>
-                        <Typography fontSize={14} color="text.secondary" sx={{ mt: 0.5 }}>
-                            {variantLabel}
-                        </Typography>
-                        <Typography fontSize={12} color="text.secondary" sx={{ mt: 0.5 }}>
-                            Show details ⌄
-                        </Typography>
-                        <Typography fontWeight={900} fontSize={20} sx={{ mt: 2 }}>
+                        <Typography fontWeight={900} fontSize={24} sx={{ mt: 2, textAlign: "center" }}>
                             ${price.toFixed(2)}
                         </Typography>
-                        <Typography fontSize={12} color="text.secondary">
+                        <Typography fontSize={12} color="text.secondary" sx={{ textAlign: "center" }}>
                             Price (USD)
                         </Typography>
-                        <Typography fontSize={12} color="text.secondary" sx={{ mt: 2 }}>
+                        <Typography fontSize={12} color="text.secondary" sx={{ mt: 2, textAlign: "center" }}>
                             Shipping & handling calculated at checkout
                         </Typography>
                     </Box>
 
-                    {/* Right: Steps + content */}
-                    <Box sx={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+                    {/* Right: Prescription form */}
+                    <Box
+                        sx={{
+                            flexBasis: { xs: "auto", md: "55%" },
+                            maxWidth: { md: "55%" },
+                            display: "flex",
+                            flexDirection: "column",
+                            minWidth: 0,
+                        }}
+                    >
                         {/* Step tabs */}
                         <Box
                             sx={{
@@ -240,17 +273,14 @@ export function SelectLensesDialog({
                             }}
                         >
                             {STEP_LABELS.map(({ key, label }) => {
-                                const isActive =
-                                    (key === "usage" && step === "usage") ||
-                                    (key === "form" && (step === "form" || step === "confirm")) ||
-                                    false;
+                                const isActive = key === "form" && (step === "form" || step === "confirm");
                                 const isDisabled = key === "lens" || key === "addons";
                                 return (
                                     <Typography
                                         key={key}
                                         component="button"
                                         type="button"
-                                        onClick={() => !isDisabled && (key === "usage" ? setStep("usage") : key === "form" ? setStep("form") : null)}
+                                        onClick={() => !isDisabled && setStep("form")}
                                         sx={{
                                             border: "none",
                                             background: "none",
@@ -269,94 +299,10 @@ export function SelectLensesDialog({
                             })}
                         </Box>
 
-                        <Box sx={{ flex: 1, p: 3, overflow: "auto" }}>
-                            {/* Step: Usage */}
-                            {step === "usage" && (
-                                <>
-                                    <Typography fontWeight={900} fontSize={20} sx={{ mb: 2 }}>
-                                        How will you use your glasses?
-                                    </Typography>
-                                    <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-                                        {USAGE_OPTIONS.map((opt) => {
-                                            const selected = usageType === opt.id;
-                                            const Icon = opt.Icon;
-                                            return (
-                                                <Box
-                                                    key={opt.id}
-                                                    onClick={() => setUsageType(opt.id)}
-                                                    sx={{
-                                                        display: "flex",
-                                                        alignItems: "flex-start",
-                                                        gap: 2,
-                                                        p: 2,
-                                                        borderRadius: 2,
-                                                        border: selected ? "2px solid #111827" : "1px solid rgba(17,24,39,0.12)",
-                                                        bgcolor: selected ? "rgba(17,24,39,0.04)" : "transparent",
-                                                        cursor: "pointer",
-                                                        "&:hover": { bgcolor: "rgba(17,24,39,0.04)" },
-                                                    }}
-                                                >
-                                                    <Box
-                                                        sx={{
-                                                            width: 44,
-                                                            height: 44,
-                                                            borderRadius: 2,
-                                                            bgcolor: "rgba(17,24,39,0.08)",
-                                                            display: "flex",
-                                                            alignItems: "center",
-                                                            justifyContent: "center",
-                                                            flexShrink: 0,
-                                                        }}
-                                                    >
-                                                        <Icon sx={{ fontSize: 26, color: "text.secondary" }} />
-                                                    </Box>
-                                                    <Box sx={{ flex: 1, minWidth: 0 }}>
-                                                        <Typography fontWeight={700}>{opt.label}</Typography>
-                                                        <Typography fontSize={14} color="text.secondary">
-                                                            {opt.description}
-                                                        </Typography>
-                                                    </Box>
-                                                </Box>
-                                            );
-                                        })}
-                                    </Box>
-                                    <Button
-                                        variant="contained"
-                                        disabled={!usageType}
-                                        onClick={handleUsageContinue}
-                                        sx={{
-                                            mt: 3,
-                                            py: 1.2,
-                                            px: 3,
-                                            fontWeight: 900,
-                                            bgcolor: "#111827",
-                                            "&:hover": { bgcolor: "#0b1220" },
-                                        }}
-                                    >
-                                        Continue &gt;
-                                    </Button>
-                                </>
-                            )}
-
+                        <Box sx={{ flex: 1, p: { xs: 2, md: 3 }, overflow: "auto" }}>
                             {/* Step: Prescription form */}
                             {step === "form" && (
-                                <Box>
-                                    <Typography
-                                        component="button"
-                                        onClick={() => setStep("usage")}
-                                        sx={{
-                                            display: "block",
-                                            mb: 2,
-                                            color: "primary.main",
-                                            fontSize: 14,
-                                            cursor: "pointer",
-                                            border: "none",
-                                            background: "none",
-                                            "&:hover": { textDecoration: "underline" },
-                                        }}
-                                    >
-                                        ← Previous Step
-                                    </Typography>
+                                <Box sx={{ width: "100%" }}>
                                     <Typography fontWeight={700} sx={{ mb: 2 }}>
                                         Fill in your prescription details
                                     </Typography>
@@ -446,7 +392,8 @@ export function SelectLensesDialog({
                                         sx={{ maxWidth: 200 }}
                                         SelectProps={{
                                             displayEmpty: true,
-                                            renderValue: (v) => (v === "" ? "Select PD" : v),
+                                            renderValue: (selected: unknown) =>
+                                                selected === "" ? "Select PD" : (selected as string),
                                             MenuProps: { PaperProps: { sx: { maxHeight: 280 } } },
                                         }}
                                     >

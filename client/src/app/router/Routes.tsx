@@ -8,6 +8,7 @@ import Counter from "../../features/counter/Counter";
 import CollectionLandingPage from "../../features/collections/CollectionLandingPage";
 import CollectionPage from "../../features/collections/CollectionPage";
 import ProductDetailPage from "../../features/collections/ProductDetailPage";
+import SelectLensesPage from "../../features/collections/SelectLensesPage";
 
 import LoginForm from "../../features/account/LoginForm";
 import RegisterForm from "../../features/account/RegisterForm";
@@ -25,10 +26,12 @@ import OrdersPage from "../../features/orders/OrdersPage";
 import OrderDetailPage from "../../features/orders/OrderDetailPage";
 import ProfilePage from "../../features/Customer/profile/ProfilePage";
 import RequireRole from "./RequireRole";
-import SalesDashboard from "../../features/sales/SalesDashboard";
+import SalesLayout from "../../features/Sales/SalesLayout";
+import { OverviewScreen as SalesOverviewScreen } from "../../features/Sales/screens/OverviewScreen";
+import { OrdersScreen as SalesOrdersScreen } from "../../features/Sales/screens/OrdersScreen";
+import { OrderDetailScreen as SalesOrderDetailScreen } from "../../features/Sales/screens/OrderDetailScreen";
 import OperationsLayout from "../../features/Operations/OperationsLayout";
 import {
-  OverviewScreen,
   PackScreen,
   CreateShipmentScreen,
   TrackingScreen,
@@ -59,6 +62,14 @@ export const router = createBrowserRouter([
   },
 
   // ======================
+  // SELECT LENSES (NO NAVBAR)
+  // ======================
+  {
+    path: "/product/:id/lenses",
+    element: <SelectLensesPage />,
+  },
+
+  // ======================
   // APP (WITH NAVBAR)
   // ======================
   {
@@ -70,7 +81,17 @@ export const router = createBrowserRouter([
       // ======================
       {
         element: <RequireRole allowedRoles={["Sales"]} />,
-        children: [{ path: "sales", element: <SalesDashboard /> }],
+        children: [
+          {
+            path: "sales",
+            element: <SalesLayout />,
+            children: [
+              { index: true, element: <SalesOverviewScreen /> },
+              { path: "orders", element: <SalesOrdersScreen /> },
+              { path: "orders/:id", element: <SalesOrderDetailScreen /> },
+            ],
+          },
+        ],
       },
       {
         element: <RequireRole allowedRoles={["Operations"]} />,
@@ -79,8 +100,7 @@ export const router = createBrowserRouter([
             path: "operations",
             element: <OperationsLayout />,
             children: [
-              { index: true, element: <Navigate to="/operations/overview" replace /> },
-              { path: "overview", element: <OverviewScreen /> },
+              { index: true, element: <Navigate to="/operations/pack" replace /> },
               { path: "pack", element: <PackScreen /> },
               { path: "create-shipment", element: <CreateShipmentScreen /> },
               { path: "tracking", element: <TrackingScreen /> },
