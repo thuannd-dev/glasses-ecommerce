@@ -75,7 +75,7 @@ export function CreateShipmentScreen() {
     selectedOrderIds.forEach((orderId) => {
       updateStatus.mutate({
         orderId,
-        status: "Shipped" as OrderStatus,
+        status: "shipped" as OrderStatus,
         shipmentCarrierName: trimmedCarrier,
         shipmentTrackingCode: trackingCode || null,
         shipmentTrackingUrl: trackingUrl || null,

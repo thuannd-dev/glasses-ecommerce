@@ -3,7 +3,6 @@ import agent from "../api/agent";
 import type {
   OrderDto,
   ShipmentDto,
-  OrderType,
   OrderStatus,
   CreateShipmentPayload,
   UpdateTrackingPayload,
@@ -56,8 +55,7 @@ const ORDER_STATUS_TO_NEW_STATUS: Record<OrderStatus | string, number> = {
 async function apiUpdateOrderStatus(payload: UpdateOrderStatusPayload): Promise<OrderDto> {
   const newStatus = ORDER_STATUS_TO_NEW_STATUS[payload.status];
 
-  const isShipping =
-    payload.status === "Shipped" || payload.status === "shipped";
+  const isShipping = payload.status === "shipped";
 
   const res = await agent.put<OrderDto>(`/operations/orders/${payload.orderId}/status`, {
     newStatus,
