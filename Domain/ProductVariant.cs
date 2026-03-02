@@ -31,6 +31,12 @@ public class ProductVariant
 
     public bool IsActive { get; set; } = true;
 
+    /// <summary>
+    /// Khi true: khách có thể add vào giỏ và checkout dù kho không đủ.
+    /// Hệ thống tự động đặt OrderType = PreOrder tại Checkout.
+    /// </summary>
+    public bool IsPreOrder { get; set; } = false;
+
     // Navigation properties
     public Product Product { get; set; } = null!;
     

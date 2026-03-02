@@ -120,7 +120,19 @@ public sealed class Checkout
                             $"Product '{variant.VariantName}' is no longer available.", 400);
                 }
 
-                if (dto.OrderType == OrderType.ReadyStock || dto.OrderType == OrderType.Prescription)
+                // Phân loại items: PreOrder vs Regular
+                bool hasPreOrderItems = mergedItems
+                    .Any(m => variants.First(v => v.Id == m.ProductVariantId).IsPreOrder);
+                bool hasRegularItems = mergedItems
+                    .Any(m => !variants.First(v => v.Id == m.ProductVariantId).IsPreOrder);
+
+                // Nếu toàn bộ hoặc có bất kỳ PreOrder item nào → order type bị ép thành PreOrder.
+                // Mixed cart (Regular + PreOrder) cũng gộp chung 1 đơn, chờ đủ hàng rồi ship 1 lần.
+                OrderType resolvedOrderType = hasPreOrderItems ? OrderType.PreOrder : dto.OrderType;
+
+                // Kiểm tra stock chỉ cho những Regular items trong đơn
+                // (PreOrder items bỏ qua bước này vì hàng chưa có)
+                if (resolvedOrderType == OrderType.ReadyStock || resolvedOrderType == OrderType.Prescription)
                 {
                     foreach (var mergedItem in mergedItems)
                     {
@@ -128,6 +140,20 @@ public sealed class Checkout
                         if (variant.Stock == null || variant.Stock.QuantityAvailable < mergedItem.Quantity)
                             return Result<Guid>.Failure(
                                 $"Insufficient stock for '{variant.VariantName}'. Available: {variant.Stock?.QuantityAvailable ?? 0}.", 400);
+                    }
+                }
+                else if (resolvedOrderType == OrderType.PreOrder && hasRegularItems)
+                {
+                    // Mixed cart: chỉ kiểm tra stock cho Regular items (PreOrder items bỏ qua)
+                    foreach (var mergedItem in mergedItems)
+                    {
+                        ProductVariant variant = variants.First(v => v.Id == mergedItem.ProductVariantId);
+                        if (!variant.IsPreOrder)
+                        {
+                            if (variant.Stock == null || variant.Stock.QuantityAvailable < mergedItem.Quantity)
+                                return Result<Guid>.Failure(
+                                    $"Insufficient stock for '{variant.VariantName}'. Available: {variant.Stock?.QuantityAvailable ?? 0}.", 400);
+                        }
                     }
                 }
 
@@ -195,14 +221,14 @@ public sealed class Checkout
                 {
                     Id = orderId, // explicitly assigned from outside retry scope
                     OrderSource = OrderSource.Online,
-                    OrderType = dto.OrderType,
+                    OrderType = resolvedOrderType,
                     OrderStatus = OrderStatus.Pending,
                     UserId = userId,
                     AddressId = dto.AddressId,
                     TotalAmount = totalAmount,
                     ShippingFee = shippingFee,
                     CustomerNote = dto.CustomerNote,
-                    CancellationDeadline = dto.OrderType == OrderType.Prescription
+                    CancellationDeadline = resolvedOrderType == OrderType.Prescription
                         ? DateTime.UtcNow.AddHours(24) : null,
                 };
 
@@ -215,8 +241,8 @@ public sealed class Checkout
                 }
                 context.OrderItems.AddRange(orderItems);
 
-                // 8. Reserve stock for ReadyStock and Prescription orders
-                if (dto.OrderType == OrderType.ReadyStock || dto.OrderType == OrderType.Prescription)
+                // 8. Reserve stock cho ReadyStock/Prescription; track demand cho PreOrder
+                if (resolvedOrderType == OrderType.ReadyStock || resolvedOrderType == OrderType.Prescription)
                 {
                     foreach (var mergedItem in mergedItems)
                     {
@@ -224,6 +250,31 @@ public sealed class Checkout
                         stock.QuantityReserved += mergedItem.Quantity;
                         stock.UpdatedAt = DateTime.UtcNow;
                         stock.UpdatedBy = userId;
+                    }
+                }
+                else if (resolvedOrderType == OrderType.PreOrder)
+                {
+                    // Không reserve (hàng chưa có), chỉ ghi nhận demand để biết cần nhập thêm bao nhiêu.
+                    // Regular items trong mixed cart cũng được ghi vào QuantityPreOrdered
+                    // vì toàn đơn sẽ giữ lại chờ đóng gói 1 lần khi đủ hàng.
+                    foreach (var mergedItem in mergedItems)
+                    {
+                        ProductVariant variant = variants.First(v => v.Id == mergedItem.ProductVariantId);
+                        if (variant.IsPreOrder && variant.Stock != null)
+                        {
+                            variant.Stock.QuantityPreOrdered += mergedItem.Quantity;
+                            variant.Stock.UpdatedAt = DateTime.UtcNow;
+                            variant.Stock.UpdatedBy = userId;
+                        }
+                        else if (!variant.IsPreOrder)
+                        {
+                            // Regular item trong mixed PreOrder cart: reserve bình thường
+                            // (hàng có sẵn, chỉ cần giữ chỗ khi đợi PreOrder về)
+                            Stock stock = variant.Stock!;
+                            stock.QuantityReserved += mergedItem.Quantity;
+                            stock.UpdatedAt = DateTime.UtcNow;
+                            stock.UpdatedBy = userId;
+                        }
                     }
                 }
 
@@ -251,7 +302,7 @@ public sealed class Checkout
                 }
 
                 // 11. Prescription
-                if (dto.OrderType == OrderType.Prescription && dto.Prescription != null)
+                if (resolvedOrderType == OrderType.Prescription && dto.Prescription != null)
                 {
                     Prescription prescription = new Prescription
                     {

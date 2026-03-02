@@ -42,11 +42,14 @@ public sealed class AddItemToCart
                 return Result<CartItemDto>.Failure("Product variant is not available.", 400);
             }
 
-            // Check stock availability (only validate, don't reserve yet)
-            if (productVariant.Stock == null || productVariant.Stock.QuantityAvailable < request.AddCartItemDto.Quantity)
+            // Chỉ kiểm tra stock khi variant KHÔNG phải PreOrder
+            if (!productVariant.IsPreOrder)
             {
-                return Result<CartItemDto>.Failure(
-                    $"Insufficient stock. Only {productVariant.Stock?.QuantityAvailable ?? 0} items available.", 400);
+                if (productVariant.Stock == null || productVariant.Stock.QuantityAvailable < request.AddCartItemDto.Quantity)
+                {
+                    return Result<CartItemDto>.Failure(
+                        $"Insufficient stock. Only {productVariant.Stock?.QuantityAvailable ?? 0} items available.", 400);
+                }
             }
 
             // Get or create active cart for user (without Items to avoid tracking issues)
@@ -75,8 +78,9 @@ public sealed class AddItemToCart
                 // Update quantity
                 int newQuantity = existingItem.Quantity + request.AddCartItemDto.Quantity;
 
-                // Re-validate stock for new total quantity
-                if (productVariant.Stock.QuantityAvailable < newQuantity)
+                // Re-validate stock cho new total quantity, chỉ khi không phải PreOrder
+                if (!productVariant.IsPreOrder
+                    && productVariant.Stock!.QuantityAvailable < newQuantity)
                 {
                     return Result<CartItemDto>.Failure(
                         $"Insufficient stock. You already have {existingItem.Quantity} in cart. Only {productVariant.Stock.QuantityAvailable} items available.", 400);
