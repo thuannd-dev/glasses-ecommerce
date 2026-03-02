@@ -53,8 +53,13 @@ public sealed class CancelMyOrder
 
                 OrderStatus oldStatus = order.OrderStatus;
 
-                // ReadyStock and Prescription orders reserve stock on creation — skip stock release for other types.
-                if (order.OrderType == OrderType.ReadyStock || order.OrderType == OrderType.Prescription)
+                // ReadyStock, Prescription và PreOrder orders đều cần giải phóng stock khi huỷ:
+                //  - ReadyStock / Prescription: giải phóng QuantityReserved.
+                //  - PreOrder (thuần / mixed): PreOrder items giải phóng QuantityPreOrdered (hoặc QuantityReserved
+                //    nếu hàng đã về qua Inbound); Regular items trong mixed cart giải phóng QuantityReserved.
+                if (order.OrderType == OrderType.ReadyStock
+                    || order.OrderType == OrderType.Prescription
+                    || order.OrderType == OrderType.PreOrder)
                 {
                     List<OrderItem> items = await context.OrderItems
                         .Where(oi => oi.OrderId == order.Id)
@@ -74,17 +79,49 @@ public sealed class CancelMyOrder
 
                         Dictionary<Guid, Stock> stockByVariant = stocks.ToDictionary(s => s.ProductVariantId);
 
-                        // Release reserved stock
+                        // Load variants chỉ khi là PreOrder order — cần biết IsPreOrder của từng item
+                        Dictionary<Guid, bool> isPreOrderByVariant = [];
+                        if (order.OrderType == OrderType.PreOrder)
+                        {
+                            List<ProductVariant> variants = await context.ProductVariants
+                                .AsNoTracking()
+                                .Where(pv => variantIds.Contains(pv.Id))
+                                .ToListAsync(ct);
+                            isPreOrderByVariant = variants.ToDictionary(pv => pv.Id, pv => pv.IsPreOrder);
+                        }
+
                         foreach (OrderItem item in items)
                         {
                             if (!stockByVariant.TryGetValue(item.ProductVariantId, out Stock? stock))
                                 return Result<Unit>.Failure(
                                     $"Stock record not found for product variant '{item.ProductVariantId}'.", 409);
-                            if (stock.QuantityReserved < item.Quantity)
-                                return Result<Unit>.Failure(
-                                    $"Insufficient reserved stock for product variant '{item.ProductVariantId}'.", 409);
 
-                            stock.QuantityReserved -= item.Quantity;
+                            // PreOrder item: có thể demand nằm ở QuantityPreOrdered (hàng chưa về)
+                            // hoặc QuantityReserved (hàng đã về qua Inbound). Giải phóng Reserved trước.
+                            if (order.OrderType == OrderType.PreOrder
+                                && isPreOrderByVariant.TryGetValue(item.ProductVariantId, out bool isPreOrderItem)
+                                && isPreOrderItem)
+                            {
+                                int fromReserved = Math.Min(item.Quantity, stock.QuantityReserved);
+                                int fromPreOrdered = item.Quantity - fromReserved;
+
+                                if (fromPreOrdered > stock.QuantityPreOrdered)
+                                    return Result<Unit>.Failure(
+                                        $"Cannot release more pre-order demand than tracked for variant '{item.ProductVariantId}'.", 409);
+
+                                stock.QuantityReserved -= fromReserved;
+                                stock.QuantityPreOrdered -= fromPreOrdered;
+                            }
+                            else
+                            {
+                                // Regular item (hoặc Regular item trong mixed PreOrder cart)
+                                if (stock.QuantityReserved < item.Quantity)
+                                    return Result<Unit>.Failure(
+                                        $"Insufficient reserved stock for product variant '{item.ProductVariantId}'.", 409);
+
+                                stock.QuantityReserved -= item.Quantity;
+                            }
+
                             stock.UpdatedAt = DateTime.UtcNow;
                             stock.UpdatedBy = userId;
                         }
