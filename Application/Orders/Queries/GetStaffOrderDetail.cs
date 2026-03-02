@@ -24,7 +24,8 @@ public sealed class GetStaffOrderDetail
             Guid staffUserId = userAccessor.GetUserId();
 
             StaffOrderDto? order = await context.Orders
-                .Where(o => o.Id == request.Id && o.CreatedBySalesStaff == staffUserId)
+                .Where(o => o.Id == request.Id && (o.CreatedBySalesStaff == staffUserId ||
+                           (o.OrderSource == Domain.OrderSource.Online && o.OrderStatus == Domain.OrderStatus.Pending)))
                 .ProjectTo<StaffOrderDto>(mapper.ConfigurationProvider)
                 .FirstOrDefaultAsync(ct);
 
