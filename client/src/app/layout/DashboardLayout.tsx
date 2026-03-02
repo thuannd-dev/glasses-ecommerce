@@ -13,6 +13,7 @@ import MenuIcon from "@mui/icons-material/Menu";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import LogoutIcon from "@mui/icons-material/Logout";
 import PointOfSaleIcon from "@mui/icons-material/PointOfSale";
+import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import LocalShippingIcon from "@mui/icons-material/LocalShipping";
 import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
@@ -43,7 +44,7 @@ const OPERATIONS_SUB_LINKS: { path: string; label: string; icon: React.ReactNode
 
 const SALES_SUB_LINKS: { path: string; label: string; icon: React.ReactNode }[] = [
   { path: "/sales", label: "Overview", icon: <PointOfSaleIcon /> },
-  { path: "/sales/orders", label: "Orders", icon: <PointOfSaleIcon /> },
+  { path: "/sales/orders", label: "Orders", icon: <ShoppingCartIcon /> },
   { path: "/sales/after-sales", label: "Returns / Refunds / Warranty", icon: <VisibilityOutlined /> },
 ];
 

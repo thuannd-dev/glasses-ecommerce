@@ -31,6 +31,27 @@ type Ticket = {
   details?: string;
 };
 
+const TICKET_TYPE_LABEL: Record<Ticket['type'], string> = {
+  return: 'Return',
+  refund: 'Refund',
+  warranty: 'Warranty',
+};
+
+const TICKET_STATUS_LABEL: Record<Ticket['status'], string> = {
+  pending: 'Pending',
+  processing: 'Processing',
+  completed: 'Completed',
+};
+
+const TICKET_STATUS_COLORS: Record<
+  Ticket['status'],
+  { bg: string; color: string }
+> = {
+  pending: { bg: 'rgba(25,118,210,0.12)', color: '#1976d2' },
+  processing: { bg: 'rgba(245,124,0,0.12)', color: '#f57c00' },
+  completed: { bg: 'rgba(46,125,50,0.12)', color: '#2e7d32' },
+};
+
 const SAMPLE_TICKETS: Ticket[] = [
   { id: "t1", ticketNumber: "TCK-2026-001", type: "return", status: "pending", createdAt: "2026-02-20T10:00:00Z", customerName: "Nguyễn Văn A", amount: 49.99, details: "Wrong size" },
   { id: "t2", ticketNumber: "TCK-2026-002", type: "refund", status: "processing", createdAt: "2026-02-18T09:15:00Z", customerName: "Trần Thị B", amount: 129.0, details: "Damaged on arrival" },
@@ -405,12 +426,34 @@ export default function SalesDashboard() {
                         }}
                       >
                         <TableCell sx={{ fontWeight: 600 }}>{t.ticketNumber}</TableCell>
-                        <TableCell>{t.type.toUpperCase()}</TableCell>
+                        <TableCell>
+                          <Chip
+                            label={TICKET_TYPE_LABEL[t.type]}
+                            size="small"
+                            sx={{ fontWeight: 600, borderRadius: 1 }}
+                          />
+                        </TableCell>
                         <TableCell>
                           <Select
                             size="small"
                             value={t.status}
                             onChange={(e) => handleChangeTicketStatus(t.id, e.target.value as any)}
+                            renderValue={(val) => (
+                              <Chip
+                                label={TICKET_STATUS_LABEL[val as Ticket['status']]}
+                                size="small"
+                                sx={{
+                                  fontWeight: 600,
+                                  borderRadius: 1,
+                                  bgcolor: TICKET_STATUS_COLORS[val as Ticket['status']].bg,
+                                  color: TICKET_STATUS_COLORS[val as Ticket['status']].color,
+                                }}
+                              />
+                            )}
+                            sx={{
+                              minWidth: 120,
+                              '& .MuiSelect-select': { p: 0 },
+                            }}
                           >
                             <MenuItem value="pending">Pending</MenuItem>
                             <MenuItem value="processing">Processing</MenuItem>
