@@ -41,6 +41,12 @@ const OPERATIONS_SUB_LINKS: { path: string; label: string; icon: React.ReactNode
   { path: "/operations/prescription", label: "Prescription", icon: <VisibilityOutlined /> },
 ];
 
+const SALES_SUB_LINKS: { path: string; label: string; icon: React.ReactNode }[] = [
+  { path: "/sales", label: "Overview", icon: <PointOfSaleIcon /> },
+  { path: "/sales/orders", label: "Orders", icon: <PointOfSaleIcon /> },
+  { path: "/sales/after-sales", label: "Returns / Refunds / Warranty", icon: <VisibilityOutlined /> },
+];
+
 export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const { currentUser, logoutUser } = useAccount();
@@ -120,6 +126,45 @@ export default function DashboardLayout() {
                   Operations
                 </Typography>
                 {OPERATIONS_SUB_LINKS.map((sub) => (
+                  <ListItemButton
+                    key={sub.path}
+                    component={NavLink}
+                    to={sub.path}
+                    sx={{
+                      borderRadius: 2,
+                      mb: 0.5,
+                      color: "rgba(0,0,0,0.7)",
+                      "&.active": {
+                        bgcolor: "rgba(25,118,210,0.12)",
+                        color: "primary.main",
+                      },
+                      "&:hover": {
+                        bgcolor: "rgba(0,0,0,0.04)",
+                        color: "rgba(0,0,0,0.9)",
+                      },
+                    }}
+                  >
+                    <ListItemIcon sx={{ minWidth: 40, color: "inherit" }}>{sub.icon}</ListItemIcon>
+                    <ListItemText primary={sub.label} primaryTypographyProps={{ fontWeight: 600 }} />
+                  </ListItemButton>
+                ))}
+              </Fragment>
+            ) : path === "/sales" ? (
+              <Fragment key="sales">
+                <Typography
+                  sx={{
+                    fontSize: 11,
+                    letterSpacing: 4,
+                    textTransform: "uppercase",
+                    color: "text.secondary",
+                    px: 2,
+                    py: 1,
+                    mt: 1,
+                  }}
+                >
+                  Sales
+                </Typography>
+                {SALES_SUB_LINKS.map((sub) => (
                   <ListItemButton
                     key={sub.path}
                     component={NavLink}

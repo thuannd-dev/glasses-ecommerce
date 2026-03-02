@@ -70,7 +70,17 @@ export const router = createBrowserRouter([
       // ======================
       {
         element: <RequireRole allowedRoles={["Sales"]} />,
-        children: [{ path: "sales", element: <SalesDashboard /> }],
+        children: [
+          {
+            path: "sales",
+            element: <Outlet />,
+            children: [
+              { index: true, element: <SalesDashboard /> },
+              { path: "orders", element: <SalesDashboard /> },
+              { path: "after-sales", element: <SalesDashboard /> },
+            ],
+          },
+        ],
       },
       {
         element: <RequireRole allowedRoles={["Operations"]} />,
