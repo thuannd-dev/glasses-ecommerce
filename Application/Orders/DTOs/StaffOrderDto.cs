@@ -1,3 +1,5 @@
+using Application.Addresses.DTOs;
+
 namespace Application.Orders.DTOs;
 
 //Dto Response chi tiết đơn hàng cho staff (bao gồm thông tin walk-in, staff name)
@@ -16,6 +18,10 @@ public sealed class StaffOrderDto
     public string? CustomerNote { get; set; }
     public string? WalkInCustomerName { get; set; }
     public string? WalkInCustomerPhone { get; set; }
+
+    public string? CustomerName { get; set; }
+    public string? CustomerPhone { get; set; }
+    public AddressDto? ShippingAddress { get; set; }
 
     public Guid? CreatedBySalesStaff { get; set; }
     public string? SalesStaffName { get; set; }

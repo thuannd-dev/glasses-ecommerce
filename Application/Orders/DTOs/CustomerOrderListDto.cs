@@ -10,7 +10,11 @@ public sealed class CustomerOrderListDto
     public decimal TotalAmount { get; set; }
     public decimal FinalAmount { get; set; }
 
+    public string? CustomerName { get; set; }
+    public string? CustomerPhone { get; set; }
+
     public int ItemCount { get; set; }
+    public string? FirstItemImageUrl { get; set; }
 
     public DateTime CreatedAt { get; set; }
 }

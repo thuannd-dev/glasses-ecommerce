@@ -3,6 +3,7 @@ using Application.Interfaces;
 using Application.Orders.DTOs;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
+using Domain;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Persistence;
@@ -15,6 +16,7 @@ public sealed class GetStaffOrders
     {
         public int PageNumber { get; set; } = 1;
         public int PageSize { get; set; } = 10;
+        public OrderStatus? Status { get; set; }
     }
 
     internal sealed class Handler(AppDbContext context, IMapper mapper, IUserAccessor userAccessor)
@@ -28,10 +30,16 @@ public sealed class GetStaffOrders
 
             Guid staffUserId = userAccessor.GetUserId();
 
-            IQueryable<Domain.Order> query = context.Orders
+            IQueryable<Order> query = context.Orders
                 .AsNoTracking()
                 .Where(o => o.CreatedBySalesStaff == staffUserId ||
-                           (o.OrderSource == Domain.OrderSource.Online && o.OrderStatus == Domain.OrderStatus.Pending));
+                           (o.OrderSource == OrderSource.Online &&
+                            (o.OrderStatus == OrderStatus.Pending || o.OrderStatus == OrderStatus.Confirmed || o.OrderStatus == OrderStatus.Cancelled)));
+
+            if (request.Status.HasValue)
+            {
+                query = query.Where(o => o.OrderStatus == request.Status.Value);
+            }
 
             int totalCount = await query.CountAsync(ct);
 

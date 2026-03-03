@@ -43,7 +43,7 @@ public sealed class MappingProfiles : Profile
             .ForMember(d => d.QuantityAvailable, o => o.MapFrom(s =>
                 s.Stock != null ? s.Stock.QuantityAvailable : 0))
             .ForMember(d => d.Images, o => o.MapFrom(s =>
-                s.Images.OrderBy(i => i.DisplayOrder)));
+                s.Images.Where(i => !i.IsDeleted).OrderBy(i => i.DisplayOrder)));
 
         CreateMap<Product, ProductDto>()
             .ForMember(d => d.Variants, o => o.MapFrom(s =>
@@ -86,15 +86,20 @@ public sealed class MappingProfiles : Profile
             .ForMember(d => d.ProductId, o => o.MapFrom(s => s.ProductVariant != null ? s.ProductVariant.ProductId : Guid.Empty))
             .ForMember(d => d.ProductName, o => o.MapFrom(s => s.ProductVariant != null && s.ProductVariant.Product != null ? s.ProductVariant.Product.ProductName : null))
             .ForMember(d => d.ProductImageUrl, o => o.MapFrom(s =>
-                s.ProductVariant != null && s.ProductVariant.Images.OrderBy(i => i.DisplayOrder).FirstOrDefault() != null
-                    ? s.ProductVariant.Images.OrderBy(i => i.DisplayOrder).First().ImageUrl
-                    : s.ProductVariant != null && s.ProductVariant.Product != null
-                        ? s.ProductVariant.Product.Images
-                            .Where(i => !i.IsDeleted && i.ProductId != null)
+                s.ProductVariant != null
+                    ? (s.ProductVariant.Images
+                            .Where(i => !i.IsDeleted)
                             .OrderBy(i => i.DisplayOrder)
                             .Select(i => i.ImageUrl)
                             .FirstOrDefault()
-                        : null))
+                        ?? (s.ProductVariant.Product != null
+                            ? s.ProductVariant.Product.Images
+                                .Where(i => !i.IsDeleted && i.ProductId != null)
+                                .OrderBy(i => i.DisplayOrder)
+                                .Select(i => i.ImageUrl)
+                                .FirstOrDefault()
+                            : null))
+                    : null))
             .ForMember(d => d.Subtotal, o => o.MapFrom(s => s.Quantity * (s.ProductVariant != null ? s.ProductVariant.Price : 0)));
 
         // Address mappings
@@ -113,6 +118,8 @@ public sealed class MappingProfiles : Profile
             .ForMember(d => d.OrderStatus, o => o.MapFrom(s => s.OrderStatus.ToString()))
             .ForMember(d => d.FinalAmount, o => o.MapFrom(s =>
                 s.TotalAmount + s.ShippingFee - s.PromoUsageLogs.Sum(p => p.DiscountApplied)))
+            .ForMember(d => d.CustomerName, o => o.MapFrom(s => s.Address != null ? s.Address.RecipientName : s.WalkInCustomerName))
+            .ForMember(d => d.CustomerPhone, o => o.MapFrom(s => s.Address != null ? s.Address.RecipientPhone : s.WalkInCustomerPhone))
             .ForMember(d => d.SalesStaffName, o => o.MapFrom(s =>
                 s.SalesStaff != null ? s.SalesStaff.DisplayName : null))
             .ForMember(d => d.ItemCount, o => o.MapFrom(s => s.OrderItems.Count));
@@ -127,6 +134,9 @@ public sealed class MappingProfiles : Profile
                 s.PromoUsageLogs.Sum(p => p.DiscountApplied) > 0
                     ? (decimal?)s.PromoUsageLogs.Sum(p => p.DiscountApplied)
                     : null))
+            .ForMember(d => d.CustomerName, o => o.MapFrom(s => s.Address != null ? s.Address.RecipientName : s.WalkInCustomerName))
+            .ForMember(d => d.CustomerPhone, o => o.MapFrom(s => s.Address != null ? s.Address.RecipientPhone : s.WalkInCustomerPhone))
+            .ForMember(d => d.ShippingAddress, o => o.MapFrom(s => s.Address))
             .ForMember(d => d.SalesStaffName, o => o.MapFrom(s =>
                 s.SalesStaff != null ? s.SalesStaff.DisplayName : null))
             .ForMember(d => d.Items, o => o.MapFrom(s => s.OrderItems))
@@ -144,7 +154,22 @@ public sealed class MappingProfiles : Profile
             .ForMember(d => d.ProductName, o => o.MapFrom(s =>
                 s.ProductVariant != null && s.ProductVariant.Product != null
                     ? s.ProductVariant.Product.ProductName : null))
-            .ForMember(d => d.TotalPrice, o => o.MapFrom(s => s.Quantity * s.UnitPrice));
+            .ForMember(d => d.TotalPrice, o => o.MapFrom(s => s.Quantity * s.UnitPrice))
+            .ForMember(d => d.ProductImageUrl, o => o.MapFrom(s =>
+                s.ProductVariant != null
+                    ? (s.ProductVariant.Images
+                            .Where(i => !i.IsDeleted)
+                            .OrderBy(i => i.DisplayOrder)
+                            .Select(i => i.ImageUrl)
+                            .FirstOrDefault()
+                        ?? (s.ProductVariant.Product != null
+                            ? s.ProductVariant.Product.Images
+                                .Where(i => !i.IsDeleted && i.ProductId != null)
+                                .OrderBy(i => i.DisplayOrder)
+                                .Select(i => i.ImageUrl)
+                                .FirstOrDefault()
+                            : null))
+                    : null));
 
         CreateMap<Payment, OrderPaymentDto>()
             .ForMember(d => d.PaymentMethod, o => o.MapFrom(s => s.PaymentMethod.ToString()))
@@ -173,6 +198,7 @@ public sealed class MappingProfiles : Profile
                 s.PromoUsageLogs.Sum(p => p.DiscountApplied) > 0
                     ? (decimal?)s.PromoUsageLogs.Sum(p => p.DiscountApplied)
                     : null))
+            .ForMember(d => d.ShippingAddress, o => o.MapFrom(s => s.Address))
             .ForMember(d => d.Items, o => o.MapFrom(s => s.OrderItems))
             .ForMember(d => d.Payment, o => o.MapFrom(s => s.Payments.FirstOrDefault()))
             .ForMember(d => d.Prescription, o => o.MapFrom(s => s.Prescription))
@@ -185,7 +211,26 @@ public sealed class MappingProfiles : Profile
             .ForMember(d => d.OrderStatus, o => o.MapFrom(s => s.OrderStatus.ToString()))
             .ForMember(d => d.FinalAmount, o => o.MapFrom(s =>
                 s.TotalAmount + s.ShippingFee - s.PromoUsageLogs.Sum(p => p.DiscountApplied)))
-            .ForMember(d => d.ItemCount, o => o.MapFrom(s => s.OrderItems.Count));
+            .ForMember(d => d.CustomerName, o => o.MapFrom(s => s.Address != null ? s.Address.RecipientName : s.WalkInCustomerName))
+            .ForMember(d => d.CustomerPhone, o => o.MapFrom(s => s.Address != null ? s.Address.RecipientPhone : s.WalkInCustomerPhone))
+            .ForMember(d => d.ItemCount, o => o.MapFrom(s => s.OrderItems.Count))
+            .ForMember(d => d.FirstItemImageUrl, o => o.MapFrom(s =>
+                s.OrderItems.OrderBy(i => i.Id).Select(i =>
+                    i.ProductVariant != null
+                        ? (i.ProductVariant.Images
+                                .Where(img => !img.IsDeleted)
+                                .OrderBy(img => img.DisplayOrder)
+                                .Select(img => img.ImageUrl)
+                                .FirstOrDefault()
+                            ?? (i.ProductVariant.Product != null
+                                ? i.ProductVariant.Product.Images
+                                    .Where(img => !img.IsDeleted && img.ProductId != null)
+                                    .OrderBy(img => img.DisplayOrder)
+                                    .Select(img => img.ImageUrl)
+                                    .FirstOrDefault()
+                                : null))
+                        : null
+                ).FirstOrDefault()));
 
         // Inventory transaction mappings
         CreateMap<InventoryTransaction, Application.Inventory.DTOs.InventoryTransactionDto>()

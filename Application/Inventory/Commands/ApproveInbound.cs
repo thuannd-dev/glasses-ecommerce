@@ -106,6 +106,15 @@ public sealed class ApproveInbound
                     stock.UpdatedAt = DateTime.UtcNow;
                     stock.UpdatedBy = managerUserId;
 
+                    // Auto-fulfill PreOrder demand: chuyển demand sang QuantityReserved
+                    // để Operations biết có hàng trong kho cần đóng gói và ship cho đơn PreOrder.
+                    if (stock.QuantityPreOrdered > 0)
+                    {
+                        int fulfillable = Math.Min(item.Quantity, stock.QuantityPreOrdered);
+                        stock.QuantityPreOrdered -= fulfillable;
+                        stock.QuantityReserved += fulfillable;
+                    }
+
                     // Create inventory transaction for audit
                     context.InventoryTransactions.Add(new InventoryTransaction
                     {

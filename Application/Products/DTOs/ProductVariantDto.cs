@@ -15,6 +15,7 @@ public sealed class ProductVariantDto
     public required decimal Price { get; set; }
     public decimal? CompareAtPrice { get; set; }
     public bool IsActive { get; set; }
+    public bool IsPreOrder { get; set; }
     public int QuantityAvailable { get; set; }
     public ICollection<ProductImageDto> Images { get; set; } = [];
 }

@@ -230,7 +230,7 @@ public sealed class CreateStaffOrder
                 }
                 context.OrderItems.AddRange(orderItems);
 
-                // 8. Reserve stock for ReadyStock and Prescription orders
+                // 8. Reserve stock for ReadyStock and Prescription orders; track demand for PreOrder
                 if (dto.OrderType == OrderType.ReadyStock || dto.OrderType == OrderType.Prescription)
                 {
                     foreach (OrderItemInputDto item in mergedItems)
@@ -239,6 +239,29 @@ public sealed class CreateStaffOrder
                         stock.QuantityReserved += item.Quantity;
                         stock.UpdatedAt = DateTime.UtcNow;
                         stock.UpdatedBy = staffUserId;
+                    }
+                }
+                else if (dto.OrderType == OrderType.PreOrder)
+                {
+                    foreach (OrderItemInputDto item in mergedItems)
+                    {
+                        ProductVariant variant = variants.First(v => v.Id == item.ProductVariantId);
+                        if (variant.Stock == null)
+                            return Result<Guid>.Failure(
+                                $"Stock record not found for product variant '{variant.VariantName}'.", 409);
+                        if (variant.IsPreOrder && variant.Stock != null)
+                        {
+                            variant.Stock.QuantityPreOrdered += item.Quantity;
+                            variant.Stock.UpdatedAt = DateTime.UtcNow;
+                            variant.Stock.UpdatedBy = staffUserId;
+                        }
+                        else if (!variant.IsPreOrder)
+                        {
+                            Stock stock = variant.Stock!;
+                            stock.QuantityReserved += item.Quantity;
+                            stock.UpdatedAt = DateTime.UtcNow;
+                            stock.UpdatedBy = staffUserId;
+                        }
                     }
                 }
 
