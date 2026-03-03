@@ -14,6 +14,9 @@ public sealed class StaffOrderListDto
     public string? WalkInCustomerName { get; set; }
     public string? WalkInCustomerPhone { get; set; }
 
+    public string? CustomerName { get; set; }
+    public string? CustomerPhone { get; set; }
+
     public Guid? CreatedBySalesStaff { get; set; }
     public string? SalesStaffName { get; set; }
 

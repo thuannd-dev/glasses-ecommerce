@@ -113,6 +113,8 @@ public sealed class MappingProfiles : Profile
             .ForMember(d => d.OrderStatus, o => o.MapFrom(s => s.OrderStatus.ToString()))
             .ForMember(d => d.FinalAmount, o => o.MapFrom(s =>
                 s.TotalAmount + s.ShippingFee - s.PromoUsageLogs.Sum(p => p.DiscountApplied)))
+            .ForMember(d => d.CustomerName, o => o.MapFrom(s => s.Address != null ? s.Address.RecipientName : s.WalkInCustomerName))
+            .ForMember(d => d.CustomerPhone, o => o.MapFrom(s => s.Address != null ? s.Address.RecipientPhone : s.WalkInCustomerPhone))
             .ForMember(d => d.SalesStaffName, o => o.MapFrom(s =>
                 s.SalesStaff != null ? s.SalesStaff.DisplayName : null))
             .ForMember(d => d.ItemCount, o => o.MapFrom(s => s.OrderItems.Count));
@@ -127,6 +129,9 @@ public sealed class MappingProfiles : Profile
                 s.PromoUsageLogs.Sum(p => p.DiscountApplied) > 0
                     ? (decimal?)s.PromoUsageLogs.Sum(p => p.DiscountApplied)
                     : null))
+            .ForMember(d => d.CustomerName, o => o.MapFrom(s => s.Address != null ? s.Address.RecipientName : s.WalkInCustomerName))
+            .ForMember(d => d.CustomerPhone, o => o.MapFrom(s => s.Address != null ? s.Address.RecipientPhone : s.WalkInCustomerPhone))
+            .ForMember(d => d.ShippingAddress, o => o.MapFrom(s => s.Address))
             .ForMember(d => d.SalesStaffName, o => o.MapFrom(s =>
                 s.SalesStaff != null ? s.SalesStaff.DisplayName : null))
             .ForMember(d => d.Items, o => o.MapFrom(s => s.OrderItems))
@@ -173,6 +178,7 @@ public sealed class MappingProfiles : Profile
                 s.PromoUsageLogs.Sum(p => p.DiscountApplied) > 0
                     ? (decimal?)s.PromoUsageLogs.Sum(p => p.DiscountApplied)
                     : null))
+            .ForMember(d => d.ShippingAddress, o => o.MapFrom(s => s.Address))
             .ForMember(d => d.Items, o => o.MapFrom(s => s.OrderItems))
             .ForMember(d => d.Payment, o => o.MapFrom(s => s.Payments.FirstOrDefault()))
             .ForMember(d => d.Prescription, o => o.MapFrom(s => s.Prescription))
@@ -185,6 +191,8 @@ public sealed class MappingProfiles : Profile
             .ForMember(d => d.OrderStatus, o => o.MapFrom(s => s.OrderStatus.ToString()))
             .ForMember(d => d.FinalAmount, o => o.MapFrom(s =>
                 s.TotalAmount + s.ShippingFee - s.PromoUsageLogs.Sum(p => p.DiscountApplied)))
+            .ForMember(d => d.CustomerName, o => o.MapFrom(s => s.Address != null ? s.Address.RecipientName : s.WalkInCustomerName))
+            .ForMember(d => d.CustomerPhone, o => o.MapFrom(s => s.Address != null ? s.Address.RecipientPhone : s.WalkInCustomerPhone))
             .ForMember(d => d.ItemCount, o => o.MapFrom(s => s.OrderItems.Count));
 
         // Inventory transaction mappings
