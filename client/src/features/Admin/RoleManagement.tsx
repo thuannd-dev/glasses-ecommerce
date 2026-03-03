@@ -32,7 +32,6 @@ export default function RoleManagement() {
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
 
   const selectedUser = users.find((u) => u.userId === selectedUserId);
-  const currentRoles = selectedUser?.roles || [];
 
   const handleOpenDialog = (userId: string, currentUserRoles: string[]) => {
     setSelectedUserId(userId);
