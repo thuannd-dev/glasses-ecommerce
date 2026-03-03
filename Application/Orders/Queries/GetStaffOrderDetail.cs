@@ -3,6 +3,7 @@ using Application.Interfaces;
 using Application.Orders.DTOs;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
+using Domain;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Persistence;
@@ -25,7 +26,8 @@ public sealed class GetStaffOrderDetail
 
             StaffOrderDto? order = await context.Orders
                 .Where(o => o.Id == request.Id && (o.CreatedBySalesStaff == staffUserId ||
-                           (o.OrderSource == Domain.OrderSource.Online && o.OrderStatus == Domain.OrderStatus.Pending)))
+                           (o.OrderSource == OrderSource.Online &&
+                            (o.OrderStatus == OrderStatus.Pending || o.OrderStatus == OrderStatus.Confirmed || o.OrderStatus == OrderStatus.Cancelled))))
                 .ProjectTo<StaffOrderDto>(mapper.ConfigurationProvider)
                 .FirstOrDefaultAsync(ct);
 
