@@ -142,7 +142,7 @@ export function OrderCard({ orderSummary }: OrderCardProps) {
               "&:hover": { bgcolor: "#0f172a" },
             }}
           >
-            View order details
+            View detail
           </Button>
         </Box>
       </Box>

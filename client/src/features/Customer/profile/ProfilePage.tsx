@@ -1,4 +1,3 @@
-import { useQuery } from "@tanstack/react-query";
 import {
   Avatar,
   Box,
@@ -6,29 +5,13 @@ import {
   Divider,
   Typography,
 } from "@mui/material";
-import agent from "../../../lib/api/agent";
 import { useAccount } from "../../../lib/hooks/useAccount";
-import type { Profile } from "../../../lib/types/user";
+import { useProfile } from "../../../lib/hooks/useProfile";
 
 export default function ProfilePage() {
   const { currentUser } = useAccount();
 
-  const {
-    data: profile,
-    isLoading,
-    isError,
-    error,
-  } = useQuery({
-    queryKey: ["profile", currentUser?.id],
-    enabled: !!currentUser?.id,
-    queryFn: async () => {
-      const response = await agent.get<Profile>(
-        `/profiles/${currentUser!.id}`,
-      );
-      console.log("PROFILE from backend:", response.data);
-      return response.data;
-    },
-  });
+  const { data: profile, isLoading, isError, error } = useProfile(currentUser?.id);
 
   if (!currentUser?.id) {
     return (

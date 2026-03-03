@@ -1,7 +1,10 @@
+import { useState } from "react";
 import { Box, Typography } from "@mui/material";
 import { useProductDetail } from "../../lib/hooks/useProducts";
 import { formatMoney } from "../../lib/utils/format";
+import { PrescriptionDisplay } from "../../app/shared/components/PrescriptionDisplay";
 import { getOrderItemImage } from "./orderImageCache";
+import { getOrderPrescription } from "./orderPrescriptionCache";
 
 function getItemPrice(item: {
   totalPrice?: number;
@@ -37,10 +40,12 @@ export interface OrderItemRowProps {
   compact?: boolean;
   /** Order id for cache lookup (ảnh từ cart khi place order) */
   orderId?: string;
+  /** When true (Order Detail page), show full prescription details instead of label only. */
+  showPrescriptionDetails?: boolean;
 }
 
 /** Renders one order item with thumbnail (item / cache / GET /products/:id), name, price */
-export function OrderItemRow({ item, compact, orderId }: OrderItemRowProps) {
+export function OrderItemRow({ item, compact, orderId, showPrescriptionDetails }: OrderItemRowProps) {
   const imageFromItem =
     (item as { imageUrl?: string }).imageUrl ??
     (item as { productImageUrl?: string }).productImageUrl;
@@ -60,7 +65,11 @@ export function OrderItemRow({ item, compact, orderId }: OrderItemRowProps) {
   const qty = item.quantity ?? 1;
   const price = getItemPrice(item as Parameters<typeof getItemPrice>[0]);
 
+  const prescription =
+    orderId && productVariantId ? getOrderPrescription(orderId, productVariantId) : undefined;
+
   const thumbSize = compact ? 40 : 56;
+  const [isPrescriptionOpen, setIsPrescriptionOpen] = useState(false);
 
   return (
     <Box
@@ -117,6 +126,39 @@ export function OrderItemRow({ item, compact, orderId }: OrderItemRowProps) {
         <Typography fontSize={13} color="text.secondary">
           {variantName ? `${variantName} · Qty ${qty}` : `Qty ${qty}`}
         </Typography>
+        {prescription &&
+          (showPrescriptionDetails ? (
+            <Box sx={{ mt: 0.25 }}>
+              <Typography
+                fontSize={12}
+                fontWeight={700}
+                color="primary"
+                sx={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 0.5,
+                  cursor: "pointer",
+                }}
+                onClick={() => setIsPrescriptionOpen((v) => !v)}
+              >
+                Prescription details {isPrescriptionOpen ? "▲" : "▼"}
+              </Typography>
+              {isPrescriptionOpen && (
+                <Box sx={{ mt: 0.5 }}>
+                  <PrescriptionDisplay prescription={prescription} variant="inline" />
+                </Box>
+              )}
+            </Box>
+          ) : (
+            <Typography
+              fontSize={12}
+              fontWeight={700}
+              color="primary"
+              sx={{ mt: 0.25 }}
+            >
+              Prescription
+            </Typography>
+          ))}
       </Box>
 
       <Typography fontSize={compact ? 14 : 15} fontWeight={700} sx={{ flexShrink: 0 }}>

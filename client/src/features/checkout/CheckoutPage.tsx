@@ -24,6 +24,7 @@ export default function CheckoutPage() {
         items,
         totalAmount,
         isEmptyCart,
+        itemPrescriptions,
         cartLoading,
         address,
         setAddress,
@@ -359,6 +360,16 @@ export default function CheckoutPage() {
                                                     <Typography fontSize={14}>
                                                         {item.productName} × {item.quantity}
                                                     </Typography>
+                                                    {itemPrescriptions[item.id] && (
+                                                        <Typography
+                                                            fontSize={12}
+                                                            fontWeight={700}
+                                                            color="primary"
+                                                            sx={{ mt: 0.25 }}
+                                                        >
+                                                            Prescription
+                                                        </Typography>
+                                                    )}
                                                 </Box>
                                                 <Typography fontWeight={700}>
                                                     {formatMoney(item.subtotal)}

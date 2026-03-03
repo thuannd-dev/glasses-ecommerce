@@ -35,8 +35,8 @@ export function OperationsProvider({ children }: { children: React.ReactNode }) 
   const [createShipTracking, setCreateShipTracking] = useState("");
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
 
-  const { data: orders = [], isLoading: ordersLoading } = useOperationsOrders();
-  const { data: shipments = [], isLoading: shipmentsLoading } = useOperationsShipments();
+  const { data: ordersData, isLoading: ordersLoading } = useOperationsOrders();
+  const { data: shipmentsData, isLoading: shipmentsLoading } = useOperationsShipments();
   const updateStatus = useUpdateOrderStatus();
   const createShipment = useCreateShipment();
   const updateTracking = useUpdateTracking();
@@ -56,10 +56,22 @@ export function OperationsProvider({ children }: { children: React.ReactNode }) 
     );
   }, [createShipOrderId, createShipCarrier, createShipTracking, createShipment]);
 
+  const safeOrders: OrderDto[] = Array.isArray(ordersData)
+    ? ordersData
+    : Array.isArray((ordersData as any)?.items)
+    ? ((ordersData as any).items as OrderDto[])
+    : [];
+
+  const safeShipments: ShipmentDto[] = Array.isArray(shipmentsData)
+    ? shipmentsData
+    : Array.isArray((shipmentsData as any)?.items)
+    ? ((shipmentsData as any).items as ShipmentDto[])
+    : [];
+
   const value: OperationsContextValue = {
-    orders: orders ?? [],
+    orders: safeOrders,
     ordersLoading,
-    shipments: shipments ?? [],
+    shipments: safeShipments,
     shipmentsLoading,
     updateStatus,
     updateTracking,
@@ -69,7 +81,7 @@ export function OperationsProvider({ children }: { children: React.ReactNode }) 
   };
 
   const selectedOrder = createShipOrderId
-    ? (orders ?? []).find((o) => o.id === createShipOrderId) ?? null
+    ? safeOrders.find((o) => o.id === createShipOrderId) ?? null
     : null;
 
   return (

@@ -81,4 +81,31 @@ export interface UpdateOrderStatusPayload {
   orderId: string;
   status: OrderStatus;
   receivedQuantity?: Record<string, number>;
+  // Optional shipment info (used when transitioning to shipped status)
+  shipmentCarrierName?: string;
+  shipmentTrackingCode?: string | null;
+  shipmentTrackingUrl?: string | null;
+  shipmentEstimatedDeliveryAt?: string | null;
+  shipmentNotes?: string | null;
+}
+
+// -------- Operations orders list (paginated) --------
+
+/** Query params for Operations orders listing endpoint `/api/operations/orders` */
+export interface OperationsOrdersQueryParams {
+  pageNumber?: number;
+  pageSize?: number;
+  status?: string;
+  orderType?: OrderType;
+}
+
+/** Standard paginated response for Operations orders listing */
+export interface OperationsOrdersResponse {
+  items: OrderDto[];
+  totalCount: number;
+  pageNumber: number;
+  pageSize: number;
+  totalPages: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
 }

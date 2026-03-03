@@ -34,6 +34,7 @@ export default function ProductDetailPage() {
         setActiveImg,
         handleAddToCart,
         handleVariantSelect,
+        isEyeglasses,
     } = useProductDetailPage();
 
     if (isLoading) {
@@ -311,20 +312,43 @@ export default function ProductDetailPage() {
 
                     {/* Actions */}
                     <Box sx={{ display: "flex", gap: 1.2, mt: 1 }}>
-                        <Button
-                            variant="contained"
-                            onClick={handleAddToCart}
-                            sx={{
-                                bgcolor: "#111827",
-                                borderRadius: 2,
-                                height: 46,
-                                px: 3,
-                                fontWeight: 900,
-                                "&:hover": { bgcolor: "#0b1220" },
-                            }}
-                        >
-                            Add to cart
-                        </Button>
+        {isEyeglasses ? (
+                            <>
+                                <Button
+                                    variant="contained"
+                                    onClick={() =>
+                                        nav(`/product/${product.id}/lenses`, {
+                                            state: { variantId: currentVariant?.id ?? null },
+                                        })
+                                    }
+                                    sx={{
+                                        bgcolor: "#111827",
+                                        borderRadius: 2,
+                                        height: 46,
+                                        px: 3,
+                                        fontWeight: 900,
+                                        "&:hover": { bgcolor: "#0b1220" },
+                                    }}
+                                >
+                                    Select lenses
+                                </Button>
+                            </>
+                        ) : (
+                            <Button
+                                variant="contained"
+                                onClick={handleAddToCart}
+                                sx={{
+                                    bgcolor: "#111827",
+                                    borderRadius: 2,
+                                    height: 46,
+                                    px: 3,
+                                    fontWeight: 900,
+                                    "&:hover": { bgcolor: "#0b1220" },
+                                }}
+                            >
+                                Add to cart
+                            </Button>
+                        )}
 
                         <Button
                             variant="outlined"

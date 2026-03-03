@@ -17,6 +17,103 @@ import { NavLink, useNavigate } from "react-router-dom";
 
 import { useCart } from "../../lib/hooks/useCart";
 import { formatMoney } from "../../lib/utils/format";
+import { getCartItemPrescriptions } from "./prescriptionCache";
+import { PrescriptionDisplay } from "../../app/shared/components/PrescriptionDisplay";
+import type { CartItemDto } from "../../lib/types/cart";
+import type { PrescriptionData } from "../../lib/types/prescription";
+
+function CartItemRow({
+    item,
+    selected,
+    prescription,
+    onToggle,
+    onIncrease,
+    onDecrease,
+    formatMoney: fmt,
+}: {
+    item: CartItemDto;
+    selected: boolean;
+    prescription?: PrescriptionData;
+    onToggle: () => void;
+    onIncrease: () => void;
+    onDecrease: () => void;
+    formatMoney: (n: number) => string;
+}) {
+    return (
+        <Box
+            sx={{
+                display: "flex",
+                gap: 2,
+                alignItems: "flex-start",
+                py: 2,
+            }}
+        >
+            <Checkbox checked={selected} onChange={onToggle} />
+            <Box
+                component="img"
+                src={item.productImageUrl ?? ""}
+                sx={{
+                    width: 120,
+                    height: 90,
+                    objectFit: "cover",
+                    bgcolor: "#f3f4f6",
+                    borderRadius: 2,
+                }}
+            />
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography fontWeight={800}>{item.productName}</Typography>
+                {prescription && (
+                    <Typography
+                        component="span"
+                        fontSize={12}
+                        fontWeight={700}
+                        color="primary"
+                        sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, mt: 0.5 }}
+                    >
+                        Prescription
+                    </Typography>
+                )}
+                <Typography fontSize={14} fontWeight={700} mt={0.5}>
+                    {fmt(item.price)}
+                </Typography>
+                {prescription && (
+                    <PrescriptionDisplay prescription={prescription} variant="inline" />
+                )}
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 1 }}>
+                    <IconButton
+                        size="small"
+                        onClick={onDecrease}
+                        sx={{
+                            border: "1px solid rgba(17,24,39,0.15)",
+                            width: 28,
+                            height: 28,
+                        }}
+                    >
+                        <RemoveIcon fontSize="small" />
+                    </IconButton>
+                    <Typography
+                        fontSize={14}
+                        fontWeight={700}
+                        sx={{ minWidth: 24, textAlign: "center" }}
+                    >
+                        {item.quantity}
+                    </Typography>
+                    <IconButton
+                        size="small"
+                        onClick={onIncrease}
+                        sx={{
+                            border: "1px solid rgba(17,24,39,0.15)",
+                            width: 28,
+                            height: 28,
+                        }}
+                    >
+                        <AddIcon fontSize="small" />
+                    </IconButton>
+                </Box>
+            </Box>
+        </Box>
+    );
+}
 
 export default function CartPage() {
     const navigate = useNavigate();
@@ -24,6 +121,24 @@ export default function CartPage() {
 
     const items = cart?.items ?? [];
     const itemIds = useMemo(() => items.map((i) => i.id), [items]);
+
+    /** Split items: ones with prescription (from prescriptionCache) are prescription orders, others are standard orders. */
+    const itemPrescriptions = useMemo(
+        () => getCartItemPrescriptions(items),
+        [items],
+    );
+    const prescriptionItemIds = useMemo(
+        () => new Set(Object.keys(itemPrescriptions)),
+        [itemPrescriptions],
+    );
+    const normalItems = useMemo(
+        () => items.filter((i) => !prescriptionItemIds.has(i.id)),
+        [items, prescriptionItemIds],
+    );
+    const prescriptionItems = useMemo(
+        () => items.filter((i) => prescriptionItemIds.has(i.id)),
+        [items, prescriptionItemIds],
+    );
 
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set(itemIds));
     useEffect(() => {
@@ -44,10 +159,43 @@ export default function CartPage() {
     const totalQuantity = selectedItems.reduce((s, i) => s + i.quantity, 0);
     const totalAmount = selectedItems.reduce((s, i) => s + (i.subtotal ?? i.price * i.quantity), 0);
 
-    const allSelected = items.length > 0 && selectedIds.size >= items.length;
-    const handleSelectAll = () => {
-        if (allSelected) setSelectedIds(new Set());
-        else setSelectedIds(new Set(itemIds));
+    const allNormalSelected =
+        normalItems.length > 0 &&
+        normalItems.every((i) => selectedIds.has(i.id));
+    const handleSelectAllNormal = () => {
+        const normalIds = normalItems.map((i) => i.id);
+        if (allNormalSelected) {
+            setSelectedIds((prev) => {
+                const next = new Set(prev);
+                normalIds.forEach((id) => next.delete(id));
+                return next;
+            });
+        } else {
+            setSelectedIds((prev) => {
+                const next = new Set(prev);
+                normalIds.forEach((id) => next.add(id));
+                return next;
+            });
+        }
+    };
+    const allPrescriptionSelected =
+        prescriptionItems.length > 0 &&
+        prescriptionItems.every((i) => selectedIds.has(i.id));
+    const handleSelectAllPrescription = () => {
+        const prescriptionIds = prescriptionItems.map((i) => i.id);
+        if (allPrescriptionSelected) {
+            setSelectedIds((prev) => {
+                const next = new Set(prev);
+                prescriptionIds.forEach((id) => next.delete(id));
+                return next;
+            });
+        } else {
+            setSelectedIds((prev) => {
+                const next = new Set(prev);
+                prescriptionIds.forEach((id) => next.add(id));
+                return next;
+            });
+        }
     };
     const handleToggleItem = (id: string) => {
         setSelectedIds((prev) => {
@@ -153,7 +301,7 @@ export default function CartPage() {
             ) : (
                 /* ===== CART CONTENT ===== */
                 <Grid container spacing={4}>
-                    {/* ===== LEFT: CART ITEMS ===== */}
+                    {/* ===== LEFT: CART ITEMS (split standard & prescription) ===== */}
                     <Grid item xs={12} md={8}>
                         <Paper
                             elevation={0}
@@ -163,112 +311,113 @@ export default function CartPage() {
                                 p: 3,
                             }}
                         >
-                            <Box sx={{ pb: 2, borderBottom: "1px solid rgba(17,24,39,0.08)" }}>
-                                <FormControlLabel
-                                    control={
-                                        <Checkbox
-                                            checked={allSelected}
-                                            indeterminate={selectedIds.size > 0 && selectedIds.size < items.length}
-                                            onChange={handleSelectAll}
-                                        />
-                                    }
-                                    label="Select all"
-                                    sx={{ fontWeight: 600 }}
-                                />
-                            </Box>
-                            {items.map((item) => (
-                                <Box
-                                    key={item.id}
-                                    sx={{
-                                        display: "flex",
-                                        gap: 2,
-                                        alignItems: "center",
-                                        py: 2,
-                                    }}
-                                >
-                                    <Checkbox
-                                        checked={selectedIds.has(item.id)}
-                                        onChange={() => handleToggleItem(item.id)}
-                                    />
+                            {/* --- Standard orders --- */}
+                            {normalItems.length > 0 && (
+                                <>
                                     <Box
-                                        component="img"
-                                        src={item.productImageUrl ?? ""}
                                         sx={{
-                                            width: 120,
-                                            height: 90,
-                                            objectFit: "cover",
-                                            bgcolor: "#f3f4f6",
-                                            borderRadius: 2,
+                                            pb: 2,
+                                            borderBottom: "1px solid rgba(17,24,39,0.08)",
                                         }}
-                                    />
-
-                                    <Box sx={{ flex: 1 }}>
-                                        <Typography fontWeight={800}>
-                                            {item.productName}
-                                        </Typography>
-
+                                    >
                                         <Typography
-                                            fontSize={14}
-                                            fontWeight={700}
-                                            mt={0.5}
+                                            fontWeight={800}
+                                            fontSize={16}
+                                            color="text.secondary"
+                                            sx={{ mb: 1 }}
                                         >
-                                            {formatMoney(item.price)}
+                                            Standard orders
                                         </Typography>
-
-                                        {/* Quantity controls dưới giá */}
-                                        <Box
-                                            sx={{
-                                                display: "flex",
-                                                alignItems: "center",
-                                                gap: 1,
-                                                mt: 1,
-                                            }}
-                                        >
-                                            <IconButton
-                                                size="small"
-                                                onClick={() =>
-                                                    handleDecrease(
-                                                        item.id,
-                                                        item.quantity,
-                                                    )
-                                                }
-                                                sx={{
-                                                    border: "1px solid rgba(17,24,39,0.15)",
-                                                    width: 28,
-                                                    height: 28,
-                                                }}
-                                            >
-                                                <RemoveIcon fontSize="small" />
-                                            </IconButton>
-
-                                            <Typography
-                                                fontSize={14}
-                                                fontWeight={700}
-                                                sx={{ minWidth: 24, textAlign: "center" }}
-                                            >
-                                                {item.quantity}
-                                            </Typography>
-
-                                            <IconButton
-                                                size="small"
-                                                onClick={() =>
-                                                    handleIncrease(
-                                                        item.id,
-                                                        item.quantity,
-                                                    )
-                                                }
-                                                sx={{
-                                                    border: "1px solid rgba(17,24,39,0.15)",
-                                                    width: 28,
-                                                    height: 28,
-                                                }}
-                                            >
-                                                <AddIcon fontSize="small" />
-                                            </IconButton>
-                                        </Box>
+                                        <FormControlLabel
+                                            control={
+                                                <Checkbox
+                                                    checked={allNormalSelected}
+                                                    indeterminate={
+                                                        normalItems.some((i) =>
+                                                            selectedIds.has(i.id),
+                                                        ) &&
+                                                        !allNormalSelected
+                                                    }
+                                                    onChange={handleSelectAllNormal}
+                                                />
+                                            }
+                                            label="Select all standard orders"
+                                            sx={{ fontWeight: 600 }}
+                                        />
                                     </Box>
-                                </Box>
-                            ))}
+                                    {normalItems.map((item) => (
+                                        <CartItemRow
+                                            key={item.id}
+                                            item={item}
+                                            selected={selectedIds.has(item.id)}
+                                            onToggle={() => handleToggleItem(item.id)}
+                                            onIncrease={() =>
+                                                handleIncrease(item.id, item.quantity)
+                                            }
+                                            onDecrease={() =>
+                                                handleDecrease(item.id, item.quantity)
+                                            }
+                                            formatMoney={formatMoney}
+                                        />
+                                    ))}
+                                    {prescriptionItems.length > 0 && (
+                                        <Divider sx={{ my: 3 }} />
+                                    )}
+                                </>
+                            )}
+
+                            {/* --- Prescription orders --- */}
+                            {prescriptionItems.length > 0 && (
+                                <>
+                                    <Box
+                                        sx={{
+                                            pb: 2,
+                                            borderBottom: "1px solid rgba(17,24,39,0.08)",
+                                        }}
+                                    >
+                                        <Typography
+                                            fontWeight={800}
+                                            fontSize={16}
+                                            color="text.secondary"
+                                            sx={{ mb: 1 }}
+                                        >
+                                            Prescription orders
+                                        </Typography>
+                                        <FormControlLabel
+                                            control={
+                                                <Checkbox
+                                                    checked={allPrescriptionSelected}
+                                                    indeterminate={
+                                                        prescriptionItems.some((i) =>
+                                                            selectedIds.has(i.id),
+                                                        ) &&
+                                                        !allPrescriptionSelected
+                                                    }
+                                                    onChange={handleSelectAllPrescription}
+                                                />
+                                            }
+                                            label="Select all prescription orders"
+                                            sx={{ fontWeight: 600 }}
+                                        />
+                                    </Box>
+                                    {prescriptionItems.map((item) => (
+                                        <CartItemRow
+                                            key={item.id}
+                                            item={item}
+                                            selected={selectedIds.has(item.id)}
+                                            prescription={itemPrescriptions[item.id]}
+                                            onToggle={() => handleToggleItem(item.id)}
+                                            onIncrease={() =>
+                                                handleIncrease(item.id, item.quantity)
+                                            }
+                                            onDecrease={() =>
+                                                handleDecrease(item.id, item.quantity)
+                                            }
+                                            formatMoney={formatMoney}
+                                        />
+                                    ))}
+                                </>
+                            )}
                         </Paper>
                     </Grid>
 
