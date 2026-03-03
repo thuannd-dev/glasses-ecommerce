@@ -6,6 +6,9 @@ import { useCreateAddress } from "../../../lib/hooks/useAddresses";
 import { useCreateOrder } from "../../../lib/hooks/useOrders";
 import { setOrderItemImages } from "../../orders/orderImageCache";
 import { setOrderShippingAddress } from "../../orders/orderShippingAddressCache";
+import { setOrderPrescriptions } from "../../orders/orderPrescriptionCache";
+import { getCartItemPrescriptions } from "../../cart/prescriptionCache";
+import type { PrescriptionData } from "../../../lib/types/prescription";
 import type { CheckoutShippingForm, CheckoutSnackbarState, PaymentMethodUI } from "../types";
 import { toApiPaymentMethod, isValidVietnamPhone } from "../utils";
 
@@ -154,6 +157,15 @@ export function useCheckoutPage() {
       });
       setOrderItemImages(orderForState.id, variantToImage);
       setOrderShippingAddress(orderForState.id, shippingAddr);
+      const prescriptionsByCartItem = getCartItemPrescriptions(
+        items.map((i) => ({ id: i.id, productVariantId: i.productVariantId }))
+      );
+      const prescriptionsByVariant: Record<string, PrescriptionData> = {};
+      items.forEach((cartItem) => {
+        const prescription = prescriptionsByCartItem[cartItem.id];
+        if (prescription) prescriptionsByVariant[cartItem.productVariantId] = prescription;
+      });
+      setOrderPrescriptions(orderForState.id, prescriptionsByVariant);
       const orderItemsWithImage = orderForState.items.map((oItem) => ({
         ...oItem,
         imageUrl: variantToImage[oItem.productVariantId] ?? undefined,
@@ -173,10 +185,19 @@ export function useCheckoutPage() {
     }
   };
 
+  const itemPrescriptions = useMemo(
+    () =>
+      getCartItemPrescriptions(
+        items.map((i) => ({ id: i.id, productVariantId: i.productVariantId }))
+      ),
+    [items],
+  );
+
   return {
     items,
     totalAmount,
     isEmptyCart,
+    itemPrescriptions,
     cartLoading,
     address,
     setAddress,

@@ -10,6 +10,8 @@ import {
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import { NavLink } from "react-router-dom";
 import { formatMoney } from "../../lib/utils/format";
+import { getOrderPrescription } from "../orders/orderPrescriptionCache";
+import { PrescriptionDisplay } from "../../app/shared/components/PrescriptionDisplay";
 import { useOrderSuccessPage } from "./hooks/useOrderSuccessPage";
 
 const OrderNotFoundBlock = () => (
@@ -223,6 +225,12 @@ export default function OrderSuccessPage() {
                     {item.productName}
                     {item.variantName ? ` (${item.variantName})` : ""} × {item.quantity}
                   </Typography>
+                  {(() => {
+                    const prescription = getOrderPrescription(order.id, item.productVariantId);
+                    return prescription ? (
+                      <PrescriptionDisplay prescription={prescription} variant="inline" />
+                    ) : null;
+                  })()}
                 </Box>
                 <Typography fontWeight={700}>{formatMoney(item.totalPrice)}</Typography>
               </Box>

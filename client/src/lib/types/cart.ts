@@ -25,11 +25,14 @@ export type CartDto = {
   totalAmount: number;
 };
 
+/** Optional prescription; when present, backend should create a NEW cart line (do not merge with same variant). */
 export type AddCartItemPayload = {
   /** Product variant ID to add to cart */
   productVariantId: string;
   /** Quantity to add */
   quantity: number;
+  /** When set, server should create a separate line so "same variant + prescription" and "same variant + no prescription" are different lines. */
+  prescription?: import("./prescription").PrescriptionData | null;
 };
 
 export type UpdateCartItemPayload = {

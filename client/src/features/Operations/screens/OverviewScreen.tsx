@@ -34,17 +34,20 @@ const STATUS_COLORS: Record<OrderStatus, { bg: string; color: string }> = {
 export function OverviewScreen() {
   const { orders, ordersLoading, shipments, shipmentsLoading } = useOperations();
 
-  const pendingCount = orders.filter(
+  const safeOrders = Array.isArray(orders) ? orders : [];
+  const safeShipments = Array.isArray(shipments) ? shipments : [];
+
+  const pendingCount = safeOrders.filter(
     (o) => o.status === "pending" || o.status === "processing" || o.status === "ready_to_ship"
   ).length;
-  const shippedCount = orders.filter(
+  const shippedCount = safeOrders.filter(
     (o) => o.status === "shipped" || o.status === "delivered"
   ).length;
-  const inTransitCount = shipments.filter(
+  const inTransitCount = safeShipments.filter(
     (s) => s.status === "in_transit" || s.status === "picked"
   ).length;
-  const preOrderCount = orders.filter((o) => o.orderType === "pre-order").length;
-  const prescriptionCount = orders.filter((o) => o.orderType === "prescription").length;
+  const preOrderCount = safeOrders.filter((o) => o.orderType === "pre-order").length;
+  const prescriptionCount = safeOrders.filter((o) => o.orderType === "prescription").length;
 
   return (
     <>
@@ -95,7 +98,7 @@ export function OverviewScreen() {
           <Box sx={{ px: 3, py: 2 }}>
             <LinearProgress sx={{ borderRadius: 1 }} />
           </Box>
-        ) : orders.length === 0 ? (
+        ) : safeOrders.length === 0 ? (
           <Box sx={{ px: 3, py: 4 }}>
             <Typography color="text.secondary">No orders yet.</Typography>
           </Box>
@@ -198,7 +201,7 @@ export function OverviewScreen() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {orders.map((order) => (
+                {safeOrders.map((order) => (
                   <TableRow
                     key={order.id}
                     hover

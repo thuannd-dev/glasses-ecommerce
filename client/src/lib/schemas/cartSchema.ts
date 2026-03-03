@@ -10,6 +10,8 @@ export const addCartItemSchema = z.object({
     .number({ message: "Quantity must be a number" })
     .int("Quantity must be an integer")
     .min(1, { message: "Quantity must be greater than 0" }),
+  /** When present, backend should create a new line (do not merge with same variant). */
+  prescription: z.unknown().optional(),
 });
 
 /** Payload cập nhật số lượng item – validate trước khi gọi PUT /api/carts/items/{id} */

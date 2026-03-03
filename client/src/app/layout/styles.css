@@ -6,5 +6,11 @@ html, body {
   margin: 0;
   height: 100%;
   overflow-x: hidden;
-  overflow-y: auto;   /* ✅ cho scroll */
+  overflow-y: auto; /* vẫn cho scroll */
+  scrollbar-width: none;              /* Firefox */
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none;                      /* Chrome, Edge, Safari */
 }
