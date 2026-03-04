@@ -50,6 +50,11 @@ export default function RoleManagement() {
   };
 
   const handleSaveRoles = () => {
+    if (!selectedUserId) {
+      toast.error("No user selected");
+      return;
+    }
+
     if (selectedRoles.length === 0) {
       toast.error("At least one role must be selected");
       return;
@@ -57,7 +62,7 @@ export default function RoleManagement() {
 
     assignRoles(
       {
-        userId: selectedUserId!,
+        userId: selectedUserId,
         roles: selectedRoles,
       },
       {
