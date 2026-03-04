@@ -26,6 +26,8 @@ import VisibilityOutlined from "@mui/icons-material/VisibilityOutlined";
 import SecurityIcon from "@mui/icons-material/Security";
 import ExpandLess from "@mui/icons-material/ExpandLess";
 import ExpandMore from "@mui/icons-material/ExpandMore";
+import AssignmentReturnIcon from "@mui/icons-material/AssignmentReturn";
+import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
 import { useAccount } from "../../lib/hooks/useAccount";
 
 const SIDEBAR_WIDTH = 260;
@@ -40,6 +42,8 @@ const DASHBOARD_LINKS: { path: string; label: string; role: string; icon: React.
 const SALES_SUB_LINKS: { path: string; label: string; icon: React.ReactNode }[] = [
   { path: "/sales", label: "Overview", icon: <PointOfSaleIcon /> },
   { path: "/sales/orders", label: "Orders", icon: <Inventory2Outlined /> },
+  { path: "/sales/return-refund", label: "Return / Refund", icon: <AssignmentReturnIcon /> },
+  { path: "/sales/warranty", label: "Warranty", icon: <VerifiedUserIcon /> },
 ];
 
 const OPERATIONS_SUB_LINKS: { path: string; label: string; icon: React.ReactNode }[] = [
@@ -58,6 +62,8 @@ const ADMIN_SUB_LINKS: { path: string; label: string; icon: React.ReactNode }[] 
 export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [salesOrdersOpen, setSalesOrdersOpen] = useState(true);
+  const [returnRefundOpen, setReturnRefundOpen] = useState(true);
+  const [warrantyOpen, setWarrantyOpen] = useState(true);
   const [operationsOpen, setOperationsOpen] = useState(true);
   const { currentUser, logoutUser } = useAccount();
   const roles = Array.isArray(currentUser?.roles) ? currentUser.roles : [];
@@ -121,7 +127,30 @@ export default function DashboardLayout() {
             }),
         }}
       >
-        <List sx={{ pt: 2, px: 1 }}>
+        <List
+          sx={{
+            pt: 2,
+            px: 1,
+            flex: 1,
+            overflowY: "auto",
+            overflowX: "hidden",
+            scrollbarWidth: "thin",
+            scrollbarColor: "rgba(0,0,0,0.2) transparent",
+            "&::-webkit-scrollbar": {
+              width: "6px",
+            },
+            "&::-webkit-scrollbar-track": {
+              background: "transparent",
+            },
+            "&::-webkit-scrollbar-thumb": {
+              background: "rgba(0,0,0,0.2)",
+              borderRadius: "3px",
+              "&:hover": {
+                background: "rgba(0,0,0,0.3)",
+              },
+            },
+          }}
+        >
           {visibleLinks.map(({ path, label, icon }) => {
             if (path === "/sales") {
               return (
@@ -255,6 +284,262 @@ export default function DashboardLayout() {
                                       sx={{
                                         ...baseStyles,
                                         ...(isOrdersRoute && currentStatus === "Cancelled" ? activeStyles : {}),
+                                      }}
+                                    >
+                                      <ListItemText
+                                        primary="Rejected"
+                                        primaryTypographyProps={{ fontWeight: 500 }}
+                                      />
+                                    </ListItemButton>
+                                  </>
+                                );
+                              })()}
+                            </List>
+                          </Collapse>
+                        </Fragment>
+                      );
+                    }
+
+                    // Return/Refund parent + dropdown children
+                    if (sub.path === "/sales/return-refund") {
+                      return (
+                        <Fragment key="sales-return-refund-group">
+                          <ListItemButton
+                            onClick={() => setReturnRefundOpen((open) => !open)}
+                            sx={{
+                              borderRadius: 2,
+                              mb: 0.25,
+                              color: "rgba(0,0,0,0.7)",
+                              "&:hover": {
+                                bgcolor: "rgba(0,0,0,0.04)",
+                                color: "rgba(0,0,0,0.9)",
+                              },
+                            }}
+                          >
+                            <ListItemIcon sx={{ minWidth: 40, color: "inherit" }}>
+                              <AssignmentReturnIcon />
+                            </ListItemIcon>
+                            <ListItemText
+                              primary="Return / Refund"
+                              primaryTypographyProps={{ fontWeight: 600 }}
+                            />
+                            {returnRefundOpen ? <ExpandLess /> : <ExpandMore />}
+                          </ListItemButton>
+
+                          <Collapse in={returnRefundOpen} timeout="auto" unmountOnExit>
+                            <List component="div" disablePadding sx={{ pl: 4 }}>
+                              {(() => {
+                                const searchParams = new URLSearchParams(location.search);
+                                const currentStatus =
+                                  location.pathname.startsWith("/sales/return-refund")
+                                    ? searchParams.get("status") ?? "Pending"
+                                    : null;
+
+                                const baseStyles = {
+                                  borderRadius: 2,
+                                  mb: 0.25,
+                                  color: "rgba(0,0,0,0.7)",
+                                  "&:hover": {
+                                    bgcolor: "rgba(0,0,0,0.04)",
+                                    color: "rgba(0,0,0,0.9)",
+                                  },
+                                } as const;
+
+                                const activeStyles = {
+                                  bgcolor: "rgba(25,118,210,0.12)",
+                                  color: "primary.main",
+                                } as const;
+
+                                const isReturnRefundRoute = location.pathname.startsWith(
+                                  "/sales/return-refund"
+                                );
+
+                                return (
+                                  <>
+                                    <ListItemButton
+                                      component={NavLink}
+                                      to="/sales/return-refund?status=Pending"
+                                      sx={{
+                                        ...baseStyles,
+                                        ...(isReturnRefundRoute && currentStatus === "Pending"
+                                          ? activeStyles
+                                          : {}),
+                                      }}
+                                    >
+                                      <ListItemText
+                                        primary="Pending"
+                                        primaryTypographyProps={{ fontWeight: 500 }}
+                                      />
+                                    </ListItemButton>
+
+                                    <ListItemButton
+                                      component={NavLink}
+                                      to="/sales/return-refund?status=InProgress"
+                                      sx={{
+                                        ...baseStyles,
+                                        ...(isReturnRefundRoute && currentStatus === "InProgress"
+                                          ? activeStyles
+                                          : {}),
+                                      }}
+                                    >
+                                      <ListItemText
+                                        primary="In Progress"
+                                        primaryTypographyProps={{ fontWeight: 500 }}
+                                      />
+                                    </ListItemButton>
+
+                                    <ListItemButton
+                                      component={NavLink}
+                                      to="/sales/return-refund?status=Resolved"
+                                      sx={{
+                                        ...baseStyles,
+                                        ...(isReturnRefundRoute && currentStatus === "Resolved"
+                                          ? activeStyles
+                                          : {}),
+                                      }}
+                                    >
+                                      <ListItemText
+                                        primary="Resolved"
+                                        primaryTypographyProps={{ fontWeight: 500 }}
+                                      />
+                                    </ListItemButton>
+
+                                    <ListItemButton
+                                      component={NavLink}
+                                      to="/sales/return-refund?status=Rejected"
+                                      sx={{
+                                        ...baseStyles,
+                                        ...(isReturnRefundRoute && currentStatus === "Rejected"
+                                          ? activeStyles
+                                          : {}),
+                                      }}
+                                    >
+                                      <ListItemText
+                                        primary="Rejected"
+                                        primaryTypographyProps={{ fontWeight: 500 }}
+                                      />
+                                    </ListItemButton>
+                                  </>
+                                );
+                              })()}
+                            </List>
+                          </Collapse>
+                        </Fragment>
+                      );
+                    }
+
+                    // Warranty parent + dropdown children
+                    if (sub.path === "/sales/warranty") {
+                      return (
+                        <Fragment key="sales-warranty-group">
+                          <ListItemButton
+                            onClick={() => setWarrantyOpen((open) => !open)}
+                            sx={{
+                              borderRadius: 2,
+                              mb: 0.25,
+                              color: "rgba(0,0,0,0.7)",
+                              "&:hover": {
+                                bgcolor: "rgba(0,0,0,0.04)",
+                                color: "rgba(0,0,0,0.9)",
+                              },
+                            }}
+                          >
+                            <ListItemIcon sx={{ minWidth: 40, color: "inherit" }}>
+                              <VerifiedUserIcon />
+                            </ListItemIcon>
+                            <ListItemText
+                              primary="Warranty"
+                              primaryTypographyProps={{ fontWeight: 600 }}
+                            />
+                            {warrantyOpen ? <ExpandLess /> : <ExpandMore />}
+                          </ListItemButton>
+
+                          <Collapse in={warrantyOpen} timeout="auto" unmountOnExit>
+                            <List component="div" disablePadding sx={{ pl: 4 }}>
+                              {(() => {
+                                const searchParams = new URLSearchParams(location.search);
+                                const currentStatus =
+                                  location.pathname.startsWith("/sales/warranty")
+                                    ? searchParams.get("status") ?? "Pending"
+                                    : null;
+
+                                const baseStyles = {
+                                  borderRadius: 2,
+                                  mb: 0.25,
+                                  color: "rgba(0,0,0,0.7)",
+                                  "&:hover": {
+                                    bgcolor: "rgba(0,0,0,0.04)",
+                                    color: "rgba(0,0,0,0.9)",
+                                  },
+                                } as const;
+
+                                const activeStyles = {
+                                  bgcolor: "rgba(25,118,210,0.12)",
+                                  color: "primary.main",
+                                } as const;
+
+                                const isWarrantyRoute = location.pathname.startsWith(
+                                  "/sales/warranty"
+                                );
+
+                                return (
+                                  <>
+                                    <ListItemButton
+                                      component={NavLink}
+                                      to="/sales/warranty?status=Pending"
+                                      sx={{
+                                        ...baseStyles,
+                                        ...(isWarrantyRoute && currentStatus === "Pending"
+                                          ? activeStyles
+                                          : {}),
+                                      }}
+                                    >
+                                      <ListItemText
+                                        primary="Pending"
+                                        primaryTypographyProps={{ fontWeight: 500 }}
+                                      />
+                                    </ListItemButton>
+
+                                    <ListItemButton
+                                      component={NavLink}
+                                      to="/sales/warranty?status=InProgress"
+                                      sx={{
+                                        ...baseStyles,
+                                        ...(isWarrantyRoute && currentStatus === "InProgress"
+                                          ? activeStyles
+                                          : {}),
+                                      }}
+                                    >
+                                      <ListItemText
+                                        primary="In Progress"
+                                        primaryTypographyProps={{ fontWeight: 500 }}
+                                      />
+                                    </ListItemButton>
+
+                                    <ListItemButton
+                                      component={NavLink}
+                                      to="/sales/warranty?status=Resolved"
+                                      sx={{
+                                        ...baseStyles,
+                                        ...(isWarrantyRoute && currentStatus === "Resolved"
+                                          ? activeStyles
+                                          : {}),
+                                      }}
+                                    >
+                                      <ListItemText
+                                        primary="Resolved"
+                                        primaryTypographyProps={{ fontWeight: 500 }}
+                                      />
+                                    </ListItemButton>
+
+                                    <ListItemButton
+                                      component={NavLink}
+                                      to="/sales/warranty?status=Rejected"
+                                      sx={{
+                                        ...baseStyles,
+                                        ...(isWarrantyRoute && currentStatus === "Rejected"
+                                          ? activeStyles
+                                          : {}),
                                       }}
                                     >
                                       <ListItemText
@@ -422,7 +707,7 @@ export default function DashboardLayout() {
           })}
         </List>
 
-        <Box sx={{ flex: 1 }} />
+        {/* Logout section - fixed at bottom */}
 
         <List sx={{ px: 1, pb: 2 }}>
           <ListItemButton
