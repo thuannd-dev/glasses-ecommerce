@@ -22,10 +22,8 @@ import { useState } from "react";
 import { useAdminRoles } from "../../lib/hooks/useAdminRoles";
 import { toast } from "react-toastify";
 
-const AVAILABLE_ROLES = ["Customer", "Sales", "Operations", "Manager", "Admin"];
-
 export default function RoleManagement() {
-  const { users, rolesLoading, usersLoading, assignRoles, isAssigning } =
+  const { users, roles, rolesLoading, usersLoading, assignRoles, isAssigning } =
     useAdminRoles();
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
@@ -47,7 +45,7 @@ export default function RoleManagement() {
 
   const handleRoleChange = (role: string) => {
     setSelectedRoles((prev) =>
-      prev.includes(role) ? prev.filter((r) => r !== role) : [...prev, role]
+      prev.includes(role) ? prev.filter((r) => r !== role) : [...prev, role],
     );
   };
 
@@ -70,7 +68,7 @@ export default function RoleManagement() {
         onError: () => {
           toast.error("Failed to update roles");
         },
-      }
+      },
     );
   };
 
@@ -146,7 +144,9 @@ export default function RoleManagement() {
                         />
                       ))
                     ) : (
-                      <Typography sx={{ fontSize: 12, color: "text.secondary" }}>
+                      <Typography
+                        sx={{ fontSize: 12, color: "text.secondary" }}
+                      >
                         No roles
                       </Typography>
                     )}
@@ -156,9 +156,7 @@ export default function RoleManagement() {
                   <Button
                     size="small"
                     variant="outlined"
-                    onClick={() =>
-                      handleOpenDialog(user.userId, user.roles)
-                    }
+                    onClick={() => handleOpenDialog(user.userId, user.roles)}
                     sx={{
                       textTransform: "none",
                       fontSize: 12,
@@ -174,7 +172,12 @@ export default function RoleManagement() {
       </TableContainer>
 
       {/* Role Assignment Dialog */}
-      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
+      <Dialog
+        open={openDialog}
+        onClose={handleCloseDialog}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle sx={{ fontWeight: 700 }}>
           Assign Roles to {selectedUser?.displayName}
         </DialogTitle>
@@ -186,16 +189,16 @@ export default function RoleManagement() {
             Select roles:
           </Typography>
           <FormGroup>
-            {AVAILABLE_ROLES.map((role) => (
+            {roles.map((role) => (
               <FormControlLabel
-                key={role}
+                key={role.id}
                 control={
                   <Checkbox
-                    checked={selectedRoles.includes(role)}
-                    onChange={() => handleRoleChange(role)}
+                    checked={selectedRoles.includes(role.name)}
+                    onChange={() => handleRoleChange(role.name)}
                   />
                 }
-                label={role}
+                label={role.name}
               />
             ))}
           </FormGroup>

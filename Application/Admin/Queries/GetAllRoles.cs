@@ -1,8 +1,8 @@
 using Application.Admin.DTOs;
 using Application.Core;
-using Domain;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace Application.Admin.Queries;
 
@@ -17,7 +17,7 @@ public sealed class GetAllRoles
     {
         public async Task<Result<List<RoleDto>>> Handle(Query request, CancellationToken cancellationToken)
         {
-            List<IdentityRole<Guid>> roles = roleManager.Roles.ToList();
+            List<IdentityRole<Guid>> roles = await roleManager.Roles.AsNoTracking().ToListAsync(cancellationToken);
 
             List<RoleDto> roleDtos = roles.Select(r => new RoleDto
             {

@@ -14,13 +14,11 @@ public sealed class AssignRolesValidator : AbstractValidator<AssignRoles.Command
             .NotNull().WithMessage("Roles list is required.")
             .NotEmpty().WithMessage("At least one role must be assigned.");
 
-        RuleFor(x => x.Roles)
-            .Custom((roles, context) =>
-            {
-                if (roles.Any(string.IsNullOrWhiteSpace))
-                {
-                    context.AddFailure("Roles list contains invalid role names.");
-                }
-            });
+        When(x => x.Roles is not null, () =>
+        {
+            RuleForEach(x => x.Roles)
+                .Must(roleName => !string.IsNullOrWhiteSpace(roleName))
+                .WithMessage("Roles list contains invalid role names.");
+        });
     }
 }
