@@ -489,3 +489,4 @@ API/appsettings.json
 client/.env.development
 client/.env.production
 test_flows.ps1
+API/wwwroot
