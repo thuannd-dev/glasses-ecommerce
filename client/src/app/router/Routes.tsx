@@ -32,6 +32,7 @@ import { OrdersScreen as SalesOrdersScreen } from "../../features/Sales/screens/
 import { OrderDetailScreen as SalesOrderDetailScreen } from "../../features/Sales/screens/OrderDetailScreen";
 import { ReturnRefundScreen } from "../../features/Sales/screens/ReturnRefundScreen";
 import { WarrantyScreen } from "../../features/Sales/screens/WarrantyScreen";
+import { TicketDetailScreen } from "../../features/Sales/screens/TicketDetailScreen";
 import OperationsLayout from "../../features/Operations/OperationsLayout";
 import {
   PackScreen,
@@ -93,7 +94,9 @@ export const router = createBrowserRouter([
               { path: "orders", element: <SalesOrdersScreen /> },
               { path: "orders/:id", element: <SalesOrderDetailScreen /> },
               { path: "return-refund", element: <ReturnRefundScreen /> },
+              { path: "return-refund/:ticketId", element: <TicketDetailScreen /> },
               { path: "warranty", element: <WarrantyScreen /> },
+              { path: "warranty/:ticketId", element: <TicketDetailScreen /> },
             ],
           },
         ],

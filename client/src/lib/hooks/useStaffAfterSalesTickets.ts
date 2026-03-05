@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import agent from "../api/agent";
 import type {
   StaffAfterSalesResponse,
@@ -14,6 +14,12 @@ export interface StaffAfterSalesQueryParams {
   status?: AfterSalesTicketStatus;
   ticketType?: AfterSalesTicketType;
   orderId?: string;
+}
+
+export interface UpdateTicketStatusPayload {
+  ticketId: string;
+  status: AfterSalesTicketStatus;
+  notes?: string;
 }
 
 async function fetchStaffAfterSalesTickets(
@@ -38,6 +44,19 @@ async function fetchStaffAfterSalesTicketDetail(
   return res.data;
 }
 
+async function updateTicketStatus(
+  payload: UpdateTicketStatusPayload
+): Promise<TicketDetailDto> {
+  const res = await agent.put<TicketDetailDto>(
+    `/staff/after-sales/${payload.ticketId}/status`,
+    {
+      status: payload.status,
+      notes: payload.notes ?? null,
+    }
+  );
+  return res.data;
+}
+
 // -------- Hooks --------
 
 export function useStaffAfterSalesTickets(
@@ -58,5 +77,17 @@ export function useStaffAfterSalesTicketDetail(ticketId: string | undefined) {
     },
     enabled: !!ticketId,
     retry: false,
+  });
+}
+
+export function useUpdateTicketStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: updateTicketStatus,
+    onSuccess: () => {
+      // Refresh list cache
+      queryClient.invalidateQueries({ queryKey: ["staff", "after-sales", "list"] });
+    },
   });
 }
