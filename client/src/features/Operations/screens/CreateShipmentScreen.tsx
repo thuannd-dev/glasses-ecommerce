@@ -308,6 +308,8 @@ export function CreateShipmentScreen() {
               textTransform: "none",
               fontWeight: 700,
               borderRadius: 2,
+              bgcolor: "#10b981",
+              "&:hover": { bgcolor: "#059669" },
               px: 2.5,
             }}
           >
@@ -378,6 +380,7 @@ function OperationsOrderRow({
               border: `1px solid ${border}`,
               bgcolor: bg,
               color,
+              flexShrink: 0,
             }}
           />
           <IconButton

@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   Box,
   Chip,
+  Grid,
   LinearProgress,
   Pagination,
   Paper,
@@ -9,6 +10,7 @@ import {
   Button,
 } from "@mui/material";
 import { useOperationsOrders, useUpdateOrderStatus } from "../../../lib/hooks/useOperationsOrders";
+import { SummaryCard } from "../components";
 import type { StaffOrderDto } from "../../../lib/types/staffOrders";
 import type { OrderStatus } from "../../../lib/types/operations";
 
@@ -83,6 +85,12 @@ export function PackScreen() {
           Orders to pick and prepare before creating shipments.
         </Typography>
       </Box>
+
+      <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid item xs={12} sm={4}>
+          <SummaryCard label="Confirmed Orders" value={isLoading ? "—" : safeOrders.length} />
+        </Grid>
+      </Grid>
 
       <Box
         sx={{
@@ -176,6 +184,7 @@ export function PackScreen() {
                               border: `1px solid ${border}`,
                               bgcolor: bg,
                               color,
+                              flexShrink: 0,
                             }}
                           />
                           {o.orderStatus === "Confirmed" && (

@@ -3,7 +3,20 @@ import ExpandMore from "@mui/icons-material/ExpandMore";
 import ExpandLess from "@mui/icons-material/ExpandLess";
 
 import { ORDER_STATUS_LABEL, ORDER_TYPE_LABEL, formatDate } from "../constants";
-import type { OrderDto, OrderStatus } from "../../../lib/types";
+import type { OrderStatus } from "../../../lib/types";
+
+type OperationsOrder = {
+  id: string;
+  orderSource: string;
+  orderType: string;
+  orderStatus: string;
+  totalAmount: number;
+  finalAmount: number;
+  customerName: string | null;
+  customerPhone: string | null;
+  itemCount: number;
+  createdAt: string;
+};
 
 export function OrderCard({
   order,
@@ -13,15 +26,15 @@ export function OrderCard({
   onCreateShipment,
   canCreateShipment,
 }: {
-  order: OrderDto;
+  order: OperationsOrder;
   expanded: boolean;
   onToggleExpand: () => void;
   onUpdateStatus: (status: OrderStatus) => void;
   onCreateShipment: () => void;
   canCreateShipment: boolean;
 }) {
-  const statusLabel = ORDER_STATUS_LABEL[order.status];
-  const typeLabel = ORDER_TYPE_LABEL[order.orderType];
+  const statusLabel = ORDER_STATUS_LABEL[order.orderStatus as keyof typeof ORDER_STATUS_LABEL] || order.orderStatus;
+  const typeLabel = ORDER_TYPE_LABEL[order.orderType as keyof typeof ORDER_TYPE_LABEL] || order.orderType;
 
   return (
     <Paper
@@ -45,69 +58,51 @@ export function OrderCard({
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
           <Typography fontWeight={800} fontSize={14}>
-            {order.orderNumber}
+            {order.id}
           </Typography>
           <Chip label={typeLabel} size="small" sx={{ fontWeight: 600 }} />
           <Chip
             label={statusLabel}
             size="small"
             sx={{
-              bgcolor: order.status === "shipped" || order.status === "delivered" ? "rgba(46,125,50,0.12)" : "rgba(25,118,210,0.12)",
-              color: order.status === "shipped" || order.status === "delivered" ? "#2e7d32" : "#1976d2",
+              bgcolor: order.orderStatus === "Shipped" || order.orderStatus === "Delivered" ? "rgba(46,125,50,0.12)" : "rgba(25,118,210,0.12)",
+              color: order.orderStatus === "Shipped" || order.orderStatus === "Delivered" ? "#2e7d32" : "#1976d2",
               fontWeight: 600,
             }}
           />
-          {order.trackingNumber && (
-            <Typography fontSize={12} color="text.secondary">
-              {order.carrier} · {order.trackingNumber}
-            </Typography>
-          )}
         </Box>
         {expanded ? <ExpandLess /> : <ExpandMore />}
       </Box>
       <Collapse in={expanded}>
         <Box sx={{ mt: 2, pt: 2, borderTop: "1px solid rgba(0,0,0,0.06)" }}>
           <Typography fontSize={12} color="text.secondary">
-            {order.customerName} · {order.customerEmail}
+            {order.customerName} · {order.customerPhone}
           </Typography>
           <Typography fontSize={12} color="text.secondary" sx={{ mt: 0.5 }}>
-            {order.shippingAddress}
+            {formatDate(order.createdAt)} · {order.itemCount} items · {order.finalAmount.toLocaleString("en-US", { style: "currency", currency: "USD" })}
           </Typography>
-          <Typography fontSize={12} color="text.secondary" sx={{ mt: 0.5 }}>
-            {formatDate(order.createdAt)} · {order.items.length} items · {order.totalAmount.toLocaleString("en-US", { style: "currency", currency: "USD" })}
-          </Typography>
-          {order.orderType === "pre-order" && order.expectedStockDate && (
-            <Typography fontSize={12} color="text.secondary" sx={{ mt: 0.5 }}>
-              Expected stock: {order.expectedStockDate}
-            </Typography>
-          )}
-          {order.orderType === "prescription" && order.prescriptionStatus && (
-            <Typography fontSize={12} color="text.secondary" sx={{ mt: 0.5 }}>
-              Prescription: {order.prescriptionStatus}
-            </Typography>
-          )}
           <Box sx={{ mt: 2, display: "flex", gap: 1, flexWrap: "wrap" }}>
-            {order.status === "pending" && (
+            {order.orderStatus === "Pending" && (
               <Button size="small" variant="outlined" onClick={(e) => { e.stopPropagation(); onUpdateStatus("confirmed"); }}>
                 Confirm
               </Button>
             )}
-            {(order.status === "confirmed" || order.status === "pending") && (
+            {(order.orderStatus === "Confirmed" || order.orderStatus === "Pending") && (
               <Button size="small" variant="outlined" onClick={(e) => { e.stopPropagation(); onUpdateStatus("processing"); }}>
                 Processing
               </Button>
             )}
-            {order.status === "processing" && (
+            {order.orderStatus === "Processing" && (
               <Button size="small" variant="outlined" onClick={(e) => { e.stopPropagation(); onUpdateStatus("ready_to_ship"); }}>
                 Ready to ship
               </Button>
             )}
-            {order.orderType === "pre-order" && order.status === "pending" && (
+            {order.orderType === "PreOrder" && order.orderStatus === "Pending" && (
               <Button size="small" variant="outlined" onClick={(e) => { e.stopPropagation(); onUpdateStatus("received"); }}>
                 Received at warehouse
               </Button>
             )}
-            {order.orderType === "prescription" && order.status === "processing" && (
+            {order.orderType === "Prescription" && order.orderStatus === "Processing" && (
               <Button size="small" variant="outlined" onClick={(e) => { e.stopPropagation(); onUpdateStatus("lens_fitting"); }}>
                 Lens fitting
               </Button>

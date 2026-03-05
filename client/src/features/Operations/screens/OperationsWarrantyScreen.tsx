@@ -1,68 +1,87 @@
-import { useMemo, useState } from "react";
-import { Box, Grid, InputAdornment, LinearProgress, Paper, TextField, Typography, Button, Chip } from "@mui/material";
-import SearchIcon from "@mui/icons-material/Search";
-import { DatePicker } from "@mui/x-date-pickers/DatePicker";
-import { isSameDay } from "date-fns";
-import { useNavigate } from "react-router-dom";
-
-import { useOperations } from "../context/OperationsContext";
+import { useEffect, useState } from "react";
+import {
+  Box,
+  Paper,
+  Typography,
+  LinearProgress,
+  Chip,
+  Pagination,
+  Grid,
+  Button,
+} from "@mui/material";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
+import { useStaffAfterSalesTickets } from "../../../lib/hooks/useStaffAfterSalesTickets";
 import { SummaryCard } from "../components";
+import {
+  AfterSalesTicketStatusValues,
+  AfterSalesTicketTypeValues,
+  type AfterSalesTicketStatus,
+} from "../../../lib/types/afterSales";
 import { formatDate } from "../constants";
 
-type OperationsOrder = {
-  id: string;
-  orderSource: string;
-  orderType: string;
-  orderStatus: string;
-  totalAmount: number;
-  finalAmount: number;
-  customerName: string | null;
-  customerPhone: string | null;
-  itemCount: number;
-  createdAt: string;
+const STATUS_LABELS: Record<AfterSalesTicketStatus, string> = {
+  [AfterSalesTicketStatusValues.Pending]: "Pending",
+  [AfterSalesTicketStatusValues.InProgress]: "In Progress",
+  [AfterSalesTicketStatusValues.Resolved]: "Resolved",
+  [AfterSalesTicketStatusValues.Rejected]: "Rejected",
+  [AfterSalesTicketStatusValues.Closed]: "Closed",
 };
 
-function filterAndSortOrders(
-  list: OperationsOrder[],
-  searchQuery: string,
-  dateFilter: Date | null
-): OperationsOrder[] {
-  let filtered = list;
-  const q = searchQuery.trim().toLowerCase();
-  if (q) {
-    filtered = filtered.filter(
-      (o) =>
-        o.id.toLowerCase().includes(q) ||
-        (o.customerName && o.customerName.toLowerCase().includes(q))
-    );
-  }
-  if (dateFilter) {
-    filtered = filtered.filter((o) => isSameDay(new Date(o.createdAt), dateFilter));
-  }
-  return [...filtered].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
-}
-
-const ORDER_STATUS_COLORS: Record<string, { bg: string; border: string; color: string }> = {
-  Pending: { bg: "#fbbf2422", border: "#fbbf24", color: "#92400e" },
-  Confirmed: { bg: "#3b82f622", border: "#3b82f6", color: "#1e40af" },
-  Processing: { bg: "#3b82f622", border: "#3b82f6", color: "#1e40af" },
-  Shipped: { bg: "#10b98122", border: "#10b981", color: "#065f46" },
-  Delivered: { bg: "#10b98122", border: "#10b981", color: "#065f46" },
+const STATUS_COLORS: Record<AfterSalesTicketStatus, { bg: string; border: string; color: string }> = {
+  [AfterSalesTicketStatusValues.Pending]: { bg: "#fbbf2422", border: "#fbbf24", color: "#92400e" },
+  [AfterSalesTicketStatusValues.InProgress]: { bg: "#3b82f622", border: "#3b82f6", color: "#1e40af" },
+  [AfterSalesTicketStatusValues.Resolved]: { bg: "#10b98122", border: "#10b981", color: "#065f46" },
+  [AfterSalesTicketStatusValues.Rejected]: { bg: "#ef444422", border: "#ef4444", color: "#7f1d1d" },
+  [AfterSalesTicketStatusValues.Closed]: { bg: "#6b728022", border: "#6b7280", color: "#374151" },
 };
 
-export function PreOrderScreen() {
-  const { orders, ordersLoading } = useOperations();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [dateFilter, setDateFilter] = useState<Date | null>(null);
+const TYPE_COLORS: Record<string, { bg: string; border: string; color: string }> = {
+  Warranty: { bg: "#3b82f622", border: "#3b82f6", color: "#1e40af" },
+};
+
+export function OperationsWarrantyScreen() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
-  const preOrderOrders = orders.filter((o) => o.orderType === "PreOrder" && o.orderStatus === "Confirmed");
-  const filteredOrders = useMemo(
-    () => filterAndSortOrders(preOrderOrders, searchQuery, dateFilter),
-    [preOrderOrders, searchQuery, dateFilter]
-  );
+  const [pageNumber, setPageNumber] = useState(1);
+  const pageSize = 10;
+
+  const rawStatus = searchParams.get("status") ?? "Pending";
+  const allowedStatuses = ["Pending", "Repair", "Replace", "Rejected"];
+
+  const statusMap: Record<string, AfterSalesTicketStatus> = {
+    Pending: AfterSalesTicketStatusValues.Pending,
+    Repair: AfterSalesTicketStatusValues.InProgress,
+    Replace: AfterSalesTicketStatusValues.InProgress,
+    Rejected: AfterSalesTicketStatusValues.Rejected,
+  };
+
+  const statusFilter = allowedStatuses.includes(rawStatus)
+    ? statusMap[rawStatus]
+    : AfterSalesTicketStatusValues.Pending;
+
+  useEffect(() => {
+    setPageNumber(1);
+  }, [statusFilter]);
+
+  const { data, isLoading } = useStaffAfterSalesTickets({
+    pageNumber,
+    pageSize,
+    status: statusFilter,
+    ticketType: AfterSalesTicketTypeValues.Warranty,
+  });
+
+  const safeTickets = Array.isArray(data?.items) ? data.items : [];
+  const meta = data ? { totalPages: Math.ceil(data.totalCount / pageSize) } : null;
+
+  const handlePageChange = (_event: React.ChangeEvent<unknown>, value: number) => {
+    setPageNumber(value);
+  };
+
+  const handleViewTicket = (ticketId: string) => {
+    navigate(`/operations/warranty/${ticketId}?status=${rawStatus}`);
+  };
 
   return (
     <Box
@@ -76,47 +95,26 @@ export function PreOrderScreen() {
         overflow: "hidden",
       }}
     >
-      <Typography sx={{ fontSize: 24, fontWeight: 900, mb: 2 }}>
-        Pre-order
-      </Typography>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2 }}>
+        <VerifiedUserIcon sx={{ fontSize: 32, color: "#3b82f6" }} />
+        <Typography sx={{ fontSize: 24, fontWeight: 900 }}>
+          Warranty
+        </Typography>
+      </Box>
 
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid item xs={12} sm={4}>
-          <SummaryCard label="Pre-order" value={ordersLoading ? "—" : preOrderOrders.length} />
+          <SummaryCard label="Warranty" value={isLoading ? "—" : safeTickets.length} />
         </Grid>
       </Grid>
 
-      {/* Filters */}
-      <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 2, mb: 3 }}>
-        <TextField
-          size="small"
-          placeholder="Order # or customer name"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon fontSize="small" sx={{ color: "text.secondary" }} />
-              </InputAdornment>
-            ),
-          }}
-          sx={{ minWidth: 220 }}
-        />
-        <DatePicker
-          label="Date"
-          value={dateFilter}
-          onChange={(d) => setDateFilter(d ?? null)}
-          slotProps={{ textField: { size: "small", sx: { minWidth: 160 } } }}
-        />
-      </Box>
-
-      {ordersLoading && (
+      {isLoading && (
         <Box sx={{ maxWidth: 720, mx: "auto", mt: 2 }}>
           <LinearProgress sx={{ borderRadius: 1 }} />
         </Box>
       )}
 
-      {!ordersLoading && filteredOrders.length === 0 && (
+      {!isLoading && safeTickets.length === 0 && (
         <Box sx={{ maxWidth: 720, mx: "auto", mt: 3 }}>
           <Paper
             elevation={0}
@@ -128,12 +126,12 @@ export function PreOrderScreen() {
               textAlign: "center",
             }}
           >
-            <Typography color="text.secondary">No pre-orders yet.</Typography>
+            <Typography color="text.secondary">No tickets found.</Typography>
           </Paper>
         </Box>
       )}
 
-      {!ordersLoading && filteredOrders.length > 0 && (
+      {!isLoading && safeTickets.length > 0 && (
         <Box
           sx={{
             display: "flex",
@@ -157,9 +155,9 @@ export function PreOrderScreen() {
               },
             }}
           >
-            {filteredOrders.map((order) => (
+            {safeTickets.map((ticket) => (
               <Paper
-                key={order.id}
+                key={ticket.id}
                 elevation={0}
                 sx={{
                   border: "1px solid rgba(0,0,0,0.08)",
@@ -171,9 +169,9 @@ export function PreOrderScreen() {
                     bgcolor: "rgba(0,0,0,0.03)",
                   },
                 }}
-                onClick={() => navigate(`/operations/orders/${order.id}`)}
+                onClick={() => handleViewTicket(ticket.id)}
               >
-                {/* Header row: Order # + Status chip */}
+                {/* Header row: ID + Status chip */}
                 <Box
                   sx={{
                     display: "flex",
@@ -184,18 +182,18 @@ export function PreOrderScreen() {
                 >
                   <Box sx={{ flex: 1, minWidth: 0 }}>
                     <Typography sx={{ fontWeight: 700, fontSize: 15, wordBreak: "break-all" }}>
-                      Order ID: {order.id}
+                      Ticket ID: {ticket.id}
                     </Typography>
                   </Box>
                   <Chip
-                    label={order.orderStatus}
+                    label={STATUS_LABELS[ticket.ticketStatus]}
                     size="small"
                     sx={{
                       fontWeight: 700,
                       textTransform: "capitalize",
-                      border: `1px solid ${ORDER_STATUS_COLORS[order.orderStatus]?.border || "#ddd"}`,
-                      bgcolor: `${ORDER_STATUS_COLORS[order.orderStatus]?.bg || "#f0f0f0"}`,
-                      color: ORDER_STATUS_COLORS[order.orderStatus]?.color || "#666",
+                      border: `1px solid ${STATUS_COLORS[ticket.ticketStatus].border}`,
+                      bgcolor: `${STATUS_COLORS[ticket.ticketStatus].bg}`,
+                      color: STATUS_COLORS[ticket.ticketStatus].color,
                       flexShrink: 0,
                     }}
                   />
@@ -218,25 +216,25 @@ export function PreOrderScreen() {
                       Type:
                     </Typography>
                     <Chip
-                      label="Pre-order"
+                      label="Warranty"
                       size="small"
                       sx={{
                         fontWeight: 600,
                         borderRadius: 1,
                         height: 24,
-                        bgcolor: "#f59e0b22",
-                        color: "#92400e",
-                        border: "1px solid #f59e0b",
+                        bgcolor: TYPE_COLORS.Warranty.bg,
+                        color: TYPE_COLORS.Warranty.color,
+                        border: `1px solid ${TYPE_COLORS.Warranty.border}`,
                         "& .MuiChip-label": { px: 1 },
                       }}
                     />
                   </Box>
                   <Typography fontSize={13} color="text.secondary">
-                    Created: {formatDate(order.createdAt)}
+                    Created: {formatDate(ticket.createdAt)}
                   </Typography>
                 </Box>
 
-                {/* Customer + View button */}
+                {/* Reason + View button */}
                 <Box
                   sx={{
                     display: "flex",
@@ -248,10 +246,10 @@ export function PreOrderScreen() {
                 >
                   <Box sx={{ flex: 1 }}>
                     <Typography sx={{ fontSize: 13, color: "text.secondary", mb: 0.5 }}>
-                      Customer
+                      Reason
                     </Typography>
                     <Typography sx={{ fontWeight: 600, color: "rgba(0,0,0,0.7)" }}>
-                      {order.customerName}
+                      {ticket.reason}
                     </Typography>
                   </Box>
                   <Button
@@ -267,7 +265,7 @@ export function PreOrderScreen() {
                     }}
                     onClick={(e) => {
                       e.stopPropagation();
-                      navigate(`/operations/orders/${order.id}`);
+                      handleViewTicket(ticket.id);
                     }}
                   >
                     View detail
@@ -276,6 +274,17 @@ export function PreOrderScreen() {
               </Paper>
             ))}
           </Box>
+
+          {meta && meta.totalPages > 1 && (
+            <Box sx={{ display: "flex", justifyContent: "center", mt: 3, pt: 2, borderTop: "1px solid rgba(0,0,0,0.08)" }}>
+              <Pagination
+                count={meta.totalPages}
+                page={pageNumber}
+                onChange={handlePageChange}
+                size="small"
+              />
+            </Box>
+          )}
         </Box>
       )}
     </Box>

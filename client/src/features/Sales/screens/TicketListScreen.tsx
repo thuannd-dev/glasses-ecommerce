@@ -7,9 +7,11 @@ import {
   Chip,
   Button,
   Pagination,
+  Grid,
 } from "@mui/material";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useStaffAfterSalesTickets } from "../../../lib/hooks/useStaffAfterSalesTickets";
+import { SummaryCard } from "../components";
 import {
   AfterSalesTicketStatusValues,
   AfterSalesTicketTypeValues,
@@ -115,6 +117,12 @@ export function TicketListScreen({ title, ticketTypes, navPrefix }: TicketListSc
       <Typography sx={{ fontSize: 24, fontWeight: 900, mb: 2 }}>
         {title}
       </Typography>
+
+      <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid item xs={12} sm={4}>
+          <SummaryCard label={title} value={isLoading ? "—" : filteredTickets.length} />
+        </Grid>
+      </Grid>
 
       {isLoading && (
         <Box sx={{ maxWidth: 720, mx: "auto", mt: 2 }}>

@@ -101,7 +101,18 @@ export interface OperationsOrdersQueryParams {
 
 /** Standard paginated response for Operations orders listing */
 export interface OperationsOrdersResponse {
-  items: OrderDto[];
+  items: Array<{
+    id: string;
+    orderSource: string;
+    orderType: string;
+    orderStatus: string;
+    totalAmount: number;
+    finalAmount: number;
+    customerName: string | null;
+    customerPhone: string | null;
+    itemCount: number;
+    createdAt: string;
+  }>;
   totalCount: number;
   pageNumber: number;
   pageSize: number;

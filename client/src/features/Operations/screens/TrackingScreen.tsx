@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   Box,
   Chip,
+  Grid,
   LinearProgress,
   Pagination,
   Paper,
@@ -14,6 +15,7 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 
 import { useOperationsOrders, useOperationsOrderDetail } from "../../../lib/hooks/useOperationsOrders";
+import { SummaryCard } from "../components";
 import type { StaffOrderDto, StaffOrderDetailDto } from "../../../lib/types/staffOrders";
 
 export function TrackingScreen() {
@@ -88,6 +90,12 @@ export function TrackingScreen() {
           Orders that have been marked as shipped.
         </Typography>
       </Box>
+
+      <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid item xs={12} sm={4}>
+          <SummaryCard label="Shipped Orders" value={isLoading ? "—" : safeOrders.length} />
+        </Grid>
+      </Grid>
 
       <Box
         sx={{
@@ -206,6 +214,7 @@ function ShippedOrderRow({
               border: `1px solid ${border}`,
               bgcolor: bg,
               color,
+              flexShrink: 0,
             }}
           />
           <IconButton

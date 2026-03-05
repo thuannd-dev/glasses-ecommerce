@@ -7,10 +7,23 @@ import {
   useUpdateTracking,
 } from "../../../lib/hooks/useOperationsOrders";
 import { CreateShipmentDialog } from "../components";
-import type { OrderDto, ShipmentDto } from "../../../lib/types";
+import type { ShipmentDto } from "../../../lib/types";
+
+type OperationsOrder = {
+  id: string;
+  orderSource: string;
+  orderType: string;
+  orderStatus: string;
+  totalAmount: number;
+  finalAmount: number;
+  customerName: string | null;
+  customerPhone: string | null;
+  itemCount: number;
+  createdAt: string;
+};
 
 type OperationsContextValue = {
-  orders: OrderDto[];
+  orders: OperationsOrder[];
   ordersLoading: boolean;
   shipments: ShipmentDto[];
   shipmentsLoading: boolean;
@@ -56,10 +69,10 @@ export function OperationsProvider({ children }: { children: React.ReactNode }) 
     );
   }, [createShipOrderId, createShipCarrier, createShipTracking, createShipment]);
 
-  const safeOrders: OrderDto[] = Array.isArray(ordersData)
+  const safeOrders: OperationsOrder[] = Array.isArray(ordersData)
     ? ordersData
     : Array.isArray((ordersData as any)?.items)
-    ? ((ordersData as any).items as OrderDto[])
+    ? ((ordersData as any).items as OperationsOrder[])
     : [];
 
   const safeShipments: ShipmentDto[] = Array.isArray(shipmentsData)
@@ -90,7 +103,7 @@ export function OperationsProvider({ children }: { children: React.ReactNode }) 
       <CreateShipmentDialog
         open={!!createShipOrderId}
         onClose={() => setCreateShipOrderId(null)}
-        order={selectedOrder}
+        order={selectedOrder as any}
         carrier={createShipCarrier}
         setCarrier={setCreateShipCarrier}
         trackingNumber={createShipTracking}

@@ -7,9 +7,11 @@ import {
   Chip,
   Button,
   Pagination,
+  Grid,
 } from "@mui/material";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useStaffOrders } from "../../../lib/hooks/useStaffOrders";
+import { SummaryCard } from "../components";
 
 const getStatusColor = (
   status: string
@@ -92,6 +94,12 @@ export function PreorderScreen() {
       <Typography sx={{ fontSize: 24, fontWeight: 900, mb: 2 }}>
         Pre-orders
       </Typography>
+
+      <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid item xs={12} sm={4}>
+          <SummaryCard label="Pre-orders" value={isLoading ? "—" : filteredOrders.length} />
+        </Grid>
+      </Grid>
 
       {isLoading ? (
         <Box sx={{ maxWidth: 720, mx: "auto", mt: 2 }}>
