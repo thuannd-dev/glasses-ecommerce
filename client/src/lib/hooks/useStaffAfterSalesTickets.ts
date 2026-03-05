@@ -3,8 +3,9 @@ import agent from "../api/agent";
 import type {
   StaffAfterSalesResponse,
   TicketDetailDto,
+  AfterSalesTicketStatus,
+  AfterSalesTicketType,
 } from "../types/afterSales";
-import { AfterSalesTicketStatus, AfterSalesTicketType } from "../types/afterSales";
 
 // -------- API wrappers --------
 
