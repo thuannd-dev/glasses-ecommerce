@@ -287,7 +287,7 @@ export default function DashboardLayout() {
                                       }}
                                     >
                                       <ListItemText
-                                        primary="Rejected"
+                                        primary="Cancelled"
                                         primaryTypographyProps={{ fontWeight: 500 }}
                                       />
                                     </ListItemButton>

@@ -11,6 +11,41 @@ import {
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useStaffOrders } from "../../../lib/hooks/useStaffOrders";
 
+const getStatusColor = (
+  status: string
+): {
+  bgcolor: string;
+  color: string;
+  border: string;
+} => {
+  switch (status) {
+    case "Pending":
+      return {
+        bgcolor: "rgba(251, 191, 36, 0.12)",
+        color: "#fbbf24",
+        border: "1px solid #fbbf24",
+      };
+    case "Confirmed":
+      return {
+        bgcolor: "rgba(59, 130, 246, 0.12)",
+        color: "#3b82f6",
+        border: "1px solid #3b82f6",
+      };
+    case "Cancelled":
+      return {
+        bgcolor: "rgba(239, 68, 68, 0.12)",
+        color: "#ef4444",
+        border: "1px solid #ef4444",
+      };
+    default:
+      return {
+        bgcolor: "rgba(139,92,246,0.12)",
+        color: "#8b5cf6",
+        border: "1px solid #8b5cf6",
+      };
+  }
+};
+
 export function OrdersScreen() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -127,9 +162,7 @@ export function OrdersScreen() {
                     sx={{
                       fontWeight: 700,
                       textTransform: "capitalize",
-                      border: "1px solid #8b5cf6",
-                      bgcolor: "rgba(139,92,246,0.12)",
-                      color: "#5b21b6",
+                      ...getStatusColor(o.orderStatus),
                     }}
                   />
                 </Box>
