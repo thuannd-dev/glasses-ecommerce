@@ -1,6 +1,7 @@
 using System;
 using Domain;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace Persistence;
 
@@ -1183,139 +1184,145 @@ public class DbInitializer
         // Seed AfterSalesTickets (Return/Refund and Warranty)
         if (!context.AfterSalesTickets.Any())
         {
-            var afterSalesTickets = new List<AfterSalesTicket>
+            // Get a customer user from the database
+            User? customerUser = await userManager.Users.FirstOrDefaultAsync(u => u.UserName == "customer@test.com");
+            
+            if (customerUser != null)
             {
-                // Return/Refund Tickets
-                new()
+                var afterSalesTickets = new List<AfterSalesTicket>
                 {
-                    OrderId = Guid.CreateVersion7(TimeProvider.System.GetUtcNow()),
-                    CustomerId = users[0].Id,
-                    TicketType = AfterSalesTicketType.Return,
-                    TicketStatus = AfterSalesTicketStatus.Pending,
-                    Reason = "Frame is slightly bent and uncomfortable to wear",
-                    RequestedAction = "Exchange for same model",
-                    RefundAmount = null,
-                    IsRequiredEvidence = true,
-                    CreatedAt = DateTime.UtcNow.AddDays(-5)
-                },
-                new()
-                {
-                    OrderId = Guid.CreateVersion7(TimeProvider.System.GetUtcNow()),
-                    CustomerId = users[0].Id,
-                    TicketType = AfterSalesTicketType.Refund,
-                    TicketStatus = AfterSalesTicketStatus.InProgress,
-                    Reason = "Customer changed their mind about the purchase",
-                    RequestedAction = "Full refund",
-                    RefundAmount = 189.99m,
-                    IsRequiredEvidence = false,
-                    CreatedAt = DateTime.UtcNow.AddDays(-3)
-                },
-                new()
-                {
-                    OrderId = Guid.CreateVersion7(TimeProvider.System.GetUtcNow()),
-                    CustomerId = users[0].Id,
-                    TicketType = AfterSalesTicketType.Return,
-                    TicketStatus = AfterSalesTicketStatus.Resolved,
-                    Reason = "Wrong frame color shipped",
-                    RequestedAction = "Exchange for correct color",
-                    RefundAmount = null,
-                    IsRequiredEvidence = false,
-                    CreatedAt = DateTime.UtcNow.AddDays(-8),
-                    ResolvedAt = DateTime.UtcNow.AddDays(-1)
-                },
-                new()
-                {
-                    OrderId = Guid.CreateVersion7(TimeProvider.System.GetUtcNow()),
-                    CustomerId = users[0].Id,
-                    TicketType = AfterSalesTicketType.Refund,
-                    TicketStatus = AfterSalesTicketStatus.Rejected,
-                    Reason = "Product damaged due to customer mishandling",
-                    RequestedAction = "Refund requested",
-                    RefundAmount = null,
-                    IsRequiredEvidence = true,
-                    CreatedAt = DateTime.UtcNow.AddDays(-10),
-                    ResolvedAt = DateTime.UtcNow.AddDays(-4)
-                },
-                new()
-                {
-                    OrderId = Guid.CreateVersion7(TimeProvider.System.GetUtcNow()),
-                    CustomerId = users[0].Id,
-                    TicketType = AfterSalesTicketType.Return,
-                    TicketStatus = AfterSalesTicketStatus.Pending,
-                    Reason = "Prescription was incorrectly filled",
-                    RequestedAction = "Replace with correct prescription",
-                    RefundAmount = null,
-                    IsRequiredEvidence = true,
-                    CreatedAt = DateTime.UtcNow.AddDays(-1)
-                },
+                    // Return/Refund Tickets
+                    new()
+                    {
+                        OrderId = null,
+                        CustomerId = customerUser.Id,
+                        TicketType = AfterSalesTicketType.Return,
+                        TicketStatus = AfterSalesTicketStatus.Pending,
+                        Reason = "Frame is slightly bent and uncomfortable to wear",
+                        RequestedAction = "Exchange for same model",
+                        RefundAmount = null,
+                        IsRequiredEvidence = true,
+                        CreatedAt = DateTime.UtcNow.AddDays(-5)
+                    },
+                    new()
+                    {
+                        OrderId = null,
+                        CustomerId = customerUser.Id,
+                        TicketType = AfterSalesTicketType.Refund,
+                        TicketStatus = AfterSalesTicketStatus.InProgress,
+                        Reason = "Customer changed their mind about the purchase",
+                        RequestedAction = "Full refund",
+                        RefundAmount = 189.99m,
+                        IsRequiredEvidence = false,
+                        CreatedAt = DateTime.UtcNow.AddDays(-3)
+                    },
+                    new()
+                    {
+                        OrderId = null,
+                        CustomerId = customerUser.Id,
+                        TicketType = AfterSalesTicketType.Return,
+                        TicketStatus = AfterSalesTicketStatus.Resolved,
+                        Reason = "Wrong frame color shipped",
+                        RequestedAction = "Exchange for correct color",
+                        RefundAmount = null,
+                        IsRequiredEvidence = false,
+                        CreatedAt = DateTime.UtcNow.AddDays(-8),
+                        ResolvedAt = DateTime.UtcNow.AddDays(-1)
+                    },
+                    new()
+                    {
+                        OrderId = null,
+                        CustomerId = customerUser.Id,
+                        TicketType = AfterSalesTicketType.Refund,
+                        TicketStatus = AfterSalesTicketStatus.Rejected,
+                        Reason = "Product damaged due to customer mishandling",
+                        RequestedAction = "Refund requested",
+                        RefundAmount = null,
+                        IsRequiredEvidence = true,
+                        CreatedAt = DateTime.UtcNow.AddDays(-10),
+                        ResolvedAt = DateTime.UtcNow.AddDays(-4)
+                    },
+                    new()
+                    {
+                        OrderId = null,
+                        CustomerId = customerUser.Id,
+                        TicketType = AfterSalesTicketType.Return,
+                        TicketStatus = AfterSalesTicketStatus.Pending,
+                        Reason = "Prescription was incorrectly filled",
+                        RequestedAction = "Replace with correct prescription",
+                        RefundAmount = null,
+                        IsRequiredEvidence = true,
+                        CreatedAt = DateTime.UtcNow.AddDays(-1)
+                    },
 
-                // Warranty Tickets
-                new()
-                {
-                    OrderId = Guid.CreateVersion7(TimeProvider.System.GetUtcNow()),
-                    CustomerId = users[0].Id,
-                    TicketType = AfterSalesTicketType.Warranty,
-                    TicketStatus = AfterSalesTicketStatus.Pending,
-                    Reason = "Left lens has a small scratch that appeared after normal use",
-                    RequestedAction = "Lens replacement",
-                    RefundAmount = null,
-                    IsRequiredEvidence = true,
-                    CreatedAt = DateTime.UtcNow.AddDays(-6)
-                },
-                new()
-                {
-                    OrderId = Guid.CreateVersion7(TimeProvider.System.GetUtcNow()),
-                    CustomerId = users[0].Id,
-                    TicketType = AfterSalesTicketType.Warranty,
-                    TicketStatus = AfterSalesTicketStatus.InProgress,
-                    Reason = "Frame temple is loose and needs adjustment",
-                    RequestedAction = "Frame repair and adjustment",
-                    RefundAmount = null,
-                    IsRequiredEvidence = false,
-                    CreatedAt = DateTime.UtcNow.AddDays(-4)
-                },
-                new()
-                {
-                    OrderId = Guid.CreateVersion7(TimeProvider.System.GetUtcNow()),
-                    CustomerId = users[0].Id,
-                    TicketType = AfterSalesTicketType.Warranty,
-                    TicketStatus = AfterSalesTicketStatus.Resolved,
-                    Reason = "Nose pad came off",
-                    RequestedAction = "Repair nose pad",
-                    RefundAmount = null,
-                    IsRequiredEvidence = false,
-                    CreatedAt = DateTime.UtcNow.AddDays(-12),
-                    ResolvedAt = DateTime.UtcNow.AddDays(-2)
-                },
-                new()
-                {
-                    OrderId = Guid.CreateVersion7(TimeProvider.System.GetUtcNow()),
-                    CustomerId = users[0].Id,
-                    TicketType = AfterSalesTicketType.Warranty,
-                    TicketStatus = AfterSalesTicketStatus.Rejected,
-                    Reason = "Damage caused by user dropping the glasses",
-                    RequestedAction = "Warranty claim",
-                    RefundAmount = null,
-                    IsRequiredEvidence = true,
-                    CreatedAt = DateTime.UtcNow.AddDays(-9),
-                    ResolvedAt = DateTime.UtcNow.AddDays(-3)
-                },
-                new()
-                {
-                    OrderId = Guid.CreateVersion7(TimeProvider.System.GetUtcNow()),
-                    CustomerId = users[0].Id,
-                    TicketType = AfterSalesTicketType.Warranty,
-                    TicketStatus = AfterSalesTicketStatus.InProgress,
-                    Reason = "Left lens coating is peeling",
-                    RequestedAction = "Lens replacement with coating",
-                    RefundAmount = null,
-                    IsRequiredEvidence = true,
-                    CreatedAt = DateTime.UtcNow.AddDays(-2)
-                }
-            };
+                    // Warranty Tickets
+                    new()
+                    {
+                        OrderId = null,
+                        CustomerId = customerUser.Id,
+                        TicketType = AfterSalesTicketType.Warranty,
+                        TicketStatus = AfterSalesTicketStatus.Pending,
+                        Reason = "Left lens has a small scratch that appeared after normal use",
+                        RequestedAction = "Lens replacement",
+                        RefundAmount = null,
+                        IsRequiredEvidence = true,
+                        CreatedAt = DateTime.UtcNow.AddDays(-6)
+                    },
+                    new()
+                    {
+                        OrderId = null,
+                        CustomerId = customerUser.Id,
+                        TicketType = AfterSalesTicketType.Warranty,
+                        TicketStatus = AfterSalesTicketStatus.InProgress,
+                        Reason = "Frame temple is loose and needs adjustment",
+                        RequestedAction = "Frame repair and adjustment",
+                        RefundAmount = null,
+                        IsRequiredEvidence = false,
+                        CreatedAt = DateTime.UtcNow.AddDays(-4)
+                    },
+                    new()
+                    {
+                        OrderId = null,
+                        CustomerId = customerUser.Id,
+                        TicketType = AfterSalesTicketType.Warranty,
+                        TicketStatus = AfterSalesTicketStatus.Resolved,
+                        Reason = "Nose pad came off",
+                        RequestedAction = "Repair nose pad",
+                        RefundAmount = null,
+                        IsRequiredEvidence = false,
+                        CreatedAt = DateTime.UtcNow.AddDays(-12),
+                        ResolvedAt = DateTime.UtcNow.AddDays(-2)
+                    },
+                    new()
+                    {
+                        OrderId = null,
+                        CustomerId = customerUser.Id,
+                        TicketType = AfterSalesTicketType.Warranty,
+                        TicketStatus = AfterSalesTicketStatus.Rejected,
+                        Reason = "Damage caused by user dropping the glasses",
+                        RequestedAction = "Warranty claim",
+                        RefundAmount = null,
+                        IsRequiredEvidence = true,
+                        CreatedAt = DateTime.UtcNow.AddDays(-9),
+                        ResolvedAt = DateTime.UtcNow.AddDays(-3)
+                    },
+                    new()
+                    {
+                        OrderId = null,
+                        CustomerId = customerUser.Id,
+                        TicketType = AfterSalesTicketType.Warranty,
+                        TicketStatus = AfterSalesTicketStatus.InProgress,
+                        Reason = "Left lens coating is peeling",
+                        RequestedAction = "Lens replacement with coating",
+                        RefundAmount = null,
+                        IsRequiredEvidence = true,
+                        CreatedAt = DateTime.UtcNow.AddDays(-2)
+                    }
+                };
 
-            await context.AfterSalesTickets.AddRangeAsync(afterSalesTickets);
-            await context.SaveChangesAsync();
+                await context.AfterSalesTickets.AddRangeAsync(afterSalesTickets);
+                await context.SaveChangesAsync();
+            }
         }
     }
 

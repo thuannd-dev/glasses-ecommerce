@@ -12,7 +12,7 @@ using Persistence;
 namespace Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260304205921_MakeOrderIdNullable")]
+    [Migration("20260305032202_MakeOrderIdNullable")]
     partial class MakeOrderIdNullable
     {
         /// <inheritdoc />
