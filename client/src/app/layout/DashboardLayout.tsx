@@ -42,6 +42,8 @@ const DASHBOARD_LINKS: { path: string; label: string; role: string; icon: React.
 const SALES_SUB_LINKS: { path: string; label: string; icon: React.ReactNode }[] = [
   { path: "/sales", label: "Overview", icon: <PointOfSaleIcon /> },
   { path: "/sales/orders", label: "Orders", icon: <Inventory2Outlined /> },
+  { path: "/sales/preorder", label: "Preorder", icon: <ScheduleOutlined /> },
+  { path: "/sales/prescription", label: "Prescription", icon: <VisibilityOutlined /> },
   { path: "/sales/return-refund", label: "Return / Refund", icon: <AssignmentReturnIcon /> },
   { path: "/sales/warranty", label: "Warranty", icon: <VerifiedUserIcon /> },
 ];
@@ -62,6 +64,8 @@ const ADMIN_SUB_LINKS: { path: string; label: string; icon: React.ReactNode }[] 
 export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [salesOrdersOpen, setSalesOrdersOpen] = useState(true);
+  const [preorderOpen, setPreorderOpen] = useState(true);
+  const [prescriptionOpen, setPrescriptionOpen] = useState(true);
   const [returnRefundOpen, setReturnRefundOpen] = useState(true);
   const [warrantyOpen, setWarrantyOpen] = useState(true);
   const [operationsOpen, setOperationsOpen] = useState(true);
@@ -284,6 +288,214 @@ export default function DashboardLayout() {
                                       sx={{
                                         ...baseStyles,
                                         ...(isOrdersRoute && currentStatus === "Cancelled" ? activeStyles : {}),
+                                      }}
+                                    >
+                                      <ListItemText
+                                        primary="Cancelled"
+                                        primaryTypographyProps={{ fontWeight: 500 }}
+                                      />
+                                    </ListItemButton>
+                                  </>
+                                );
+                              })()}
+                            </List>
+                          </Collapse>
+                        </Fragment>
+                      );
+                    }
+
+                    // Preorder parent + dropdown children
+                    if (sub.path === "/sales/preorder") {
+                      return (
+                        <Fragment key="sales-preorder-group">
+                          <ListItemButton
+                            onClick={() => setPreorderOpen((open) => !open)}
+                            sx={{
+                              borderRadius: 2,
+                              mb: 0.25,
+                              color: "rgba(0,0,0,0.7)",
+                              "&:hover": {
+                                bgcolor: "rgba(0,0,0,0.04)",
+                                color: "rgba(0,0,0,0.9)",
+                              },
+                            }}
+                          >
+                            <ListItemIcon sx={{ minWidth: 40, color: "inherit" }}>
+                              <ScheduleOutlined />
+                            </ListItemIcon>
+                            <ListItemText
+                              primary="Preorder"
+                              primaryTypographyProps={{ fontWeight: 600 }}
+                            />
+                            {preorderOpen ? <ExpandLess /> : <ExpandMore />}
+                          </ListItemButton>
+
+                          <Collapse in={preorderOpen} timeout="auto" unmountOnExit>
+                            <List component="div" disablePadding sx={{ pl: 4 }}>
+                              {(() => {
+                                const searchParams = new URLSearchParams(location.search);
+                                const currentStatus =
+                                  location.pathname.startsWith("/sales/preorder")
+                                    ? searchParams.get("status") ?? "Pending"
+                                    : null;
+
+                                const baseStyles = {
+                                  borderRadius: 2,
+                                  mb: 0.25,
+                                  color: "rgba(0,0,0,0.7)",
+                                  "&:hover": {
+                                    bgcolor: "rgba(0,0,0,0.04)",
+                                    color: "rgba(0,0,0,0.9)",
+                                  },
+                                } as const;
+
+                                const activeStyles = {
+                                  bgcolor: "rgba(25,118,210,0.12)",
+                                  color: "primary.main",
+                                } as const;
+
+                                const isPreorderRoute = location.pathname.startsWith("/sales/preorder");
+
+                                return (
+                                  <>
+                                    <ListItemButton
+                                      component={NavLink}
+                                      to="/sales/preorder?status=Pending"
+                                      sx={{
+                                        ...baseStyles,
+                                        ...(isPreorderRoute && currentStatus === "Pending" ? activeStyles : {}),
+                                      }}
+                                    >
+                                      <ListItemText
+                                        primary="Pending"
+                                        primaryTypographyProps={{ fontWeight: 500 }}
+                                      />
+                                    </ListItemButton>
+
+                                    <ListItemButton
+                                      component={NavLink}
+                                      to="/sales/preorder?status=Confirmed"
+                                      sx={{
+                                        ...baseStyles,
+                                        ...(isPreorderRoute && currentStatus === "Confirmed" ? activeStyles : {}),
+                                      }}
+                                    >
+                                      <ListItemText
+                                        primary="Confirmed"
+                                        primaryTypographyProps={{ fontWeight: 500 }}
+                                      />
+                                    </ListItemButton>
+
+                                    <ListItemButton
+                                      component={NavLink}
+                                      to="/sales/preorder?status=Cancelled"
+                                      sx={{
+                                        ...baseStyles,
+                                        ...(isPreorderRoute && currentStatus === "Cancelled" ? activeStyles : {}),
+                                      }}
+                                    >
+                                      <ListItemText
+                                        primary="Cancelled"
+                                        primaryTypographyProps={{ fontWeight: 500 }}
+                                      />
+                                    </ListItemButton>
+                                  </>
+                                );
+                              })()}
+                            </List>
+                          </Collapse>
+                        </Fragment>
+                      );
+                    }
+
+                    // Prescription parent + dropdown children
+                    if (sub.path === "/sales/prescription") {
+                      return (
+                        <Fragment key="sales-prescription-group">
+                          <ListItemButton
+                            onClick={() => setPrescriptionOpen((open) => !open)}
+                            sx={{
+                              borderRadius: 2,
+                              mb: 0.25,
+                              color: "rgba(0,0,0,0.7)",
+                              "&:hover": {
+                                bgcolor: "rgba(0,0,0,0.04)",
+                                color: "rgba(0,0,0,0.9)",
+                              },
+                            }}
+                          >
+                            <ListItemIcon sx={{ minWidth: 40, color: "inherit" }}>
+                              <VisibilityOutlined />
+                            </ListItemIcon>
+                            <ListItemText
+                              primary="Prescription"
+                              primaryTypographyProps={{ fontWeight: 600 }}
+                            />
+                            {prescriptionOpen ? <ExpandLess /> : <ExpandMore />}
+                          </ListItemButton>
+
+                          <Collapse in={prescriptionOpen} timeout="auto" unmountOnExit>
+                            <List component="div" disablePadding sx={{ pl: 4 }}>
+                              {(() => {
+                                const searchParams = new URLSearchParams(location.search);
+                                const currentStatus =
+                                  location.pathname.startsWith("/sales/prescription")
+                                    ? searchParams.get("status") ?? "Pending"
+                                    : null;
+
+                                const baseStyles = {
+                                  borderRadius: 2,
+                                  mb: 0.25,
+                                  color: "rgba(0,0,0,0.7)",
+                                  "&:hover": {
+                                    bgcolor: "rgba(0,0,0,0.04)",
+                                    color: "rgba(0,0,0,0.9)",
+                                  },
+                                } as const;
+
+                                const activeStyles = {
+                                  bgcolor: "rgba(25,118,210,0.12)",
+                                  color: "primary.main",
+                                } as const;
+
+                                const isPrescriptionRoute = location.pathname.startsWith("/sales/prescription");
+
+                                return (
+                                  <>
+                                    <ListItemButton
+                                      component={NavLink}
+                                      to="/sales/prescription?status=Pending"
+                                      sx={{
+                                        ...baseStyles,
+                                        ...(isPrescriptionRoute && currentStatus === "Pending" ? activeStyles : {}),
+                                      }}
+                                    >
+                                      <ListItemText
+                                        primary="Pending"
+                                        primaryTypographyProps={{ fontWeight: 500 }}
+                                      />
+                                    </ListItemButton>
+
+                                    <ListItemButton
+                                      component={NavLink}
+                                      to="/sales/prescription?status=Confirmed"
+                                      sx={{
+                                        ...baseStyles,
+                                        ...(isPrescriptionRoute && currentStatus === "Confirmed" ? activeStyles : {}),
+                                      }}
+                                    >
+                                      <ListItemText
+                                        primary="Confirmed"
+                                        primaryTypographyProps={{ fontWeight: 500 }}
+                                      />
+                                    </ListItemButton>
+
+                                    <ListItemButton
+                                      component={NavLink}
+                                      to="/sales/prescription?status=Cancelled"
+                                      sx={{
+                                        ...baseStyles,
+                                        ...(isPrescriptionRoute && currentStatus === "Cancelled" ? activeStyles : {}),
                                       }}
                                     >
                                       <ListItemText
