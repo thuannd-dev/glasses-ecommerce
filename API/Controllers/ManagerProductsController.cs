@@ -73,6 +73,18 @@ public sealed class ManagerProductsController : BaseApiController
             new DeleteVariant.Command { ProductId = id, VariantId = variantId }, ct));
     }
 
+    /// <summary>
+    /// Bật/tắt chế độ PreOrder của Variant.
+    /// IsPreOrder = true: khách có thể add vào giỏ hàng và checkout dù kho không đủ → OrderType = PreOrder.
+    /// IsPreOrder = false: kiểm tra tồn kho bình thường.
+    /// </summary>
+    [HttpPatch("{id:guid}/variants/{variantId:guid}/preorder")]
+    public async Task<IActionResult> SetVariantPreOrder(Guid id, Guid variantId, SetVariantPreOrderDto dto, CancellationToken ct)
+    {
+        return HandleResult(await Mediator.Send(
+            new SetVariantPreOrder.Command { ProductId = id, VariantId = variantId, IsPreOrder = dto.IsPreOrder }, ct));
+    }
+
     // ────────────────────────── PRODUCT IMAGES ──────────────────────────
 
     /// <summary>

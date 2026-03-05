@@ -10,6 +10,7 @@ public sealed class SetVariantPreOrder
 {
     public sealed class Command : IRequest<Result<Unit>>
     {
+        public required Guid ProductId { get; set; }
         public required Guid VariantId { get; set; }
         public required bool IsPreOrder { get; set; }
     }
@@ -23,6 +24,10 @@ public sealed class SetVariantPreOrder
                 .FirstOrDefaultAsync(pv => pv.Id == request.VariantId, ct);
 
             if (variant == null)
+                return Result<Unit>.Failure("Product variant not found.", 404);
+
+            // Ownership check: variant must belong to the product in the route
+            if (variant.ProductId != request.ProductId)
                 return Result<Unit>.Failure("Product variant not found.", 404);
 
             if (variant.IsPreOrder == request.IsPreOrder)

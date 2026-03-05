@@ -66,14 +66,4 @@ public sealed class ManagerInventoryController : BaseApiController
             new RejectInbound.Command { InboundRecordId = id, Dto = dto }, ct));
     }
 
-    // Đặt trạng thái PreOrder cho một ProductVariant.
-    // IsPreOrder = true: khách có thể add vào giỏ và checkout dù kho không đủ hàng.
-    // Hệ thống sẽ tự động set OrderType = PreOrder khi checkout.
-    // IsPreOrder = false: kiểm tra tồn kho bình thường.
-    [HttpPatch("variants/{id}/preorder")]
-    public async Task<IActionResult> SetVariantPreOrder(Guid id, SetVariantPreOrderDto dto, CancellationToken ct)
-    {
-        return HandleResult(await Mediator.Send(
-            new SetVariantPreOrder.Command { VariantId = id, IsPreOrder = dto.IsPreOrder }, ct));
-    }
 }
