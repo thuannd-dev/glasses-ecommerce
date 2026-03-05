@@ -280,60 +280,6 @@ function TicketListContent({
               </Typography>
             </Box>
 
-            {ticket.orderItem && (
-              <Box
-                sx={{
-                  bgcolor: "rgba(0,0,0,0.02)",
-                  borderRadius: 2,
-                  p: 1.5,
-                  border: "1px solid rgba(0,0,0,0.06)",
-                }}
-              >
-                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 0.75 }}>
-                  <Box>
-                    <Typography sx={{ fontSize: 11, color: "text.secondary", mb: 0.25 }}>SKU</Typography>
-                    <Typography sx={{ fontSize: 13, fontWeight: 700, color: "#1f2937", wordBreak: "break-word" }}>
-                      {ticket.orderItem.sku || "N/A"}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ textAlign: "right" }}>
-                    <Typography sx={{ fontSize: 11, color: "text.secondary", mb: 0.25 }}>Unit Price</Typography>
-                    <Typography sx={{ fontSize: 14, fontWeight: 700, color: "#059669" }}>
-                      ${ticket.orderItem.unitPrice.toFixed(2)}
-                    </Typography>
-                  </Box>
-                </Box>
-                <Typography sx={{ fontSize: 13, fontWeight: 600, mb: 0.75, color: "#1f2937" }}>
-                  {ticket.orderItem.productName || "Unknown Product"}
-                </Typography>
-                <Box sx={{ display: "flex", gap: 2, fontSize: 12, color: "text.secondary" }}>
-                  {ticket.orderItem.variantName && (
-                    <Typography>
-                      <b>Variant:</b> {ticket.orderItem.variantName}
-                    </Typography>
-                  )}
-                  <Typography>
-                    <b>Qty:</b> {ticket.orderItem.quantity}
-                  </Typography>
-                </Box>
-              </Box>
-            )}
-
-            {!ticket.orderItem && (
-              <Box
-                sx={{
-                  bgcolor: "rgba(59, 130, 246, 0.05)",
-                  borderRadius: 2,
-                  p: 1.5,
-                  border: "1px solid rgba(59, 130, 246, 0.2)",
-                }}
-              >
-                <Typography sx={{ fontSize: 12, color: "rgb(59, 130, 246)", fontStyle: "italic" }}>
-                  📦 No product information linked to this ticket
-                </Typography>
-              </Box>
-            )}
-
             <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
               <Box sx={{ flex: 1 }}>
                 <Typography sx={{ fontSize: 13, color: "text.secondary", mb: 0.5 }}>

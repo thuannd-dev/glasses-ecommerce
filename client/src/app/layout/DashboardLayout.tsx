@@ -234,6 +234,14 @@ export default function DashboardLayout() {
                                   location.pathname.startsWith("/sales/orders")
                                     ? searchParams.get("status") ?? "Pending"
                                     : null;
+                                const rawTypes =
+                                  location.pathname.startsWith("/sales/orders")
+                                    ? searchParams.get("type") ?? "ReadyStock"
+                                    : null;
+                                const allowedTypes = ["ReadyStock", "PreOrder", "Prescription"];
+                                const currentTypes = rawTypes
+                                  ?.split(",")
+                                  .filter((t) => allowedTypes.includes(t)) || ["ReadyStock"];
 
                                 const baseStyles = {
                                   borderRadius: 2,
@@ -252,11 +260,20 @@ export default function DashboardLayout() {
 
                                 const isOrdersRoute = location.pathname.startsWith("/sales/orders");
 
+                                const handleTypeClick = (type: string) => {
+                                  const newTypes = currentTypes.includes(type)
+                                    ? currentTypes.filter((t) => t !== type)
+                                    : [...currentTypes, type];
+                                  const typeParam =
+                                    newTypes.length > 0 ? newTypes.join(",") : "ReadyStock";
+                                  window.location.href = `/sales/orders?status=${currentStatus || "Pending"}&type=${typeParam}`;
+                                };
+
                                 return (
                                   <>
                                     <ListItemButton
                                       component={NavLink}
-                                      to="/sales/orders?status=Pending"
+                                      to={`/sales/orders?status=Pending&type=${currentTypes.join(",")}`}
                                       sx={{
                                         ...baseStyles,
                                         ...(isOrdersRoute && currentStatus === "Pending" ? activeStyles : {}),
@@ -270,7 +287,7 @@ export default function DashboardLayout() {
 
                                     <ListItemButton
                                       component={NavLink}
-                                      to="/sales/orders?status=Confirmed"
+                                      to={`/sales/orders?status=Confirmed&type=${currentTypes.join(",")}`}
                                       sx={{
                                         ...baseStyles,
                                         ...(isOrdersRoute && currentStatus === "Confirmed" ? activeStyles : {}),
@@ -284,7 +301,7 @@ export default function DashboardLayout() {
 
                                     <ListItemButton
                                       component={NavLink}
-                                      to="/sales/orders?status=Cancelled"
+                                      to={`/sales/orders?status=Cancelled&type=${currentTypes.join(",")}`}
                                       sx={{
                                         ...baseStyles,
                                         ...(isOrdersRoute && currentStatus === "Cancelled" ? activeStyles : {}),

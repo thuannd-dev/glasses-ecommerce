@@ -186,7 +186,7 @@ export default function OrderDetailPage() {
                 {order.statusHistories.map((h, i) => (
                   <Box key={i}>
                     <Typography fontSize={14}>
-                      {h.fromStatus ?? "—"} → <b>{h.toStatus}</b>
+                      <b>{h.toStatus}</b>
                       {h.notes ? ` · ${h.notes}` : ""}
                     </Typography>
                     <Typography fontSize={12} color="text.secondary">

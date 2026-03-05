@@ -57,13 +57,30 @@ export function OrdersScreen() {
   const allowedStatuses = ["Pending", "Confirmed", "Cancelled"];
   const statusFilter = allowedStatuses.includes(rawStatus) ? rawStatus : "Pending";
 
+  const allowedTypes = ["ReadyStock", "PreOrder", "Prescription"];
+  const rawTypes = searchParams.get("type") ?? "";
+  const selectedTypes = rawTypes
+    .split(",")
+    .filter((t) => t && allowedTypes.includes(t));
+  const typeFilters = selectedTypes;
+
+  const handleTypeToggle = (type: string) => {
+    const newTypes = typeFilters.includes(type)
+      ? typeFilters.filter((t) => t !== type)
+      : [...typeFilters, type];
+    const typeParam = newTypes.length > 0 ? newTypes.join(",") : "";
+    navigate(`/sales/orders?status=${statusFilter}&type=${typeParam}`);
+  };
+
   useEffect(() => {
     setPageNumber(1);
-  }, [statusFilter]);
+  }, [statusFilter, typeFilters.join(",")]);
 
   const { data, isLoading } = useStaffOrders({ pageNumber, pageSize, status: statusFilter });
   const safeOrders = Array.isArray(data?.items) ? data!.items : [];
-  const filteredOrders = safeOrders.filter((o) => o.orderStatus === statusFilter);
+  const filteredOrders = safeOrders.filter(
+    (o) => o.orderStatus === statusFilter && (typeFilters.length === 0 || typeFilters.includes(o.orderType))
+  );
   const meta = data
     ? {
         totalPages: data.totalPages,
@@ -82,9 +99,44 @@ export function OrdersScreen() {
         overflow: "hidden",
       }}
     >
-      <Typography sx={{ fontSize: 24, fontWeight: 900, mb: 2 }}>
+      <Typography sx={{ fontSize: 24, fontWeight: 900, mb: 3 }}>
         Orders
       </Typography>
+
+      <Box
+        sx={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 1.5,
+          mb: 2,
+        }}
+      >
+        <Typography sx={{ alignSelf: "center", fontWeight: 600, color: "text.secondary", fontSize: 14 }}>
+          Type:
+        </Typography>
+        {allowedTypes.map((type) => (
+          <Button
+            key={type}
+            onClick={() => handleTypeToggle(type)}
+            sx={{
+              textTransform: "none",
+              fontWeight: 500,
+              borderRadius: 2,
+              px: 2,
+              py: 0.75,
+              border: "1px solid",
+              borderColor: typeFilters.includes(type) ? "#ec4899" : "rgba(0,0,0,0.12)",
+              bgcolor: typeFilters.includes(type) ? "rgba(236,72,153,0.12)" : "transparent",
+              color: typeFilters.includes(type) ? "#ec4899" : "text.secondary",
+              "&:hover": {
+                bgcolor: typeFilters.includes(type) ? "rgba(236,72,153,0.2)" : "rgba(0,0,0,0.04)",
+              },
+            }}
+          >
+            {type}
+          </Button>
+        ))}
+      </Box>
 
       {isLoading ? (
         <Box sx={{ maxWidth: 720, mx: "auto", mt: 2 }}>

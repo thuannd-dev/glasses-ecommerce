@@ -326,7 +326,7 @@ function ShippedOrderRow({
                 {detail.statusHistories.map((h, idx) => (
                   <Box key={idx}>
                     <Typography>
-                      {h.fromStatus} → <b>{h.toStatus}</b>
+                      <b>{h.toStatus}</b>
                     </Typography>
                     <Typography sx={{ fontSize: 12 }}>
                       {h.notes ? `${h.notes} · ` : ""}
