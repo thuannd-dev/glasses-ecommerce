@@ -44,6 +44,7 @@ import {
   PrescriptionScreen,
   ReturnRefundInspectionScreen,
   OperationsWarrantyScreen,
+  OperationsOrderDetailScreen,
 } from "../../features/Operations/screens";
 import ManagerDashboard from "../../features/Manager/ManagerDashboard";
 import AdminDashboard from "../../features/Admin/AdminDashboard";
@@ -124,6 +125,7 @@ export const router = createBrowserRouter([
               { path: "return-refund/:ticketId", element: <TicketDetailScreen /> },
               { path: "warranty", element: <OperationsWarrantyScreen /> },
               { path: "warranty/:ticketId", element: <TicketDetailScreen /> },
+              { path: "orders/:id", element: <OperationsOrderDetailScreen /> },
             ],
           },
         ],

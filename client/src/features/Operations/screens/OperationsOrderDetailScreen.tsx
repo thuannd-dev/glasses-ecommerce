@@ -5,16 +5,14 @@ import {
   Paper,
   Divider,
   Button,
-  Stack,
 } from "@mui/material";
 import { useNavigate, useParams } from "react-router-dom";
-import { useStaffOrder, useUpdateStaffOrderStatus } from "../../../lib/hooks/useStaffOrders";
+import { useOperationsOrderDetail } from "../../../lib/hooks/useOperationsOrders";
 
-export function OrderDetailScreen() {
+export function OperationsOrderDetailScreen() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const { data, isLoading, isError } = useStaffOrder(id);
-  const updateStatus = useUpdateStaffOrderStatus();
+  const { data, isLoading, isError } = useOperationsOrderDetail(id);
 
   if (isLoading) {
     return (
@@ -71,52 +69,6 @@ export function OrderDetailScreen() {
         <Typography sx={{ fontSize: 24, fontWeight: 900 }}>
           Order ID: {order.id}
         </Typography>
-
-        {order.orderStatus === "Pending" && (
-          <Stack direction="row" spacing={1} sx={{ flexShrink: 0 }}>
-            <Button
-              variant="contained"
-              size="small"
-              disabled={updateStatus.isPending}
-              sx={{
-                textTransform: "none",
-                fontWeight: 700,
-                borderRadius: 2,
-                bgcolor: "#16a34a",
-                "&:hover": { bgcolor: "#15803d" },
-              }}
-              onClick={() =>
-                updateStatus.mutate({
-                  id: order.id,
-                  newStatus: 1,
-                })
-              }
-            >
-              Confirm
-            </Button>
-            <Button
-              variant="outlined"
-              size="small"
-              disabled={updateStatus.isPending}
-              sx={{
-                textTransform: "none",
-                fontWeight: 700,
-                borderRadius: 2,
-                borderColor: "#dc2626",
-                color: "#dc2626",
-                "&:hover": { borderColor: "#b91c1c", bgcolor: "rgba(220,38,38,0.04)" },
-              }}
-              onClick={() =>
-                updateStatus.mutate({
-                  id: order.id,
-                  newStatus: 6,
-                })
-              }
-            >
-              Reject
-            </Button>
-          </Stack>
-        )}
       </Box>
 
       <Paper
@@ -253,4 +205,3 @@ export function OrderDetailScreen() {
     </Box>
   );
 }
-

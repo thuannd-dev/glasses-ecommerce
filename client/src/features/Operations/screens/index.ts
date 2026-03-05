@@ -6,3 +6,4 @@ export { PreOrderScreen } from "./PreOrderScreen";
 export { PrescriptionScreen } from "./PrescriptionScreen";
 export { ReturnRefundInspectionScreen } from "./ReturnRefundInspectionScreen";
 export { OperationsWarrantyScreen } from "./OperationsWarrantyScreen";
+export { OperationsOrderDetailScreen } from "./OperationsOrderDetailScreen";
