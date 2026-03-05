@@ -36,6 +36,7 @@ public sealed class DeleteVariant
                 .AnyAsync(oi =>
                     oi.ProductVariantId == request.VariantId &&
                     oi.Order.OrderStatus != OrderStatus.Delivered &&
+                    oi.Order.OrderStatus != OrderStatus.Completed &&
                     oi.Order.OrderStatus != OrderStatus.Cancelled &&
                     oi.Order.OrderStatus != OrderStatus.Refunded, ct);
 

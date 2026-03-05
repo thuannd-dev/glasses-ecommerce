@@ -79,10 +79,18 @@ public sealed class AddVariant
 
                 context.Stocks.Add(stock);
 
-                bool success = await context.SaveChangesAsync(ct) > 0;
+                try
+                {
+                    int affectedRows = await context.SaveChangesAsync(ct);
 
-                if (!success)
-                    return Result<Guid>.Failure("Failed to add variant.", 500);
+                    if (affectedRows == 0)
+                        return Result<Guid>.Failure("Failed to add variant.", 500);
+                }
+                catch (DbUpdateException ex) when (ex.InnerException?.Message.Contains("IX_ProductVariant_SKU", StringComparison.OrdinalIgnoreCase) == true)
+                {
+                    // Handle concurrent SKU collision (UNIQUE constraint violation)
+                    return Result<Guid>.Failure($"SKU '{dto.SKU}' already exists.", 409);
+                }
 
                 await transaction.CommitAsync(ct);
 

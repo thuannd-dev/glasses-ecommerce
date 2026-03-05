@@ -87,15 +87,22 @@ public sealed class UpdateVariant
             if (dto.IsActive.HasValue)
                 variant.IsActive = dto.IsActive.Value;
 
-            bool success = await context.SaveChangesAsync(ct) > 0;
+            try
+            {
+                int affectedRows = await context.SaveChangesAsync(ct);
 
-            if (!success && context.Entry(variant).State == EntityState.Unchanged)
+                if (affectedRows == 0 && context.Entry(variant).State == EntityState.Unchanged)
+                    return Result<Unit>.Success(Unit.Value);
+
+                if (affectedRows == 0)
+                    return Result<Unit>.Failure("Failed to update variant.", 500);
+
                 return Result<Unit>.Success(Unit.Value);
-
-            if (!success)
-                return Result<Unit>.Failure("Failed to update variant.", 500);
-
-            return Result<Unit>.Success(Unit.Value);
+            }
+            catch (DbUpdateException ex) when (ex.InnerException?.Message.Contains("IX_ProductVariant_SKU", StringComparison.OrdinalIgnoreCase) == true)
+            {
+                return Result<Unit>.Failure($"SKU '{dto.SKU}' already exists.", 409);
+            }
         }
     }
 }
