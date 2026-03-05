@@ -24,12 +24,16 @@ public sealed class GetStaffTickets
         AppDbContext context,
         IMapper mapper) : IRequestHandler<Query, Result<PagedResult<TicketListDto>>>
     {
-        public async Task<Result<PagedResult<TicketListDto>>> Handle(Query request, CancellationToken ct)
+        public async Task<Result<PagedResult<TicketListDto>>> Handle(Query request, CancellationToken cancellationToken)
         {
             if (request.PageNumber < 1 || request.PageSize < 1 || request.PageSize > 100)
                 return Result<PagedResult<TicketListDto>>.Failure("Invalid pagination parameters.", 400);
 
-            IQueryable<AfterSalesTicket> query = context.AfterSalesTickets.AsNoTracking();
+            IQueryable<AfterSalesTicket> query = context.AfterSalesTickets
+                .AsNoTracking()
+                .Include(t => t.OrderItem)
+                .ThenInclude(oi => oi!.ProductVariant)
+                .ThenInclude(pv => pv!.Product);
 
             if (request.Status.HasValue)
                 query = query.Where(t => t.TicketStatus == request.Status.Value);
@@ -40,14 +44,14 @@ public sealed class GetStaffTickets
             if (request.OrderId.HasValue)
                 query = query.Where(t => t.OrderId == request.OrderId.Value);
 
-            int totalCount = await query.CountAsync(ct);
+            int totalCount = await query.CountAsync(cancellationToken);
 
             List<TicketListDto> items = await query
                 .OrderByDescending(t => t.CreatedAt)
                 .Skip((request.PageNumber - 1) * request.PageSize)
                 .Take(request.PageSize)
                 .ProjectTo<TicketListDto>(mapper.ConfigurationProvider)
-                .ToListAsync(ct);
+                .ToListAsync(cancellationToken);
 
             PagedResult<TicketListDto> result = new()
             {

@@ -30,6 +30,11 @@ import SalesLayout from "../../features/Sales/SalesLayout";
 import { OverviewScreen as SalesOverviewScreen } from "../../features/Sales/screens/OverviewScreen";
 import { OrdersScreen as SalesOrdersScreen } from "../../features/Sales/screens/OrdersScreen";
 import { OrderDetailScreen as SalesOrderDetailScreen } from "../../features/Sales/screens/OrderDetailScreen";
+import { PreorderScreen } from "../../features/Sales/screens/PreorderScreen";
+import { PrescriptionScreen as SalesPrescriptionScreen } from "../../features/Sales/screens/PrescriptionScreen";
+import { ReturnRefundScreen } from "../../features/Sales/screens/ReturnRefundScreen";
+import { WarrantyScreen } from "../../features/Sales/screens/WarrantyScreen";
+import { TicketDetailScreen } from "../../features/Sales/screens/TicketDetailScreen";
 import OperationsLayout from "../../features/Operations/OperationsLayout";
 import {
   PackScreen,
@@ -90,6 +95,12 @@ export const router = createBrowserRouter([
               { index: true, element: <SalesOverviewScreen /> },
               { path: "orders", element: <SalesOrdersScreen /> },
               { path: "orders/:id", element: <SalesOrderDetailScreen /> },
+              { path: "preorder", element: <PreorderScreen /> },
+              { path: "prescription", element: <SalesPrescriptionScreen /> },
+              { path: "return-refund", element: <ReturnRefundScreen /> },
+              { path: "return-refund/:ticketId", element: <TicketDetailScreen /> },
+              { path: "warranty", element: <WarrantyScreen /> },
+              { path: "warranty/:ticketId", element: <TicketDetailScreen /> },
             ],
           },
         ],

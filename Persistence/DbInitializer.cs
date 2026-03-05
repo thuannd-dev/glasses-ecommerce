@@ -1,6 +1,7 @@
 using System;
 using Domain;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace Persistence;
 
@@ -1178,6 +1179,240 @@ public class DbInitializer
 
             await context.PolicyConfigurations.AddRangeAsync(policies);
             await context.SaveChangesAsync();
+        }
+
+        // Seed Orders with OrderItems
+        if (!context.Orders.Any())
+        {
+            User? customerUser = await userManager.Users.FirstOrDefaultAsync(u => u.UserName == "customer@test.com");
+            
+            if (customerUser != null)
+            {
+                // Get product variants for linking to order items
+                List<ProductVariant> variants = await context.ProductVariants.Take(20).ToListAsync();
+
+                var orders = new List<Order>
+                {
+                    new() { UserId = customerUser.Id, OrderType = OrderType.ReadyStock, TotalAmount = 318.00m, OrderStatus = OrderStatus.Pending, CreatedAt = DateTime.UtcNow.AddDays(-5) },
+                    new() { UserId = customerUser.Id, OrderType = OrderType.ReadyStock, TotalAmount = 189.99m, OrderStatus = OrderStatus.Confirmed, CreatedAt = DateTime.UtcNow.AddDays(-3) },
+                    new() { UserId = customerUser.Id, OrderType = OrderType.ReadyStock, TotalAmount = 308.00m, OrderStatus = OrderStatus.Pending, CreatedAt = DateTime.UtcNow.AddDays(-8) },
+                    new() { UserId = customerUser.Id, OrderType = OrderType.ReadyStock, TotalAmount = 450.00m, OrderStatus = OrderStatus.Confirmed, CreatedAt = DateTime.UtcNow.AddDays(-10) },
+                    new() { UserId = customerUser.Id, OrderType = OrderType.ReadyStock, TotalAmount = 159.00m, OrderStatus = OrderStatus.Pending, CreatedAt = DateTime.UtcNow.AddDays(-1) },
+                    new() { UserId = customerUser.Id, OrderType = OrderType.ReadyStock, TotalAmount = 378.00m, OrderStatus = OrderStatus.Confirmed, CreatedAt = DateTime.UtcNow.AddDays(-6) },
+                    new() { UserId = customerUser.Id, OrderType = OrderType.ReadyStock, TotalAmount = 338.00m, OrderStatus = OrderStatus.Pending, CreatedAt = DateTime.UtcNow.AddDays(-4) },
+                    new() { UserId = customerUser.Id, OrderType = OrderType.ReadyStock, TotalAmount = 290.00m, OrderStatus = OrderStatus.Confirmed, CreatedAt = DateTime.UtcNow.AddDays(-12) },
+                    new() { UserId = customerUser.Id, OrderType = OrderType.ReadyStock, TotalAmount = 169.00m, OrderStatus = OrderStatus.Pending, CreatedAt = DateTime.UtcNow.AddDays(-9) },
+                    new() { UserId = customerUser.Id, OrderType = OrderType.ReadyStock, TotalAmount = 318.00m, OrderStatus = OrderStatus.Confirmed, CreatedAt = DateTime.UtcNow.AddDays(-2) },
+                    new() { UserId = customerUser.Id, OrderType = OrderType.ReadyStock, TotalAmount = 245.00m, OrderStatus = OrderStatus.Cancelled, CreatedAt = DateTime.UtcNow.AddDays(-7) },
+                    new() { UserId = customerUser.Id, OrderType = OrderType.ReadyStock, TotalAmount = 425.00m, OrderStatus = OrderStatus.Cancelled, CreatedAt = DateTime.UtcNow.AddDays(-11) }
+                };
+
+                await context.Orders.AddRangeAsync(orders);
+                await context.SaveChangesAsync();
+
+                // Now add OrderItems with the Order IDs
+                if (variants.Count > 0)
+                {
+                    List<OrderItem> orderItems = new List<OrderItem>
+                    {
+                        // Order 1: 2 items
+                        new() { OrderId = orders[0].Id, ProductVariantId = variants[0].Id, Quantity = 2, UnitPrice = 159.00m },
+                        new() { OrderId = orders[0].Id, ProductVariantId = variants.Count > 1 ? variants[1].Id : variants[0].Id, Quantity = 1, UnitPrice = 149.00m },
+                        
+                        // Order 2: 1 item
+                        new() { OrderId = orders[1].Id, ProductVariantId = variants[variants.Count > 2 ? 2 : 0].Id, Quantity = 1, UnitPrice = 189.99m },
+                        
+                        // Order 3: 1 item
+                        new() { OrderId = orders[2].Id, ProductVariantId = variants[variants.Count > 3 ? 3 : 1].Id, Quantity = 2, UnitPrice = 154.00m },
+                        
+                        // Order 4: 3 items
+                        new() { OrderId = orders[3].Id, ProductVariantId = variants[variants.Count > 4 ? 4 : 2].Id, Quantity = 1, UnitPrice = 169.00m },
+                        new() { OrderId = orders[3].Id, ProductVariantId = variants[variants.Count > 5 ? 5 : 3].Id, Quantity = 1, UnitPrice = 159.00m },
+                        new() { OrderId = orders[3].Id, ProductVariantId = variants[variants.Count > 6 ? 6 : 4].Id, Quantity = 1, UnitPrice = 122.00m },
+                        
+                        // Order 5: 1 item
+                        new() { OrderId = orders[4].Id, ProductVariantId = variants[variants.Count > 7 ? 7 : 5].Id, Quantity = 1, UnitPrice = 159.00m },
+                        
+                        // Order 6: 2 items
+                        new() { OrderId = orders[5].Id, ProductVariantId = variants[variants.Count > 8 ? 8 : 6].Id, Quantity = 2, UnitPrice = 189.00m },
+                        new() { OrderId = orders[5].Id, ProductVariantId = variants[variants.Count > 9 ? 9 : 7].Id, Quantity = 1, UnitPrice = 189.00m },
+                        
+                        // Order 7: 2 items
+                        new() { OrderId = orders[6].Id, ProductVariantId = variants[0].Id, Quantity = 2, UnitPrice = 169.00m },
+                        new() { OrderId = orders[6].Id, ProductVariantId = variants[1].Id, Quantity = 1, UnitPrice = 169.00m },
+                        
+                        // Order 8: 2 items
+                        new() { OrderId = orders[7].Id, ProductVariantId = variants[variants.Count > 2 ? 2 : 0].Id, Quantity = 1, UnitPrice = 145.00m },
+                        new() { OrderId = orders[7].Id, ProductVariantId = variants[variants.Count > 3 ? 3 : 1].Id, Quantity = 1, UnitPrice = 145.00m },
+                        
+                        // Order 9: 1 item
+                        new() { OrderId = orders[8].Id, ProductVariantId = variants[variants.Count > 4 ? 4 : 2].Id, Quantity = 1, UnitPrice = 169.00m },
+                        
+                        // Order 10: 1 item
+                        new() { OrderId = orders[9].Id, ProductVariantId = variants[variants.Count > 5 ? 5 : 3].Id, Quantity = 2, UnitPrice = 159.00m }
+                    };
+
+                    await context.OrderItems.AddRangeAsync(orderItems);
+                    await context.SaveChangesAsync();
+                }
+            }
+        }
+
+        // Seed AfterSalesTickets (Return/Refund and Warranty)
+        if (!context.AfterSalesTickets.Any())
+        {
+            // Get a customer user and order items from the database
+            User? customerUser = await userManager.Users.FirstOrDefaultAsync(u => u.UserName == "customer@test.com");
+            
+            if (customerUser != null)
+            {
+                // Get OrderItems to link to tickets
+                List<OrderItem> orderItems = await context.OrderItems.ToListAsync();
+
+                var afterSalesTickets = new List<AfterSalesTicket>
+                {
+                    // Return/Refund Tickets - map to first 5 order items
+                    new()
+                    {
+                        OrderId = null,
+                        OrderItemId = orderItems.Count > 0 ? orderItems[0].Id : null,
+                        CustomerId = customerUser.Id,
+                        TicketType = AfterSalesTicketType.Return,
+                        TicketStatus = AfterSalesTicketStatus.Pending,
+                        Reason = "Frame is slightly bent and uncomfortable to wear",
+                        RequestedAction = "Exchange for same model",
+                        RefundAmount = null,
+                        IsRequiredEvidence = true,
+                        CreatedAt = DateTime.UtcNow.AddDays(-5)
+                    },
+                    new()
+                    {
+                        OrderId = null,
+                        OrderItemId = orderItems.Count > 1 ? orderItems[1].Id : null,
+                        CustomerId = customerUser.Id,
+                        TicketType = AfterSalesTicketType.Refund,
+                        TicketStatus = AfterSalesTicketStatus.InProgress,
+                        Reason = "Customer changed their mind about the purchase",
+                        RequestedAction = "Full refund",
+                        RefundAmount = 189.99m,
+                        IsRequiredEvidence = false,
+                        CreatedAt = DateTime.UtcNow.AddDays(-3)
+                    },
+                    new()
+                    {
+                        OrderId = null,
+                        OrderItemId = orderItems.Count > 2 ? orderItems[2].Id : null,
+                        CustomerId = customerUser.Id,
+                        TicketType = AfterSalesTicketType.Return,
+                        TicketStatus = AfterSalesTicketStatus.Resolved,
+                        Reason = "Wrong frame color shipped",
+                        RequestedAction = "Exchange for correct color",
+                        RefundAmount = null,
+                        IsRequiredEvidence = false,
+                        CreatedAt = DateTime.UtcNow.AddDays(-8),
+                        ResolvedAt = DateTime.UtcNow.AddDays(-1)
+                    },
+                    new()
+                    {
+                        OrderId = null,
+                        OrderItemId = orderItems.Count > 3 ? orderItems[3].Id : null,
+                        CustomerId = customerUser.Id,
+                        TicketType = AfterSalesTicketType.Refund,
+                        TicketStatus = AfterSalesTicketStatus.Rejected,
+                        Reason = "Product damaged due to customer mishandling",
+                        RequestedAction = "Refund requested",
+                        RefundAmount = null,
+                        IsRequiredEvidence = true,
+                        CreatedAt = DateTime.UtcNow.AddDays(-10),
+                        ResolvedAt = DateTime.UtcNow.AddDays(-4)
+                    },
+                    new()
+                    {
+                        OrderId = null,
+                        OrderItemId = orderItems.Count > 4 ? orderItems[4].Id : null,
+                        CustomerId = customerUser.Id,
+                        TicketType = AfterSalesTicketType.Return,
+                        TicketStatus = AfterSalesTicketStatus.Pending,
+                        Reason = "Prescription was incorrectly filled",
+                        RequestedAction = "Replace with correct prescription",
+                        RefundAmount = null,
+                        IsRequiredEvidence = true,
+                        CreatedAt = DateTime.UtcNow.AddDays(-1)
+                    },
+
+                    // Warranty Tickets - map to remaining order items
+                    new()
+                    {
+                        OrderId = null,
+                        OrderItemId = orderItems.Count > 5 ? orderItems[5].Id : null,
+                        CustomerId = customerUser.Id,
+                        TicketType = AfterSalesTicketType.Warranty,
+                        TicketStatus = AfterSalesTicketStatus.Pending,
+                        Reason = "Left lens has a small scratch that appeared after normal use",
+                        RequestedAction = "Lens replacement",
+                        RefundAmount = null,
+                        IsRequiredEvidence = true,
+                        CreatedAt = DateTime.UtcNow.AddDays(-6)
+                    },
+                    new()
+                    {
+                        OrderId = null,
+                        OrderItemId = orderItems.Count > 6 ? orderItems[6].Id : null,
+                        CustomerId = customerUser.Id,
+                        TicketType = AfterSalesTicketType.Warranty,
+                        TicketStatus = AfterSalesTicketStatus.InProgress,
+                        Reason = "Frame temple is loose and needs adjustment",
+                        RequestedAction = "Frame repair and adjustment",
+                        RefundAmount = null,
+                        IsRequiredEvidence = false,
+                        CreatedAt = DateTime.UtcNow.AddDays(-4)
+                    },
+                    new()
+                    {
+                        OrderId = null,
+                        OrderItemId = orderItems.Count > 7 ? orderItems[7].Id : null,
+                        CustomerId = customerUser.Id,
+                        TicketType = AfterSalesTicketType.Warranty,
+                        TicketStatus = AfterSalesTicketStatus.Resolved,
+                        Reason = "Nose pad came off",
+                        RequestedAction = "Repair nose pad",
+                        RefundAmount = null,
+                        IsRequiredEvidence = false,
+                        CreatedAt = DateTime.UtcNow.AddDays(-12),
+                        ResolvedAt = DateTime.UtcNow.AddDays(-2)
+                    },
+                    new()
+                    {
+                        OrderId = null,
+                        OrderItemId = orderItems.Count > 8 ? orderItems[8].Id : null,
+                        CustomerId = customerUser.Id,
+                        TicketType = AfterSalesTicketType.Warranty,
+                        TicketStatus = AfterSalesTicketStatus.Rejected,
+                        Reason = "Damage caused by user dropping the glasses",
+                        RequestedAction = "Warranty claim",
+                        RefundAmount = null,
+                        IsRequiredEvidence = true,
+                        CreatedAt = DateTime.UtcNow.AddDays(-9),
+                        ResolvedAt = DateTime.UtcNow.AddDays(-3)
+                    },
+                    new()
+                    {
+                        OrderId = null,
+                        OrderItemId = orderItems.Count > 9 ? orderItems[9].Id : null,
+                        CustomerId = customerUser.Id,
+                        TicketType = AfterSalesTicketType.Warranty,
+                        TicketStatus = AfterSalesTicketStatus.InProgress,
+                        Reason = "Left lens coating is peeling",
+                        RequestedAction = "Lens replacement with coating",
+                        RefundAmount = null,
+                        IsRequiredEvidence = true,
+                        CreatedAt = DateTime.UtcNow.AddDays(-2)
+                    }
+                };
+
+                await context.AfterSalesTickets.AddRangeAsync(afterSalesTickets);
+                await context.SaveChangesAsync();
+            }
         }
     }
 

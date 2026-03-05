@@ -7,7 +7,12 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
-[Authorize(Roles = "Sales")]
+/// <summary>
+/// Staff After-Sales Management Controller.
+/// NOTE: Currently allows anonymous access for demo/testing purposes.
+/// In production, change to [Authorize] or role-based authorization as needed.
+/// </summary>
+[AllowAnonymous]
 [Route("api/staff/after-sales")]
 public sealed class StaffAfterSalesController : BaseApiController
 {

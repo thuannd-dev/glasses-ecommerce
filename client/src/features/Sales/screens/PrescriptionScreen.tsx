@@ -46,7 +46,7 @@ const getStatusColor = (
   }
 };
 
-export function OrdersScreen() {
+export function PrescriptionScreen() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -61,9 +61,16 @@ export function OrdersScreen() {
     setPageNumber(1);
   }, [statusFilter]);
 
-  const { data, isLoading } = useStaffOrders({ pageNumber, pageSize, status: statusFilter });
+  const { data, isLoading } = useStaffOrders({
+    pageNumber,
+    pageSize,
+    status: statusFilter,
+    orderType: "Prescription",
+  });
   const safeOrders = Array.isArray(data?.items) ? data!.items : [];
-  const filteredOrders = safeOrders.filter((o) => o.orderStatus === statusFilter);
+  const filteredOrders = safeOrders.filter(
+    (o) => o.orderStatus === statusFilter && o.orderType === "Prescription"
+  );
   const meta = data
     ? {
         totalPages: data.totalPages,
@@ -83,7 +90,7 @@ export function OrdersScreen() {
       }}
     >
       <Typography sx={{ fontSize: 24, fontWeight: 900, mb: 2 }}>
-        Orders
+        Prescriptions
       </Typography>
 
       {isLoading ? (
@@ -102,7 +109,7 @@ export function OrdersScreen() {
               textAlign: "center",
             }}
           >
-            <Typography color="text.secondary">No orders yet.</Typography>
+            <Typography color="text.secondary">No prescriptions yet.</Typography>
           </Paper>
         </Box>
       ) : (
@@ -283,4 +290,3 @@ export function OrdersScreen() {
     </Box>
   );
 }
-
