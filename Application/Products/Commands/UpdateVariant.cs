@@ -72,8 +72,18 @@ public sealed class UpdateVariant
             if (dto.Price.HasValue)
                 variant.Price = dto.Price.Value;
 
+            // Guard: resolve effective final Price (new or existing) and validate CompareAtPrice.
+            // Validator can only check when both fields are in the request; this handles the case
+            // where only CompareAtPrice is sent — the effective Price comes from the DB record.
             if (dto.CompareAtPrice.HasValue)
+            {
+                decimal finalPrice = dto.Price ?? variant.Price;
+                if (dto.CompareAtPrice.Value < finalPrice)
+                    return Result<Unit>.Failure(
+                        "Compare-at price must be greater than or equal to the selling price.", 400);
+
                 variant.CompareAtPrice = dto.CompareAtPrice;
+            }
 
             if (dto.IsActive.HasValue)
                 variant.IsActive = dto.IsActive.Value;
