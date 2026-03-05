@@ -20,7 +20,7 @@ public sealed class CreateVariantDto
     /// <summary>
     /// Khi true: khách có thể add vào giỏ và checkout dù kho không đủ.
     /// Hệ thống tự động set OrderType = PreOrder khi checkout.
-    /// Mặc định false — có thể thay đổi sau via PATCH /api/manager/inventory/variants/{id}/preorder.
+    /// Mặc định false — có thể thay đổi sau via PATCH api/manager/products/{id}/variants/{variantId}/preorder.
     /// </summary>
     public bool IsPreOrder { get; set; } = false;
 }

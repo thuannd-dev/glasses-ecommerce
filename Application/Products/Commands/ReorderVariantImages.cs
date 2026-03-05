@@ -58,6 +58,9 @@ public sealed class ReorderVariantImages
                 imageById[dto.ImageIds[i]].DisplayOrder = i;
             }
 
+            if (!context.ChangeTracker.HasChanges())
+                return Result<Unit>.Success(Unit.Value);
+
             bool success = await context.SaveChangesAsync(ct) > 0;
 
             if (!success)

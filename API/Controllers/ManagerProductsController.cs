@@ -109,7 +109,7 @@ public sealed class ManagerProductsController : BaseApiController
     }
 
     /// <summary>
-    /// Sắp xếp lại thứ tự ảnh của Product. Phải truyền đầy đủ tất cả ImageId (cả product và variant level).
+    /// Sắp xếp lại thứ tự ảnh của Product.
     /// </summary>
     [HttpPut("{id}/images/reorder")]
     public async Task<IActionResult> ReorderProductImages(Guid id, ReorderImagesDto dto, CancellationToken ct)
