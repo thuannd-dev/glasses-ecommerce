@@ -260,15 +260,6 @@ export default function DashboardLayout() {
 
                                 const isOrdersRoute = location.pathname.startsWith("/sales/orders");
 
-                                const handleTypeClick = (type: string) => {
-                                  const newTypes = currentTypes.includes(type)
-                                    ? currentTypes.filter((t) => t !== type)
-                                    : [...currentTypes, type];
-                                  const typeParam =
-                                    newTypes.length > 0 ? newTypes.join(",") : "ReadyStock";
-                                  window.location.href = `/sales/orders?status=${currentStatus || "Pending"}&type=${typeParam}`;
-                                };
-
                                 return (
                                   <>
                                     <ListItemButton
