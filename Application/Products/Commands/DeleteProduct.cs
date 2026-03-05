@@ -39,6 +39,7 @@ public sealed class DeleteProduct
                     .AnyAsync(oi =>
                         variantIds.Contains(oi.ProductVariantId) &&
                         oi.Order.OrderStatus != OrderStatus.Delivered &&
+                        oi.Order.OrderStatus != OrderStatus.Completed &&
                         oi.Order.OrderStatus != OrderStatus.Cancelled &&
                         oi.Order.OrderStatus != OrderStatus.Refunded, ct);
 
