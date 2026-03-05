@@ -1181,20 +1181,101 @@ public class DbInitializer
             await context.SaveChangesAsync();
         }
 
-        // Seed AfterSalesTickets (Return/Refund and Warranty)
-        if (!context.AfterSalesTickets.Any())
+        // Seed Orders with OrderItems
+        if (!context.Orders.Any())
         {
-            // Get a customer user from the database
             User? customerUser = await userManager.Users.FirstOrDefaultAsync(u => u.UserName == "customer@test.com");
             
             if (customerUser != null)
             {
+                // Get product variants for linking to order items
+                List<ProductVariant> variants = await context.ProductVariants.Take(20).ToListAsync();
+
+                var orders = new List<Order>
+                {
+                    new() { UserId = customerUser.Id, OrderType = OrderType.ReadyStock, TotalAmount = 318.00m, OrderStatus = OrderStatus.Pending, CreatedAt = DateTime.UtcNow.AddDays(-5) },
+                    new() { UserId = customerUser.Id, OrderType = OrderType.ReadyStock, TotalAmount = 189.99m, OrderStatus = OrderStatus.Confirmed, CreatedAt = DateTime.UtcNow.AddDays(-3) },
+                    new() { UserId = customerUser.Id, OrderType = OrderType.ReadyStock, TotalAmount = 308.00m, OrderStatus = OrderStatus.Pending, CreatedAt = DateTime.UtcNow.AddDays(-8) },
+                    new() { UserId = customerUser.Id, OrderType = OrderType.ReadyStock, TotalAmount = 450.00m, OrderStatus = OrderStatus.Confirmed, CreatedAt = DateTime.UtcNow.AddDays(-10) },
+                    new() { UserId = customerUser.Id, OrderType = OrderType.ReadyStock, TotalAmount = 159.00m, OrderStatus = OrderStatus.Pending, CreatedAt = DateTime.UtcNow.AddDays(-1) },
+                    new() { UserId = customerUser.Id, OrderType = OrderType.ReadyStock, TotalAmount = 378.00m, OrderStatus = OrderStatus.Confirmed, CreatedAt = DateTime.UtcNow.AddDays(-6) },
+                    new() { UserId = customerUser.Id, OrderType = OrderType.ReadyStock, TotalAmount = 338.00m, OrderStatus = OrderStatus.Pending, CreatedAt = DateTime.UtcNow.AddDays(-4) },
+                    new() { UserId = customerUser.Id, OrderType = OrderType.ReadyStock, TotalAmount = 290.00m, OrderStatus = OrderStatus.Confirmed, CreatedAt = DateTime.UtcNow.AddDays(-12) },
+                    new() { UserId = customerUser.Id, OrderType = OrderType.ReadyStock, TotalAmount = 169.00m, OrderStatus = OrderStatus.Pending, CreatedAt = DateTime.UtcNow.AddDays(-9) },
+                    new() { UserId = customerUser.Id, OrderType = OrderType.ReadyStock, TotalAmount = 318.00m, OrderStatus = OrderStatus.Confirmed, CreatedAt = DateTime.UtcNow.AddDays(-2) },
+                    new() { UserId = customerUser.Id, OrderType = OrderType.ReadyStock, TotalAmount = 245.00m, OrderStatus = OrderStatus.Cancelled, CreatedAt = DateTime.UtcNow.AddDays(-7) },
+                    new() { UserId = customerUser.Id, OrderType = OrderType.ReadyStock, TotalAmount = 425.00m, OrderStatus = OrderStatus.Cancelled, CreatedAt = DateTime.UtcNow.AddDays(-11) }
+                };
+
+                await context.Orders.AddRangeAsync(orders);
+                await context.SaveChangesAsync();
+
+                // Now add OrderItems with the Order IDs
+                if (variants.Count > 0)
+                {
+                    List<OrderItem> orderItems = new List<OrderItem>
+                    {
+                        // Order 1: 2 items
+                        new() { OrderId = orders[0].Id, ProductVariantId = variants[0].Id, Quantity = 2, UnitPrice = 159.00m },
+                        new() { OrderId = orders[0].Id, ProductVariantId = variants.Count > 1 ? variants[1].Id : variants[0].Id, Quantity = 1, UnitPrice = 149.00m },
+                        
+                        // Order 2: 1 item
+                        new() { OrderId = orders[1].Id, ProductVariantId = variants[variants.Count > 2 ? 2 : 0].Id, Quantity = 1, UnitPrice = 189.99m },
+                        
+                        // Order 3: 1 item
+                        new() { OrderId = orders[2].Id, ProductVariantId = variants[variants.Count > 3 ? 3 : 1].Id, Quantity = 2, UnitPrice = 154.00m },
+                        
+                        // Order 4: 3 items
+                        new() { OrderId = orders[3].Id, ProductVariantId = variants[variants.Count > 4 ? 4 : 2].Id, Quantity = 1, UnitPrice = 169.00m },
+                        new() { OrderId = orders[3].Id, ProductVariantId = variants[variants.Count > 5 ? 5 : 3].Id, Quantity = 1, UnitPrice = 159.00m },
+                        new() { OrderId = orders[3].Id, ProductVariantId = variants[variants.Count > 6 ? 6 : 4].Id, Quantity = 1, UnitPrice = 122.00m },
+                        
+                        // Order 5: 1 item
+                        new() { OrderId = orders[4].Id, ProductVariantId = variants[variants.Count > 7 ? 7 : 5].Id, Quantity = 1, UnitPrice = 159.00m },
+                        
+                        // Order 6: 2 items
+                        new() { OrderId = orders[5].Id, ProductVariantId = variants[variants.Count > 8 ? 8 : 6].Id, Quantity = 2, UnitPrice = 189.00m },
+                        new() { OrderId = orders[5].Id, ProductVariantId = variants[variants.Count > 9 ? 9 : 7].Id, Quantity = 1, UnitPrice = 189.00m },
+                        
+                        // Order 7: 2 items
+                        new() { OrderId = orders[6].Id, ProductVariantId = variants[0].Id, Quantity = 2, UnitPrice = 169.00m },
+                        new() { OrderId = orders[6].Id, ProductVariantId = variants[1].Id, Quantity = 1, UnitPrice = 169.00m },
+                        
+                        // Order 8: 2 items
+                        new() { OrderId = orders[7].Id, ProductVariantId = variants[variants.Count > 2 ? 2 : 0].Id, Quantity = 1, UnitPrice = 145.00m },
+                        new() { OrderId = orders[7].Id, ProductVariantId = variants[variants.Count > 3 ? 3 : 1].Id, Quantity = 1, UnitPrice = 145.00m },
+                        
+                        // Order 9: 1 item
+                        new() { OrderId = orders[8].Id, ProductVariantId = variants[variants.Count > 4 ? 4 : 2].Id, Quantity = 1, UnitPrice = 169.00m },
+                        
+                        // Order 10: 1 item
+                        new() { OrderId = orders[9].Id, ProductVariantId = variants[variants.Count > 5 ? 5 : 3].Id, Quantity = 2, UnitPrice = 159.00m }
+                    };
+
+                    await context.OrderItems.AddRangeAsync(orderItems);
+                    await context.SaveChangesAsync();
+                }
+            }
+        }
+
+        // Seed AfterSalesTickets (Return/Refund and Warranty)
+        if (!context.AfterSalesTickets.Any())
+        {
+            // Get a customer user and order items from the database
+            User? customerUser = await userManager.Users.FirstOrDefaultAsync(u => u.UserName == "customer@test.com");
+            
+            if (customerUser != null)
+            {
+                // Get OrderItems to link to tickets
+                List<OrderItem> orderItems = await context.OrderItems.ToListAsync();
+
                 var afterSalesTickets = new List<AfterSalesTicket>
                 {
-                    // Return/Refund Tickets
+                    // Return/Refund Tickets - map to first 5 order items
                     new()
                     {
                         OrderId = null,
+                        OrderItemId = orderItems.Count > 0 ? orderItems[0].Id : null,
                         CustomerId = customerUser.Id,
                         TicketType = AfterSalesTicketType.Return,
                         TicketStatus = AfterSalesTicketStatus.Pending,
@@ -1207,6 +1288,7 @@ public class DbInitializer
                     new()
                     {
                         OrderId = null,
+                        OrderItemId = orderItems.Count > 1 ? orderItems[1].Id : null,
                         CustomerId = customerUser.Id,
                         TicketType = AfterSalesTicketType.Refund,
                         TicketStatus = AfterSalesTicketStatus.InProgress,
@@ -1219,6 +1301,7 @@ public class DbInitializer
                     new()
                     {
                         OrderId = null,
+                        OrderItemId = orderItems.Count > 2 ? orderItems[2].Id : null,
                         CustomerId = customerUser.Id,
                         TicketType = AfterSalesTicketType.Return,
                         TicketStatus = AfterSalesTicketStatus.Resolved,
@@ -1232,6 +1315,7 @@ public class DbInitializer
                     new()
                     {
                         OrderId = null,
+                        OrderItemId = orderItems.Count > 3 ? orderItems[3].Id : null,
                         CustomerId = customerUser.Id,
                         TicketType = AfterSalesTicketType.Refund,
                         TicketStatus = AfterSalesTicketStatus.Rejected,
@@ -1245,6 +1329,7 @@ public class DbInitializer
                     new()
                     {
                         OrderId = null,
+                        OrderItemId = orderItems.Count > 4 ? orderItems[4].Id : null,
                         CustomerId = customerUser.Id,
                         TicketType = AfterSalesTicketType.Return,
                         TicketStatus = AfterSalesTicketStatus.Pending,
@@ -1255,10 +1340,11 @@ public class DbInitializer
                         CreatedAt = DateTime.UtcNow.AddDays(-1)
                     },
 
-                    // Warranty Tickets
+                    // Warranty Tickets - map to remaining order items
                     new()
                     {
                         OrderId = null,
+                        OrderItemId = orderItems.Count > 5 ? orderItems[5].Id : null,
                         CustomerId = customerUser.Id,
                         TicketType = AfterSalesTicketType.Warranty,
                         TicketStatus = AfterSalesTicketStatus.Pending,
@@ -1271,6 +1357,7 @@ public class DbInitializer
                     new()
                     {
                         OrderId = null,
+                        OrderItemId = orderItems.Count > 6 ? orderItems[6].Id : null,
                         CustomerId = customerUser.Id,
                         TicketType = AfterSalesTicketType.Warranty,
                         TicketStatus = AfterSalesTicketStatus.InProgress,
@@ -1283,6 +1370,7 @@ public class DbInitializer
                     new()
                     {
                         OrderId = null,
+                        OrderItemId = orderItems.Count > 7 ? orderItems[7].Id : null,
                         CustomerId = customerUser.Id,
                         TicketType = AfterSalesTicketType.Warranty,
                         TicketStatus = AfterSalesTicketStatus.Resolved,
@@ -1296,6 +1384,7 @@ public class DbInitializer
                     new()
                     {
                         OrderId = null,
+                        OrderItemId = orderItems.Count > 8 ? orderItems[8].Id : null,
                         CustomerId = customerUser.Id,
                         TicketType = AfterSalesTicketType.Warranty,
                         TicketStatus = AfterSalesTicketStatus.Rejected,
@@ -1309,6 +1398,7 @@ public class DbInitializer
                     new()
                     {
                         OrderId = null,
+                        OrderItemId = orderItems.Count > 9 ? orderItems[9].Id : null,
                         CustomerId = customerUser.Id,
                         TicketType = AfterSalesTicketType.Warranty,
                         TicketStatus = AfterSalesTicketStatus.InProgress,
