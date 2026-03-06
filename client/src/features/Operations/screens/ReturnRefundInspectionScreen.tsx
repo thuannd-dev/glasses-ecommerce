@@ -10,7 +10,6 @@ import {
   Button,
 } from "@mui/material";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import AssignmentReturnIcon from "@mui/icons-material/AssignmentReturn";
 import { useStaffAfterSalesTickets } from "../../../lib/hooks/useStaffAfterSalesTickets";
 import { SummaryCard } from "../components";
 import {

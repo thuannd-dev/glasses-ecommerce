@@ -10,7 +10,6 @@ import {
   Button,
 } from "@mui/material";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
 import { useStaffAfterSalesTickets } from "../../../lib/hooks/useStaffAfterSalesTickets";
 import { SummaryCard } from "../components";
 import {
