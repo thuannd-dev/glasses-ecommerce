@@ -164,10 +164,11 @@ public sealed class CreateStaffOrder
                 {
                     DateTime now = DateTime.UtcNow;
                     promotion = await context.Promotions
-                        .FirstOrDefaultAsync(p => p.PromoCode == dto.PromoCode
-                            && p.IsActive
-                            && p.ValidFrom <= now
-                            && p.ValidTo >= now, ct);
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(p => p.PromoCode == dto.PromoCode.ToUpper()
+                                               && p.IsActive
+                                               && p.ValidFrom <= now
+                                               && p.ValidTo >= now, ct);
 
                     if (promotion == null)
                         return Result<Guid>.Failure("Invalid or expired promo code.", 400);
