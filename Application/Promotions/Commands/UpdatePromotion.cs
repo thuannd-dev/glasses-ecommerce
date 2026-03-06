@@ -26,7 +26,6 @@ public sealed class UpdatePromotion
             UpdatePromotionDto dto = request.Dto;
 
             Promotion? promotion = await context.Promotions
-                .Include(p => p.UsageLogs)
                 .FirstOrDefaultAsync(p => p.Id == request.Id, ct);
 
             if (promotion == null)

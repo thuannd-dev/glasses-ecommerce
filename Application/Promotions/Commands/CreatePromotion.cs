@@ -25,7 +25,7 @@ public sealed class CreatePromotion
             CreatePromotionDto dto = request.Dto;
 
             bool codeExists = await context.Promotions
-                .AnyAsync(p => p.PromoCode.ToLower() == dto.PromoCode.ToLower(), ct);
+                .AnyAsync(p => p.PromoCode == dto.PromoCode.ToUpper(), ct);
             if (codeExists)
                 return Result<PromotionDetailDto>.Failure(
                     $"Promo code '{dto.PromoCode}' already exists.", 409);

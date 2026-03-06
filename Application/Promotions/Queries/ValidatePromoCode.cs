@@ -28,7 +28,7 @@ public sealed class ValidatePromoCode
             Promotion? promotion = await context.Promotions
                 .AsNoTracking()
                 .FirstOrDefaultAsync(p =>
-                    p.PromoCode.ToUpper() == dto.PromoCode.ToUpper() &&
+                    p.PromoCode == dto.PromoCode.ToUpper() &&
                     p.IsActive &&
                     p.ValidFrom <= now &&
                     p.ValidTo >= now, ct);
