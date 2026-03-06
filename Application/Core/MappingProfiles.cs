@@ -7,6 +7,7 @@ using Application.Categories.DTOs;
 using Application.Orders.DTOs;
 using Application.Products.DTOs;
 using Application.Profiles.DTOs;
+using Application.Promotions.DTOs;
 using AutoMapper;
 using Domain;
 
@@ -134,6 +135,8 @@ public sealed class MappingProfiles : Profile
                 s.PromoUsageLogs.Sum(p => p.DiscountApplied) > 0
                     ? (decimal?)s.PromoUsageLogs.Sum(p => p.DiscountApplied)
                     : null))
+            .ForMember(d => d.PromoCode, o => o.MapFrom(s =>
+                s.PromoUsageLogs.Count > 0 ? s.PromoUsageLogs.First().Promotion.PromoCode : null))
             .ForMember(d => d.CustomerName, o => o.MapFrom(s => s.Address != null ? s.Address.RecipientName : s.WalkInCustomerName))
             .ForMember(d => d.CustomerPhone, o => o.MapFrom(s => s.Address != null ? s.Address.RecipientPhone : s.WalkInCustomerPhone))
             .ForMember(d => d.ShippingAddress, o => o.MapFrom(s => s.Address))
@@ -198,6 +201,8 @@ public sealed class MappingProfiles : Profile
                 s.PromoUsageLogs.Sum(p => p.DiscountApplied) > 0
                     ? (decimal?)s.PromoUsageLogs.Sum(p => p.DiscountApplied)
                     : null))
+            .ForMember(d => d.PromoCode, o => o.MapFrom(s =>
+                s.PromoUsageLogs.Count > 0 ? s.PromoUsageLogs.First().Promotion.PromoCode : null))
             .ForMember(d => d.ShippingAddress, o => o.MapFrom(s => s.Address))
             .ForMember(d => d.Items, o => o.MapFrom(s => s.OrderItems))
             .ForMember(d => d.Payment, o => o.MapFrom(s => s.Payments.FirstOrDefault()))
@@ -290,5 +295,14 @@ public sealed class MappingProfiles : Profile
             .ForMember(d => d.OrderItem, o => o.MapFrom(s => s.OrderItem))
             .ForMember(d => d.Attachments, o => o.MapFrom(s =>
                 s.Attachments.Where(a => a.DeletedAt == null).OrderBy(a => a.CreatedAt)));
+
+        //=== PROMOTIONS ===
+        CreateMap<Promotion, PromotionListDto>()
+            .ForMember(d => d.UsedCount, o => o.MapFrom(s => s.UsageLogs.Count));
+
+        CreateMap<Promotion, PromotionDetailDto>()
+            .ForMember(d => d.UsedCount, o => o.MapFrom(s => s.UsageLogs.Count));
+
+        CreateMap<Promotion, ActivePromotionDto>();
     }
 }

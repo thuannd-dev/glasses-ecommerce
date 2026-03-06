@@ -680,6 +680,9 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
             entity.HasIndex(e => new { e.IsActive, e.ValidFrom, e.ValidTo })
                 .HasDatabaseName("IX_Promotion_Active_ValidPeriod");
 
+            entity.HasIndex(e => new { e.IsActive, e.IsPublic, e.ValidFrom, e.ValidTo })
+                .HasDatabaseName("IX_Promotion_Active_Public_ValidPeriod");
+
             entity.HasIndex(e => e.PromotionType)
                 .HasDatabaseName("IX_Promotion_PromotionType");
 
@@ -734,6 +737,17 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
                 .HasForeignKey(pul => pul.PromotionId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            // UsedBy is nullable: walk-in offline customers have no UserId.
+            // SetNull: safe to delete a user without breaking historical log rows.
+            entity.HasOne(pul => pul.User)
+                .WithMany()
+                .HasForeignKey(pul => pul.UsedBy)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // AutoInclude Promotion so ProjectTo can resolve PromoCode without extra Include()
+            entity.Navigation(e => e.Promotion).AutoInclude();
+
             // Properties
             entity.Property(pul => pul.DiscountApplied).HasColumnType("decimal(10,2)");
 
@@ -743,6 +757,12 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
 
             entity.HasIndex(e => e.PromotionId)
                 .HasDatabaseName("IX_PromoUsageLog_PromotionId");
+
+            entity.HasIndex(e => e.UsedBy)
+                .HasDatabaseName("IX_PromoUsageLog_UsedBy");
+
+            entity.HasIndex(e => new { e.PromotionId, e.UsedBy })
+                .HasDatabaseName("IX_PromoUsageLog_PromotionId_UsedBy");
 
             //Mỗi order chỉ được áp dụng một promotion một lần
             entity.HasIndex(e => new { e.OrderId, e.PromotionId })
