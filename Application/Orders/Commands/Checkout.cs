@@ -305,7 +305,7 @@ public sealed class Checkout
                 context.Payments.Add(payment);
 
                 // 10. Promo usage
-                if (promotion != null && discountApplied > 0)
+                if (promotion != null)
                 {
                     order.ApplyPromotion(new PromoUsageLog
                     {

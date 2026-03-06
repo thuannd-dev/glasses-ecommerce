@@ -294,7 +294,7 @@ public sealed class CreateStaffOrder
                 context.Payments.Add(payment);
 
                 // 10. Create Promo Usage Log
-                if (promotion != null && discountApplied > 0)
+                if (promotion != null)
                 {
                     order.ApplyPromotion(new PromoUsageLog
                     {
