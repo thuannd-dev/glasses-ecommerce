@@ -6,4 +6,5 @@ public sealed class ValidatePromoCodeDto
 {
     public required string PromoCode { get; set; }
     public required decimal OrderTotal { get; set; }
+    public decimal ShippingFee { get; set; } = 0;
 }

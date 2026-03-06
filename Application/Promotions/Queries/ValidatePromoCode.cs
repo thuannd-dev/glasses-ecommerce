@@ -71,7 +71,7 @@ public sealed class ValidatePromoCode
             {
                 PromotionType.Percentage => Math.Round(dto.OrderTotal * promotion.DiscountValue / 100, 2),
                 PromotionType.FixedAmount => Math.Min(promotion.DiscountValue, dto.OrderTotal),
-                PromotionType.FreeShipping => 0, // Shipping fee unknown at preview time
+                PromotionType.FreeShipping => dto.ShippingFee,
                 _ => 0
             };
 
