@@ -36,6 +36,9 @@ import {
   TrackingScreen,
   PreOrderScreen,
   PrescriptionScreen,
+  InboundInventoryScreen,
+  OutboundInventoryScreen,
+  InventoryTransactionsScreen,
 } from "../../features/Operations/screens";
 import ManagerDashboard from "../../features/Manager/ManagerDashboard";
 import AdminDashboard from "../../features/Admin/AdminDashboard";
@@ -104,6 +107,9 @@ export const router = createBrowserRouter([
               { path: "tracking", element: <TrackingScreen /> },
               { path: "pre-order", element: <PreOrderScreen /> },
               { path: "prescription", element: <PrescriptionScreen /> },
+              { path: "inbound", element: <InboundInventoryScreen /> },
+              { path: "outbound", element: <OutboundInventoryScreen /> },
+              { path: "inventory-transactions", element: <InventoryTransactionsScreen /> },
             ],
           },
         ],

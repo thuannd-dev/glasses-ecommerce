@@ -4,3 +4,6 @@ export { CreateShipmentScreen } from "./CreateShipmentScreen";
 export { TrackingScreen } from "./TrackingScreen";
 export { PreOrderScreen } from "./PreOrderScreen";
 export { PrescriptionScreen } from "./PrescriptionScreen";
+export { InboundInventoryScreen } from "./InboundInventoryScreen";
+export { OutboundInventoryScreen } from "./OutboundInventoryScreen";
+export { InventoryTransactionsScreen } from "./InventoryTransactionsScreen";

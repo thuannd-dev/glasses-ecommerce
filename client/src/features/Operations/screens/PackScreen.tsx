@@ -4,6 +4,7 @@ import { useOperationsOrders, useUpdateOrderStatus } from "../../../lib/hooks/us
 import type { StaffOrderDto } from "../../../lib/types/staffOrders";
 import type { OrderStatus } from "../../../lib/types/operations";
 import { OperationsPageHeader } from "../components/OperationsPageHeader";
+import { OrdersTabs } from "../components/OrdersTabs";
 
 export function PackScreen() {
   const [pageNumber, setPageNumber] = useState(1);
@@ -57,6 +58,7 @@ export function PackScreen() {
         title="Confirmed orders"
         subtitle="Orders to pick and prepare before creating shipments."
       />
+      <OrdersTabs active="confirmed" />
 
       <Box
         sx={{

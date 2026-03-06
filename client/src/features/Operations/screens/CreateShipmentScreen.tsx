@@ -23,6 +23,7 @@ import { useOperationsOrders, useOperationsOrderDetail, useUpdateOrderStatus } f
 import type { StaffOrderDto, StaffOrderDetailDto } from "../../../lib/types/staffOrders";
 import type { OrderStatus } from "../../../lib/types/operations";
 import { OperationsPageHeader } from "../components/OperationsPageHeader";
+import { OrdersTabs } from "../components/OrdersTabs";
 
 export function CreateShipmentScreen() {
   const [pageNumber, setPageNumber] = useState(1);
@@ -162,6 +163,7 @@ export function CreateShipmentScreen() {
           </Box>
         }
       />
+      <OrdersTabs active="packing" />
 
       <Box
         sx={{

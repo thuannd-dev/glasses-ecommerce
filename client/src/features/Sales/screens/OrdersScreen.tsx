@@ -9,25 +9,34 @@ import {
   Pagination,
   Paper,
   Stack,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import { useSearchParams } from "react-router-dom";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import { Link as RouterLink, useSearchParams } from "react-router-dom";
 import { useStaffOrder, useStaffOrders, useUpdateStaffOrderStatus } from "../../../lib/hooks/useStaffOrders";
 import type { StaffOrderDto, StaffOrderDetailDto } from "../../../lib/types/staffOrders";
 
 function getStatusColors(status: string) {
   switch (status) {
+    case "PendingApproval":
     case "Pending":
-      return { border: "#8b5cf6", bg: "rgba(139,92,246,0.12)", color: "#5b21b6" };
+      return { border: "#EAEAEA", bg: "#F6F6F6", color: "#4B4B4B" };
     case "Confirmed":
-      return { border: "#0ea5e9", bg: "rgba(14,165,233,0.12)", color: "#0369a1" };
+      return { border: "#D4E5D5", bg: "#EEF5EE", color: "#466A4A" };
+    case "Rejected":
     case "Cancelled":
-      return { border: "#94a3b8", bg: "rgba(148,163,184,0.18)", color: "#475569" };
+      return { border: "#E8CFCF", bg: "#F6EAEA", color: "#8E3B3B" };
     default:
-      return { border: "rgba(148,163,184,0.8)", bg: "rgba(148,163,184,0.18)", color: "#475569" };
+      return { border: "#EAEAEA", bg: "#F6F6F6", color: "#4B4B4B" };
   }
+}
+
+function shortenId(id: string) {
+  if (!id || id.length <= 14) return id;
+  return `${id.slice(0, 8)}...${id.slice(-4)}`;
 }
 
 function SalesOrderRow({ summary }: { summary: StaffOrderDto }) {
@@ -37,18 +46,27 @@ function SalesOrderRow({ summary }: { summary: StaffOrderDto }) {
   const detail = data as StaffOrderDetailDto | undefined;
   const { border, bg, color } = getStatusColors(summary.orderStatus);
   const isPending = summary.orderStatus === "Pending";
+  const copyOrderId = () => {
+    navigator.clipboard.writeText(summary.id);
+  };
 
   return (
     <Paper
       elevation={0}
       sx={{
-        borderRadius: 3,
+        borderRadius: "18px",
         border: "1px solid rgba(0,0,0,0.08)",
-        px: 3,
-        py: 2.5,
+        boxShadow: "0 12px 30px rgba(0,0,0,0.06)",
+        px: 2.75,
+        py: 2.25,
         display: "flex",
         flexDirection: "column",
-        gap: 1.25,
+        gap: 1.5,
+        transition: "transform 0.18s ease, box-shadow 0.18s ease",
+        "&:hover": {
+          transform: "translateY(-1px)",
+          boxShadow: "0 16px 36px rgba(0,0,0,0.08)",
+        },
       }}
     >
       <Box
@@ -60,20 +78,52 @@ function SalesOrderRow({ summary }: { summary: StaffOrderDto }) {
           gap: 1,
         }}
       >
-        <Typography sx={{ fontWeight: 700 }}>Order ID: {summary.id}</Typography>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <Typography sx={{ fontSize: 12, color: "#8A8A8A", fontWeight: 600 }}>Order</Typography>
+          <Tooltip title={summary.id} arrow>
+            <Box
+              component="button"
+              type="button"
+              onClick={copyOrderId}
+              sx={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 0.5,
+                px: 1.3,
+                py: 0.45,
+                borderRadius: 999,
+                border: "1px solid rgba(0,0,0,0.08)",
+                bgcolor: "#F7F7F7",
+                color: "#171717",
+                fontFamily: "monospace",
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: "pointer",
+                "&:hover": { bgcolor: "#EFEFEF" },
+              }}
+            >
+              {shortenId(summary.id)}
+              <ContentCopyIcon sx={{ fontSize: 13, color: "#8A8A8A" }} />
+            </Box>
+          </Tooltip>
+        </Box>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
           {isPending && (
             <Stack direction="row" spacing={1}>
               <Button
-                variant="contained"
+                variant="outlined"
                 size="small"
                 disabled={updateStatus.isPending}
                 sx={{
                   textTransform: "none",
-                  fontWeight: 700,
-                  borderRadius: 2,
-                  bgcolor: "#16a34a",
-                  "&:hover": { bgcolor: "#15803d" },
+                  fontWeight: 600,
+                  fontSize: 12,
+                  height: 34,
+                  borderRadius: 999,
+                  borderColor: "#D4E5D5",
+                  bgcolor: "#EEF5EE",
+                  color: "#466A4A",
+                  "&:hover": { bgcolor: "#E3EFE4", borderColor: "#C8DDCA" },
                 }}
                 onClick={() =>
                   updateStatus.mutate({
@@ -90,11 +140,14 @@ function SalesOrderRow({ summary }: { summary: StaffOrderDto }) {
                 disabled={updateStatus.isPending}
                 sx={{
                   textTransform: "none",
-                  fontWeight: 700,
-                  borderRadius: 2,
-                  borderColor: "#dc2626",
-                  color: "#dc2626",
-                  "&:hover": { borderColor: "#b91c1c", bgcolor: "rgba(220,38,38,0.04)" },
+                  fontWeight: 600,
+                  fontSize: 12,
+                  height: 34,
+                  borderRadius: 999,
+                  borderColor: "#E8CFCF",
+                  bgcolor: "#F6EAEA",
+                  color: "#8E3B3B",
+                  "&:hover": { borderColor: "#DDBFBF", bgcolor: "#F1E2E2" },
                 }}
                 onClick={() =>
                   updateStatus.mutate({
@@ -110,20 +163,31 @@ function SalesOrderRow({ summary }: { summary: StaffOrderDto }) {
           <Box
             component="span"
             sx={{
-              px: 1,
-              py: 0.25,
-              borderRadius: 1,
+              px: 1.2,
+              py: 0.3,
+              borderRadius: 999,
               border: `1px solid ${border}`,
               bgcolor: bg,
               color,
-              fontSize: 12,
-              fontWeight: 700,
+              fontSize: 12.5,
+              fontWeight: 600,
               textTransform: "capitalize",
             }}
           >
             {summary.orderStatus}
           </Box>
-          <IconButton size="small" onClick={() => setExpanded((e) => !e)} aria-label={expanded ? "Collapse" : "Expand"}>
+          <IconButton
+            size="small"
+            onClick={() => setExpanded((e) => !e)}
+            aria-label={expanded ? "Collapse" : "Expand"}
+            sx={{
+              width: 36,
+              height: 36,
+              borderRadius: 999,
+              color: expanded ? "#B68C5A" : "#6B6B6B",
+              "&:hover": { bgcolor: "#FAFAFA", color: "#171717" },
+            }}
+          >
             {expanded ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
           </IconButton>
         </Box>
@@ -133,52 +197,18 @@ function SalesOrderRow({ summary }: { summary: StaffOrderDto }) {
         sx={{
           display: "flex",
           flexWrap: "wrap",
-          gap: 2,
+          alignItems: "center",
+          gap: 1,
           fontSize: 13,
-          color: "text.secondary",
+          color: "#6B6B6B",
         }}
       >
-        <Typography sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-          <b>Source:</b>
-          <Box
-            component="span"
-            sx={{
-              px: 1,
-              py: 0.25,
-              borderRadius: 1,
-              border: "1px solid #22c55e",
-              bgcolor: "rgba(34,197,94,0.12)",
-              color: "#15803d",
-              fontSize: 12,
-              fontWeight: 600,
-            }}
-          >
-            {summary.orderSource}
-          </Box>
+        <Typography sx={{ fontSize: 13, color: "#6B6B6B" }}>
+          {summary.itemCount} item{summary.itemCount !== 1 ? "s" : ""}
         </Typography>
-        <Typography sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-          <b>Type:</b>
-          <Box
-            component="span"
-            sx={{
-              px: 1,
-              py: 0.25,
-              borderRadius: 1,
-              border: "1px solid #0ea5e9",
-              bgcolor: "rgba(14,165,233,0.12)",
-              color: "#0369a1",
-              fontSize: 12,
-              fontWeight: 600,
-            }}
-          >
-            {summary.orderType}
-          </Box>
-        </Typography>
-        <Typography>
-          <b>Items:</b> {summary.itemCount}
-        </Typography>
-        <Typography>
-          <b>Created:</b> {new Date(summary.createdAt).toLocaleString()}
+        <Typography component="span" sx={{ color: "rgba(0,0,0,0.3)", mx: 0.25 }}>•</Typography>
+        <Typography sx={{ fontSize: 13, color: "#6B6B6B" }}>
+          {new Date(summary.createdAt).toLocaleString()}
         </Typography>
       </Box>
 
@@ -189,19 +219,28 @@ function SalesOrderRow({ summary }: { summary: StaffOrderDto }) {
           alignItems: "center",
         }}
       >
-        <Typography sx={{ fontSize: 13, color: "text.secondary" }}>Total amount</Typography>
-        <Typography sx={{ fontSize: 20, fontWeight: 900 }}>
+        <Typography sx={{ fontSize: 13, color: "#8A8A8A", fontWeight: 500 }}>Total amount</Typography>
+        <Typography sx={{ fontSize: 18, fontWeight: 700, color: "#171717" }}>
           {summary.finalAmount.toLocaleString("en-US", { style: "currency", currency: "USD" })}
         </Typography>
       </Box>
 
       <Collapse in={expanded} timeout="auto" unmountOnExit>
-        <Divider sx={{ my: 1.5 }} />
+        <Divider sx={{ borderColor: "rgba(0,0,0,0.06)", my: 1.5 }} />
         {isLoading || !detail ? (
-          <Typography sx={{ fontSize: 13, color: "text.secondary" }}>Loading detail...</Typography>
+          <Typography sx={{ fontSize: 13, color: "#6B6B6B" }}>Loading detail...</Typography>
         ) : (
-          <Box sx={{ fontSize: 13, color: "text.secondary", display: "flex", flexDirection: "column", gap: 1 }}>
-            <Typography sx={{ fontWeight: 700, color: "text.primary" }}>Items</Typography>
+          <Box sx={{ fontSize: 13, color: "#6B6B6B", display: "flex", flexDirection: "column", gap: 1.25 }}>
+            <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1 }}>
+              <Typography sx={{ fontWeight: 700, color: "#171717" }}>More details</Typography>
+              <Box component="span" sx={{ px: 1, py: 0.25, borderRadius: 999, border: "1px solid rgba(0,0,0,0.08)", bgcolor: "rgba(0,0,0,0.06)", fontSize: 11, color: "#6B6B6B" }}>
+                Source: {detail.orderSource}
+              </Box>
+              <Box component="span" sx={{ px: 1, py: 0.25, borderRadius: 999, border: "1px solid rgba(0,0,0,0.08)", bgcolor: "rgba(0,0,0,0.06)", fontSize: 11, color: "#6B6B6B" }}>
+                Type: {detail.orderType}
+              </Box>
+            </Box>
+            <Typography sx={{ fontWeight: 700, color: "#171717" }}>Items</Typography>
             {detail.items.map((item) => {
               const lineTotal = item.totalPrice ?? item.unitPrice * item.quantity;
               return (
@@ -210,7 +249,7 @@ function SalesOrderRow({ summary }: { summary: StaffOrderDto }) {
                   sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
                 >
                   <Box>
-                    <Typography sx={{ fontWeight: 600, color: "text.primary" }}>{item.productName}</Typography>
+                    <Typography sx={{ fontWeight: 600, color: "#171717" }}>{item.productName}</Typography>
                     <Typography>
                       {item.variantName} · Qty {item.quantity}
                     </Typography>
@@ -223,8 +262,8 @@ function SalesOrderRow({ summary }: { summary: StaffOrderDto }) {
             })}
             {detail.payment && (
               <>
-                <Divider sx={{ my: 1.5 }} />
-                <Typography sx={{ fontWeight: 700, color: "text.primary" }}>Payment</Typography>
+                <Divider sx={{ borderColor: "rgba(0,0,0,0.06)", my: 1.25 }} />
+                <Typography sx={{ fontWeight: 700, color: "#171717" }}>Payment</Typography>
                 <Typography>
                   <b>Method:</b> {detail.payment.paymentMethod}
                 </Typography>
@@ -239,8 +278,8 @@ function SalesOrderRow({ summary }: { summary: StaffOrderDto }) {
             )}
             {detail.statusHistories && detail.statusHistories.length > 0 && (
               <>
-                <Divider sx={{ my: 1.5 }} />
-                <Typography sx={{ fontWeight: 700, color: "text.primary" }}>Status history</Typography>
+                <Divider sx={{ borderColor: "rgba(0,0,0,0.06)", my: 1.25 }} />
+                <Typography sx={{ fontWeight: 700, color: "#171717" }}>Status history</Typography>
                 {detail.statusHistories.map((h, idx) => (
                   <Box key={idx}>
                     <Typography>
@@ -279,11 +318,16 @@ export function OrdersScreen() {
   const safeOrders = Array.isArray(data?.items) ? data!.items : [];
   const filteredOrders = safeOrders.filter((o) => o.orderStatus === statusFilter);
   const meta = data ? { totalPages: data.totalPages } : null;
+  const statusTabs = [
+    { label: "Pending", value: "Pending" },
+    { label: "Confirmed", value: "Confirmed" },
+    { label: "Rejected", value: "Cancelled" },
+  ] as const;
 
   return (
     <Box
       sx={{
-        px: { xs: 2, md: 4, lg: 6 },
+        px: { xs: 2, md: 3, lg: 4 },
         py: 4,
         height: "calc(100vh - 56px)",
         boxSizing: "border-box",
@@ -292,20 +336,96 @@ export function OrdersScreen() {
         overflow: "hidden",
       }}
     >
-      <Typography sx={{ fontSize: 24, fontWeight: 900, mb: 2 }}>
-        Orders
-      </Typography>
+      <Box sx={{ mb: 2.5 }}>
+        <Typography sx={{ fontSize: 11, letterSpacing: 4, textTransform: "uppercase", color: "#8A8A8A" }}>
+          SALES CENTER
+        </Typography>
+        <Box sx={{ mt: 0.75, display: "flex", alignItems: "baseline", gap: 1.25, flexWrap: "wrap" }}>
+          <Typography sx={{ fontSize: { xs: 24, md: 30 }, fontWeight: 800, color: "#171717" }}>
+            Orders
+          </Typography>
+          <Typography
+            component="span"
+            sx={{
+              fontSize: 13,
+              fontWeight: 600,
+              color: "#6B6B6B",
+              bgcolor: "#F7F7F7",
+              border: "1px solid rgba(0,0,0,0.08)",
+              px: 1.2,
+              py: 0.25,
+              borderRadius: 999,
+            }}
+          >
+            {filteredOrders.length} orders
+          </Typography>
+        </Box>
+        <Typography sx={{ mt: 0.5, color: "#6B6B6B", fontSize: 14 }}>
+          Manage pending approvals and order confirmations.
+        </Typography>
+      </Box>
+
+      <Box
+        sx={{
+          display: "inline-flex",
+          gap: 0.5,
+          p: 0.5,
+          borderRadius: 999,
+          bgcolor: "#F7F7F7",
+          border: "1px solid rgba(0,0,0,0.08)",
+          alignSelf: "flex-start",
+          mb: 1.5,
+        }}
+      >
+        {statusTabs.map((tab) => {
+          const active = statusFilter === tab.value;
+          return (
+            <Button
+              key={tab.value}
+              component={RouterLink}
+              to={`/sales/orders?status=${tab.value}`}
+              sx={{
+                borderRadius: 999,
+                px: 2.5,
+                py: 0.9,
+                textTransform: "none",
+                fontWeight: 600,
+                color: active ? "#171717" : "#6B6B6B",
+                position: "relative",
+                bgcolor: active ? "#FFFFFF" : "transparent",
+                border: active ? "1px solid rgba(182,140,90,0.4)" : "1px solid transparent",
+                boxShadow: active ? "0 6px 14px rgba(0,0,0,0.06)" : "none",
+                "&::after": active
+                  ? {
+                      content: '""',
+                      display: "block",
+                      width: "60%",
+                      height: 2,
+                      borderRadius: 2,
+                      bgcolor: "#B68C5A",
+                      position: "absolute",
+                      bottom: 6,
+                      left: "20%",
+                    }
+                  : undefined,
+              }}
+            >
+              {tab.label}
+            </Button>
+          );
+        })}
+      </Box>
 
       {isLoading ? (
-        <Box sx={{ maxWidth: 720, mx: "auto", mt: 2 }}>
+        <Box sx={{ mt: 2 }}>
           <LinearProgress sx={{ borderRadius: 1 }} />
         </Box>
       ) : filteredOrders.length === 0 ? (
-        <Box sx={{ maxWidth: 720, mx: "auto", mt: 3 }}>
+        <Box sx={{ mt: 3 }}>
           <Paper
             elevation={0}
             sx={{
-              borderRadius: 3,
+              borderRadius: "18px",
               border: "1px solid rgba(0,0,0,0.08)",
               px: 3,
               py: 4,
@@ -321,8 +441,8 @@ export function OrdersScreen() {
             sx={{
               display: "flex",
               flexDirection: "column",
-              gap: 2,
-              mt: 2,
+              gap: 2.25,
+              mt: 1.5,
               flex: 1,
               minHeight: 0,
               overflowY: "auto",

@@ -22,6 +22,9 @@ import AddBoxOutlined from "@mui/icons-material/AddBoxOutlined";
 import TrackChangesOutlined from "@mui/icons-material/TrackChangesOutlined";
 import ScheduleOutlined from "@mui/icons-material/ScheduleOutlined";
 import VisibilityOutlined from "@mui/icons-material/VisibilityOutlined";
+import MoveToInboxOutlined from "@mui/icons-material/MoveToInboxOutlined";
+import OutboxOutlined from "@mui/icons-material/OutboxOutlined";
+import HistoryOutlined from "@mui/icons-material/HistoryOutlined";
 import ExpandLess from "@mui/icons-material/ExpandLess";
 import ExpandMore from "@mui/icons-material/ExpandMore";
 import { useAccount } from "../../lib/hooks/useAccount";
@@ -46,6 +49,9 @@ const OPERATIONS_SUB_LINKS: { path: string; label: string; icon: React.ReactNode
   { path: "/operations/tracking", label: "Shipped", icon: <TrackChangesOutlined /> },
   { path: "/operations/pre-order", label: "Pre-order", icon: <ScheduleOutlined /> },
   { path: "/operations/prescription", label: "Prescription", icon: <VisibilityOutlined /> },
+  { path: "/operations/inbound", label: "Inbound", icon: <MoveToInboxOutlined /> },
+  { path: "/operations/outbound", label: "Outbound", icon: <OutboxOutlined /> },
+  { path: "/operations/inventory-transactions", label: "History", icon: <HistoryOutlined /> },
 ];
 
 export default function DashboardLayout() {
@@ -144,13 +150,16 @@ export default function DashboardLayout() {
                             borderRadius: 2,
                             mb: 0.5,
                             color: "rgba(0,0,0,0.7)",
+                            borderLeft: "3px solid transparent",
+                            pl: 1.5,
                             "&.active": {
-                              bgcolor: "rgba(25,118,210,0.12)",
-                              color: "primary.main",
+                              bgcolor: "rgba(182,140,90,0.12)",
+                              color: "#171717",
+                              borderLeftColor: "#B68C5A",
                             },
                             "&:hover": {
                               bgcolor: "rgba(0,0,0,0.04)",
-                              color: "rgba(0,0,0,0.9)",
+                              color: "#171717",
                             },
                           }}
                         >
@@ -198,16 +207,19 @@ export default function DashboardLayout() {
                                 const baseStyles = {
                                   borderRadius: 2,
                                   mb: 0.25,
-                                  color: "rgba(0,0,0,0.7)",
+                                  color: "#8A8A8A",
+                                  borderLeft: "3px solid transparent",
+                                  pl: 1.5,
                                   "&:hover": {
                                     bgcolor: "rgba(0,0,0,0.04)",
-                                    color: "rgba(0,0,0,0.9)",
+                                    color: "#171717",
                                   },
                                 } as const;
 
                                 const activeStyles = {
-                                  bgcolor: "rgba(25,118,210,0.12)",
-                                  color: "primary.main",
+                                  bgcolor: "rgba(182,140,90,0.12)",
+                                  color: "#171717",
+                                  borderLeftColor: "#B68C5A",
                                 } as const;
 
                                 const isOrdersRoute = location.pathname.startsWith("/sales/orders");

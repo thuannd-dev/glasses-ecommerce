@@ -20,6 +20,7 @@ import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import { useOperationsOrders, useOperationsOrderDetail } from "../../../lib/hooks/useOperationsOrders";
 import type { StaffOrderDto, StaffOrderDetailDto } from "../../../lib/types/staffOrders";
 import { OperationsPageHeader } from "../components/OperationsPageHeader";
+import { OrdersTabs } from "../components/OrdersTabs";
 
 const SHIPPED_PILL = {
   bg: "#EEF5EE",
@@ -99,6 +100,7 @@ export function TrackingScreen() {
         count={totalCount}
         countLabel="orders"
       />
+      <OrdersTabs active="shipped" />
 
       <Box
         sx={{

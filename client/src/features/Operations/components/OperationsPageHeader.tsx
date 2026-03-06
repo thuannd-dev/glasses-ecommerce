@@ -58,10 +58,11 @@ export function OperationsPageHeader({
                 fontSize: 13,
                 fontWeight: 600,
                 color: "#6B6B6B",
-                bgcolor: "rgba(0,0,0,0.06)",
+                bgcolor: "#F7F7F7",
+                border: "1px solid rgba(0,0,0,0.08)",
                 px: 1.25,
                 py: 0.25,
-                borderRadius: 10,
+                borderRadius: 999,
               }}
             >
               {count} {countLabel}
