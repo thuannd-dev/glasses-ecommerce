@@ -13,7 +13,7 @@ import {
   TextField,
   Alert,
 } from "@mui/material";
-import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { useNavigate, useParams, useLocation, useSearchParams } from "react-router-dom";
 import { useStaffAfterSalesTicketDetail, useUpdateTicketStatus } from "../../../lib/hooks/useStaffAfterSalesTickets";
 import {
   AfterSalesTicketStatusValues,
@@ -52,9 +52,11 @@ export function TicketDetailScreen() {
   const { ticketId } = useParams<{ ticketId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
 
   // Extract navPrefix from URL path (return-refund or warranty)
   const navPrefix = location.pathname.includes("return-refund") ? "return-refund" : "warranty";
+  const backUrl = `/sales/${navPrefix}?${searchParams.toString()}`;
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [actionType, setActionType] = useState<"confirm" | "reject">("confirm");
@@ -80,16 +82,11 @@ export function TicketDetailScreen() {
   const handleSubmit = async () => {
     if (!ticketId) return;
 
-    const newStatus =
-      actionType === "confirm"
-        ? AfterSalesTicketStatusValues.Resolved
-        : AfterSalesTicketStatusValues.Rejected;
-
     updateStatus(
       {
         ticketId,
-        status: newStatus,
-        notes: notes || undefined,
+        actionType: actionType === "confirm" ? "approve" : "reject",
+        reason: notes || undefined,
       },
       {
         onSuccess: () => {
@@ -127,7 +124,7 @@ export function TicketDetailScreen() {
       >
         <Alert severity="error">Ticket not found</Alert>
         <Button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate(backUrl)}
           sx={{ mt: 2 }}
         >
           Back
@@ -150,7 +147,7 @@ export function TicketDetailScreen() {
       }}
     >
       <Button
-        onClick={() => navigate(-1)}
+        onClick={() => navigate(backUrl)}
         sx={{
           mb: 2,
           textTransform: "none",
@@ -325,14 +322,76 @@ export function TicketDetailScreen() {
                 border: "1px solid rgba(0,0,0,0.06)",
               }}
             >
+              <Box sx={{ display: "flex", gap: 2, mb: 2, alignItems: "flex-start" }}>
+                <Box
+                  sx={{
+                    width: 80,
+                    height: 80,
+                    borderRadius: 1.5,
+                    bgcolor: "rgba(0,0,0,0.05)",
+                    overflow: "hidden",
+                    flexShrink: 0,
+                  }}
+                >
+                  {ticket.orderItem.productImageUrl ? (
+                    <Box
+                      component="img"
+                      src={ticket.orderItem.productImageUrl}
+                      alt=""
+                      sx={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                  ) : (
+                    <Box
+                      sx={{
+                        width: "100%",
+                        height: "100%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "text.secondary",
+                        fontSize: 12,
+                      }}
+                    >
+                      —
+                    </Box>
+                  )}
+                </Box>
+                <Box sx={{ flex: 1 }}>
+                  <Typography sx={{ fontWeight: 700, fontSize: 14, mb: 0.5, color: "#1f2937" }}>
+                    {ticket.orderItem.productName || "Unknown Product"}
+                  </Typography>
+                  {ticket.orderItem.variantName && (
+                    <Typography sx={{ fontSize: 12, color: "text.secondary", mb: 0.5 }}>
+                      {ticket.orderItem.variantName}
+                    </Typography>
+                  )}
+                  <Box sx={{ display: "flex", gap: 2, fontSize: 12 }}>
+                    <Box>
+                      <Typography sx={{ fontSize: 11, color: "text.secondary" }}>
+                        Qty
+                      </Typography>
+                      <Typography sx={{ fontWeight: 600, color: "rgba(0,0,0,0.7)" }}>
+                        {ticket.orderItem.quantity}
+                      </Typography>
+                    </Box>
+                    <Box>
+                      <Typography sx={{ fontSize: 11, color: "text.secondary" }}>
+                        Unit Price
+                      </Typography>
+                      <Typography sx={{ fontWeight: 600, color: "#059669" }}>
+                        ${ticket.orderItem.unitPrice.toFixed(2)}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Box>
+              </Box>
               <Box
                 sx={{
                   display: "grid",
                   gridTemplateColumns: "1fr 1fr",
                   gap: 1.5,
-                  mb: 1.5,
-                  pb: 1.5,
-                  borderBottom: "1px solid rgba(0,0,0,0.08)",
+                  borderTop: "1px solid rgba(0,0,0,0.08)",
+                  pt: 1.5,
                 }}
               >
                 <Box>
@@ -345,45 +404,6 @@ export function TicketDetailScreen() {
                 </Box>
                 <Box>
                   <Typography sx={{ fontSize: 12, color: "text.secondary", mb: 0.5 }}>
-                    Unit Price
-                  </Typography>
-                  <Typography sx={{ fontWeight: 700, fontSize: 14, color: "#059669" }}>
-                    ${ticket.orderItem.unitPrice.toFixed(2)}
-                  </Typography>
-                </Box>
-              </Box>
-              <Typography sx={{ fontWeight: 700, fontSize: 14, mb: 1, color: "#1f2937" }}>
-                {ticket.orderItem.productName || "Unknown Product"}
-              </Typography>
-              <Box
-                sx={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: 1.5,
-                  fontSize: 13,
-                  color: "text.secondary",
-                }}
-              >
-                {ticket.orderItem.variantName && (
-                  <Box>
-                    <Typography sx={{ fontSize: 12, color: "text.secondary", mb: 0.25 }}>
-                      Variant
-                    </Typography>
-                    <Typography sx={{ fontWeight: 600, color: "rgba(0,0,0,0.7)" }}>
-                      {ticket.orderItem.variantName}
-                    </Typography>
-                  </Box>
-                )}
-                <Box>
-                  <Typography sx={{ fontSize: 12, color: "text.secondary", mb: 0.25 }}>
-                    Quantity
-                  </Typography>
-                  <Typography sx={{ fontWeight: 600, color: "rgba(0,0,0,0.7)" }}>
-                    {ticket.orderItem.quantity}
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography sx={{ fontSize: 12, color: "text.secondary", mb: 0.25 }}>
                     Total Price
                   </Typography>
                   <Typography sx={{ fontWeight: 600, color: "rgba(0,0,0,0.7)" }}>
@@ -432,6 +452,40 @@ export function TicketDetailScreen() {
             </Typography>
           </Box>
         )}
+
+        <Box
+          sx={{
+            pt: 2,
+            borderTop: "1px solid rgba(0,0,0,0.08)",
+          }}
+        >
+          <Typography sx={{ fontWeight: 700, mb: 1.5, fontSize: 13 }}>
+            Status History
+          </Typography>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+            <Box>
+              <Typography sx={{ fontWeight: 700, fontSize: 13 }}>
+                Pending
+              </Typography>
+              <Typography sx={{ fontSize: 12, color: "text.secondary" }}>
+                Ticket created · {new Date(ticket.createdAt).toLocaleString()}
+              </Typography>
+            </Box>
+
+            {ticket.ticketStatus !== AfterSalesTicketStatusValues.Pending && (
+              <Box>
+                <Typography sx={{ fontWeight: 700, fontSize: 13 }}>
+                  {STATUS_LABELS[ticket.ticketStatus]}
+                </Typography>
+                <Typography sx={{ fontSize: 12, color: "text.secondary" }}>
+                  {ticket.resolvedAt
+                    ? new Date(ticket.resolvedAt).toLocaleString()
+                    : "—"}
+                </Typography>
+              </Box>
+            )}
+          </Box>
+        </Box>
       </Paper>
 
       <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="sm" fullWidth>

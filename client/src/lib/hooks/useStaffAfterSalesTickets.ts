@@ -19,8 +19,8 @@ export interface StaffAfterSalesQueryParams {
 
 export interface UpdateTicketStatusPayload {
   ticketId: string;
-  status: AfterSalesTicketStatus;
-  notes?: string;
+  actionType: "approve" | "reject";
+  reason?: string;
 }
 
 async function fetchStaffAfterSalesTickets(
@@ -48,14 +48,26 @@ async function fetchStaffAfterSalesTicketDetail(
 async function updateTicketStatus(
   payload: UpdateTicketStatusPayload
 ): Promise<TicketDetailDto> {
-  const res = await agent.put<TicketDetailDto>(
-    `/staff/after-sales/${payload.ticketId}/status`,
-    {
-      status: payload.status,
-      notes: payload.notes ?? null,
-    }
-  );
-  return res.data;
+  if (payload.actionType === "reject") {
+    const res = await agent.put<TicketDetailDto>(
+      `/staff/after-sales/${payload.ticketId}/reject`,
+      {
+        reason: payload.reason ?? "No reason provided",
+      }
+    );
+    return res.data;
+  } else {
+    // For approve: use a simple RefundOnly approach with 0 refund for physical returns
+    const res = await agent.put<TicketDetailDto>(
+      `/staff/after-sales/${payload.ticketId}/approve`,
+      {
+        resolutionType: 0, // RefundOnly - for now, ops will handle physical cases
+        refundAmount: 0,
+        staffNotes: payload.reason ?? null,
+      }
+    );
+    return res.data;
+  }
 }
 
 // -------- Hooks --------

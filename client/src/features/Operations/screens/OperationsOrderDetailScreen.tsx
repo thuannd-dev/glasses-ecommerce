@@ -137,21 +137,61 @@ export function OperationsOrderDetailScreen() {
 
         <Divider />
 
-        <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-          <Typography sx={{ fontSize: 13, color: "text.secondary" }}>
-            Total amount
-          </Typography>
-          <Typography sx={{ fontSize: 18, fontWeight: 900 }}>
-            {(() => {
-              const amount =
-                (order.finalAmount ?? order.totalAmount ?? 0) || 0;
-              return amount.toLocaleString("en-US", {
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+          <Box sx={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+            <Typography sx={{ color: "text.secondary" }}>Subtotal</Typography>
+            <Typography>
+              {(order.totalAmount || 0).toLocaleString("en-US", {
                 style: "currency",
                 currency: "USD",
-              });
-            })()}
-          </Typography>
+              })}
+            </Typography>
+          </Box>
+
+          {order.shippingFee > 0 && (
+            <Box sx={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+              <Typography sx={{ color: "text.secondary" }}>Shipping</Typography>
+              <Typography>
+                {(order.shippingFee || 0).toLocaleString("en-US", {
+                  style: "currency",
+                  currency: "USD",
+                })}
+              </Typography>
+            </Box>
+          )}
+
+          {order.discountApplied && order.discountApplied > 0 && (
+            <Box sx={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+              <Typography sx={{ color: "text.secondary" }}>Discount</Typography>
+              <Typography sx={{ color: "#16a34a" }}>
+                -{(order.discountApplied).toLocaleString("en-US", {
+                  style: "currency",
+                  currency: "USD",
+                })}
+              </Typography>
+            </Box>
+          )}
+
+          <Divider sx={{ my: 0.5 }} />
+
+          <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+            <Typography sx={{ fontSize: 13, color: "text.secondary", fontWeight: 700 }}>
+              Total amount
+            </Typography>
+            <Typography sx={{ fontSize: 18, fontWeight: 900 }}>
+              {(() => {
+                const amount =
+                  (order.finalAmount ?? order.totalAmount ?? 0) || 0;
+                return amount.toLocaleString("en-US", {
+                  style: "currency",
+                  currency: "USD",
+                });
+              })()}
+            </Typography>
+          </Box>
         </Box>
+
+        <Divider />
 
         {order.payment && (
           <>
@@ -185,19 +225,49 @@ export function OperationsOrderDetailScreen() {
           <>
             <Divider />
             <Box sx={{ fontSize: 13 }}>
-              <Typography sx={{ fontWeight: 700, mb: 1 }}>Status history</Typography>
-              {order.statusHistories.map((h, idx) => (
-                <Box key={idx} sx={{ mb: 0.75 }}>
-                  <Typography>
-                    <b>{h.toStatus}</b>
-                  </Typography>
-                  <Typography sx={{ color: "text.secondary" }}>
-                    {h.notes || ""}
-                    {h.notes && " · "}
-                    {new Date(h.createdAt).toLocaleString()}
-                  </Typography>
-                </Box>
-              ))}
+              <Typography sx={{ fontWeight: 700, mb: 1.5 }}>Status history</Typography>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+                {order.statusHistories.map((h, idx) => {
+                  const showUser = h.toStatus !== "Pending" && (h.changedByUserName || h.changedByUserEmail);
+                  
+                  return (
+                    <Box key={idx}>
+                      <Typography sx={{ fontWeight: 700 }}>
+                        {h.toStatus}
+                      </Typography>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
+                        <Typography sx={{ color: "text.secondary" }}>
+                          {h.notes}
+                          {h.notes && " · "}
+                          {new Date(h.createdAt).toLocaleString()}
+                        </Typography>
+                        {showUser && (
+                          <Box
+                            sx={{
+                              px: 1,
+                              py: 0.25,
+                              borderRadius: 1,
+                              bgcolor: "rgba(99, 102, 241, 0.12)",
+                              border: "1px solid rgba(99, 102, 241, 0.3)",
+                            }}
+                          >
+                            <Typography
+                              sx={{
+                                fontSize: 11,
+                                fontWeight: 600,
+                                color: "#4338ca",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              by {h.changedByUserName || h.changedByUserEmail}
+                            </Typography>
+                          </Box>
+                        )}
+                      </Box>
+                    </Box>
+                  );
+                })}
+              </Box>
             </Box>
           </>
         )}

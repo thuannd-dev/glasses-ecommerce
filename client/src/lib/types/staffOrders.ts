@@ -47,6 +47,7 @@ export interface StaffOrderItemDto {
   quantity: number;
   unitPrice: number;
   totalPrice: number;
+  productImageUrl?: string | null;
 }
 
 export interface StaffOrderPaymentDto {
@@ -62,6 +63,9 @@ export interface StaffOrderStatusHistoryDto {
   toStatus: string;
   notes: string | null;
   createdAt: string;
+  changedByUserId?: string | null;
+  changedByUserName?: string | null;
+  changedByUserEmail?: string | null;
 }
 
 export interface StaffOrderDetailDto {

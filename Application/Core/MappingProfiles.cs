@@ -182,7 +182,9 @@ public sealed class MappingProfiles : Profile
 
         CreateMap<OrderStatusHistory, OrderStatusHistoryDto>()
             .ForMember(d => d.FromStatus, o => o.MapFrom(s => s.FromStatus.ToString()))
-            .ForMember(d => d.ToStatus, o => o.MapFrom(s => s.ToStatus.ToString()));
+            .ForMember(d => d.ToStatus, o => o.MapFrom(s => s.ToStatus.ToString()))
+            .ForMember(d => d.ChangedByUserName, o => o.MapFrom(s => s.ChangedByUser != null ? s.ChangedByUser.DisplayName ?? s.ChangedByUser.UserName : null))
+            .ForMember(d => d.ChangedByUserEmail, o => o.MapFrom(s => s.ChangedByUser != null ? s.ChangedByUser.Email : null));
 
         CreateMap<ShipmentInfo, ShipmentInfoDto>()
             .ForMember(d => d.CarrierName, o => o.MapFrom(s => s.CarrierName.ToString()));

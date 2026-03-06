@@ -17,6 +17,7 @@ public sealed class GetStaffOrders
         public int PageNumber { get; set; } = 1;
         public int PageSize { get; set; } = 10;
         public OrderStatus? Status { get; set; }
+        public List<OrderType> OrderTypes { get; set; } = [];
     }
 
     internal sealed class Handler(AppDbContext context, IMapper mapper, IUserAccessor userAccessor)
@@ -32,6 +33,7 @@ public sealed class GetStaffOrders
 
             IQueryable<Order> query = context.Orders
                 .AsNoTracking()
+                .Include(o => o.OrderItems)
                 .Where(o => o.CreatedBySalesStaff == staffUserId ||
                            (o.OrderSource == OrderSource.Online &&
                             (o.OrderStatus == OrderStatus.Pending || o.OrderStatus == OrderStatus.Confirmed || o.OrderStatus == OrderStatus.Cancelled)));
@@ -39,6 +41,11 @@ public sealed class GetStaffOrders
             if (request.Status.HasValue)
             {
                 query = query.Where(o => o.OrderStatus == request.Status.Value);
+            }
+
+            if (request.OrderTypes.Count > 0)
+            {
+                query = query.Where(o => request.OrderTypes.Contains(o.OrderType));
             }
 
             int totalCount = await query.CountAsync(ct);

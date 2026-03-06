@@ -30,6 +30,13 @@ export interface OrderItemDto {
   productImageUrl: string | null;
 }
 
+// Status history for tickets based on timestamps
+export interface TicketStatusHistoryDto {
+  status: AfterSalesTicketStatus;
+  timestamp: string;
+  description: string;
+}
+
 // DTOs
 export interface TicketListDto {
   id: string;

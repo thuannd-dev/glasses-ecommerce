@@ -76,8 +76,9 @@ export function useUpdateStaffOrderStatus() {
   return useMutation({
     mutationFn: updateStaffOrderStatus,
     onSuccess: () => {
-      // Refresh list + revenue caches (detail keeps current state)
+      // Refresh list + revenue + detail caches
       queryClient.invalidateQueries({ queryKey: ["staff", "orders", "list"] });
+      queryClient.invalidateQueries({ queryKey: ["staff", "orders", "detail"] });
       queryClient.invalidateQueries({ queryKey: ["staff", "orders", "revenue"] });
     },
   });

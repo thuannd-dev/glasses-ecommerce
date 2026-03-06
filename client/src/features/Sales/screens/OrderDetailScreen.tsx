@@ -7,14 +7,18 @@ import {
   Button,
   Stack,
 } from "@mui/material";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { toast } from "react-toastify";
 import { useStaffOrder, useUpdateStaffOrderStatus } from "../../../lib/hooks/useStaffOrders";
 
 export function OrderDetailScreen() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { id } = useParams<{ id: string }>();
   const { data, isLoading, isError } = useStaffOrder(id);
   const updateStatus = useUpdateStaffOrderStatus();
+
+  const backUrl = `/sales/orders?${searchParams.toString()}`;
 
   if (isLoading) {
     return (
@@ -32,7 +36,7 @@ export function OrderDetailScreen() {
         </Typography>
         <Button
           variant="outlined"
-          onClick={() => navigate(-1)}
+          onClick={() => navigate(backUrl)}
           sx={{ textTransform: "none" }}
         >
           Back to list
@@ -53,7 +57,7 @@ export function OrderDetailScreen() {
           fontWeight: 700,
           color: "black",
         }}
-        onClick={() => navigate(-1)}
+        onClick={() => navigate(backUrl)}
       >
         ← Back to list
       </Button>
@@ -86,10 +90,22 @@ export function OrderDetailScreen() {
                 "&:hover": { bgcolor: "#15803d" },
               }}
               onClick={() =>
-                updateStatus.mutate({
-                  id: order.id,
-                  newStatus: 1,
-                })
+                updateStatus.mutate(
+                  {
+                    id: order.id,
+                    newStatus: 1,
+                  },
+                  {
+                    onSuccess: () => {
+                      toast.success("Order confirmed");
+                      navigate(backUrl);
+                    },
+                    onError: (error) => {
+                      const errorMsg = error instanceof Error ? error.message : "Failed to confirm order";
+                      toast.error(errorMsg);
+                    },
+                  }
+                )
               }
             >
               Confirm
@@ -107,10 +123,22 @@ export function OrderDetailScreen() {
                 "&:hover": { borderColor: "#b91c1c", bgcolor: "rgba(220,38,38,0.04)" },
               }}
               onClick={() =>
-                updateStatus.mutate({
-                  id: order.id,
-                  newStatus: 6,
-                })
+                updateStatus.mutate(
+                  {
+                    id: order.id,
+                    newStatus: 6,
+                  },
+                  {
+                    onSuccess: () => {
+                      toast.success("Order rejected");
+                      navigate(backUrl);
+                    },
+                    onError: (error) => {
+                      const errorMsg = error instanceof Error ? error.message : "Failed to reject order";
+                      toast.error(errorMsg);
+                    },
+                  }
+                )
               }
             >
               Reject
@@ -160,11 +188,45 @@ export function OrderDetailScreen() {
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
-                    py: 0.5,
+                    gap: 1.5,
+                    py: 1,
                     fontSize: 13,
                   }}
                 >
-                  <Box>
+                  <Box
+                    sx={{
+                      width: 56,
+                      height: 56,
+                      borderRadius: 1.5,
+                      bgcolor: "rgba(0,0,0,0.04)",
+                      overflow: "hidden",
+                      flexShrink: 0,
+                    }}
+                  >
+                    {item.productImageUrl ? (
+                      <Box
+                        component="img"
+                        src={item.productImageUrl}
+                        alt=""
+                        sx={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      />
+                    ) : (
+                      <Box
+                        sx={{
+                          width: "100%",
+                          height: "100%",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: "text.secondary",
+                          fontSize: 10,
+                        }}
+                      >
+                        —
+                      </Box>
+                    )}
+                  </Box>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
                     <Typography sx={{ fontWeight: 600 }}>
                       {item.productName}
                     </Typography>
@@ -172,7 +234,7 @@ export function OrderDetailScreen() {
                       {item.variantName} · Qty {item.quantity}
                     </Typography>
                   </Box>
-                  <Typography sx={{ fontWeight: 600 }}>
+                  <Typography sx={{ fontWeight: 600, flexShrink: 0 }}>
                     {lineTotal.toLocaleString("en-US", {
                       style: "currency",
                       currency: "USD",
@@ -185,21 +247,61 @@ export function OrderDetailScreen() {
 
         <Divider />
 
-        <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-          <Typography sx={{ fontSize: 13, color: "text.secondary" }}>
-            Total amount
-          </Typography>
-          <Typography sx={{ fontSize: 18, fontWeight: 900 }}>
-            {(() => {
-              const amount =
-                (order.finalAmount ?? order.totalAmount ?? 0) || 0;
-              return amount.toLocaleString("en-US", {
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+          <Box sx={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+            <Typography sx={{ color: "text.secondary" }}>Subtotal</Typography>
+            <Typography>
+              {(order.totalAmount || 0).toLocaleString("en-US", {
                 style: "currency",
                 currency: "USD",
-              });
-            })()}
-          </Typography>
+              })}
+            </Typography>
+          </Box>
+
+          {order.shippingFee > 0 && (
+            <Box sx={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+              <Typography sx={{ color: "text.secondary" }}>Shipping</Typography>
+              <Typography>
+                {(order.shippingFee || 0).toLocaleString("en-US", {
+                  style: "currency",
+                  currency: "USD",
+                })}
+              </Typography>
+            </Box>
+          )}
+
+          {order.discountApplied && order.discountApplied > 0 && (
+            <Box sx={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+              <Typography sx={{ color: "text.secondary" }}>Discount</Typography>
+              <Typography sx={{ color: "#16a34a" }}>
+                -{(order.discountApplied).toLocaleString("en-US", {
+                  style: "currency",
+                  currency: "USD",
+                })}
+              </Typography>
+            </Box>
+          )}
+
+          <Divider sx={{ my: 0.5 }} />
+
+          <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+            <Typography sx={{ fontSize: 13, color: "text.secondary", fontWeight: 700 }}>
+              Total amount
+            </Typography>
+            <Typography sx={{ fontSize: 18, fontWeight: 900 }}>
+              {(() => {
+                const amount =
+                  (order.finalAmount ?? order.totalAmount ?? 0) || 0;
+                return amount.toLocaleString("en-US", {
+                  style: "currency",
+                  currency: "USD",
+                });
+              })()}
+            </Typography>
+          </Box>
         </Box>
+
+        <Divider />
 
         {order.payment && (
           <>
@@ -233,19 +335,49 @@ export function OrderDetailScreen() {
           <>
             <Divider />
             <Box sx={{ fontSize: 13 }}>
-              <Typography sx={{ fontWeight: 700, mb: 1 }}>Status history</Typography>
-              {order.statusHistories.map((h, idx) => (
-                <Box key={idx} sx={{ mb: 0.75 }}>
-                  <Typography>
-                    <b>{h.toStatus}</b>
-                  </Typography>
-                  <Typography sx={{ color: "text.secondary" }}>
-                    {h.notes || ""}
-                    {h.notes && " · "}
-                    {new Date(h.createdAt).toLocaleString()}
-                  </Typography>
-                </Box>
-              ))}
+              <Typography sx={{ fontWeight: 700, mb: 1.5 }}>Status history</Typography>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+                {order.statusHistories.map((h, idx) => {
+                  const showUser = h.toStatus !== "Pending" && (h.changedByUserName || h.changedByUserEmail);
+                  
+                  return (
+                    <Box key={idx}>
+                      <Typography sx={{ fontWeight: 700 }}>
+                        {h.toStatus}
+                      </Typography>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
+                        <Typography sx={{ color: "text.secondary" }}>
+                          {h.notes}
+                          {h.notes && " · "}
+                          {new Date(h.createdAt).toLocaleString()}
+                        </Typography>
+                        {showUser && (
+                          <Box
+                            sx={{
+                              px: 1,
+                              py: 0.25,
+                              borderRadius: 1,
+                              bgcolor: "rgba(99, 102, 241, 0.12)",
+                              border: "1px solid rgba(99, 102, 241, 0.3)",
+                            }}
+                          >
+                            <Typography
+                              sx={{
+                                fontSize: 11,
+                                fontWeight: 600,
+                                color: "#4338ca",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              by {h.changedByUserName || h.changedByUserEmail}
+                            </Typography>
+                          </Box>
+                        )}
+                      </Box>
+                    </Box>
+                  );
+                })}
+              </Box>
             </Box>
           </>
         )}

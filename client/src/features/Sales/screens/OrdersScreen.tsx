@@ -78,11 +78,17 @@ export function OrdersScreen() {
     setPageNumber(1);
   }, [statusFilter, typeFilters.join(",")]);
 
-  const { data, isLoading } = useStaffOrders({ pageNumber, pageSize, status: statusFilter });
+  const { data, isLoading } = useStaffOrders({ 
+    pageNumber, 
+    pageSize, 
+    status: statusFilter,
+    orderType: typeFilters.length > 0 ? typeFilters.join(",") : undefined
+  });
   const safeOrders = Array.isArray(data?.items) ? data!.items : [];
   const filteredOrders = safeOrders.filter(
-    (o) => o.orderStatus === statusFilter && (typeFilters.length === 0 || typeFilters.includes(o.orderType))
+    (o) => o.orderStatus === statusFilter
   );
+  const totalFilteredCount = data?.totalCount ?? 0;
   const meta = data
     ? {
         totalPages: data.totalPages,
@@ -107,7 +113,7 @@ export function OrdersScreen() {
 
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid item xs={12} sm={4}>
-          <SummaryCard label="Orders" value={isLoading ? "—" : filteredOrders.length} />
+          <SummaryCard label="Orders" value={isLoading ? "—" : totalFilteredCount.toString()} />
         </Grid>
       </Grid>
 
@@ -150,7 +156,7 @@ export function OrdersScreen() {
         <Box sx={{ maxWidth: 720, mx: "auto", mt: 2 }}>
           <LinearProgress sx={{ borderRadius: 1 }} />
         </Box>
-      ) : filteredOrders.length === 0 ? (
+      ) : totalFilteredCount === 0 ? (
         <Box sx={{ maxWidth: 720, mx: "auto", mt: 3 }}>
           <Paper
             elevation={0}
@@ -318,7 +324,10 @@ export function OrdersScreen() {
                       bgcolor: "#111827",
                       "&:hover": { bgcolor: "#0f172a" },
                     }}
-                    onClick={() => navigate(`/sales/orders/${o.id}`)}
+                    onClick={() => {
+                      const url = `/sales/orders/${o.id}?status=${statusFilter}&type=${typeFilters.join(",")}`;
+                      navigate(url);
+                    }}
                   >
                     View detail
                   </Button>

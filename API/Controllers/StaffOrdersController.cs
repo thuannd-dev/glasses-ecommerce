@@ -31,15 +31,29 @@ public sealed class StaffOrdersController : BaseApiController
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 10,
         [FromQuery] OrderStatus? status = null,
+        [FromQuery] string? orderType = null,
         CancellationToken ct = default)
     {
         //Staff chỉ thấy đơn mình tạo (filter by CreatedBySalesStaff) hoặc đơn online có trạng thái là pending, confirmed hoặc cancelled
+        List<OrderType> orderTypes = [];
+        if (!string.IsNullOrWhiteSpace(orderType))
+        {
+            foreach (string type in orderType.Split(','))
+            {
+                if (Enum.TryParse<OrderType>(type.Trim(), out OrderType parsedType) && parsedType != OrderType.Unknown)
+                {
+                    orderTypes.Add(parsedType);
+                }
+            }
+        }
+
         return HandleResult(await Mediator.Send(
             new GetStaffOrders.Query
             {
                 PageNumber = pageNumber,
                 PageSize = pageSize,
-                Status = status
+                Status = status,
+                OrderTypes = orderTypes
             }, ct));
     }
 

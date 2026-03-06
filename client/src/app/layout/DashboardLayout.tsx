@@ -20,9 +20,6 @@ import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import Inventory2Outlined from "@mui/icons-material/Inventory2Outlined";
 import AddBoxOutlined from "@mui/icons-material/AddBoxOutlined";
 import TrackChangesOutlined from "@mui/icons-material/TrackChangesOutlined";
-import ScheduleOutlined from "@mui/icons-material/ScheduleOutlined";
-import VisibilityOutlined from "@mui/icons-material/VisibilityOutlined";
-
 import SecurityIcon from "@mui/icons-material/Security";
 import ExpandLess from "@mui/icons-material/ExpandLess";
 import ExpandMore from "@mui/icons-material/ExpandMore";
@@ -42,16 +39,12 @@ const DASHBOARD_LINKS: { path: string; label: string; role: string; icon: React.
 const SALES_SUB_LINKS: { path: string; label: string; icon: React.ReactNode }[] = [
   { path: "/sales", label: "Overview", icon: <PointOfSaleIcon /> },
   { path: "/sales/orders", label: "Orders", icon: <Inventory2Outlined /> },
-  { path: "/sales/preorder", label: "Preorder", icon: <ScheduleOutlined /> },
-  { path: "/sales/prescription", label: "Prescription", icon: <VisibilityOutlined /> },
   { path: "/sales/return-refund", label: "Return / Refund", icon: <AssignmentReturnIcon /> },
   { path: "/sales/warranty", label: "Warranty", icon: <VerifiedUserIcon /> },
 ];
 
 const OPERATIONS_SUB_LINKS: { path: string; label: string; icon: React.ReactNode }[] = [
   { path: "/operations/pack", label: "Confirmed orders", icon: <Inventory2Outlined /> },
-  { path: "/operations/pre-order", label: "Pre-order", icon: <ScheduleOutlined /> },
-  { path: "/operations/prescription", label: "Prescription", icon: <VisibilityOutlined /> },
   { path: "/operations/create-shipment", label: "Packing orders", icon: <AddBoxOutlined /> },
   { path: "/operations/tracking", label: "Shipped", icon: <TrackChangesOutlined /> },
 ];
@@ -64,8 +57,6 @@ const ADMIN_SUB_LINKS: { path: string; label: string; icon: React.ReactNode }[] 
 export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [salesOrdersOpen, setSalesOrdersOpen] = useState(true);
-  const [preorderOpen, setPreorderOpen] = useState(true);
-  const [prescriptionOpen, setPrescriptionOpen] = useState(true);
   const [returnRefundOpen, setReturnRefundOpen] = useState(true);
   const [warrantyOpen, setWarrantyOpen] = useState(true);
   const [operationsOpen, setOperationsOpen] = useState(true);
@@ -296,214 +287,6 @@ export default function DashboardLayout() {
                                       sx={{
                                         ...baseStyles,
                                         ...(isOrdersRoute && currentStatus === "Cancelled" ? activeStyles : {}),
-                                      }}
-                                    >
-                                      <ListItemText
-                                        primary="Cancelled"
-                                        primaryTypographyProps={{ fontWeight: 500 }}
-                                      />
-                                    </ListItemButton>
-                                  </>
-                                );
-                              })()}
-                            </List>
-                          </Collapse>
-                        </Fragment>
-                      );
-                    }
-
-                    // Preorder parent + dropdown children
-                    if (sub.path === "/sales/preorder") {
-                      return (
-                        <Fragment key="sales-preorder-group">
-                          <ListItemButton
-                            onClick={() => setPreorderOpen((open) => !open)}
-                            sx={{
-                              borderRadius: 2,
-                              mb: 0.25,
-                              color: "rgba(0,0,0,0.7)",
-                              "&:hover": {
-                                bgcolor: "rgba(0,0,0,0.04)",
-                                color: "rgba(0,0,0,0.9)",
-                              },
-                            }}
-                          >
-                            <ListItemIcon sx={{ minWidth: 40, color: "inherit" }}>
-                              <ScheduleOutlined />
-                            </ListItemIcon>
-                            <ListItemText
-                              primary="Preorder"
-                              primaryTypographyProps={{ fontWeight: 600 }}
-                            />
-                            {preorderOpen ? <ExpandLess /> : <ExpandMore />}
-                          </ListItemButton>
-
-                          <Collapse in={preorderOpen} timeout="auto" unmountOnExit>
-                            <List component="div" disablePadding sx={{ pl: 4 }}>
-                              {(() => {
-                                const searchParams = new URLSearchParams(location.search);
-                                const currentStatus =
-                                  location.pathname.startsWith("/sales/preorder")
-                                    ? searchParams.get("status") ?? "Pending"
-                                    : null;
-
-                                const baseStyles = {
-                                  borderRadius: 2,
-                                  mb: 0.25,
-                                  color: "rgba(0,0,0,0.7)",
-                                  "&:hover": {
-                                    bgcolor: "rgba(0,0,0,0.04)",
-                                    color: "rgba(0,0,0,0.9)",
-                                  },
-                                } as const;
-
-                                const activeStyles = {
-                                  bgcolor: "rgba(25,118,210,0.12)",
-                                  color: "primary.main",
-                                } as const;
-
-                                const isPreorderRoute = location.pathname.startsWith("/sales/preorder");
-
-                                return (
-                                  <>
-                                    <ListItemButton
-                                      component={NavLink}
-                                      to="/sales/preorder?status=Pending"
-                                      sx={{
-                                        ...baseStyles,
-                                        ...(isPreorderRoute && currentStatus === "Pending" ? activeStyles : {}),
-                                      }}
-                                    >
-                                      <ListItemText
-                                        primary="Pending"
-                                        primaryTypographyProps={{ fontWeight: 500 }}
-                                      />
-                                    </ListItemButton>
-
-                                    <ListItemButton
-                                      component={NavLink}
-                                      to="/sales/preorder?status=Confirmed"
-                                      sx={{
-                                        ...baseStyles,
-                                        ...(isPreorderRoute && currentStatus === "Confirmed" ? activeStyles : {}),
-                                      }}
-                                    >
-                                      <ListItemText
-                                        primary="Confirmed"
-                                        primaryTypographyProps={{ fontWeight: 500 }}
-                                      />
-                                    </ListItemButton>
-
-                                    <ListItemButton
-                                      component={NavLink}
-                                      to="/sales/preorder?status=Cancelled"
-                                      sx={{
-                                        ...baseStyles,
-                                        ...(isPreorderRoute && currentStatus === "Cancelled" ? activeStyles : {}),
-                                      }}
-                                    >
-                                      <ListItemText
-                                        primary="Cancelled"
-                                        primaryTypographyProps={{ fontWeight: 500 }}
-                                      />
-                                    </ListItemButton>
-                                  </>
-                                );
-                              })()}
-                            </List>
-                          </Collapse>
-                        </Fragment>
-                      );
-                    }
-
-                    // Prescription parent + dropdown children
-                    if (sub.path === "/sales/prescription") {
-                      return (
-                        <Fragment key="sales-prescription-group">
-                          <ListItemButton
-                            onClick={() => setPrescriptionOpen((open) => !open)}
-                            sx={{
-                              borderRadius: 2,
-                              mb: 0.25,
-                              color: "rgba(0,0,0,0.7)",
-                              "&:hover": {
-                                bgcolor: "rgba(0,0,0,0.04)",
-                                color: "rgba(0,0,0,0.9)",
-                              },
-                            }}
-                          >
-                            <ListItemIcon sx={{ minWidth: 40, color: "inherit" }}>
-                              <VisibilityOutlined />
-                            </ListItemIcon>
-                            <ListItemText
-                              primary="Prescription"
-                              primaryTypographyProps={{ fontWeight: 600 }}
-                            />
-                            {prescriptionOpen ? <ExpandLess /> : <ExpandMore />}
-                          </ListItemButton>
-
-                          <Collapse in={prescriptionOpen} timeout="auto" unmountOnExit>
-                            <List component="div" disablePadding sx={{ pl: 4 }}>
-                              {(() => {
-                                const searchParams = new URLSearchParams(location.search);
-                                const currentStatus =
-                                  location.pathname.startsWith("/sales/prescription")
-                                    ? searchParams.get("status") ?? "Pending"
-                                    : null;
-
-                                const baseStyles = {
-                                  borderRadius: 2,
-                                  mb: 0.25,
-                                  color: "rgba(0,0,0,0.7)",
-                                  "&:hover": {
-                                    bgcolor: "rgba(0,0,0,0.04)",
-                                    color: "rgba(0,0,0,0.9)",
-                                  },
-                                } as const;
-
-                                const activeStyles = {
-                                  bgcolor: "rgba(25,118,210,0.12)",
-                                  color: "primary.main",
-                                } as const;
-
-                                const isPrescriptionRoute = location.pathname.startsWith("/sales/prescription");
-
-                                return (
-                                  <>
-                                    <ListItemButton
-                                      component={NavLink}
-                                      to="/sales/prescription?status=Pending"
-                                      sx={{
-                                        ...baseStyles,
-                                        ...(isPrescriptionRoute && currentStatus === "Pending" ? activeStyles : {}),
-                                      }}
-                                    >
-                                      <ListItemText
-                                        primary="Pending"
-                                        primaryTypographyProps={{ fontWeight: 500 }}
-                                      />
-                                    </ListItemButton>
-
-                                    <ListItemButton
-                                      component={NavLink}
-                                      to="/sales/prescription?status=Confirmed"
-                                      sx={{
-                                        ...baseStyles,
-                                        ...(isPrescriptionRoute && currentStatus === "Confirmed" ? activeStyles : {}),
-                                      }}
-                                    >
-                                      <ListItemText
-                                        primary="Confirmed"
-                                        primaryTypographyProps={{ fontWeight: 500 }}
-                                      />
-                                    </ListItemButton>
-
-                                    <ListItemButton
-                                      component={NavLink}
-                                      to="/sales/prescription?status=Cancelled"
-                                      sx={{
-                                        ...baseStyles,
-                                        ...(isPrescriptionRoute && currentStatus === "Cancelled" ? activeStyles : {}),
                                       }}
                                     >
                                       <ListItemText
@@ -800,58 +583,59 @@ export default function DashboardLayout() {
                   </Typography>
 
                   {/* Parent Orders group for Operations, giống Sales */}
-                  <ListItemButton
-                    onClick={() => setOperationsOpen((open) => !open)}
-                    sx={{
-                      borderRadius: 2,
-                      mb: 0.25,
-                      color: "rgba(0,0,0,0.7)",
-                      "&:hover": {
-                        bgcolor: "rgba(0,0,0,0.04)",
-                        color: "rgba(0,0,0,0.9)",
-                      },
-                    }}
-                  >
-                    <ListItemIcon sx={{ minWidth: 40, color: "inherit" }}>
-                      <LocalShippingIcon />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary="Orders"
-                      primaryTypographyProps={{ fontWeight: 600 }}
-                    />
-                    {operationsOpen ? <ExpandLess /> : <ExpandMore />}
-                  </ListItemButton>
+                  <List component="div" disablePadding sx={{ pl: 0 }}>
+                      {/* Orders parent + dropdown children */}
+                      <ListItemButton
+                        onClick={() => setOperationsOpen((open) => !open)}
+                        sx={{
+                          borderRadius: 2,
+                          mb: 0.25,
+                          color: "rgba(0,0,0,0.7)",
+                          "&:hover": {
+                            bgcolor: "rgba(0,0,0,0.04)",
+                            color: "rgba(0,0,0,0.9)",
+                          },
+                        }}
+                      >
+                        <ListItemIcon sx={{ minWidth: 40, color: "inherit" }}>
+                          <Inventory2Outlined />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary="Orders"
+                          primaryTypographyProps={{ fontWeight: 500 }}
+                        />
+                        {operationsOpen ? <ExpandLess /> : <ExpandMore />}
+                      </ListItemButton>
 
-                  <Collapse in={operationsOpen} timeout="auto" unmountOnExit>
-                    <List component="div" disablePadding sx={{ pl: 4 }}>
-                      {OPERATIONS_SUB_LINKS.map((sub) => (
-                        <ListItemButton
-                          key={sub.path}
-                          component={NavLink}
-                          to={sub.path}
-                          sx={{
-                            borderRadius: 2,
-                            mb: 0.25,
-                            color: "rgba(0,0,0,0.7)",
-                            "&.active": {
-                              bgcolor: "rgba(25,118,210,0.12)",
-                              color: "primary.main",
-                            },
-                            "&:hover": {
-                              bgcolor: "rgba(0,0,0,0.04)",
-                              color: "rgba(0,0,0,0.9)",
-                            },
-                          }}
-                        >
-                          <ListItemIcon sx={{ minWidth: 32, color: "inherit" }}>
-                            {sub.icon}
-                          </ListItemIcon>
-                          <ListItemText
-                            primary={sub.label}
-                            primaryTypographyProps={{ fontWeight: 500 }}
-                          />
-                        </ListItemButton>
-                      ))}
+                      <Collapse in={operationsOpen} timeout="auto" unmountOnExit>
+                        <List component="div" disablePadding sx={{ pl: 4 }}>
+                          {OPERATIONS_SUB_LINKS.map((sub) => (
+                            <ListItemButton
+                              key={sub.path}
+                              component={NavLink}
+                              to={sub.path}
+                              sx={{
+                                borderRadius: 2,
+                                mb: 0.25,
+                                color: "rgba(0,0,0,0.7)",
+                                "&.active": {
+                                  bgcolor: "rgba(25,118,210,0.12)",
+                                  color: "primary.main",
+                                },
+                                "&:hover": {
+                                  bgcolor: "rgba(0,0,0,0.04)",
+                                  color: "rgba(0,0,0,0.9)",
+                                },
+                              }}
+                            >
+                              <ListItemText
+                                primary={sub.label}
+                                primaryTypographyProps={{ fontWeight: 500 }}
+                              />
+                            </ListItemButton>
+                          ))}
+                        </List>
+                      </Collapse>
 
                       {/* Return/Refund Inspection parent + dropdown children */}
                       <ListItemButton
@@ -866,6 +650,9 @@ export default function DashboardLayout() {
                           },
                         }}
                       >
+                        <ListItemIcon sx={{ minWidth: 40, color: "inherit" }}>
+                          <AssignmentReturnIcon />
+                        </ListItemIcon>
                         <ListItemText
                           primary="Return/Refund Inspection"
                           primaryTypographyProps={{ fontWeight: 500 }}
@@ -961,6 +748,9 @@ export default function DashboardLayout() {
                           },
                         }}
                       >
+                        <ListItemIcon sx={{ minWidth: 40, color: "inherit" }}>
+                          <VerifiedUserIcon />
+                        </ListItemIcon>
                         <ListItemText
                           primary="Warranty"
                           primaryTypographyProps={{ fontWeight: 500 }}
@@ -1057,7 +847,6 @@ export default function DashboardLayout() {
                         </List>
                       </Collapse>
                     </List>
-                  </Collapse>
                 </Fragment>
               );
             }

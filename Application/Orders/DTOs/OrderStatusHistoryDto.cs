@@ -7,4 +7,6 @@ public sealed class OrderStatusHistoryDto
     public string ToStatus { get; set; } = null!;
     public string? Notes { get; set; }
     public DateTime CreatedAt { get; set; }
+    public string? ChangedByUserName { get; set; }
+    public string? ChangedByUserEmail { get; set; }
 }

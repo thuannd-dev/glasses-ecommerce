@@ -25,6 +25,8 @@ public sealed class GetMyOrderDetail
 
             CustomerOrderDto? order = await context.Orders
                 .Where(o => o.Id == request.Id && o.UserId == userId)
+                .Include(o => o.StatusHistories)
+                    .ThenInclude(sh => sh.ChangedByUser)
                 .ProjectTo<CustomerOrderDto>(mapper.ConfigurationProvider)
                 .FirstOrDefaultAsync(ct);
 

@@ -97,7 +97,6 @@ export function ReturnRefundInspectionScreen() {
       }}
     >
       <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2 }}>
-        <AssignmentReturnIcon sx={{ fontSize: 32, color: "#f59e0b" }} />
         <Typography sx={{ fontSize: 24, fontWeight: 900 }}>
           Return/Refund Inspection
         </Typography>

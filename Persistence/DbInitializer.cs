@@ -1181,234 +1181,351 @@ public class DbInitializer
             await context.SaveChangesAsync();
         }
 
-        // Seed Orders with OrderItems
+        // Seed Addresses for customer
+        if (!context.Addresses.Any())
+        {
+            User? customerUser = await userManager.Users.FirstOrDefaultAsync(u => u.UserName == "customer@test.com");
+            
+            if (customerUser != null)
+            {
+                var addresses = new List<Address>
+                {
+                    new() { UserId = customerUser.Id, RecipientName = "John Doe", RecipientPhone = "0912345678", Venue = "123 Main Street", Ward = "Ward 1", District = "District 1", City = "Ho Chi Minh City", PostalCode = "70000", IsDefault = true },
+                    new() { UserId = customerUser.Id, RecipientName = "Jane Smith", RecipientPhone = "0987654321", Venue = "456 Secondary Road", Ward = "Ward 2", District = "District 2", City = "Hanoi", PostalCode = "10000" },
+                    new() { UserId = customerUser.Id, RecipientName = "Alice Johnson", RecipientPhone = "0911222333", Venue = "789 Third Avenue", Ward = "Ward 3", District = "District 3", City = "Da Nang", PostalCode = "50000" },
+                    new() { UserId = customerUser.Id, RecipientName = "Bob Wilson", RecipientPhone = "0922333444", Venue = "321 Fourth Lane", Ward = "Ward 4", District = "District 4", City = "Ho Chi Minh City", PostalCode = "70001" },
+                    new() { UserId = customerUser.Id, RecipientName = "Carol Davis", RecipientPhone = "0933444555", Venue = "654 Fifth Boulevard", Ward = "Ward 5", District = "District 5", City = "Ho Chi Minh City", PostalCode = "70002" }
+                };
+                
+                await context.Addresses.AddRangeAsync(addresses);
+                await context.SaveChangesAsync();
+            }
+        }
+
+        // Seed Orders with OrderItems, ShipmentInfo, and Prescriptions
         if (!context.Orders.Any())
         {
             User? customerUser = await userManager.Users.FirstOrDefaultAsync(u => u.UserName == "customer@test.com");
             
             if (customerUser != null)
             {
-                // Get product variants for linking to order items
-                List<ProductVariant> variants = await context.ProductVariants.Take(20).ToListAsync();
+                // Get product variants and addresses for linking
+                List<ProductVariant> variants = await context.ProductVariants.ToListAsync();
+                List<Address> addresses = await context.Addresses.Where(a => a.UserId == customerUser.Id).ToListAsync();
 
-                var orders = new List<Order>
+                if (variants.Count == 0 || addresses.Count == 0)
+                    return;
+
+                List<Order> allOrdersWithItems = new List<Order>();
+                List<ShipmentInfo> shipments = new List<ShipmentInfo>();
+                List<Prescription> prescriptions = new List<Prescription>();
+                List<PrescriptionDetail> prescriptionDetails = new List<PrescriptionDetail>();
+
+                decimal shippingFee = 15.00m;
+                int variantIndex = 0;
+
+                // Helper to create orders of a given type
+                void CreateOrdersOfType(OrderType orderType, int count, decimal basePrice, bool isPreorder = false)
                 {
-                    new() { UserId = customerUser.Id, OrderType = OrderType.ReadyStock, TotalAmount = 318.00m, OrderStatus = OrderStatus.Pending, CreatedAt = DateTime.UtcNow.AddDays(-5) },
-                    new() { UserId = customerUser.Id, OrderType = OrderType.ReadyStock, TotalAmount = 189.99m, OrderStatus = OrderStatus.Confirmed, CreatedAt = DateTime.UtcNow.AddDays(-3) },
-                    new() { UserId = customerUser.Id, OrderType = OrderType.ReadyStock, TotalAmount = 308.00m, OrderStatus = OrderStatus.Pending, CreatedAt = DateTime.UtcNow.AddDays(-8) },
-                    new() { UserId = customerUser.Id, OrderType = OrderType.ReadyStock, TotalAmount = 450.00m, OrderStatus = OrderStatus.Confirmed, CreatedAt = DateTime.UtcNow.AddDays(-10) },
-                    new() { UserId = customerUser.Id, OrderType = OrderType.ReadyStock, TotalAmount = 159.00m, OrderStatus = OrderStatus.Pending, CreatedAt = DateTime.UtcNow.AddDays(-1) },
-                    new() { UserId = customerUser.Id, OrderType = OrderType.ReadyStock, TotalAmount = 378.00m, OrderStatus = OrderStatus.Confirmed, CreatedAt = DateTime.UtcNow.AddDays(-6) },
-                    new() { UserId = customerUser.Id, OrderType = OrderType.ReadyStock, TotalAmount = 338.00m, OrderStatus = OrderStatus.Pending, CreatedAt = DateTime.UtcNow.AddDays(-4) },
-                    new() { UserId = customerUser.Id, OrderType = OrderType.ReadyStock, TotalAmount = 290.00m, OrderStatus = OrderStatus.Confirmed, CreatedAt = DateTime.UtcNow.AddDays(-12) },
-                    new() { UserId = customerUser.Id, OrderType = OrderType.ReadyStock, TotalAmount = 169.00m, OrderStatus = OrderStatus.Pending, CreatedAt = DateTime.UtcNow.AddDays(-9) },
-                    new() { UserId = customerUser.Id, OrderType = OrderType.ReadyStock, TotalAmount = 318.00m, OrderStatus = OrderStatus.Confirmed, CreatedAt = DateTime.UtcNow.AddDays(-2) },
-                    new() { UserId = customerUser.Id, OrderType = OrderType.ReadyStock, TotalAmount = 245.00m, OrderStatus = OrderStatus.Cancelled, CreatedAt = DateTime.UtcNow.AddDays(-7) },
-                    new() { UserId = customerUser.Id, OrderType = OrderType.ReadyStock, TotalAmount = 425.00m, OrderStatus = OrderStatus.Cancelled, CreatedAt = DateTime.UtcNow.AddDays(-11) }
-                };
+                    for (int i = 0; i < count; i++)
+                    {
+                        Address orderAddress = addresses[i % addresses.Count];
+                        OrderStatus status = (i % 5) switch
+                        {
+                            0 => OrderStatus.Pending,
+                            1 => OrderStatus.Confirmed,
+                            2 => OrderStatus.Processing,
+                            3 => OrderStatus.Shipped,
+                            _ => OrderStatus.Delivered
+                        };
 
-                await context.Orders.AddRangeAsync(orders);
+                        int itemCount = (i % 3) + 1;
+                        List<OrderItem> items = new List<OrderItem>();
+                        decimal orderTotal = 0m;
+
+                        for (int j = 0; j < itemCount; j++)
+                        {
+                            ProductVariant variant = variants[variantIndex % variants.Count];
+                            variantIndex++;
+                            int quantity = 1 + (j % 2);
+                            decimal unitPrice = basePrice + (i % 10) * 5m + (j * 10m);
+                            decimal itemSubtotal = unitPrice * quantity;
+                            orderTotal += itemSubtotal;
+
+                            items.Add(new OrderItem
+                            {
+                                OrderId = Guid.Empty,
+                                ProductVariantId = variant.Id,
+                                Quantity = quantity,
+                                UnitPrice = unitPrice
+                            });
+                        }
+
+                        Order order = new()
+                        {
+                            UserId = customerUser.Id,
+                            AddressId = orderAddress.Id,
+                            OrderType = orderType,
+                            OrderSource = OrderSource.Online,
+                            OrderStatus = status,
+                            CreatedAt = orderType == OrderType.PreOrder ? DateTime.UtcNow.AddDays(-45 + i) : 
+                                        orderType == OrderType.Prescription ? DateTime.UtcNow.AddDays(-30 + i) :
+                                        DateTime.UtcNow.AddDays(-60 + i),
+                            ShippingFee = shippingFee,
+                            TotalAmount = orderTotal,
+                            CustomerNote = orderType switch
+                            {
+                                OrderType.ReadyStock => $"ReadyStock Order {i + 1}.",
+                                OrderType.PreOrder => $"PreOrder {i + 1}.",
+                                _ => $"Prescription Order {i + 1}."
+                            }
+                        };
+
+                        if (isPreorder)
+                        {
+                            order.CancellationDeadline = DateTime.UtcNow.AddDays(7);
+                            order.DepositAmount = orderTotal * 0.3m;
+                            order.RemainingAmount = orderTotal * 0.7m;
+                        }
+                        else if (orderType == OrderType.Prescription)
+                        {
+                            order.CancellationDeadline = DateTime.UtcNow.AddDays(3);
+                        }
+
+                        // Set items via navigation property
+                        foreach (OrderItem item in items)
+                        {
+                            order.OrderItems.Add(item);
+                        }
+
+                        allOrdersWithItems.Add(order);
+                    }
+                }
+
+                // Create all orders with items
+                CreateOrdersOfType(OrderType.ReadyStock, 30, 150m);
+                CreateOrdersOfType(OrderType.PreOrder, 30, 165m, isPreorder: true);
+                CreateOrdersOfType(OrderType.Prescription, 30, 200m);
+
+                // Save all orders with their items in one batch
+                await context.Orders.AddRangeAsync(allOrdersWithItems);
                 await context.SaveChangesAsync();
 
-                // Now add OrderItems with the Order IDs
-                if (variants.Count > 0)
+                // Add ShipmentInfo for shipped/delivered orders
+                int shipmentIndex = 0;
+                foreach (Order order in allOrdersWithItems.Where(o => o.OrderStatus >= OrderStatus.Shipped))
                 {
-                    List<OrderItem> orderItems = new List<OrderItem>
+                    ShippingCarrier carrier = (shipmentIndex % 2 == 0) ? ShippingCarrier.GHN : ShippingCarrier.GHTK;
+                    DateTime shippedDate = order.CreatedAt.AddDays(2);
+                    DateTime estimatedDelivery = shippedDate.AddDays(3);
+                    DateTime? actualDelivery = order.OrderStatus == OrderStatus.Delivered ? estimatedDelivery.AddDays(1) : null;
+
+                    shipments.Add(new()
                     {
-                        // Order 1: 2 items
-                        new() { OrderId = orders[0].Id, ProductVariantId = variants[0].Id, Quantity = 2, UnitPrice = 159.00m },
-                        new() { OrderId = orders[0].Id, ProductVariantId = variants.Count > 1 ? variants[1].Id : variants[0].Id, Quantity = 1, UnitPrice = 149.00m },
-                        
-                        // Order 2: 1 item
-                        new() { OrderId = orders[1].Id, ProductVariantId = variants[variants.Count > 2 ? 2 : 0].Id, Quantity = 1, UnitPrice = 189.99m },
-                        
-                        // Order 3: 1 item
-                        new() { OrderId = orders[2].Id, ProductVariantId = variants[variants.Count > 3 ? 3 : 1].Id, Quantity = 2, UnitPrice = 154.00m },
-                        
-                        // Order 4: 3 items
-                        new() { OrderId = orders[3].Id, ProductVariantId = variants[variants.Count > 4 ? 4 : 2].Id, Quantity = 1, UnitPrice = 169.00m },
-                        new() { OrderId = orders[3].Id, ProductVariantId = variants[variants.Count > 5 ? 5 : 3].Id, Quantity = 1, UnitPrice = 159.00m },
-                        new() { OrderId = orders[3].Id, ProductVariantId = variants[variants.Count > 6 ? 6 : 4].Id, Quantity = 1, UnitPrice = 122.00m },
-                        
-                        // Order 5: 1 item
-                        new() { OrderId = orders[4].Id, ProductVariantId = variants[variants.Count > 7 ? 7 : 5].Id, Quantity = 1, UnitPrice = 159.00m },
-                        
-                        // Order 6: 2 items
-                        new() { OrderId = orders[5].Id, ProductVariantId = variants[variants.Count > 8 ? 8 : 6].Id, Quantity = 2, UnitPrice = 189.00m },
-                        new() { OrderId = orders[5].Id, ProductVariantId = variants[variants.Count > 9 ? 9 : 7].Id, Quantity = 1, UnitPrice = 189.00m },
-                        
-                        // Order 7: 2 items
-                        new() { OrderId = orders[6].Id, ProductVariantId = variants[0].Id, Quantity = 2, UnitPrice = 169.00m },
-                        new() { OrderId = orders[6].Id, ProductVariantId = variants[1].Id, Quantity = 1, UnitPrice = 169.00m },
-                        
-                        // Order 8: 2 items
-                        new() { OrderId = orders[7].Id, ProductVariantId = variants[variants.Count > 2 ? 2 : 0].Id, Quantity = 1, UnitPrice = 145.00m },
-                        new() { OrderId = orders[7].Id, ProductVariantId = variants[variants.Count > 3 ? 3 : 1].Id, Quantity = 1, UnitPrice = 145.00m },
-                        
-                        // Order 9: 1 item
-                        new() { OrderId = orders[8].Id, ProductVariantId = variants[variants.Count > 4 ? 4 : 2].Id, Quantity = 1, UnitPrice = 169.00m },
-                        
-                        // Order 10: 1 item
-                        new() { OrderId = orders[9].Id, ProductVariantId = variants[variants.Count > 5 ? 5 : 3].Id, Quantity = 2, UnitPrice = 159.00m }
+                        OrderId = order.Id,
+                        CarrierName = carrier,
+                        TrackingCode = $"TRK{order.Id:N}".Substring(0, 20),
+                        TrackingUrl = $"https://tracking.example.com/{order.Id:N}".Substring(0, 50),
+                        ShippedAt = shippedDate,
+                        EstimatedDeliveryAt = estimatedDelivery,
+                        ActualDeliveryAt = actualDelivery,
+                        PackageWeight = (decimal)(0.5 + (shipmentIndex % 5) * 0.2),
+                        PackageDimensions = "20x15x10 cm",
+                        ShippingNotes = "Handle with care. Fragile item - Glasses.",
+                        CreatedAt = shippedDate,
+                        CreatedBy = customerUser.Id
+                    });
+                    shipmentIndex++;
+                }
+
+                await context.ShipmentInfos.AddRangeAsync(shipments);
+                await context.SaveChangesAsync();
+
+                // Add Prescriptions and PrescriptionDetails
+                foreach (Order order in allOrdersWithItems.Where(o => o.OrderType == OrderType.Prescription))
+                {
+                    Prescription prescription = new()
+                    {
+                        OrderId = order.Id,
+                        IsVerified = order.OrderStatus >= OrderStatus.Confirmed,
+                        VerifiedBy = order.OrderStatus >= OrderStatus.Confirmed ? customerUser.Id : null,
+                        VerifiedAt = order.OrderStatus >= OrderStatus.Confirmed ? order.CreatedAt.AddDays(1) : null,
+                        VerificationNotes = order.OrderStatus >= OrderStatus.Confirmed ? "Prescription verified and approved." : null,
+                        CreatedAt = order.CreatedAt
                     };
 
-                    await context.OrderItems.AddRangeAsync(orderItems);
-                    await context.SaveChangesAsync();
+                    prescriptions.Add(prescription);
+
+                    prescriptionDetails.Add(new()
+                    {
+                        PrescriptionId = prescription.Id,
+                        Eye = EyeType.Left,
+                        SPH = -2.5m + (order.Id.GetHashCode() % 5) * 0.25m,
+                        CYL = -0.5m,
+                        AXIS = 90,
+                        PD = 63.5m,
+                        ADD = 2.0m
+                    });
+
+                    prescriptionDetails.Add(new()
+                    {
+                        PrescriptionId = prescription.Id,
+                        Eye = EyeType.Right,
+                        SPH = -2.75m + (order.Id.GetHashCode() % 5) * 0.25m,
+                        CYL = -0.75m,
+                        AXIS = 80,
+                        PD = 63.5m,
+                        ADD = 2.0m
+                    });
                 }
+
+                await context.Prescriptions.AddRangeAsync(prescriptions);
+                await context.SaveChangesAsync();
+                await context.PrescriptionDetails.AddRangeAsync(prescriptionDetails);
+                await context.SaveChangesAsync();
             }
         }
 
-        // Seed AfterSalesTickets (Return/Refund and Warranty)
+        // Seed AfterSalesTickets (Return/Refund and Warranty) - 15 of each
         if (!context.AfterSalesTickets.Any())
         {
-            // Get a customer user and order items from the database
             User? customerUser = await userManager.Users.FirstOrDefaultAsync(u => u.UserName == "customer@test.com");
             
             if (customerUser != null)
             {
-                // Get OrderItems to link to tickets
                 List<OrderItem> orderItems = await context.OrderItems.ToListAsync();
 
-                var afterSalesTickets = new List<AfterSalesTicket>
-                {
-                    // Return/Refund Tickets - map to first 5 order items
-                    new()
-                    {
-                        OrderId = null,
-                        OrderItemId = orderItems.Count > 0 ? orderItems[0].Id : null,
-                        CustomerId = customerUser.Id,
-                        TicketType = AfterSalesTicketType.Return,
-                        TicketStatus = AfterSalesTicketStatus.Pending,
-                        Reason = "Frame is slightly bent and uncomfortable to wear",
-                        RequestedAction = "Exchange for same model",
-                        RefundAmount = null,
-                        IsRequiredEvidence = true,
-                        CreatedAt = DateTime.UtcNow.AddDays(-5)
-                    },
-                    new()
-                    {
-                        OrderId = null,
-                        OrderItemId = orderItems.Count > 1 ? orderItems[1].Id : null,
-                        CustomerId = customerUser.Id,
-                        TicketType = AfterSalesTicketType.Refund,
-                        TicketStatus = AfterSalesTicketStatus.InProgress,
-                        Reason = "Customer changed their mind about the purchase",
-                        RequestedAction = "Full refund",
-                        RefundAmount = 189.99m,
-                        IsRequiredEvidence = false,
-                        CreatedAt = DateTime.UtcNow.AddDays(-3)
-                    },
-                    new()
-                    {
-                        OrderId = null,
-                        OrderItemId = orderItems.Count > 2 ? orderItems[2].Id : null,
-                        CustomerId = customerUser.Id,
-                        TicketType = AfterSalesTicketType.Return,
-                        TicketStatus = AfterSalesTicketStatus.Resolved,
-                        Reason = "Wrong frame color shipped",
-                        RequestedAction = "Exchange for correct color",
-                        RefundAmount = null,
-                        IsRequiredEvidence = false,
-                        CreatedAt = DateTime.UtcNow.AddDays(-8),
-                        ResolvedAt = DateTime.UtcNow.AddDays(-1)
-                    },
-                    new()
-                    {
-                        OrderId = null,
-                        OrderItemId = orderItems.Count > 3 ? orderItems[3].Id : null,
-                        CustomerId = customerUser.Id,
-                        TicketType = AfterSalesTicketType.Refund,
-                        TicketStatus = AfterSalesTicketStatus.Rejected,
-                        Reason = "Product damaged due to customer mishandling",
-                        RequestedAction = "Refund requested",
-                        RefundAmount = null,
-                        IsRequiredEvidence = true,
-                        CreatedAt = DateTime.UtcNow.AddDays(-10),
-                        ResolvedAt = DateTime.UtcNow.AddDays(-4)
-                    },
-                    new()
-                    {
-                        OrderId = null,
-                        OrderItemId = orderItems.Count > 4 ? orderItems[4].Id : null,
-                        CustomerId = customerUser.Id,
-                        TicketType = AfterSalesTicketType.Return,
-                        TicketStatus = AfterSalesTicketStatus.Pending,
-                        Reason = "Prescription was incorrectly filled",
-                        RequestedAction = "Replace with correct prescription",
-                        RefundAmount = null,
-                        IsRequiredEvidence = true,
-                        CreatedAt = DateTime.UtcNow.AddDays(-1)
-                    },
+                var afterSalesTickets = new List<AfterSalesTicket>();
 
-                    // Warranty Tickets - map to remaining order items
-                    new()
-                    {
-                        OrderId = null,
-                        OrderItemId = orderItems.Count > 5 ? orderItems[5].Id : null,
-                        CustomerId = customerUser.Id,
-                        TicketType = AfterSalesTicketType.Warranty,
-                        TicketStatus = AfterSalesTicketStatus.Pending,
-                        Reason = "Left lens has a small scratch that appeared after normal use",
-                        RequestedAction = "Lens replacement",
-                        RefundAmount = null,
-                        IsRequiredEvidence = true,
-                        CreatedAt = DateTime.UtcNow.AddDays(-6)
-                    },
-                    new()
-                    {
-                        OrderId = null,
-                        OrderItemId = orderItems.Count > 6 ? orderItems[6].Id : null,
-                        CustomerId = customerUser.Id,
-                        TicketType = AfterSalesTicketType.Warranty,
-                        TicketStatus = AfterSalesTicketStatus.InProgress,
-                        Reason = "Frame temple is loose and needs adjustment",
-                        RequestedAction = "Frame repair and adjustment",
-                        RefundAmount = null,
-                        IsRequiredEvidence = false,
-                        CreatedAt = DateTime.UtcNow.AddDays(-4)
-                    },
-                    new()
-                    {
-                        OrderId = null,
-                        OrderItemId = orderItems.Count > 7 ? orderItems[7].Id : null,
-                        CustomerId = customerUser.Id,
-                        TicketType = AfterSalesTicketType.Warranty,
-                        TicketStatus = AfterSalesTicketStatus.Resolved,
-                        Reason = "Nose pad came off",
-                        RequestedAction = "Repair nose pad",
-                        RefundAmount = null,
-                        IsRequiredEvidence = false,
-                        CreatedAt = DateTime.UtcNow.AddDays(-12),
-                        ResolvedAt = DateTime.UtcNow.AddDays(-2)
-                    },
-                    new()
-                    {
-                        OrderId = null,
-                        OrderItemId = orderItems.Count > 8 ? orderItems[8].Id : null,
-                        CustomerId = customerUser.Id,
-                        TicketType = AfterSalesTicketType.Warranty,
-                        TicketStatus = AfterSalesTicketStatus.Rejected,
-                        Reason = "Damage caused by user dropping the glasses",
-                        RequestedAction = "Warranty claim",
-                        RefundAmount = null,
-                        IsRequiredEvidence = true,
-                        CreatedAt = DateTime.UtcNow.AddDays(-9),
-                        ResolvedAt = DateTime.UtcNow.AddDays(-3)
-                    },
-                    new()
-                    {
-                        OrderId = null,
-                        OrderItemId = orderItems.Count > 9 ? orderItems[9].Id : null,
-                        CustomerId = customerUser.Id,
-                        TicketType = AfterSalesTicketType.Warranty,
-                        TicketStatus = AfterSalesTicketStatus.InProgress,
-                        Reason = "Left lens coating is peeling",
-                        RequestedAction = "Lens replacement with coating",
-                        RefundAmount = null,
-                        IsRequiredEvidence = true,
-                        CreatedAt = DateTime.UtcNow.AddDays(-2)
-                    }
+                // Return Tickets (15 tickets)
+                string[] returnReasons = new[]
+                {
+                    "Frame is slightly bent and uncomfortable to wear",
+                    "Wrong frame color shipped",
+                    "Frame size doesn't fit properly",
+                    "Lens has minor scratches",
+                    "Hinge mechanism is loose",
+                    "Frame is twisted",
+                    "Color faded faster than expected",
+                    "Defective temple arm",
+                    "Frame has manufacturing defect",
+                    "Incorrect lens prescription",
+                    "Bridge of frame is broken",
+                    "Nose pads are damaged",
+                    "Frame coating is peeling",
+                    "Lenses are foggy",
+                    "Uncomfortable after extended use"
                 };
+
+                for (int i = 0; i < 15; i++)
+                {
+                    OrderItem? item = orderItems.Count > i ? orderItems[i] : orderItems[i % orderItems.Count];
+                    
+                    afterSalesTickets.Add(new()
+                    {
+                        OrderItemId = item.Id,
+                        CustomerId = customerUser.Id,
+                        TicketType = AfterSalesTicketType.Return,
+                        TicketStatus = (i % 3) switch
+                        {
+                            0 => AfterSalesTicketStatus.Pending,
+                            1 => AfterSalesTicketStatus.InProgress,
+                            _ => AfterSalesTicketStatus.Resolved
+                        },
+                        Reason = returnReasons[i],
+                        RequestedAction = "Exchange for same or similar model",
+                        IsRequiredEvidence = i % 2 == 0,
+                        CreatedAt = DateTime.UtcNow.AddDays(-50 + (i * 3)),
+                        ResolvedAt = (i % 3) != 0 ? DateTime.UtcNow.AddDays(-40 + (i * 3)) : null
+                    });
+                }
+
+                // Refund Tickets (15 tickets)
+                string[] refundReasons = new[]
+                {
+                    "Customer changed their mind about the purchase",
+                    "Found better price elsewhere",
+                    "Product damaged upon arrival",
+                    "Customer doesn't like the product",
+                    "Financial hardship",
+                    "Duplicate order",
+                    "Item not as described",
+                    "Allergic reaction to material",
+                    "No longer needs the product",
+                    "Defective product",
+                    "Package arrived late",
+                    "Better alternatives found",
+                    "Personal preference changed",
+                    "Quality not meeting expectations",
+                    "Incompatible with face shape"
+                };
+
+                for (int i = 0; i < 15; i++)
+                {
+                    OrderItem? item = orderItems.Count > (15 + i) ? orderItems[15 + i] : orderItems[i % orderItems.Count];
+                    
+                    afterSalesTickets.Add(new()
+                    {
+                        OrderItemId = item.Id,
+                        CustomerId = customerUser.Id,
+                        TicketType = AfterSalesTicketType.Refund,
+                        TicketStatus = (i % 3) switch
+                        {
+                            0 => AfterSalesTicketStatus.Pending,
+                            1 => AfterSalesTicketStatus.InProgress,
+                            _ => AfterSalesTicketStatus.Resolved
+                        },
+                        Reason = refundReasons[i],
+                        RequestedAction = "Full refund",
+                        RefundAmount = 150.00m + (i * 20m),
+                        IsRequiredEvidence = i % 2 == 0,
+                        CreatedAt = DateTime.UtcNow.AddDays(-45 + (i * 3)),
+                        ResolvedAt = (i % 3) != 0 ? DateTime.UtcNow.AddDays(-35 + (i * 3)) : null
+                    });
+                }
+
+                // Warranty Tickets (15 tickets)
+                string[] warrantyReasons = new[]
+                {
+                    "Left lens has a scratch that appeared after normal use",
+                    "Frame temple is loose and needs adjustment",
+                    "Nose pad came off",
+                    "Lens coating started peeling",
+                    "Frame arm bent unexpectedly",
+                    "Hinge broke during normal use",
+                    "Lens fogging issue",
+                    "Frame deformation after storage",
+                    "Bridge cracked without external impact",
+                    "Screw fell out from temple",
+                    "Anti-reflective coating deteriorating",
+                    "Frame color fading",
+                    "Optical properties degrading",
+                    "Lens developed hairline crack",
+                    "Temple padding wore out"
+                };
+
+                for (int i = 0; i < 15; i++)
+                {
+                    OrderItem? item = orderItems.Count > (30 + i) ? orderItems[30 + i] : orderItems[i % orderItems.Count];
+                    
+                    afterSalesTickets.Add(new()
+                    {
+                        OrderItemId = item.Id,
+                        CustomerId = customerUser.Id,
+                        TicketType = AfterSalesTicketType.Warranty,
+                        TicketStatus = (i % 3) switch
+                        {
+                            0 => AfterSalesTicketStatus.Pending,
+                            1 => AfterSalesTicketStatus.InProgress,
+                            _ => AfterSalesTicketStatus.Resolved
+                        },
+                        Reason = warrantyReasons[i],
+                        RequestedAction = (i % 2 == 0) ? "Lens replacement" : "Frame repair and replacement",
+                        IsRequiredEvidence = true,
+                        CreatedAt = DateTime.UtcNow.AddDays(-40 + (i * 3)),
+                        ResolvedAt = (i % 3) != 0 ? DateTime.UtcNow.AddDays(-30 + (i * 3)) : null
+                    });
+                }
 
                 await context.AfterSalesTickets.AddRangeAsync(afterSalesTickets);
                 await context.SaveChangesAsync();

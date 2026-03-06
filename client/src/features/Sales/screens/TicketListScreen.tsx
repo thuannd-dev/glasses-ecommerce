@@ -72,17 +72,51 @@ export function TicketListScreen({ title, ticketTypes, navPrefix }: TicketListSc
     Closed: AfterSalesTicketStatusValues.Closed,
   };
 
-  const { data, isLoading } = useStaffAfterSalesTickets({
-    pageNumber,
-    pageSize,
-    status: statusMap[statusFilter],
-  });
+  const apiStatus = statusMap[statusFilter];
+  const isSingleType = ticketTypes.length === 1;
+  const isMultipleTypes = ticketTypes.length > 1;
 
-  const safeTickets = Array.isArray(data?.items) ? data.items : [];
-  const filteredTickets = safeTickets.filter((t) =>
-    ticketTypes.includes(t.ticketType)
-  );
-  const meta = data ? { totalPages: Math.ceil(data.totalCount / pageSize) } : null;
+  // Single type fetch (Warranty)
+  const singleTypeResult = isSingleType
+    ? useStaffAfterSalesTickets({
+        pageNumber,
+        pageSize,
+        status: apiStatus,
+        ticketType: ticketTypes[0],
+      })
+    : { data: undefined, isLoading: false };
+
+  // Multiple types fetch (Return/Refund)
+  const returnResult = isMultipleTypes
+    ? useStaffAfterSalesTickets({
+        pageNumber,
+        pageSize,
+        status: apiStatus,
+        ticketType: ticketTypes[0],
+      })
+    : { data: undefined, isLoading: false };
+
+  const refundResult = isMultipleTypes && ticketTypes.length > 1
+    ? useStaffAfterSalesTickets({
+        pageNumber,
+        pageSize,
+        status: apiStatus,
+        ticketType: ticketTypes[1],
+      })
+    : { data: undefined, isLoading: false };
+
+  // Merge results based on type
+  const isLoading = isSingleType ? singleTypeResult.isLoading : (returnResult.isLoading || refundResult.isLoading);
+  const allItems = isSingleType
+    ? singleTypeResult.data?.items ?? []
+    : [...(returnResult.data?.items ?? []), ...(refundResult.data?.items ?? [])];
+  const totalCountAcrossAllTypes = isSingleType
+    ? singleTypeResult.data?.totalCount ?? 0
+    : (returnResult.data?.totalCount ?? 0) + (refundResult.data?.totalCount ?? 0);
+
+  // For pagination display
+  const displayedItems = allItems.slice(0, pageSize);
+  const meta = { totalPages: Math.ceil(totalCountAcrossAllTypes / pageSize) };
 
   const handlePageChange = (_event: React.ChangeEvent<unknown>, value: number) => {
     setPageNumber(value);
@@ -98,7 +132,7 @@ export function TicketListScreen({ title, ticketTypes, navPrefix }: TicketListSc
     return "Refund";
   };
 
-  const hasTickets = filteredTickets.length > 0;
+  const hasTickets = displayedItems.length > 0;
   const shouldShowContent = !isLoading && hasTickets;
   const shouldShowEmpty = !isLoading && !hasTickets;
 
@@ -120,7 +154,7 @@ export function TicketListScreen({ title, ticketTypes, navPrefix }: TicketListSc
 
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid item xs={12} sm={4}>
-          <SummaryCard label={title} value={isLoading ? "—" : filteredTickets.length} />
+          <SummaryCard label={title} value={isLoading ? "—" : totalCountAcrossAllTypes} />
         </Grid>
       </Grid>
 
@@ -134,13 +168,14 @@ export function TicketListScreen({ title, ticketTypes, navPrefix }: TicketListSc
 
       {shouldShowContent && (
         <TicketListContent
-          filteredTickets={filteredTickets}
+          filteredTickets={displayedItems}
           meta={meta}
           pageNumber={pageNumber}
           handlePageChange={handlePageChange}
           navigate={navigate}
           navPrefix={navPrefix}
           getTypeLabel={getTypeLabel}
+          statusFilter={statusFilter}
         />
       )}
     </Box>
@@ -176,6 +211,7 @@ interface TicketListContentProps {
   readonly navigate: any;
   readonly navPrefix: string;
   readonly getTypeLabel: (type: AfterSalesTicketType) => string;
+  readonly statusFilter: string;
 }
 
 function TicketListContent({
@@ -186,6 +222,7 @@ function TicketListContent({
   navigate,
   navPrefix,
   getTypeLabel,
+  statusFilter,
 }: TicketListContentProps) {
   return (
     <Box
@@ -288,6 +325,64 @@ function TicketListContent({
               </Typography>
             </Box>
 
+            {ticket.orderItem && (
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1.5,
+                  p: 1.5,
+                  bgcolor: "rgba(0,0,0,0.02)",
+                  borderRadius: 1.5,
+                  border: "1px solid rgba(0,0,0,0.06)",
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 1,
+                    bgcolor: "rgba(0,0,0,0.05)",
+                    overflow: "hidden",
+                    flexShrink: 0,
+                  }}
+                >
+                  {ticket.orderItem.productImageUrl ? (
+                    <Box
+                      component="img"
+                      src={ticket.orderItem.productImageUrl}
+                      alt=""
+                      sx={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                  ) : (
+                    <Box
+                      sx={{
+                        width: "100%",
+                        height: "100%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "text.secondary",
+                        fontSize: 10,
+                      }}
+                    >
+                      —
+                    </Box>
+                  )}
+                </Box>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography sx={{ fontWeight: 600, fontSize: 13, color: "rgba(0,0,0,0.8)" }}>
+                    {ticket.orderItem.productName || "Unknown Product"}
+                  </Typography>
+                  {ticket.orderItem.variantName && (
+                    <Typography sx={{ fontSize: 12, color: "text.secondary", mt: 0.25 }}>
+                      {ticket.orderItem.variantName}
+                    </Typography>
+                  )}
+                </Box>
+              </Box>
+            )}
+
             <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
               <Box sx={{ flex: 1 }}>
                 <Typography sx={{ fontSize: 13, color: "text.secondary", mb: 0.5 }}>
@@ -308,7 +403,10 @@ function TicketListContent({
                   "&:hover": { bgcolor: "#111827" },
                   ml: 2,
                 }}
-                onClick={() => navigate(`/sales/${navPrefix}/${ticket.id}`)}
+                onClick={() => {
+                  const url = `/sales/${navPrefix}/${ticket.id}?status=${statusFilter}`;
+                  navigate(url);
+                }}
               >
                 View detail
               </Button>

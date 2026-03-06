@@ -96,7 +96,6 @@ export function OperationsWarrantyScreen() {
       }}
     >
       <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2 }}>
-        <VerifiedUserIcon sx={{ fontSize: 32, color: "#3b82f6" }} />
         <Typography sx={{ fontSize: 24, fontWeight: 900 }}>
           Warranty
         </Typography>

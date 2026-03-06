@@ -50,12 +50,9 @@ public sealed class UpdateOrderStatus
                     return Result<Unit>.Failure(
                         $"Cannot transition from '{oldStatus}' to '{newStatus}'.", 400);
 
-                // ReadyStock, Prescription và PreOrder orders đều cần điều chỉnh stock khi cancel/complete:
-                //  - ReadyStock / Prescription: khi tạo đơn đã reserve → giải phóng QuantityReserved khi cancel, trừ QuantityOnHand khi complete.
-                //  - PreOrder (thuần / mixed): PreOrder items dùng QuantityPreOrdered (chưa có hàng)
-                //    hoặc QuantityReserved (hàng đã về qua Inbound); Regular items trong mixed cart dùng QuantityReserved.
+                // ReadyStock and PreOrder orders need stock adjustment when cancel/complete.
+                // Prescription orders are custom-made and don't use regular stock.
                 if ((order.OrderType == OrderType.ReadyStock
-                    || order.OrderType == OrderType.Prescription
                     || order.OrderType == OrderType.PreOrder) &&
                     (newStatus == OrderStatus.Cancelled || newStatus == OrderStatus.Completed))
                 {

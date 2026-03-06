@@ -133,11 +133,20 @@ export default function OrderSuccessPage() {
                 <Typography fontWeight={900} mb={1}>
                   Status history
                 </Typography>
-                {order.statusHistories.map((h, idx) => (
-                  <Typography key={idx} fontSize={13} color="text.secondary">
-                    {new Date(h.createdAt).toLocaleString()} — {h.notes ?? ""} ({h.toStatus})
-                  </Typography>
-                ))}
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                  {order.statusHistories.map((h, idx) => (
+                    <Box key={idx}>
+                      <Typography fontSize={14} fontWeight={600}>
+                        {h.toStatus}
+                      </Typography>
+                      <Typography fontSize={12} color="text.secondary">
+                        {h.notes}
+                        {h.notes && " · "}
+                        {new Date(h.createdAt).toLocaleString()}
+                      </Typography>
+                    </Box>
+                  ))}
+                </Box>
               </>
             )}
           </Paper>
