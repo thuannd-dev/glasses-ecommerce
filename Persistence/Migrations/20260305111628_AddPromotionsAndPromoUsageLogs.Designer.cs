@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Persistence;
 
@@ -11,9 +12,11 @@ using Persistence;
 namespace Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260305111628_AddPromotionsAndPromoUsageLogs")]
+    partial class AddPromotionsAndPromoUsageLogs
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1370,9 +1373,6 @@ namespace Persistence.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
-                    b.Property<bool>("IsPublic")
-                        .HasColumnType("bit");
-
                     b.Property<decimal?>("MaxDiscountValue")
                         .HasColumnType("decimal(10,2)");
 
@@ -1418,9 +1418,6 @@ namespace Persistence.Migrations
 
                     b.HasIndex("PromotionType", "ValidFrom", "ValidTo")
                         .HasDatabaseName("IX_Promotion_Type_ValidPeriod");
-
-                    b.HasIndex("IsActive", "IsPublic", "ValidFrom", "ValidTo")
-                        .HasDatabaseName("IX_Promotion_Active_Public_ValidPeriod");
 
                     b.ToTable("Promotions", t =>
                         {
