@@ -181,6 +181,16 @@ public sealed class CreateStaffOrder
                             return Result<Guid>.Failure("Promo code usage limit reached.", 400);
                     }
 
+                    // Per-customer limit (skip for walk-in where no userId is linked)
+                    if (promotion.UsageLimitPerCustomer.HasValue && dto.UserId.HasValue)
+                    {
+                        int customerUsed = await context.PromoUsageLogs
+                            .CountAsync(l => l.PromotionId == promotion.Id && l.UsedBy == dto.UserId.Value, ct);
+                        if (customerUsed >= promotion.UsageLimitPerCustomer.Value)
+                            return Result<Guid>.Failure(
+                                "This customer has already used this promo code the maximum number of times.", 400);
+                    }
+
                     // Check min order amount
                     // Note: Add MinOrderAmount check here if field is added to Promotion entity
 
@@ -189,6 +199,7 @@ public sealed class CreateStaffOrder
                     {
                         PromotionType.Percentage => Math.Round(totalAmount * promotion.DiscountValue / 100, 2),
                         PromotionType.FixedAmount => promotion.DiscountValue,
+                        PromotionType.FreeShipping => shippingFee,
                         _ => 0
                     };
 
@@ -290,6 +301,8 @@ public sealed class CreateStaffOrder
                         PromotionId = promotion.Id,
                         DiscountApplied = discountApplied,
                         UsedAt = DateTime.UtcNow,
+                        //Walk-in thì UsedBy = null (không track, vì không có registered customer)
+                        UsedBy = dto.UserId,
                     });
                 }
 

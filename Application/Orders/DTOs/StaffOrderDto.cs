@@ -14,6 +14,7 @@ public sealed class StaffOrderDto
     public decimal ShippingFee { get; set; }
     public decimal FinalAmount { get; set; }
     public decimal? DiscountApplied { get; set; }
+    public string? PromoCode { get; set; }
 
     public string? CustomerNote { get; set; }
     public string? WalkInCustomerName { get; set; }

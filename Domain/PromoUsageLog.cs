@@ -1,5 +1,4 @@
 using System;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Domain;
 
@@ -10,6 +9,9 @@ public class PromoUsageLog
 
     public required Guid PromotionId { get; set; }
 
+    // Nullable: walk-in offline customers have no UserId (staff applies promo with dto.UserId == null)
+    public Guid? UsedBy { get; set; }
+
     public required decimal DiscountApplied { get; set; }
 
     public DateTime UsedAt { get; set; } = DateTime.UtcNow;
@@ -17,4 +19,5 @@ public class PromoUsageLog
     // Navigation properties
     public Order Order { get; set; } = null!;
     public Promotion Promotion { get; set; } = null!;
+    public User? User { get; set; } // nullable to match nullable FK
 }

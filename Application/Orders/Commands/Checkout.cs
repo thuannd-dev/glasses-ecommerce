@@ -202,10 +202,20 @@ public sealed class Checkout
                             return Result<Guid>.Failure("Promo code usage limit reached.", 400);
                     }
 
+                    if (promotion.UsageLimitPerCustomer.HasValue)
+                    {
+                        int customerUsed = await context.PromoUsageLogs
+                            .CountAsync(l => l.PromotionId == promotion.Id && l.UsedBy == userId, ct);
+                        if (customerUsed >= promotion.UsageLimitPerCustomer.Value)
+                            return Result<Guid>.Failure(
+                                "You have already used this promo code the maximum number of times.", 400);
+                    }
+
                     discountApplied = promotion.PromotionType switch
                     {
                         PromotionType.Percentage => Math.Round(totalAmount * promotion.DiscountValue / 100, 2),
                         PromotionType.FixedAmount => promotion.DiscountValue,
+                        PromotionType.FreeShipping => shippingFee,
                         _ => 0
                     };
 
@@ -302,6 +312,7 @@ public sealed class Checkout
                         PromotionId = promotion.Id,
                         DiscountApplied = discountApplied,
                         UsedAt = DateTime.UtcNow,
+                        UsedBy = userId,
                     });
                 }
 
