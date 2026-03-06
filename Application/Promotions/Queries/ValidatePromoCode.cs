@@ -78,7 +78,8 @@ public sealed class ValidatePromoCode
             if (promotion.MaxDiscountValue.HasValue && discountApplied > promotion.MaxDiscountValue.Value)
                 discountApplied = promotion.MaxDiscountValue.Value;
 
-            if (discountApplied > dto.OrderTotal)
+            // Only cap at OrderTotal for non-FreeShipping types
+            if (promotion.PromotionType != PromotionType.FreeShipping && discountApplied > dto.OrderTotal)
                 discountApplied = dto.OrderTotal;
 
             return Result<PromoValidationResultDto>.Success(new PromoValidationResultDto

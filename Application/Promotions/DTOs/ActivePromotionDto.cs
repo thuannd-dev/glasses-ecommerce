@@ -11,7 +11,7 @@ public sealed class ActivePromotionDto
     public string PromoCode { get; set; } = string.Empty;
     public string PromoName { get; set; } = string.Empty;
     public string? Description { get; set; }
-    public string PromotionType { get; set; } = string.Empty;
+    public PromotionType PromotionType { get; set; }
     public decimal DiscountValue { get; set; }
     public decimal? MaxDiscountValue { get; set; }
     public DateTime ValidTo { get; set; }

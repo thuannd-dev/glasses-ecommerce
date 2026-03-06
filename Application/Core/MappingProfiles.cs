@@ -284,14 +284,11 @@ public sealed class MappingProfiles : Profile
 
         //=== PROMOTIONS ===
         CreateMap<Promotion, PromotionListDto>()
-            .ForMember(d => d.PromotionType, o => o.MapFrom(s => s.PromotionType.ToString()))
             .ForMember(d => d.UsedCount, o => o.MapFrom(s => s.UsageLogs.Count));
 
         CreateMap<Promotion, PromotionDetailDto>()
-            .ForMember(d => d.PromotionType, o => o.MapFrom(s => s.PromotionType.ToString()))
             .ForMember(d => d.UsedCount, o => o.MapFrom(s => s.UsageLogs.Count));
 
-        CreateMap<Promotion, ActivePromotionDto>()
-            .ForMember(d => d.PromotionType, o => o.MapFrom(s => s.PromotionType.ToString()));
+        CreateMap<Promotion, ActivePromotionDto>();
     }
 }

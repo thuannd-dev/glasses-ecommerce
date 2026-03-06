@@ -1,3 +1,5 @@
+using Domain;
+
 namespace Application.Promotions.DTOs;
 /// <summary>
 /// Summary DTO returned in paged promotion list
@@ -7,7 +9,7 @@ public sealed class PromotionListDto
     public Guid Id { get; set; }
     public string PromoCode { get; set; } = string.Empty;
     public string PromoName { get; set; } = string.Empty;
-    public string PromotionType { get; set; } = string.Empty;
+    public PromotionType PromotionType { get; set; }
     public decimal DiscountValue { get; set; }
     public decimal? MaxDiscountValue { get; set; }
     public DateTime ValidFrom { get; set; }
