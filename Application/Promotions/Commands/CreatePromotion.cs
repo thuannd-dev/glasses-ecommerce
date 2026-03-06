@@ -47,9 +47,24 @@ public sealed class CreatePromotion
             };
 
             context.Promotions.Add(promotion);
-            bool success = await context.SaveChangesAsync(ct) > 0;
-            if (!success)
+            try
+            {
+                bool success = await context.SaveChangesAsync(ct) > 0;
+                if (!success)
+                    return Result<PromotionDetailDto>.Failure("Failed to create promotion.", 500);
+            }
+            catch (DbUpdateException)
+            {
+                bool duplicateCode = await context.Promotions
+                    .AsNoTracking()
+                    .AnyAsync(p => p.PromoCode == promotion.PromoCode, ct);
+
+                if (duplicateCode)
+                    return Result<PromotionDetailDto>.Failure(
+                        $"Promo code '{dto.PromoCode}' already exists.", 409);
+
                 return Result<PromotionDetailDto>.Failure("Failed to create promotion.", 500);
+            }
 
             PromotionDetailDto result = await context.Promotions
                 .AsNoTracking()

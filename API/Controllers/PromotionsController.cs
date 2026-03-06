@@ -1,5 +1,4 @@
 using Application.Core;
-using Application.Interfaces;
 using Application.Promotions.DTOs;
 using Application.Promotions.Queries;
 using MediatR;

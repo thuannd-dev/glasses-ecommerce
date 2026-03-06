@@ -1,7 +1,7 @@
 namespace Application.Promotions.DTOs;
-///summary
-///Summary DTO returned in paged promotion list
-///summary
+/// <summary>
+/// Summary DTO returned in paged promotion list
+/// </summary>
 public sealed class PromotionListDto
 {
     public Guid Id { get; set; }
