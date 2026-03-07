@@ -40,6 +40,9 @@ export type {
   CreateShipmentPayload,
   UpdateTrackingPayload,
   UpdateOrderStatusPayload,
+  OperationsOrderDto,
+  OperationsOrdersResponse,
+  OperationsOrdersQueryParams,
 } from "./operations";
 export type {
   CreateOrderPayload,
@@ -57,3 +60,10 @@ export type {
   OrderSuccessState,
 } from "./order";
 export type { LookupsResponse } from "./lookups";
+export type {
+  AfterSalesTicketType,
+  AfterSalesTicketStatus,
+  TicketListDto,
+  StaffAfterSalesResponse,
+  TicketDetailDto,
+} from "./afterSales";

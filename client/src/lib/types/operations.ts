@@ -54,6 +54,8 @@ export interface ShipmentDto {
   createdAt: string;
   shippedAt?: string;
   deliveredAt?: string;
+  trackingUrl?: string;
+  estimatedDeliveryAt?: string;
   trackingEvents?: TrackingEventDto[];
 }
 
@@ -68,6 +70,7 @@ export interface CreateShipmentPayload {
   orderId: string;
   carrier: string;
   trackingNumber: string;
+  trackingUrl?: string;
 }
 
 export interface UpdateTrackingPayload {
@@ -99,9 +102,23 @@ export interface OperationsOrdersQueryParams {
   orderType?: OrderType;
 }
 
+/** DTO for operations orders list item */
+export interface OperationsOrderDto {
+  id: string;
+  orderSource: string;
+  orderType: string;
+  orderStatus: string;
+  totalAmount: number;
+  finalAmount: number;
+  customerName: string | null;
+  customerPhone: string | null;
+  itemCount: number;
+  createdAt: string;
+}
+
 /** Standard paginated response for Operations orders listing */
 export interface OperationsOrdersResponse {
-  items: OrderDto[];
+  items: OperationsOrderDto[];
   totalCount: number;
   pageNumber: number;
   pageSize: number;

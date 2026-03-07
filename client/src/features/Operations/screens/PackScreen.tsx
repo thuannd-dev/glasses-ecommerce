@@ -8,11 +8,13 @@ import {
   Typography,
   Button,
 } from "@mui/material";
-import { useOperationsOrders, useUpdateOrderStatus } from "../../../lib/hooks/useOperationsOrders";
-import type { StaffOrderDto } from "../../../lib/types/staffOrders";
-import type { OrderStatus } from "../../../lib/types/operations";
+import { useNavigate } from "react-router-dom";
+import { useOperationsOrders } from "../../../lib/hooks/useOperationsOrders";
+import { SummaryCard } from "../components";
+import type { OperationsOrderDto } from "../../../lib/types/operations";
 
 export function PackScreen() {
+  const navigate = useNavigate();
   const [pageNumber, setPageNumber] = useState(1);
   const pageSize = 10;
 
@@ -22,12 +24,10 @@ export function PackScreen() {
     status: "Confirmed",
   });
 
-  const safeOrders: StaffOrderDto[] = Array.isArray(data?.items)
-    ? (data!.items as unknown as StaffOrderDto[])
+  const safeOrders: OperationsOrderDto[] = Array.isArray(data?.items)
+    ? (data!.items as OperationsOrderDto[])
     : [];
   const totalPages = data?.totalPages ?? 1;
-
-  const updateStatus = useUpdateOrderStatus();
 
   const getStatusColors = (status: string) => {
     switch (status) {
@@ -71,16 +71,21 @@ export function PackScreen() {
         >
           Operations Center
         </Typography>
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2, mt: 1, mb: 2 }}>
+          <Typography
+            sx={{ fontSize: 26, fontWeight: 900 }}
+            color="text.primary"
+          >
+            CONFIRMED ORDERS
+          </Typography>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2, minWidth: 200 }}>
+            <SummaryCard label="Total Order" value={isLoading ? "—" : data?.totalCount ?? 0} />
+          </Box>
+        </Box>
         <Typography
-          sx={{ mt: 1, fontSize: 26, fontWeight: 900 }}
-          color="text.primary"
+          sx={{ color: "text.secondary", fontSize: 14 }}
         >
-          Confirmed orders
-        </Typography>
-        <Typography
-          sx={{ mt: 0.5, color: "text.secondary", fontSize: 14 }}
-        >
-          Orders to pick and prepare before creating shipments.
+          View confirmed order list, pick and pack order, and manage shipping information
         </Typography>
       </Box>
 
@@ -159,68 +164,65 @@ export function PackScreen() {
                         <Typography sx={{ fontWeight: 700 }}>
                           Order ID: {o.id}
                         </Typography>
-                        <Box
+                        <Chip
+                          label={o.orderStatus}
+                          size="small"
                           sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 1.25,
-                            flexWrap: "wrap",
+                            fontWeight: 700,
+                            textTransform: "capitalize",
+                            border: `1px solid ${border}`,
+                            bgcolor: bg,
+                            color,
+                            flexShrink: 0,
                           }}
-                        >
-                          <Chip
-                            label={o.orderStatus}
-                            size="small"
-                            sx={{
-                              fontWeight: 700,
-                              textTransform: "capitalize",
-                              border: `1px solid ${border}`,
-                              bgcolor: bg,
-                              color,
-                            }}
-                          />
-                          {o.orderStatus === "Confirmed" && (
-                            <Button
-                              size="small"
-                              variant="contained"
-                              onClick={() =>
-                                updateStatus.mutate({
-                                  orderId: o.id,
-                                  status: "processing" as OrderStatus,
-                                })
-                              }
-                              sx={{
-                                textTransform: "none",
-                                fontWeight: 700,
-                                borderRadius: 2,
-                                px: 1.8,
-                                py: 0.2,
-                                fontSize: 12,
-                                bgcolor: "#f97316",
-                                "&:hover": {
-                                  bgcolor: "#ea580c",
-                                },
-                              }}
-                            >
-                              Processing
-                            </Button>
-                          )}
-                        </Box>
+                        />
                       </Box>
 
                       <Box
                         sx={{
                           display: "flex",
                           flexWrap: "wrap",
-                          gap: 2,
+                          gap: 1.5,
                           fontSize: 13,
                           color: "text.secondary",
+                          alignItems: "center",
                         }}
                       >
-                        <Typography>
-                          <b>Source:</b> {o.orderSource}
+                        <Typography sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                          <b>Source:</b>
+                          <Box
+                            component="span"
+                            sx={{
+                              px: 1,
+                              py: 0.25,
+                              borderRadius: 1,
+                              border: "1px solid #22c55e",
+                              bgcolor: "rgba(34,197,94,0.12)",
+                              color: "#15803d",
+                              fontSize: 12,
+                              fontWeight: 600,
+                            }}
+                          >
+                            {o.orderSource}
+                          </Box>
                         </Typography>
-                        <Typography>
-                          <b>Type:</b> {o.orderType}
+                        <Typography sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                          <b>Type:</b>
+                          <Box
+                            component="span"
+                            sx={{
+                              px: 1,
+                              py: 0.25,
+                              borderRadius: 1,
+                              border: "1px solid #0ea5e9",
+                              bgcolor: "rgba(14,165,233,0.12)",
+                              color: "#0369a1",
+                              fontSize: 12,
+                              fontWeight: 600,
+                            }}
+                          >
+                            {o.orderType}
+                          </Box>
                         </Typography>
                         <Typography>
                           <b>Items:</b> {o.itemCount}
@@ -249,6 +251,29 @@ export function PackScreen() {
                             currency: "USD",
                           })}
                         </Typography>
+                      </Box>
+
+                      <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+                        <Button
+                          size="small"
+                          variant="contained"
+                          onClick={() => navigate(`/operations/orders/${o.id}`)}
+                          sx={{
+                            textTransform: "none",
+                            fontWeight: 700,
+                            borderRadius: 2,
+                            px: 2.2,
+                            py: 0.6,
+                            fontSize: 13,
+                            bgcolor: "#1a202c",
+                            color: "white",
+                            "&:hover": {
+                              bgcolor: "#2d3748",
+                            },
+                          }}
+                        >
+                          View detail
+                        </Button>
                       </Box>
                     </Paper>
                   );

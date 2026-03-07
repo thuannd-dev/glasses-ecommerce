@@ -31,7 +31,7 @@ public class AfterSalesTicket
 {
     public Guid Id { get; set; } = Guid.CreateVersion7(TimeProvider.System.GetUtcNow());
 
-    public required Guid OrderId { get; set; }
+    public Guid? OrderId { get; set; }
 
     public Guid? OrderItemId { get; set; } // NULL if the ticket is for the whole order
 

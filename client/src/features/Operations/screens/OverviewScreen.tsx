@@ -1,7 +1,6 @@
 import {
   Box,
   Chip,
-  Grid,
   LinearProgress,
   Paper,
   Table,
@@ -15,20 +14,24 @@ import {
 
 import { useOperations } from "../context/OperationsContext";
 import { SummaryCard } from "../components";
-import { ORDER_STATUS_LABEL, ORDER_TYPE_LABEL, formatDate } from "../constants";
-import type { OrderStatus } from "../../../lib/types";
+import { ORDER_TYPE_LABEL, formatDate } from "../constants";
 
-const STATUS_COLORS: Record<OrderStatus, { bg: string; color: string }> = {
-  pending: { bg: "rgba(25,118,210,0.08)", color: "#1565c0" },
-  confirmed: { bg: "rgba(25,118,210,0.08)", color: "#1565c0" },
-  processing: { bg: "rgba(255,152,0,0.12)", color: "#ef6c00" },
-  ready_to_ship: { bg: "rgba(2,136,209,0.12)", color: "#0277bd" },
-  shipped: { bg: "rgba(46,125,50,0.12)", color: "#2e7d32" },
-  delivered: { bg: "rgba(46,125,50,0.12)", color: "#2e7d32" },
-  received: { bg: "rgba(63,81,181,0.10)", color: "#3949ab" },
-  lens_ordered: { bg: "rgba(123,31,162,0.10)", color: "#7b1fa2" },
-  lens_fitting: { bg: "rgba(94,53,177,0.12)", color: "#5e35b1" },
-  cancelled: { bg: "rgba(211,47,47,0.10)", color: "#c62828" },
+const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
+  Pending: { bg: "rgba(255,193,7,0.12)", color: "#f57f17" },
+  Confirmed: { bg: "rgba(25,118,210,0.08)", color: "#1565c0" },
+  Processing: { bg: "rgba(255,152,0,0.12)", color: "#ef6c00" },
+  Shipped: { bg: "rgba(46,125,50,0.12)", color: "#2e7d32" },
+  Delivered: { bg: "rgba(46,125,50,0.12)", color: "#2e7d32" },
+  Rejected: { bg: "rgba(211,47,47,0.10)", color: "#c62828" },
+};
+
+const ORDER_STATUS_LABEL: Record<string, string> = {
+  Pending: "Pending",
+  Confirmed: "Confirmed",
+  Processing: "Processing",
+  Shipped: "Shipped",
+  Delivered: "Delivered",
+  Rejected: "Rejected",
 };
 
 export function OverviewScreen() {
@@ -38,16 +41,16 @@ export function OverviewScreen() {
   const safeShipments = Array.isArray(shipments) ? shipments : [];
 
   const pendingCount = safeOrders.filter(
-    (o) => o.status === "pending" || o.status === "processing" || o.status === "ready_to_ship"
+    (o) => o.orderStatus === "Pending" || o.orderStatus === "Processing"
   ).length;
   const shippedCount = safeOrders.filter(
-    (o) => o.status === "shipped" || o.status === "delivered"
+    (o) => o.orderStatus === "Shipped" || o.orderStatus === "Delivered"
   ).length;
   const inTransitCount = safeShipments.filter(
     (s) => s.status === "in_transit" || s.status === "picked"
   ).length;
-  const preOrderCount = safeOrders.filter((o) => o.orderType === "pre-order").length;
-  const prescriptionCount = safeOrders.filter((o) => o.orderType === "prescription").length;
+  const preOrderCount = safeOrders.filter((o) => o.orderType === "PreOrder").length;
+  const prescriptionCount = safeOrders.filter((o) => o.orderType === "Prescription").length;
 
   return (
     <>
@@ -55,31 +58,34 @@ export function OverviewScreen() {
         <Typography sx={{ fontSize: 12, letterSpacing: 5, textTransform: "uppercase", color: "text.secondary" }}>
           Operations Center
         </Typography>
-        <Typography sx={{ mt: 1, fontSize: 26, fontWeight: 900 }} color="text.primary">
-          Overview
-        </Typography>
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 3, mt: 1, mb: 2 }}>
+          <Typography sx={{ fontSize: 26, fontWeight: 900 }} color="text.primary">
+            OVERVIEW
+          </Typography>
+          <Box sx={{ display: "flex", gap: 2, overflowX: "auto", pb: 1, minWidth: 0, flex: 1, justifyContent: "flex-end", scrollbarWidth: "none", "&::-webkit-scrollbar": { display: "none" } }}>
+            <Box sx={{ display: "flex", gap: 2, whiteSpace: "nowrap" }}>
+              <Box sx={{ minWidth: 180 }}>
+                <SummaryCard label="Orders to process" value={ordersLoading ? "—" : pendingCount} />
+              </Box>
+              <Box sx={{ minWidth: 180 }}>
+                <SummaryCard label="Orders shipped" value={ordersLoading ? "—" : shippedCount} />
+              </Box>
+              <Box sx={{ minWidth: 180 }}>
+                <SummaryCard label="In transit" value={shipmentsLoading ? "—" : inTransitCount} />
+              </Box>
+              <Box sx={{ minWidth: 180 }}>
+                <SummaryCard label="Pre-order" value={ordersLoading ? "—" : preOrderCount} />
+              </Box>
+              <Box sx={{ minWidth: 180 }}>
+                <SummaryCard label="Prescription" value={ordersLoading ? "—" : prescriptionCount} />
+              </Box>
+            </Box>
+          </Box>
+        </Box>
         <Typography sx={{ mt: 0.5, color: "text.secondary", fontSize: 14 }}>
           Summary and order list.
         </Typography>
       </Box>
-
-      <Grid container spacing={2} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={4}>
-          <SummaryCard label="Orders to process" value={ordersLoading ? "—" : pendingCount} />
-        </Grid>
-        <Grid item xs={12} sm={4}>
-          <SummaryCard label="Orders shipped" value={ordersLoading ? "—" : shippedCount} />
-        </Grid>
-        <Grid item xs={12} sm={4}>
-          <SummaryCard label="In transit" value={shipmentsLoading ? "—" : inTransitCount} />
-        </Grid>
-        <Grid item xs={12} sm={4}>
-          <SummaryCard label="Pre-order" value={ordersLoading ? "—" : preOrderCount} />
-        </Grid>
-        <Grid item xs={12} sm={4}>
-          <SummaryCard label="Prescription" value={ordersLoading ? "—" : prescriptionCount} />
-        </Grid>
-      </Grid>
 
       <Paper
         elevation={0}
@@ -215,23 +221,26 @@ export function OverviewScreen() {
                       },
                     }}
                   >
-                    <TableCell sx={{ fontWeight: 600 }}>{order.orderNumber}</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>{order.id.slice(0, 8)}</TableCell>
                     <TableCell>
                       <Chip
                         label={ORDER_TYPE_LABEL[order.orderType]}
                         size="small"
-                        sx={{ fontWeight: 600, borderRadius: 1 }}
+                        sx={{ fontWeight: 600, borderRadius: 1, height: 24 }}
                       />
                     </TableCell>
                     <TableCell>
                       <Chip
-                        label={ORDER_STATUS_LABEL[order.status]}
+                        label={ORDER_STATUS_LABEL[order.orderStatus]}
                         size="small"
                         sx={{
-                          fontWeight: 600,
+                          fontWeight: 700,
+                          textTransform: "capitalize",
                           borderRadius: 1,
-                          bgcolor: STATUS_COLORS[order.status].bg,
-                          color: STATUS_COLORS[order.status].color,
+                          border: `1px solid ${STATUS_COLORS[order.orderStatus].color}`,
+                          bgcolor: STATUS_COLORS[order.orderStatus].bg,
+                          color: STATUS_COLORS[order.orderStatus].color,
+                          flexShrink: 0,
                         }}
                       />
                     </TableCell>

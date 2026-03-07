@@ -183,7 +183,9 @@ public sealed class MappingProfiles : Profile
 
         CreateMap<OrderStatusHistory, OrderStatusHistoryDto>()
             .ForMember(d => d.FromStatus, o => o.MapFrom(s => s.FromStatus.ToString()))
-            .ForMember(d => d.ToStatus, o => o.MapFrom(s => s.ToStatus.ToString()));
+            .ForMember(d => d.ToStatus, o => o.MapFrom(s => s.ToStatus.ToString()))
+            .ForMember(d => d.ChangedByUserName, o => o.MapFrom(s => s.ChangedByUser != null ? s.ChangedByUser.DisplayName ?? s.ChangedByUser.UserName : null))
+            .ForMember(d => d.ChangedByUserEmail, o => o.MapFrom(s => s.ChangedByUser != null ? s.ChangedByUser.Email : null));
 
         CreateMap<ShipmentInfo, ShipmentInfoDto>()
             .ForMember(d => d.CarrierName, o => o.MapFrom(s => s.CarrierName.ToString()));
@@ -277,9 +279,23 @@ public sealed class MappingProfiles : Profile
         // AfterSales mappings
         CreateMap<TicketAttachment, TicketAttachmentDto>();
 
-        CreateMap<AfterSalesTicket, TicketListDto>();
+        CreateMap<OrderItem, OrderItemOutputDto>()
+            .ForMember(d => d.ProductName, o => o.MapFrom(s =>
+                s.ProductVariant != null && s.ProductVariant.Product != null ? s.ProductVariant.Product.ProductName : null))
+            .ForMember(d => d.Sku, o => o.MapFrom(s =>
+                s.ProductVariant != null ? s.ProductVariant.SKU : null))
+            .ForMember(d => d.VariantName, o => o.MapFrom(s =>
+                s.ProductVariant != null ? s.ProductVariant.VariantName : null))
+            .ForMember(d => d.ProductImageUrl, o => o.MapFrom(s =>
+                s.ProductVariant != null && s.ProductVariant.Product != null && s.ProductVariant.Product.Images.Any()
+                    ? s.ProductVariant.Product.Images.First().ImageUrl : null))
+            .ForMember(d => d.TotalPrice, o => o.MapFrom(s => s.TotalPrice));
+
+        CreateMap<AfterSalesTicket, TicketListDto>()
+            .ForMember(d => d.OrderItem, o => o.MapFrom(s => s.OrderItem));
 
         CreateMap<AfterSalesTicket, TicketDetailDto>()
+            .ForMember(d => d.OrderItem, o => o.MapFrom(s => s.OrderItem))
             .ForMember(d => d.Attachments, o => o.MapFrom(s =>
                 s.Attachments.Where(a => a.DeletedAt == null).OrderBy(a => a.CreatedAt)));
 

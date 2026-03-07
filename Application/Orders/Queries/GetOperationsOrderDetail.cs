@@ -22,6 +22,8 @@ public sealed class GetOperationsOrderDetail
         {
             StaffOrderDto? order = await context.Orders
                 .Where(o => o.Id == request.Id)
+                .Include(o => o.StatusHistories)
+                    .ThenInclude(sh => sh.ChangedByUser)
                 .ProjectTo<StaffOrderDto>(mapper.ConfigurationProvider)
                 .FirstOrDefaultAsync(ct);
 

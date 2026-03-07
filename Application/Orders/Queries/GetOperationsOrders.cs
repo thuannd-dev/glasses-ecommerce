@@ -29,7 +29,9 @@ public sealed class GetOperationsOrders
                 return Result<PagedResult<StaffOrderListDto>>
                     .Failure("Invalid pagination parameters.", 400);
 
-            IQueryable<Order> query = context.Orders.AsNoTracking();
+            IQueryable<Order> query = context.Orders
+                .AsNoTracking()
+                .Include(o => o.OrderItems);
 
             if (request.Status.HasValue)
                 query = query.Where(o => o.OrderStatus == request.Status.Value);

@@ -31,6 +31,16 @@ export interface MeOrderItemDto {
   subtotal: number;
 }
 
+/** Status history entry */
+export interface OrderStatusHistoryDto {
+  fromStatus: string;
+  toStatus: string;
+  notes: string | null;
+  createdAt: string;
+  changedByUserName?: string | null;
+  changedByUserEmail?: string | null;
+}
+
 /** Order returned from GET /api/me/orders or GET /api/me/orders/:id */
 export interface MeOrderDto {
   id: string;
@@ -42,6 +52,7 @@ export interface MeOrderDto {
   /** Full shipping address (may be object or string depending on API) */
   shippingAddress: string | MeOrderShippingAddress;
   items: MeOrderItemDto[];
+  statusHistories?: OrderStatusHistoryDto[];
   orderNote?: string | null;
   /** If shipped */
   trackingNumber?: string | null;

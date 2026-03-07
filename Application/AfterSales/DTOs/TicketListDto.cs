@@ -1,4 +1,5 @@
 using Domain;
+using Application.Orders.DTOs;
 
 namespace Application.AfterSales.DTOs;
 /// <summary>
@@ -9,6 +10,7 @@ public sealed class TicketListDto
     public Guid Id { get; set; }
     public Guid OrderId { get; set; }
     public Guid? OrderItemId { get; set; }
+    public OrderItemOutputDto? OrderItem { get; set; }
     public AfterSalesTicketType TicketType { get; set; }
     public AfterSalesTicketStatus TicketStatus { get; set; }
     public string Reason { get; set; } = null!;

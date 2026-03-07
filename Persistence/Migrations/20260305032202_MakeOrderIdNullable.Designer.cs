@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Persistence;
 
@@ -11,9 +12,11 @@ using Persistence;
 namespace Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260305032202_MakeOrderIdNullable")]
+    partial class MakeOrderIdNullable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1324,9 +1327,6 @@ namespace Persistence.Migrations
                     b.Property<DateTime>("UsedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<Guid?>("UsedBy")
-                        .HasColumnType("uniqueidentifier");
-
                     b.HasKey("Id");
 
                     b.HasIndex("OrderId")
@@ -1338,15 +1338,9 @@ namespace Persistence.Migrations
                     b.HasIndex("UsedAt")
                         .HasDatabaseName("IX_PromoUsageLog_UsedAt");
 
-                    b.HasIndex("UsedBy")
-                        .HasDatabaseName("IX_PromoUsageLog_UsedBy");
-
                     b.HasIndex("OrderId", "PromotionId")
                         .IsUnique()
                         .HasDatabaseName("UX_PromoUsageLog_Order_Promotion");
-
-                    b.HasIndex("PromotionId", "UsedBy")
-                        .HasDatabaseName("IX_PromoUsageLog_PromotionId_UsedBy");
 
                     b.ToTable("PromoUsageLogs", t =>
                         {
@@ -1368,9 +1362,6 @@ namespace Persistence.Migrations
                         .HasColumnType("decimal(10,2)");
 
                     b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsPublic")
                         .HasColumnType("bit");
 
                     b.Property<decimal?>("MaxDiscountValue")
@@ -1418,9 +1409,6 @@ namespace Persistence.Migrations
 
                     b.HasIndex("PromotionType", "ValidFrom", "ValidTo")
                         .HasDatabaseName("IX_Promotion_Type_ValidPeriod");
-
-                    b.HasIndex("IsActive", "IsPublic", "ValidFrom", "ValidTo")
-                        .HasDatabaseName("IX_Promotion_Active_Public_ValidPeriod");
 
                     b.ToTable("Promotions", t =>
                         {
@@ -2241,16 +2229,9 @@ namespace Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Domain.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UsedBy")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.Navigation("Order");
 
                     b.Navigation("Promotion");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Domain.Refund", b =>

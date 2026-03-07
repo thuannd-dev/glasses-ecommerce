@@ -47,6 +47,7 @@ export interface StaffOrderItemDto {
   quantity: number;
   unitPrice: number;
   totalPrice: number;
+  productImageUrl?: string | null;
 }
 
 export interface StaffOrderPaymentDto {
@@ -57,11 +58,24 @@ export interface StaffOrderPaymentDto {
   paymentAt: string | null;
 }
 
+export interface ShipmentInfoDto {
+  carrierName: string;
+  trackingCode?: string | null;
+  trackingUrl?: string | null;
+  shippedAt?: string | null;
+  estimatedDeliveryAt?: string | null;
+  actualDeliveryAt?: string | null;
+  shippingNotes?: string | null;
+}
+
 export interface StaffOrderStatusHistoryDto {
   fromStatus: string;
   toStatus: string;
   notes: string | null;
   createdAt: string;
+  changedByUserId?: string | null;
+  changedByUserName?: string | null;
+  changedByUserEmail?: string | null;
 }
 
 export interface StaffOrderDetailDto {
@@ -84,7 +98,7 @@ export interface StaffOrderDetailDto {
   items: StaffOrderItemDto[];
   payment: StaffOrderPaymentDto | null;
   prescription: unknown;
-  shipment: unknown;
+  shipment?: ShipmentInfoDto | null;
   statusHistories: StaffOrderStatusHistoryDto[];
 }
 

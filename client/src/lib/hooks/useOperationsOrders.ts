@@ -52,29 +52,46 @@ const ORDER_STATUS_TO_NEW_STATUS: Record<OrderStatus | string, number> = {
   refunded: 7,
 };
 
+const CARRIER_TO_ENUM: Record<string, number> = {
+  GHN: 1,   // Giao Hàng Nhanh
+  GHTK: 2,  // Giao Hàng Tiết Kiệm
+};
+
+function ensureAbsoluteUrl(url: string | null | undefined): string | null {
+  if (!url || url.trim() === "") return null;
+  
+  const trimmed = url.trim();
+  // If already has a scheme, return as-is
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+  
+  // Otherwise prepend https://
+  return `https://${trimmed}`;
+}
+
 async function apiUpdateOrderStatus(payload: UpdateOrderStatusPayload): Promise<OrderDto> {
   const newStatus = ORDER_STATUS_TO_NEW_STATUS[payload.status];
 
   const isShipping = payload.status === "shipped";
 
+  const carrierEnum = isShipping && payload.shipmentCarrierName 
+    ? CARRIER_TO_ENUM[payload.shipmentCarrierName] ?? 1
+    : null;
+
   const res = await agent.put<OrderDto>(`/operations/orders/${payload.orderId}/status`, {
-    newStatus,
-    notes: null,
-    // Backend requires shipment info (at least carrierName) when shipping an order
-    shipment: isShipping
+    NewStatus: newStatus,
+    Notes: null,
+    // Backend requires shipment info (at least CarrierName) when shipping an order
+    Shipment: isShipping
       ? {
-          carrierName: payload.shipmentCarrierName ?? "GHN",
-          trackingCode: payload.shipmentTrackingCode ?? null,
-          trackingUrl: payload.shipmentTrackingUrl ?? null,
-          estimatedDeliveryAt: payload.shipmentEstimatedDeliveryAt ?? null,
-          shippingNotes: payload.shipmentNotes ?? null,
+          CarrierName: carrierEnum ?? 1,
+          TrackingCode: payload.shipmentTrackingCode ?? null,
+          TrackingUrl: ensureAbsoluteUrl(payload.shipmentTrackingUrl),
+          EstimatedDeliveryAt: payload.shipmentEstimatedDeliveryAt ?? null,
+          ShippingNotes: payload.shipmentNotes ?? null,
         }
       : null,
-    carrierName: null,
-    trackingCode: null,
-    trackingUrl: null,
-    estimatedDeliveryAt: null,
-    shippingNotes: null,
   });
   return res.data;
 }
@@ -135,8 +152,9 @@ export function useUpdateOrderStatus() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: UpdateOrderStatusPayload) => apiUpdateOrderStatus(payload),
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY_ORDERS });
+      queryClient.invalidateQueries({ queryKey: ["operations", "order", variables.orderId] });
     },
   });
 }

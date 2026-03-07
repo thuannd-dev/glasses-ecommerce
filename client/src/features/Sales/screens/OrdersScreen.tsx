@@ -10,6 +10,42 @@ import {
 } from "@mui/material";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useStaffOrders } from "../../../lib/hooks/useStaffOrders";
+import { SummaryCard } from "../components";
+
+const getStatusColor = (
+  status: string
+): {
+  bgcolor: string;
+  color: string;
+  border: string;
+} => {
+  switch (status) {
+    case "Pending":
+      return {
+        bgcolor: "rgba(251, 191, 36, 0.12)",
+        color: "#fbbf24",
+        border: "1px solid #fbbf24",
+      };
+    case "Confirmed":
+      return {
+        bgcolor: "rgba(59, 130, 246, 0.12)",
+        color: "#3b82f6",
+        border: "1px solid #3b82f6",
+      };
+    case "Cancelled":
+      return {
+        bgcolor: "rgba(239, 68, 68, 0.12)",
+        color: "#ef4444",
+        border: "1px solid #ef4444",
+      };
+    default:
+      return {
+        bgcolor: "rgba(139,92,246,0.12)",
+        color: "#8b5cf6",
+        border: "1px solid #8b5cf6",
+      };
+  }
+};
 
 export function OrdersScreen() {
   const navigate = useNavigate();
@@ -22,13 +58,36 @@ export function OrdersScreen() {
   const allowedStatuses = ["Pending", "Confirmed", "Cancelled"];
   const statusFilter = allowedStatuses.includes(rawStatus) ? rawStatus : "Pending";
 
+  const allowedTypes = ["ReadyStock", "PreOrder", "Prescription"];
+  const rawTypes = searchParams.get("type") ?? "";
+  const selectedTypes = rawTypes
+    .split(",")
+    .filter((t) => t && allowedTypes.includes(t));
+  const typeFilters = selectedTypes;
+
+  const handleTypeToggle = (type: string) => {
+    const newTypes = typeFilters.includes(type)
+      ? typeFilters.filter((t) => t !== type)
+      : [...typeFilters, type];
+    const typeParam = newTypes.length > 0 ? newTypes.join(",") : "";
+    navigate(`/sales/orders?status=${statusFilter}&type=${typeParam}`);
+  };
+
   useEffect(() => {
     setPageNumber(1);
-  }, [statusFilter]);
+  }, [statusFilter, typeFilters.join(",")]);
 
-  const { data, isLoading } = useStaffOrders({ pageNumber, pageSize, status: statusFilter });
+  const { data, isLoading } = useStaffOrders({ 
+    pageNumber, 
+    pageSize, 
+    status: statusFilter,
+    orderType: typeFilters.length > 0 ? typeFilters.join(",") : undefined
+  });
   const safeOrders = Array.isArray(data?.items) ? data!.items : [];
-  const filteredOrders = safeOrders.filter((o) => o.orderStatus === statusFilter);
+  const filteredOrders = safeOrders.filter(
+    (o) => o.orderStatus === statusFilter
+  );
+  const totalFilteredCount = data?.totalCount ?? 0;
   const meta = data
     ? {
         totalPages: data.totalPages,
@@ -47,15 +106,63 @@ export function OrdersScreen() {
         overflow: "hidden",
       }}
     >
-      <Typography sx={{ fontSize: 24, fontWeight: 900, mb: 2 }}>
-        Orders
-      </Typography>
+      <Box sx={{ mb: 4 }}>
+        <Typography sx={{ fontSize: 12, letterSpacing: 6, textTransform: "uppercase", color: "text.secondary" }}>
+          Sales Console
+        </Typography>
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2, mt: 1, mb: 2 }}>
+          <Typography sx={{ fontSize: 24, fontWeight: 900 }}>
+            ORDERS
+          </Typography>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2, minWidth: 200 }}>
+            <SummaryCard label="Total Order" value={isLoading ? "—" : totalFilteredCount.toString()} />
+          </Box>
+        </Box>
+        <Typography sx={{ color: "text.secondary", fontSize: 14 }}>
+          Manage and process customer orders.
+        </Typography>
+      </Box>
+
+      <Box
+        sx={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 1.5,
+          mb: 2,
+        }}
+      >
+        <Typography sx={{ alignSelf: "center", fontWeight: 600, color: "text.secondary", fontSize: 14 }}>
+          Type:
+        </Typography>
+        {allowedTypes.map((type) => (
+          <Button
+            key={type}
+            onClick={() => handleTypeToggle(type)}
+            sx={{
+              textTransform: "none",
+              fontWeight: 500,
+              borderRadius: 2,
+              px: 2,
+              py: 0.75,
+              border: "1px solid",
+              borderColor: typeFilters.includes(type) ? "#ec4899" : "rgba(0,0,0,0.12)",
+              bgcolor: typeFilters.includes(type) ? "rgba(236,72,153,0.12)" : "transparent",
+              color: typeFilters.includes(type) ? "#ec4899" : "text.secondary",
+              "&:hover": {
+                bgcolor: typeFilters.includes(type) ? "rgba(236,72,153,0.2)" : "rgba(0,0,0,0.04)",
+              },
+            }}
+          >
+            {type}
+          </Button>
+        ))}
+      </Box>
 
       {isLoading ? (
         <Box sx={{ maxWidth: 720, mx: "auto", mt: 2 }}>
           <LinearProgress sx={{ borderRadius: 1 }} />
         </Box>
-      ) : filteredOrders.length === 0 ? (
+      ) : totalFilteredCount === 0 ? (
         <Box sx={{ maxWidth: 720, mx: "auto", mt: 3 }}>
           <Paper
             elevation={0}
@@ -127,9 +234,7 @@ export function OrdersScreen() {
                     sx={{
                       fontWeight: 700,
                       textTransform: "capitalize",
-                      border: "1px solid #8b5cf6",
-                      bgcolor: "rgba(139,92,246,0.12)",
-                      color: "#5b21b6",
+                      ...getStatusColor(o.orderStatus),
                     }}
                   />
                 </Box>
@@ -225,7 +330,10 @@ export function OrdersScreen() {
                       bgcolor: "#111827",
                       "&:hover": { bgcolor: "#0f172a" },
                     }}
-                    onClick={() => navigate(`/sales/orders/${o.id}`)}
+                    onClick={() => {
+                      const url = `/sales/orders/${o.id}?status=${statusFilter}&type=${typeFilters.join(",")}`;
+                      navigate(url);
+                    }}
                   >
                     View detail
                   </Button>

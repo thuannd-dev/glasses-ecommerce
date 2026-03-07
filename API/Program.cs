@@ -30,10 +30,6 @@ builder.Services.AddControllers(opt =>
     */
     var policy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
     opt.Filters.Add(new AuthorizeFilter(policy));
-}).AddJsonOptions(options =>
-{
-    // Configure the JSON serializer to convert enum values to their string representations
-    options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
 });
 
 builder.Services.AddOpenApi();

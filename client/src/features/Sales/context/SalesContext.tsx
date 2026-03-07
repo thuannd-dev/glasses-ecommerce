@@ -14,6 +14,7 @@ type SalesContextValue = {
 
 const SalesContext = createContext<SalesContextValue | null>(null);
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useSales() {
   const ctx = useContext(SalesContext);
   if (!ctx) throw new Error("useSales must be used within SalesProvider");

@@ -28,6 +28,8 @@ public sealed class GetStaffOrderDetail
                 .Where(o => o.Id == request.Id && (o.CreatedBySalesStaff == staffUserId ||
                            (o.OrderSource == OrderSource.Online &&
                             (o.OrderStatus == OrderStatus.Pending || o.OrderStatus == OrderStatus.Confirmed || o.OrderStatus == OrderStatus.Cancelled))))
+                .Include(o => o.StatusHistories)
+                    .ThenInclude(sh => sh.ChangedByUser)
                 .ProjectTo<StaffOrderDto>(mapper.ConfigurationProvider)
                 .FirstOrDefaultAsync(ct);
 

@@ -7,10 +7,10 @@ import {
   useUpdateTracking,
 } from "../../../lib/hooks/useOperationsOrders";
 import { CreateShipmentDialog } from "../components";
-import type { OrderDto, ShipmentDto } from "../../../lib/types";
+import type { ShipmentDto, OperationsOrdersResponse, OperationsOrderDto } from "../../../lib/types";
 
 type OperationsContextValue = {
-  orders: OrderDto[];
+  orders: OperationsOrderDto[];
   ordersLoading: boolean;
   shipments: ShipmentDto[];
   shipmentsLoading: boolean;
@@ -23,6 +23,7 @@ type OperationsContextValue = {
 
 const OperationsContext = createContext<OperationsContextValue | null>(null);
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useOperations() {
   const ctx = useContext(OperationsContext);
   if (!ctx) throw new Error("useOperations must be used within OperationsProvider");
@@ -33,6 +34,7 @@ export function OperationsProvider({ children }: { children: React.ReactNode }) 
   const [createShipOrderId, setCreateShipOrderId] = useState<string | null>(null);
   const [createShipCarrier, setCreateShipCarrier] = useState("GHN");
   const [createShipTracking, setCreateShipTracking] = useState("");
+  const [createShipTrackingUrl, setCreateShipTrackingUrl] = useState("");
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
 
   const { data: ordersData, isLoading: ordersLoading } = useOperationsOrders();
@@ -46,27 +48,34 @@ export function OperationsProvider({ children }: { children: React.ReactNode }) 
   const handleCreateShipment = useCallback(() => {
     if (!createShipOrderId || !createShipTracking.trim()) return;
     createShipment.mutate(
-      { orderId: createShipOrderId, carrier: createShipCarrier, trackingNumber: createShipTracking.trim() },
+      { 
+        orderId: createShipOrderId, 
+        carrier: createShipCarrier, 
+        trackingNumber: createShipTracking.trim(),
+        trackingUrl: createShipTrackingUrl.trim() || undefined,
+      },
       {
         onSuccess: () => {
           setCreateShipOrderId(null);
           setCreateShipTracking("");
+          setCreateShipTrackingUrl("");
         },
       }
     );
-  }, [createShipOrderId, createShipCarrier, createShipTracking, createShipment]);
+  }, [createShipOrderId, createShipCarrier, createShipTracking, createShipTrackingUrl, createShipment]);
 
-  const safeOrders: OrderDto[] = Array.isArray(ordersData)
-    ? ordersData
-    : Array.isArray((ordersData as any)?.items)
-    ? ((ordersData as any).items as OrderDto[])
+  const safeOrders: OperationsOrderDto[] = Array.isArray(ordersData)
+    ? (ordersData as OperationsOrderDto[])
+    : Array.isArray((ordersData as OperationsOrdersResponse | undefined)?.items)
+    ? ((ordersData as OperationsOrdersResponse).items as OperationsOrderDto[])
     : [];
 
-  const safeShipments: ShipmentDto[] = Array.isArray(shipmentsData)
-    ? shipmentsData
-    : Array.isArray((shipmentsData as any)?.items)
-    ? ((shipmentsData as any).items as ShipmentDto[])
-    : [];
+  const safeShipments: ShipmentDto[] =  
+    Array.isArray(shipmentsData)
+      ? (shipmentsData as ShipmentDto[])
+      : (shipmentsData as any)?.items && Array.isArray((shipmentsData as any).items)
+      ? ((shipmentsData as any).items as ShipmentDto[])
+      : [];
 
   const value: OperationsContextValue = {
     orders: safeOrders,
@@ -95,6 +104,8 @@ export function OperationsProvider({ children }: { children: React.ReactNode }) 
         setCarrier={setCreateShipCarrier}
         trackingNumber={createShipTracking}
         setTrackingNumber={setCreateShipTracking}
+        trackingUrl={createShipTrackingUrl}
+        setTrackingUrl={setCreateShipTrackingUrl}
         onSubmit={handleCreateShipment}
         isPending={createShipment.isPending}
       />

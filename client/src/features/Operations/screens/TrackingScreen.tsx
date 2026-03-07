@@ -12,9 +12,13 @@ import {
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
+import CopyIcon from "@mui/icons-material/ContentCopy";
+import CheckIcon from "@mui/icons-material/Check";
 
 import { useOperationsOrders, useOperationsOrderDetail } from "../../../lib/hooks/useOperationsOrders";
-import type { StaffOrderDto, StaffOrderDetailDto } from "../../../lib/types/staffOrders";
+import { SummaryCard } from "../components";
+import type { StaffOrderDetailDto, ShipmentInfoDto } from "../../../lib/types/staffOrders";
+import type { OperationsOrderDto } from "../../../lib/types/operations";
 
 export function TrackingScreen() {
   const [pageNumber, setPageNumber] = useState(1);
@@ -26,8 +30,8 @@ export function TrackingScreen() {
     status: "Shipped",
   });
 
-  const safeOrders: StaffOrderDto[] = Array.isArray(data?.items)
-    ? (data!.items as unknown as StaffOrderDto[])
+  const safeOrders: OperationsOrderDto[] = Array.isArray(data?.items)
+    ? (data!.items as OperationsOrderDto[])
     : [];
   const totalPages = data?.totalPages ?? 1;
 
@@ -81,13 +85,19 @@ export function TrackingScreen() {
         <Typography sx={{ fontSize: 12, letterSpacing: 5, textTransform: "uppercase", color: "text.secondary" }}>
           Operations Center
         </Typography>
-        <Typography sx={{ mt: 1, fontSize: 26, fontWeight: 900 }} color="text.primary">
-          Shipped orders
-        </Typography>
-        <Typography sx={{ mt: 0.5, color: "text.secondary", fontSize: 14 }}>
-          Orders that have been marked as shipped.
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2, mt: 1, mb: 2 }}>
+          <Typography sx={{ fontSize: 26, fontWeight: 900 }} color="text.primary">
+            SHIPPED ORDERS
+          </Typography>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2, minWidth: 200 }}>
+            <SummaryCard label="Total Order" value={isLoading ? "—" : data?.totalCount ?? 0} />
+          </Box>
+        </Box>
+        <Typography sx={{ color: "text.secondary", fontSize: 14 }}>
+          View confirmed order list, pick and pack order, and manage shipping information
         </Typography>
       </Box>
+
 
       <Box
         sx={{
@@ -162,14 +172,21 @@ function ShippedOrderRow({
   summary,
   getStatusColors,
 }: {
-  summary: StaffOrderDto;
+  summary: OperationsOrderDto;
   getStatusColors: (status: string) => { border: string; bg: string; color: string };
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [copiedTrackingCode, setCopiedTrackingCode] = useState(false);
   const { data, isLoading } = useOperationsOrderDetail(summary.id);
   const detail = data as StaffOrderDetailDto | undefined;
 
   const { border, bg, color } = getStatusColors(summary.orderStatus);
+
+  const handleCopyTrackingCode = (trackingCode: string) => {
+    navigator.clipboard.writeText(trackingCode);
+    setCopiedTrackingCode(true);
+    setTimeout(() => setCopiedTrackingCode(false), 2000);
+  };
 
   return (
     <Paper
@@ -206,6 +223,7 @@ function ShippedOrderRow({
               border: `1px solid ${border}`,
               bgcolor: bg,
               color,
+              flexShrink: 0,
             }}
           />
           <IconButton
@@ -242,24 +260,6 @@ function ShippedOrderRow({
         </Typography>
       </Box>
 
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <Typography sx={{ fontSize: 13, color: "text.secondary" }}>
-          Total amount
-        </Typography>
-        <Typography sx={{ fontSize: 18, fontWeight: 900 }}>
-          {summary.finalAmount.toLocaleString("en-US", {
-            style: "currency",
-            currency: "USD",
-          })}
-        </Typography>
-      </Box>
-
       <Collapse in={expanded} timeout="auto" unmountOnExit>
         <Divider sx={{ my: 1.5 }} />
         {isLoading || !detail ? (
@@ -277,27 +277,101 @@ function ShippedOrderRow({
                   key={item.id}
                   sx={{
                     display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
+                    gap: 2,
+                    alignItems: "flex-start",
                   }}
                 >
-                  <Box>
-                    <Typography sx={{ fontWeight: 600, color: "text.primary" }}>
-                      {item.productName}
-                    </Typography>
-                    <Typography>
-                      {item.variantName} · Qty {item.quantity}
+                  {item.productImageUrl && (
+                    <Box
+                      component="img"
+                      src={item.productImageUrl}
+                      alt={item.productName}
+                      sx={{
+                        width: 60,
+                        height: 60,
+                        borderRadius: 1,
+                        objectFit: "cover",
+                        flexShrink: 0,
+                      }}
+                    />
+                  )}
+                  <Box
+                    sx={{
+                      flex: 1,
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "flex-start",
+                    }}
+                  >
+                    <Box>
+                      <Typography sx={{ fontWeight: 600, color: "text.primary" }}>
+                        {item.productName}
+                      </Typography>
+                      <Typography sx={{ fontSize: 12 }}>
+                        {item.variantName} · Qty {item.quantity}
+                      </Typography>
+                    </Box>
+                    <Typography sx={{ fontWeight: 600, whiteSpace: "nowrap", ml: 1 }}>
+                      {lineTotal.toLocaleString("en-US", {
+                        style: "currency",
+                        currency: "USD",
+                      })}
                     </Typography>
                   </Box>
-                  <Typography sx={{ fontWeight: 600 }}>
-                    {lineTotal.toLocaleString("en-US", {
-                      style: "currency",
-                      currency: "USD",
-                    })}
-                  </Typography>
                 </Box>
               );
             })}
+
+            <Divider sx={{ my: 1.5 }} />
+            <Typography sx={{ fontWeight: 700, color: "text.primary" }}>Pricing Breakdown</Typography>
+            <Box sx={{ display: "flex", justifyContent: "space-between", gap: 2 }}>
+              <Typography>Subtotal</Typography>
+              <Typography fontWeight={600}>
+                {(detail.totalAmount).toLocaleString("en-US", {
+                  style: "currency",
+                  currency: "USD",
+                })}
+              </Typography>
+            </Box>
+            {detail.shippingFee > 0 && (
+              <Box sx={{ display: "flex", justifyContent: "space-between", gap: 2 }}>
+                <Typography>Shipping Fee</Typography>
+                <Typography fontWeight={600}>
+                  {detail.shippingFee.toLocaleString("en-US", {
+                    style: "currency",
+                    currency: "USD",
+                  })}
+                </Typography>
+              </Box>
+            )}
+            {detail.discountApplied && detail.discountApplied > 0 && (
+              <Box sx={{ display: "flex", justifyContent: "space-between", gap: 2 }}>
+                <Typography>Discount</Typography>
+                <Typography fontWeight={600} sx={{ color: "success.main" }}>
+                  -{detail.discountApplied.toLocaleString("en-US", {
+                    style: "currency",
+                    currency: "USD",
+                  })}
+                </Typography>
+              </Box>
+            )}
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 2,
+                pt: 1,
+                borderTop: "1px solid rgba(0,0,0,0.1)",
+              }}
+            >
+              <Typography sx={{ fontWeight: 700, color: "text.primary" }}>Total</Typography>
+              <Typography sx={{ fontWeight: 900, fontSize: 16 }}>
+                {summary.finalAmount.toLocaleString("en-US", {
+                  style: "currency",
+                  currency: "USD",
+                })}
+              </Typography>
+            </Box>
 
             {detail.payment && (
               <>
@@ -326,7 +400,7 @@ function ShippedOrderRow({
                 {detail.statusHistories.map((h, idx) => (
                   <Box key={idx}>
                     <Typography>
-                      {h.fromStatus} → <b>{h.toStatus}</b>
+                      <b>{h.toStatus}</b>
                     </Typography>
                     <Typography sx={{ fontSize: 12 }}>
                       {h.notes ? `${h.notes} · ` : ""}
@@ -334,6 +408,103 @@ function ShippedOrderRow({
                     </Typography>
                   </Box>
                 ))}
+              </>
+            )}
+
+            {detail.shipment && (
+              <>
+                <Divider sx={{ my: 1.5 }} />
+                {(() => {
+                  const shipment = detail.shipment as ShipmentInfoDto | null | undefined;
+                  // Get tracking code from the shipment object
+                  const trackingCode = shipment?.trackingCode;
+                  
+                  return (
+                    <>
+                      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1.5 }}>
+                        <Typography sx={{ fontWeight: 700, color: "text.primary" }}>Tracking the order</Typography>
+                        {shipment?.estimatedDeliveryAt && (
+                          <Typography fontWeight={600} sx={{ fontSize: 13 }}>
+                            Est. Arrival: {new Date(shipment.estimatedDeliveryAt).toLocaleDateString()}
+                          </Typography>
+                        )}
+                      </Box>
+                      {trackingCode && (
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}>
+                          <Box sx={{ flex: 1 }}>
+                            <Typography sx={{ fontSize: 13, color: "text.secondary", mb: 0.5 }}>Tracking Code</Typography>
+                            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                              <Typography fontWeight={600} sx={{ fontFamily: "monospace", fontSize: 14 }}>
+                                {trackingCode}
+                              </Typography>
+                              <IconButton
+                                size="small"
+                                onClick={() => handleCopyTrackingCode(trackingCode)}
+                                sx={{
+                                  p: 0.5,
+                                  color: copiedTrackingCode ? "success.main" : "text.secondary",
+                                  transition: "color 0.2s",
+                                  "&:hover": {
+                                    bgcolor: "rgba(0,0,0,0.04)",
+                                  },
+                                }}
+                                title="Copy tracking code"
+                              >
+                                {copiedTrackingCode ? (
+                                  <CheckIcon sx={{ fontSize: 18 }} />
+                                ) : (
+                                  <CopyIcon sx={{ fontSize: 18 }} />
+                                )}
+                              </IconButton>
+                            </Box>
+                          </Box>
+                        </Box>
+                      )}
+                      {shipment?.trackingUrl && (
+                        <Box sx={{ pt: 1 }}>
+                          <Box
+                            component="a"
+                            href={shipment.trackingUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            sx={{
+                              textDecoration: "none",
+                              display: "block",
+                            }}
+                          >
+                            <Box
+                              component="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                if (shipment?.trackingUrl) {
+                                  window.open(shipment.trackingUrl, "_blank");
+                                }
+                              }}
+                              sx={{
+                                width: "100%",
+                                px: 2,
+                                py: 0.75,
+                                borderRadius: 1,
+                                border: "1px solid rgba(0,0,0,0.15)",
+                                bgcolor: "primary.main",
+                                color: "white",
+                                fontSize: 13,
+                                fontWeight: 600,
+                                cursor: "pointer",
+                                transition: "all 0.2s",
+                                "&:hover": {
+                                  bgcolor: "primary.dark",
+                                },
+                              }}
+                            >
+                              Move To Tracking Page
+                            </Box>
+                          </Box>
+                        </Box>
+                      )}
+                    </>
+                  );
+                })()}
               </>
             )}
           </Box>

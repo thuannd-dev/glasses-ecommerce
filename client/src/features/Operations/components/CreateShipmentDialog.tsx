@@ -12,16 +12,18 @@ import {
 } from "@mui/material";
 
 import { formatDate, ORDER_STATUS_LABEL, ORDER_TYPE_LABEL } from "../constants";
-import type { OrderDto } from "../../../lib/types";
+import type { OrderDto, OperationsOrderDto } from "../../../lib/types";
 
 type CreateShipmentDialogProps = {
   open: boolean;
   onClose: () => void;
-  order: OrderDto | null;
+  order: OrderDto | OperationsOrderDto | null;
   carrier: string;
   setCarrier: (v: string) => void;
   trackingNumber: string;
   setTrackingNumber: (v: string) => void;
+  trackingUrl: string;
+  setTrackingUrl: (v: string) => void;
   onSubmit: () => void;
   isPending: boolean;
 };
@@ -34,14 +36,19 @@ export function CreateShipmentDialog({
   setCarrier,
   trackingNumber,
   setTrackingNumber,
+  trackingUrl,
+  setTrackingUrl,
   onSubmit,
   isPending,
 }: CreateShipmentDialogProps) {
+  // Check if this is a full OrderDto with order details
+  const isFullOrder = order && 'orderNumber' in order && 'items' in order;
+  
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>Create shipment</DialogTitle>
       <DialogContent sx={{ pt: 1 }}>
-        {order && (
+        {isFullOrder && order && 'orderNumber' in order && 'items' in order && (
           <>
             <Typography sx={{ fontWeight: 700, fontSize: 14, mb: 1.5 }} color="text.secondary">
               Order details
@@ -57,11 +64,11 @@ export function CreateShipmentDialog({
             >
               <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap", mb: 1.5 }}>
                 <Typography fontWeight={800} fontSize={15}>
-                  {order.orderNumber}
+                  {(order as OrderDto).orderNumber}
                 </Typography>
-                <Chip label={ORDER_TYPE_LABEL[order.orderType]} size="small" sx={{ fontWeight: 600 }} />
+                <Chip label={ORDER_TYPE_LABEL[(order as OrderDto).orderType]} size="small" sx={{ fontWeight: 600 }} />
                 <Chip
-                  label={ORDER_STATUS_LABEL[order.status]}
+                  label={ORDER_STATUS_LABEL[(order as OrderDto).status]}
                   size="small"
                   sx={{
                     fontWeight: 600,
@@ -71,29 +78,29 @@ export function CreateShipmentDialog({
                 />
               </Box>
               <Typography fontSize={13} color="text.secondary">
-                {order.customerName} · {order.customerEmail}
+                {(order as OrderDto).customerName} · {(order as OrderDto).customerEmail}
               </Typography>
               <Typography fontSize={13} color="text.secondary" sx={{ mt: 0.5 }}>
-                {order.shippingAddress}
+                {(order as OrderDto).shippingAddress}
               </Typography>
               <Typography fontSize={13} color="text.secondary" sx={{ mt: 0.5 }}>
-                {formatDate(order.createdAt)}
+                {formatDate((order as OrderDto).createdAt)}
               </Typography>
-              {order.orderType === "pre-order" && order.expectedStockDate && (
+              {(order as OrderDto).orderType === "pre-order" && (order as OrderDto).expectedStockDate && (
                 <Typography fontSize={13} color="text.secondary" sx={{ mt: 0.5 }}>
-                  Expected stock: {order.expectedStockDate}
+                  Expected stock: {(order as OrderDto).expectedStockDate}
                 </Typography>
               )}
-              {order.orderType === "prescription" && order.prescriptionStatus && (
+              {(order as OrderDto).orderType === "prescription" && (order as OrderDto).prescriptionStatus && (
                 <Typography fontSize={13} color="text.secondary" sx={{ mt: 0.5 }}>
-                  Prescription: {order.prescriptionStatus}
+                  Prescription: {(order as OrderDto).prescriptionStatus}
                 </Typography>
               )}
               <Divider sx={{ my: 1.5 }} />
               <Typography fontSize={12} fontWeight={700} color="text.secondary" sx={{ mb: 0.5 }}>
-                Items ({order.items.length})
+                Items ({(order as OrderDto).items.length})
               </Typography>
-              {order.items.map((item) => (
+              {(order as OrderDto).items.map((item) => (
                 <Box
                   key={item.id}
                   sx={{
@@ -117,7 +124,7 @@ export function CreateShipmentDialog({
                   Total
                 </Typography>
                 <Typography fontSize={14} fontWeight={800}>
-                  {order.totalAmount.toLocaleString("en-US", { style: "currency", currency: "USD" })}
+                  {(order as OrderDto).totalAmount.toLocaleString("en-US", { style: "currency", currency: "USD" })}
                 </Typography>
               </Box>
             </Box>
@@ -140,6 +147,15 @@ export function CreateShipmentDialog({
           onChange={(e) => setTrackingNumber(e.target.value)}
           placeholder="e.g. VN123456789"
           sx={{ mt: 2 }}
+        />
+        <TextField
+          fullWidth
+          label="Tracking URL"
+          value={trackingUrl}
+          onChange={(e) => setTrackingUrl(e.target.value)}
+          placeholder="https://tracking.example.com/..."
+          sx={{ mt: 2 }}
+          type="url"
         />
       </DialogContent>
       <DialogActions>

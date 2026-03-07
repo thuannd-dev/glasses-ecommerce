@@ -5,20 +5,24 @@ import {
   Paper,
   Divider,
   Button,
-  Stack,
+  Select,
+  MenuItem,
+  FormControl,
+  CircularProgress,
 } from "@mui/material";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { toast } from "react-toastify";
-import { useStaffOrder, useUpdateStaffOrderStatus } from "../../../lib/hooks/useStaffOrders";
+import { useNavigate, useParams } from "react-router-dom";
+import { useState } from "react";
+import { useOperationsOrderDetail, useUpdateOrderStatus } from "../../../lib/hooks/useOperationsOrders";
+import type { OrderStatus } from "../../../lib/types/operations";
 
-export function OrderDetailScreen() {
+export function OperationsOrderDetailScreen() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const { id } = useParams<{ id: string }>();
-  const { data, isLoading, isError } = useStaffOrder(id);
-  const updateStatus = useUpdateStaffOrderStatus();
-
-  const backUrl = `/sales/orders?${searchParams.toString()}`;
+  const { data, isLoading, isError } = useOperationsOrderDetail(id);
+  const updateStatus = useUpdateOrderStatus();
+  
+  const [newStatus, setNewStatus] = useState<OrderStatus | null>(null);
+  const [showSave, setShowSave] = useState(false);
 
   if (isLoading) {
     return (
@@ -36,7 +40,7 @@ export function OrderDetailScreen() {
         </Typography>
         <Button
           variant="outlined"
-          onClick={() => navigate(backUrl)}
+          onClick={() => navigate(-1)}
           sx={{ textTransform: "none" }}
         >
           Back to list
@@ -46,6 +50,36 @@ export function OrderDetailScreen() {
   }
 
   const order = data;
+
+  const statusOptions: OrderStatus[] = [
+    "pending",
+    "confirmed",
+    "processing",
+    "ready_to_ship",
+    "shipped",
+    "delivered",
+    "received",
+    "cancelled",
+  ];
+
+  const handleStatusChange = (status: OrderStatus) => {
+    setNewStatus(status);
+    setShowSave(true);
+  };
+
+  const handleSaveStatus = () => {
+    if (newStatus && id) {
+      updateStatus.mutate(
+        { orderId: id, status: newStatus },
+        {
+          onSuccess: () => {
+            setShowSave(false);
+            setNewStatus(null);
+          },
+        }
+      );
+    }
+  };
 
   return (
     <Box sx={{ px: { xs: 2, md: 4, lg: 6 }, py: 4 }}>
@@ -57,7 +91,7 @@ export function OrderDetailScreen() {
           fontWeight: 700,
           color: "black",
         }}
-        onClick={() => navigate(backUrl)}
+        onClick={() => navigate(-1)}
       >
         ← Back to list
       </Button>
@@ -75,77 +109,44 @@ export function OrderDetailScreen() {
         <Typography sx={{ fontSize: 24, fontWeight: 900 }}>
           Order ID: {order.id}
         </Typography>
-
-        {order.orderStatus === "Pending" && (
-          <Stack direction="row" spacing={1} sx={{ flexShrink: 0 }}>
-            <Button
-              variant="contained"
-              size="small"
-              disabled={updateStatus.isPending}
-              sx={{
-                textTransform: "none",
-                fontWeight: 700,
-                borderRadius: 2,
-                bgcolor: "#16a34a",
-                "&:hover": { bgcolor: "#15803d" },
-              }}
-              onClick={() =>
-                updateStatus.mutate(
-                  {
-                    id: order.id,
-                    newStatus: 1,
-                  },
-                  {
-                    onSuccess: () => {
-                      toast.success("Order confirmed");
-                      navigate(backUrl);
-                    },
-                    onError: (error) => {
-                      const errorMsg = error instanceof Error ? error.message : "Failed to confirm order";
-                      toast.error(errorMsg);
-                    },
-                  }
-                )
-              }
-            >
-              Confirm
-            </Button>
-            <Button
-              variant="outlined"
-              size="small"
-              disabled={updateStatus.isPending}
-              sx={{
-                textTransform: "none",
-                fontWeight: 700,
-                borderRadius: 2,
-                borderColor: "#dc2626",
-                color: "#dc2626",
-                "&:hover": { borderColor: "#b91c1c", bgcolor: "rgba(220,38,38,0.04)" },
-              }}
-              onClick={() =>
-                updateStatus.mutate(
-                  {
-                    id: order.id,
-                    newStatus: 6,
-                  },
-                  {
-                    onSuccess: () => {
-                      toast.success("Order rejected");
-                      navigate(backUrl);
-                    },
-                    onError: (error) => {
-                      const errorMsg = error instanceof Error ? error.message : "Failed to reject order";
-                      toast.error(errorMsg);
-                    },
-                  }
-                )
-              }
-            >
-              Reject
-            </Button>
-          </Stack>
-        )}
       </Box>
+
+      <Paper
+        elevation={0}
+        sx={{
+          borderRadius: 3,
+          border: "1px solid rgba(0,0,0,0.08)",
+          p: 3,
+          display: "flex",
+          flexDirection: "column",
+          gap: 2,
+          mb: 3,
+        }}
+      >
+        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, fontSize: 13, alignItems: "center" }}>
+          <Typography>
+            <b>Source:</b> {order.orderSource}
+          </Typography>
+          <Typography>
+            <b>Type:</b> {order.orderType}
+          </Typography>
+          <Typography>
+            <b>Status:</b>{" "}
+            <span
+              style={{
+                textTransform: "capitalize",
+                fontWeight: 600,
+                color: newStatus ? "#1565c0" : "inherit",
+              }}
+            >
+              {newStatus || order.orderStatus}
+            </span>
+          </Typography>
+          <Typography>
+            <b>Created:</b> {new Date(order.createdAt).toLocaleString()}
+          </Typography>
+        </Box>
+      </Paper>
 
       <Paper
         elevation={0}
@@ -158,22 +159,71 @@ export function OrderDetailScreen() {
           gap: 2,
         }}
       >
-        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, fontSize: 13 }}>
-          <Typography>
-            <b>Source:</b> {order.orderSource}
-          </Typography>
-          <Typography>
-            <b>Type:</b> {order.orderType}
-          </Typography>
-          <Typography>
-            <b>Status:</b> {order.orderStatus}
-          </Typography>
-          <Typography>
-            <b>Created:</b> {new Date(order.createdAt).toLocaleString()}
-          </Typography>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: 2,
+            mb: 2,
+            flexWrap: "wrap",
+            pb: 2,
+            borderBottom: "1px solid rgba(0,0,0,0.08)",
+          }}
+        >
+          <Typography sx={{ fontWeight: 700, fontSize: 14 }}>Change Order Status</Typography>
+          <Box sx={{ display: "flex", gap: 1, alignItems: "center", flexWrap: "wrap" }}>
+            <FormControl sx={{ minWidth: 180 }}>
+              <Select
+                value={newStatus || order.orderStatus}
+                onChange={(e) => handleStatusChange(e.target.value as OrderStatus)}
+                size="small"
+                sx={{
+                  textTransform: "capitalize",
+                  fontSize: 13,
+                  fontWeight: 500,
+                }}
+              >
+                <MenuItem value={order.orderStatus} disabled sx={{ textTransform: "capitalize", color: "text.secondary", fontSize: 12, fontStyle: "italic" }}>
+                  Current: {order.orderStatus}
+                </MenuItem>
+                {statusOptions
+                  .filter((status) => status !== order.orderStatus.toLowerCase())
+                  .map((status) => (
+                    <MenuItem key={status} value={status} sx={{ textTransform: "capitalize" }}>
+                      {status}
+                    </MenuItem>
+                  ))}
+              </Select>
+            </FormControl>
+            {showSave && (
+              <Button
+                variant="contained"
+                size="small"
+                onClick={handleSaveStatus}
+                disabled={updateStatus.isPending}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: 700,
+                  borderRadius: 2,
+                  bgcolor: "#16a34a",
+                  "&:hover": {
+                    bgcolor: "#15803d",
+                  },
+                  "&:disabled": {
+                    opacity: 0.7,
+                  },
+                }}
+              >
+                {updateStatus.isPending ? (
+                  <CircularProgress size={16} sx={{ color: "white" }} />
+                ) : (
+                  "Save"
+                )}
+              </Button>
+            )}
+          </Box>
         </Box>
-
-        <Divider />
 
         <Box>
           <Typography sx={{ fontWeight: 700, mb: 1 }}>Items</Typography>
@@ -188,45 +238,11 @@ export function OrderDetailScreen() {
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
-                    gap: 1.5,
-                    py: 1,
+                    py: 0.5,
                     fontSize: 13,
                   }}
                 >
-                  <Box
-                    sx={{
-                      width: 56,
-                      height: 56,
-                      borderRadius: 1.5,
-                      bgcolor: "rgba(0,0,0,0.04)",
-                      overflow: "hidden",
-                      flexShrink: 0,
-                    }}
-                  >
-                    {item.productImageUrl ? (
-                      <Box
-                        component="img"
-                        src={item.productImageUrl}
-                        alt=""
-                        sx={{ width: "100%", height: "100%", objectFit: "cover" }}
-                      />
-                    ) : (
-                      <Box
-                        sx={{
-                          width: "100%",
-                          height: "100%",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          color: "text.secondary",
-                          fontSize: 10,
-                        }}
-                      >
-                        —
-                      </Box>
-                    )}
-                  </Box>
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Box>
                     <Typography sx={{ fontWeight: 600 }}>
                       {item.productName}
                     </Typography>
@@ -234,7 +250,7 @@ export function OrderDetailScreen() {
                       {item.variantName} · Qty {item.quantity}
                     </Typography>
                   </Box>
-                  <Typography sx={{ fontWeight: 600, flexShrink: 0 }}>
+                  <Typography sx={{ fontWeight: 600 }}>
                     {lineTotal.toLocaleString("en-US", {
                       style: "currency",
                       currency: "USD",
@@ -385,4 +401,3 @@ export function OrderDetailScreen() {
     </Box>
   );
 }
-

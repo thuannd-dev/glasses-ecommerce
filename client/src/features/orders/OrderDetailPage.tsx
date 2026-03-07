@@ -182,18 +182,21 @@ export default function OrderDetailPage() {
             {order.statusHistories && order.statusHistories.length > 0 && (
               <>
                 <Divider sx={{ my: 1.5 }} />
-                <Typography fontSize={14} fontWeight={600} color="text.secondary">Status history</Typography>
-                {order.statusHistories.map((h, i) => (
-                  <Box key={i}>
-                    <Typography fontSize={14}>
-                      {h.fromStatus ?? "—"} → <b>{h.toStatus}</b>
-                      {h.notes ? ` · ${h.notes}` : ""}
-                    </Typography>
-                    <Typography fontSize={12} color="text.secondary">
-                      {h.createdAt ? new Date(h.createdAt).toLocaleString() : ""}
-                    </Typography>
-                  </Box>
-                ))}
+                <Typography fontSize={14} fontWeight={600} color="text.secondary" sx={{ mb: 1 }}>Status history</Typography>
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                  {order.statusHistories.map((h, i) => (
+                    <Box key={i}>
+                      <Typography fontSize={14} fontWeight={600}>
+                        {h.toStatus}
+                      </Typography>
+                      <Typography fontSize={12} color="text.secondary">
+                        {h.notes}
+                        {h.notes && " · "}
+                        {h.createdAt ? new Date(h.createdAt).toLocaleString() : ""}
+                      </Typography>
+                    </Box>
+                  ))}
+                </Box>
               </>
             )}
           </Box>

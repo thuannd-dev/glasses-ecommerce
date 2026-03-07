@@ -14,6 +14,7 @@ export interface StaffOrdersQueryParams {
   pageNumber?: number;
   pageSize?: number;
   status?: string;
+  orderType?: string;
 }
 
 async function fetchStaffOrders(params?: StaffOrdersQueryParams): Promise<StaffOrdersResponse> {
@@ -22,6 +23,7 @@ async function fetchStaffOrders(params?: StaffOrdersQueryParams): Promise<StaffO
       pageNumber: params?.pageNumber ?? 1,
       pageSize: params?.pageSize ?? 10,
       status: params?.status,
+      orderType: params?.orderType,
     },
   });
   return res.data;
@@ -74,8 +76,9 @@ export function useUpdateStaffOrderStatus() {
   return useMutation({
     mutationFn: updateStaffOrderStatus,
     onSuccess: () => {
-      // Refresh list + revenue caches (detail keeps current state)
+      // Refresh list + revenue + detail caches
       queryClient.invalidateQueries({ queryKey: ["staff", "orders", "list"] });
+      queryClient.invalidateQueries({ queryKey: ["staff", "orders", "detail"] });
       queryClient.invalidateQueries({ queryKey: ["staff", "orders", "revenue"] });
     },
   });
