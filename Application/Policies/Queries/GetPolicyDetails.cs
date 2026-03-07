@@ -19,7 +19,7 @@ public sealed class GetPolicyDetails
     {
         public async Task<Result<PolicyConfigurationDto>> Handle(Query request, CancellationToken ct)
         {
-            var policy = await context.PolicyConfigurations
+            PolicyConfigurationDto? policy = await context.PolicyConfigurations
                 .Where(p => p.Id == request.Id && !p.IsDeleted)
                 .AsNoTracking()
                 .ProjectTo<PolicyConfigurationDto>(mapper.ConfigurationProvider)

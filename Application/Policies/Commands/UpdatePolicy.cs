@@ -25,13 +25,13 @@ public sealed class UpdatePolicy
     {
         public async Task<Result<PolicyConfigurationDto>> Handle(Command request, CancellationToken ct)
         {
-            var policy = await context.PolicyConfigurations
+            PolicyConfiguration? policy = await context.PolicyConfigurations
                 .FirstOrDefaultAsync(p => p.Id == request.Id, ct);
 
             if (policy == null) return Result<PolicyConfigurationDto>.Failure("Policy not found", 404);
             if (policy.IsDeleted) return Result<PolicyConfigurationDto>.Failure("Cannot update a deleted policy.", 400);
 
-            var dto = request.Dto;
+            UpdatePolicyDto dto = request.Dto;
 
             // Basic Date Validation
             if (dto.EffectiveTo.HasValue && dto.EffectiveTo <= dto.EffectiveFrom)
@@ -42,8 +42,8 @@ public sealed class UpdatePolicy
             // Date Overlap Validation (only if it's being set to active, or dates are changing)
             if (dto.IsActive)
             {
-                var pStart = dto.EffectiveFrom;
-                var pEnd = dto.EffectiveTo ?? DateTime.MaxValue;
+                DateTime pStart = dto.EffectiveFrom;
+                DateTime pEnd = dto.EffectiveTo ?? DateTime.MaxValue;
 
                 bool isOverlap = await context.PolicyConfigurations
                     .Where(p => p.PolicyType == policy.PolicyType && p.Id != policy.Id && p.IsActive && !p.IsDeleted)
@@ -73,11 +73,11 @@ public sealed class UpdatePolicy
             policy.UpdatedAt = DateTime.UtcNow;
             policy.UpdatedBy = userAccessor.GetUserId();
 
-            var success = await context.SaveChangesAsync(ct) > 0;
+            bool success = await context.SaveChangesAsync(ct) > 0;
 
             if (!success) return Result<PolicyConfigurationDto>.Failure("Failed to update policy", 500);
 
-            var updatedDto = await context.PolicyConfigurations
+            PolicyConfigurationDto? updatedDto = await context.PolicyConfigurations
                 .Where(p => p.Id == policy.Id)
                 .AsNoTracking()
                 .ProjectTo<PolicyConfigurationDto>(mapper.ConfigurationProvider)

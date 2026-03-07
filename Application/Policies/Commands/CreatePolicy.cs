@@ -24,7 +24,7 @@ public sealed class CreatePolicy
     {
         public async Task<Result<PolicyConfigurationDto>> Handle(Command request, CancellationToken ct)
         {
-            var dto = request.Dto;
+            CreatePolicyDto dto = request.Dto;
 
             // Basic Date Validation
             if (dto.EffectiveTo.HasValue && dto.EffectiveTo <= dto.EffectiveFrom)
@@ -34,8 +34,8 @@ public sealed class CreatePolicy
 
             // Date Overlap Validation
             // Overlap condition: P.Start <= E.End && P.End >= E.Start
-            var pStart = dto.EffectiveFrom;
-            var pEnd = dto.EffectiveTo ?? DateTime.MaxValue;
+            DateTime pStart = dto.EffectiveFrom;
+            DateTime pEnd = dto.EffectiveTo ?? DateTime.MaxValue;
 
             bool isOverlap = await context.PolicyConfigurations
                 .Where(p => p.PolicyType == dto.PolicyType && p.IsActive && !p.IsDeleted)
@@ -49,7 +49,7 @@ public sealed class CreatePolicy
                     $"Cannot create policy. The effective dates overlap with an existing active policy for type {dto.PolicyType}.", 409);
             }
 
-            var policy = new PolicyConfiguration
+            PolicyConfiguration policy = new PolicyConfiguration
             {
                 PolicyType = dto.PolicyType,
                 PolicyName = dto.PolicyName,
@@ -66,11 +66,11 @@ public sealed class CreatePolicy
             };
 
             context.PolicyConfigurations.Add(policy);
-            var success = await context.SaveChangesAsync(ct) > 0;
+            bool success = await context.SaveChangesAsync(ct) > 0;
 
             if (!success) return Result<PolicyConfigurationDto>.Failure("Failed to create policy", 500);
 
-            var createdDto = await context.PolicyConfigurations
+            PolicyConfigurationDto? createdDto = await context.PolicyConfigurations
                 .Where(p => p.Id == policy.Id)
                 .AsNoTracking()
                 .ProjectTo<PolicyConfigurationDto>(mapper.ConfigurationProvider)

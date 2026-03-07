@@ -27,7 +27,7 @@ public sealed class GetPolicyList
             if (request.PageNumber < 1 || request.PageSize < 1 || request.PageSize > 100)
                 return Result<PagedResult<PolicyConfigurationDto>>.Failure("Invalid pagination parameters.", 400);
 
-            var query = context.PolicyConfigurations
+            IQueryable<PolicyConfiguration> query = context.PolicyConfigurations
                 .Where(p => !p.IsDeleted)
                 .AsNoTracking()
                 .AsQueryable();
@@ -44,13 +44,13 @@ public sealed class GetPolicyList
 
             if (!string.IsNullOrWhiteSpace(request.Search))
             {
-                var lowerSearch = request.Search.ToLower();
+                string lowerSearch = request.Search.ToLower();
                 query = query.Where(p => p.PolicyName.ToLower().Contains(lowerSearch));
             }
 
             int totalCount = await query.CountAsync(ct);
 
-            var items = await query
+            List<PolicyConfigurationDto> items = await query
                 .OrderByDescending(p => p.CreatedAt)
                 .Skip((request.PageNumber - 1) * request.PageSize)
                 .Take(request.PageSize)

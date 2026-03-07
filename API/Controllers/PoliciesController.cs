@@ -1,7 +1,6 @@
 using Application.Core;
 using Application.Policies.DTOs;
 using Application.Policies.Queries;
-using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

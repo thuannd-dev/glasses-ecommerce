@@ -18,9 +18,9 @@ public sealed class GetActivePolicies
     {
         public async Task<Result<List<PolicyConfigurationDto>>> Handle(Query request, CancellationToken ct)
         {
-            var now = DateTime.UtcNow;
+            DateTime now = DateTime.UtcNow;
 
-            var policies = await context.PolicyConfigurations
+            List<PolicyConfigurationDto> policies = await context.PolicyConfigurations
                 .Where(p => 
                     p.IsActive && 
                     !p.IsDeleted && 

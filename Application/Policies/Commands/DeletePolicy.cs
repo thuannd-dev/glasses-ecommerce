@@ -1,5 +1,6 @@
 using Application.Core;
 using Application.Interfaces;
+using Domain;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Persistence;
@@ -17,7 +18,7 @@ public sealed class DeletePolicy
     {
         public async Task<Result<Unit>> Handle(Command request, CancellationToken ct)
         {
-            var policy = await context.PolicyConfigurations
+            PolicyConfiguration? policy = await context.PolicyConfigurations
                 .FirstOrDefaultAsync(p => p.Id == request.Id, ct);
 
             if (policy == null) return Result<Unit>.Failure("Policy not found", 404);
@@ -28,7 +29,7 @@ public sealed class DeletePolicy
             policy.DeletedAt = DateTime.UtcNow;
             policy.DeletedBy = userAccessor.GetUserId();
 
-            var success = await context.SaveChangesAsync(ct) > 0;
+            bool success = await context.SaveChangesAsync(ct) > 0;
 
             if (!success) return Result<Unit>.Failure("Failed to delete policy", 500);
 
