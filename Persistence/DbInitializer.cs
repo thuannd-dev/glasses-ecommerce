@@ -1147,8 +1147,10 @@ public class DbInitializer
                     RefundAllowed = true,
                     CustomizedLensRefundable = false,
                     EvidenceRequired = true,
+                    MinOrderAmount = 0,
                     IsActive = true,
-                    EffectiveFrom = DateTime.UtcNow
+                    EffectiveFrom = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                    EffectiveTo = null,
                 },
                 new()
                 {
@@ -1159,8 +1161,10 @@ public class DbInitializer
                     RefundAllowed = false,
                     CustomizedLensRefundable = true,
                     EvidenceRequired = true,
+                    MinOrderAmount = null,
                     IsActive = true,
-                    EffectiveFrom = DateTime.UtcNow
+                    EffectiveFrom = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                    EffectiveTo = null,
                 },
                 new()
                 {
@@ -1171,8 +1175,24 @@ public class DbInitializer
                     RefundAllowed = true,
                     CustomizedLensRefundable = false,
                     EvidenceRequired = true,
+                    MinOrderAmount = 500000,
                     IsActive = true,
-                    EffectiveFrom = DateTime.UtcNow
+                    EffectiveFrom = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                    EffectiveTo = null,
+                },
+                new()
+                {
+                    PolicyType = PolicyType.Return,
+                    PolicyName = "Draft: Holiday Return Policy 2026",
+                    ReturnWindowDays = 15,
+                    WarrantyMonths = null,
+                    RefundAllowed = false,
+                    CustomizedLensRefundable = false,
+                    EvidenceRequired = true,
+                    MinOrderAmount = null,
+                    IsActive = false,
+                    EffectiveFrom = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                    EffectiveTo = new DateTime(2026, 2, 28, 23, 59, 59, DateTimeKind.Utc),
                 }
             };
 
