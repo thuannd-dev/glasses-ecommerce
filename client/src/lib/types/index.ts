@@ -40,6 +40,9 @@ export type {
   CreateShipmentPayload,
   UpdateTrackingPayload,
   UpdateOrderStatusPayload,
+  OperationsOrderDto,
+  OperationsOrdersResponse,
+  OperationsOrdersQueryParams,
 } from "./operations";
 export type {
   CreateOrderPayload,

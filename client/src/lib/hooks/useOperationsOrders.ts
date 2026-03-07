@@ -57,7 +57,7 @@ const CARRIER_TO_ENUM: Record<string, number> = {
   GHTK: 2,  // Giao Hàng Tiết Kiệm
 };
 
-function ensureAbsoluteUrl(url: string | null): string | null {
+function ensureAbsoluteUrl(url: string | null | undefined): string | null {
   if (!url || url.trim() === "") return null;
   
   const trimmed = url.trim();

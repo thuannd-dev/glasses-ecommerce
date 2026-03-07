@@ -7,23 +7,10 @@ import {
   useUpdateTracking,
 } from "../../../lib/hooks/useOperationsOrders";
 import { CreateShipmentDialog } from "../components";
-import type { ShipmentDto, OperationsOrdersResponse } from "../../../lib/types";
-
-type OperationsOrder = {
-  id: string;
-  orderSource: string;
-  orderType: string;
-  orderStatus: string;
-  totalAmount: number;
-  finalAmount: number;
-  customerName: string | null;
-  customerPhone: string | null;
-  itemCount: number;
-  createdAt: string;
-};
+import type { ShipmentDto, OperationsOrdersResponse, OperationsOrderDto } from "../../../lib/types";
 
 type OperationsContextValue = {
-  orders: OperationsOrder[];
+  orders: OperationsOrderDto[];
   ordersLoading: boolean;
   shipments: ShipmentDto[];
   shipmentsLoading: boolean;
@@ -77,17 +64,18 @@ export function OperationsProvider({ children }: { children: React.ReactNode }) 
     );
   }, [createShipOrderId, createShipCarrier, createShipTracking, createShipTrackingUrl, createShipment]);
 
-  const safeOrders: OperationsOrder[] = Array.isArray(ordersData)
-    ? (ordersData as OperationsOrder[])
+  const safeOrders: OperationsOrderDto[] = Array.isArray(ordersData)
+    ? (ordersData as OperationsOrderDto[])
     : Array.isArray((ordersData as OperationsOrdersResponse | undefined)?.items)
-    ? ((ordersData as OperationsOrdersResponse).items as OperationsOrder[])
+    ? ((ordersData as OperationsOrdersResponse).items as OperationsOrderDto[])
     : [];
 
-  const safeShipments: ShipmentDto[] = Array.isArray(shipmentsData)
-    ? (shipmentsData as ShipmentDto[])
-    : Array.isArray((shipmentsData as { items?: ShipmentDto[] } | undefined)?.items)
-    ? ((shipmentsData as { items: ShipmentDto[] }).items as ShipmentDto[])
-    : [];
+  const safeShipments: ShipmentDto[] =  
+    Array.isArray(shipmentsData)
+      ? (shipmentsData as ShipmentDto[])
+      : (shipmentsData as any)?.items && Array.isArray((shipmentsData as any).items)
+      ? ((shipmentsData as any).items as ShipmentDto[])
+      : [];
 
   const value: OperationsContextValue = {
     orders: safeOrders,

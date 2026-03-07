@@ -476,7 +476,9 @@ function ShippedOrderRow({
                               component="button"
                               onClick={(e) => {
                                 e.preventDefault();
-                                window.open(shipment.trackingUrl, "_blank");
+                                if (shipment?.trackingUrl) {
+                                  window.open(shipment.trackingUrl, "_blank");
+                                }
                               }}
                               sx={{
                                 width: "100%",
