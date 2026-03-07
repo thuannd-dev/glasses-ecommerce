@@ -24,9 +24,31 @@ public sealed class CreatePolicyValidator : AbstractValidator<CreatePolicy.Comma
                 .InclusiveBetween(0, 365).WithMessage("Return window must be between 0 and 365 days.")
                 .When(x => x.Dto.ReturnWindowDays.HasValue);
 
+            When(x => x.Dto.PolicyType == PolicyType.Return, () =>
+            {
+                RuleFor(x => x.Dto.ReturnWindowDays)
+                    .NotNull().WithMessage("ReturnWindowDays is required for Return policies.");
+            });
+            When(x => x.Dto.PolicyType != PolicyType.Return && x.Dto.PolicyType != PolicyType.Unknown, () =>
+            {
+                RuleFor(x => x.Dto.ReturnWindowDays)
+                    .Null().WithMessage("ReturnWindowDays must be null for non-Return policies.");
+            });
+
             RuleFor(x => x.Dto.WarrantyMonths)
                 .InclusiveBetween(0, 120).WithMessage("Warranty months must be between 0 and 120.")
                 .When(x => x.Dto.WarrantyMonths.HasValue);
+
+            When(x => x.Dto.PolicyType == PolicyType.Warranty, () =>
+            {
+                RuleFor(x => x.Dto.WarrantyMonths)
+                    .NotNull().WithMessage("WarrantyMonths is required for Warranty policies.");
+            });
+            When(x => x.Dto.PolicyType != PolicyType.Warranty && x.Dto.PolicyType != PolicyType.Unknown, () =>
+            {
+                RuleFor(x => x.Dto.WarrantyMonths)
+                    .Null().WithMessage("WarrantyMonths must be null for non-Warranty policies.");
+            });
 
             RuleFor(x => x.Dto.MinOrderAmount)
                 .GreaterThanOrEqualTo(0).WithMessage("Minimum order amount must be non-negative.")

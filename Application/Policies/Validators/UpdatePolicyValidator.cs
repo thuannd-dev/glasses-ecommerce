@@ -1,12 +1,19 @@
 using Application.Policies.Commands;
+using Domain;
 using FluentValidation;
+using Microsoft.EntityFrameworkCore;
+using Persistence;
 
 namespace Application.Policies.Validators;
 
 public sealed class UpdatePolicyValidator : AbstractValidator<UpdatePolicy.Command>
 {
-    public UpdatePolicyValidator()
+    private readonly AppDbContext _context;
+
+    public UpdatePolicyValidator(AppDbContext context)
     {
+        _context = context;
+
         RuleFor(x => x.Dto).NotNull().WithMessage("Request body is required.");
 
         When(x => x.Dto != null, () =>
@@ -22,6 +29,34 @@ public sealed class UpdatePolicyValidator : AbstractValidator<UpdatePolicy.Comma
             RuleFor(x => x.Dto.WarrantyMonths)
                 .InclusiveBetween(0, 120).WithMessage("Warranty months must be between 0 and 120.")
                 .When(x => x.Dto.WarrantyMonths.HasValue);
+
+            RuleFor(x => x).CustomAsync(async (command, validationContext, ct) => 
+            {
+                if (command.Dto == null) return;
+                PolicyConfiguration? policy = await _context.PolicyConfigurations
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(p => p.Id == command.Id, ct);
+                
+                if (policy == null) return;
+
+                if (policy.PolicyType == PolicyType.Return && !command.Dto.ReturnWindowDays.HasValue)
+                {
+                    validationContext.AddFailure("Dto.ReturnWindowDays", "ReturnWindowDays is required for Return policies.");
+                }
+                if (policy.PolicyType != PolicyType.Return && command.Dto.ReturnWindowDays.HasValue)
+                {
+                    validationContext.AddFailure("Dto.ReturnWindowDays", "ReturnWindowDays must be null for non-Return policies.");
+                }
+
+                if (policy.PolicyType == PolicyType.Warranty && !command.Dto.WarrantyMonths.HasValue)
+                {
+                    validationContext.AddFailure("Dto.WarrantyMonths", "WarrantyMonths is required for Warranty policies.");
+                }
+                if (policy.PolicyType != PolicyType.Warranty && command.Dto.WarrantyMonths.HasValue)
+                {
+                    validationContext.AddFailure("Dto.WarrantyMonths", "WarrantyMonths must be null for non-Warranty policies.");
+                }
+            });
 
             RuleFor(x => x.Dto.MinOrderAmount)
                 .GreaterThanOrEqualTo(0).WithMessage("Minimum order amount must be non-negative.")
