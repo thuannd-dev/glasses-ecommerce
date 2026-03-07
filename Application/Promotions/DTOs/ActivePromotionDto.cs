@@ -3,7 +3,7 @@ using Domain;
 namespace Application.Promotions.DTOs;
 ///<summary>
 ///Public DTO returned in GET /api/promotions/active
-///Excludes sensible internal fields like UsageLimit, UsageLimitPerCustomer, UsedCount, IsActive, IsPublic
+///Excludes sensitive internal fields like UsageLimit, UsageLimitPerCustomer, UsedCount, IsActive, IsPublic
 ///</summary>
 public sealed class ActivePromotionDto
 {
