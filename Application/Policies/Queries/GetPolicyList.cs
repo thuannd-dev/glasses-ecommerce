@@ -28,7 +28,6 @@ public sealed class GetPolicyList
                 return Result<PagedResult<PolicyConfigurationDto>>.Failure("Invalid pagination parameters.", 400);
 
             IQueryable<PolicyConfiguration> query = context.PolicyConfigurations
-                .Where(p => !p.IsDeleted)
                 .AsNoTracking();
 
             if (request.PolicyType.HasValue)
