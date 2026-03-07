@@ -25,6 +25,8 @@ public sealed class UpdatePolicy
     {
         public async Task<Result<PolicyConfigurationDto>> Handle(Command request, CancellationToken ct)
         {
+            await using var transaction = await context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
+
             PolicyConfiguration? policy = await context.PolicyConfigurations
                 .FirstOrDefaultAsync(p => p.Id == request.Id, ct);
 
@@ -93,6 +95,11 @@ public sealed class UpdatePolicy
             policy.UpdatedBy = userAccessor.GetUserId();
 
             bool success = await context.SaveChangesAsync(ct) > 0;
+
+            if (success)
+            {
+                await transaction.CommitAsync(ct);
+            }
 
             if (!success) return Result<PolicyConfigurationDto>.Failure("Failed to update policy", 500);
 

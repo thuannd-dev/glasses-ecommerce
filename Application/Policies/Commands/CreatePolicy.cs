@@ -26,6 +26,8 @@ public sealed class CreatePolicy
         {
             CreatePolicyDto dto = request.Dto;
 
+            await using var transaction = await context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
+
             // Basic Date Validation
             if (dto.EffectiveTo.HasValue && dto.EffectiveTo <= dto.EffectiveFrom)
             {
@@ -70,6 +72,11 @@ public sealed class CreatePolicy
 
             context.PolicyConfigurations.Add(policy);
             bool success = await context.SaveChangesAsync(ct) > 0;
+
+            if (success)
+            {
+                await transaction.CommitAsync(ct);
+            }
 
             if (!success) return Result<PolicyConfigurationDto>.Failure("Failed to create policy", 500);
 
