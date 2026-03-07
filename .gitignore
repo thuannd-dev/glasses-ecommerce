@@ -490,3 +490,4 @@ client/.env.development
 client/.env.production
 test_flows.ps1
 API/wwwroot
+API/ManualPolicyTests.http

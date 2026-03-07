@@ -1,9 +1,9 @@
 using Domain;
 
 namespace Application.Promotions.DTOs;
-///<summary>
-///Full detail DTO returned for single promotion (includes usage limits + description)
-///</summary>
+/// <summary>
+/// Full detail DTO returned for single promotion (includes usage limits + description)
+/// </summary>
 public sealed class PromotionDetailDto
 {
     public Guid Id { get; set; }
