@@ -76,21 +76,12 @@ public sealed class CreatePolicy
             context.PolicyConfigurations.Add(policy);
             bool success = await context.SaveChangesAsync(ct) > 0;
 
-            if (success)
-            {
-                await transaction.CommitAsync(ct);
-            }
-
             if (!success) return Result<PolicyConfigurationDto>.Failure("Failed to create policy", 500);
 
-            PolicyConfigurationDto? createdDto = await context.PolicyConfigurations
-                .Where(p => p.Id == policy.Id)
-                .AsNoTracking()
-                .ProjectTo<PolicyConfigurationDto>(mapper.ConfigurationProvider)
-                .FirstOrDefaultAsync(ct);
-
-                return Result<PolicyConfigurationDto>.Success(createdDto!);
-            });
+            await transaction.CommitAsync(ct);
+            PolicyConfigurationDto createdDto = mapper.Map<PolicyConfigurationDto>(policy);
+            return Result<PolicyConfigurationDto>.Success(createdDto);
+        });
         }
     }
 }
