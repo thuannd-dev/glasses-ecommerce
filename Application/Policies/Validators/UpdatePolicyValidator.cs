@@ -7,6 +7,8 @@ public sealed class UpdatePolicyValidator : AbstractValidator<UpdatePolicy.Comma
 {
     public UpdatePolicyValidator()
     {
+        RuleFor(x => x.Id).NotEmpty().WithMessage("Policy id is required.");
+        
         RuleFor(x => x.Dto).NotNull().WithMessage("Request body is required.");
 
         When(x => x.Dto != null, () =>

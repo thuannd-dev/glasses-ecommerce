@@ -21,6 +21,6 @@ public sealed class PolicyConfigurationDto
     public DateTime EffectiveFrom { get; set; }
     public DateTime? EffectiveTo { get; set; }
     public DateTime CreatedAt { get; set; }
-    public DateTime? UpdatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
     public bool IsDeleted { get; set; }
 }

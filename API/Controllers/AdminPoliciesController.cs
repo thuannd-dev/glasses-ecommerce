@@ -3,7 +3,6 @@ using Application.Policies.Commands;
 using Application.Policies.DTOs;
 using Application.Policies.Queries;
 using Domain;
-using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -21,8 +20,9 @@ public sealed class AdminPoliciesController : BaseApiController
         [FromQuery] bool? isActive = null,
         [FromQuery] string? search = null)
     {
-        Result<PagedResult<PolicyConfigurationDto>> result = await Mediator.Send(new GetPolicyList.Query 
-        { 
+        Result<PagedResult<PolicyConfigurationDto>> result = await Mediator.Send(new GetPolicyList.Query
+        {
+
             PageNumber = pageNumber,
             PageSize = pageSize,
             PolicyType = policyType,
@@ -56,7 +56,6 @@ public sealed class AdminPoliciesController : BaseApiController
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeletePolicy(Guid id)
     {
-        Result<Unit> result = await Mediator.Send(new DeletePolicy.Command { Id = id });
-        return HandleResult(result);
+        return HandleResult(await Mediator.Send(new DeletePolicy.Command { Id = id }));
     }
 }
