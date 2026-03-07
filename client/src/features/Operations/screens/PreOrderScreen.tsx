@@ -36,7 +36,7 @@ export function PreOrderScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [dateFilter, setDateFilter] = useState<Date | null>(null);
 
-  const preOrderOrders = orders.filter((o) => o.orderType === "pre-order");
+  const preOrderOrders = orders.filter((o) => o.orderType === "PreOrder");
   const filteredOrders = useMemo(
     () => filterAndSortOrders(preOrderOrders, searchQuery, dateFilter),
     [preOrderOrders, searchQuery, dateFilter]
@@ -107,7 +107,7 @@ export function PreOrderScreen() {
                 onToggleExpand={() => setExpandedOrderId(expandedOrderId === order.id ? null : order.id)}
                 onUpdateStatus={(status) => updateStatus.mutate({ orderId: order.id, status })}
                 onCreateShipment={() => openCreateShipment(order.id)}
-                canCreateShipment={order.status === "ready_to_ship" && !order.shipmentId}
+                canCreateShipment={order.status === "Shipped" && !order.shipmentId}
               />
             ))}
           </Box>

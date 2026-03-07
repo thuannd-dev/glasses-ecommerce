@@ -52,8 +52,8 @@ export function OrderCard({
             label={statusLabel}
             size="small"
             sx={{
-              bgcolor: order.status === "shipped" || order.status === "delivered" ? "rgba(46,125,50,0.12)" : "rgba(25,118,210,0.12)",
-              color: order.status === "shipped" || order.status === "delivered" ? "#2e7d32" : "#1976d2",
+              bgcolor: order.status === "Shipped" || order.status === "Delivered" ? "rgba(46,125,50,0.12)" : "rgba(25,118,210,0.12)",
+              color: order.status === "Shipped" || order.status === "Delivered" ? "#2e7d32" : "#1976d2",
               fontWeight: 600,
             }}
           />
@@ -74,41 +74,41 @@ export function OrderCard({
             {order.shippingAddress}
           </Typography>
           <Typography fontSize={12} color="text.secondary" sx={{ mt: 0.5 }}>
-            {formatDate(order.createdAt)} · {order.items.length} items · {order.totalAmount.toLocaleString("en-US", { style: "currency", currency: "USD" })}
+            {formatDate(order.createdAt)} · {order.items?.length || 0} items · {order.totalAmount.toLocaleString("en-US", { style: "currency", currency: "USD" })}
           </Typography>
-          {order.orderType === "pre-order" && order.expectedStockDate && (
+          {order.orderType === "PreOrder" && order.expectedStockDate && (
             <Typography fontSize={12} color="text.secondary" sx={{ mt: 0.5 }}>
               Expected stock: {order.expectedStockDate}
             </Typography>
           )}
-          {order.orderType === "prescription" && order.prescriptionStatus && (
+          {order.orderType === "Prescription" && order.prescriptionStatus && (
             <Typography fontSize={12} color="text.secondary" sx={{ mt: 0.5 }}>
               Prescription: {order.prescriptionStatus}
             </Typography>
           )}
           <Box sx={{ mt: 2, display: "flex", gap: 1, flexWrap: "wrap" }}>
-            {order.status === "pending" && (
-              <Button size="small" variant="outlined" onClick={(e) => { e.stopPropagation(); onUpdateStatus("confirmed"); }}>
+            {order.status === "Pending" && (
+              <Button size="small" variant="outlined" onClick={(e) => { e.stopPropagation(); onUpdateStatus("Confirmed"); }}>
                 Confirm
               </Button>
             )}
-            {(order.status === "confirmed" || order.status === "pending") && (
-              <Button size="small" variant="outlined" onClick={(e) => { e.stopPropagation(); onUpdateStatus("processing"); }}>
+            {(order.status === "Confirmed" || order.status === "Pending") && (
+              <Button size="small" variant="outlined" onClick={(e) => { e.stopPropagation(); onUpdateStatus("Processing"); }}>
                 Processing
               </Button>
             )}
-            {order.status === "processing" && (
-              <Button size="small" variant="outlined" onClick={(e) => { e.stopPropagation(); onUpdateStatus("ready_to_ship"); }}>
+            {order.status === "Processing" && (
+              <Button size="small" variant="outlined" onClick={(e) => { e.stopPropagation(); onUpdateStatus("Confirmed"); }}>
                 Ready to ship
               </Button>
             )}
-            {order.orderType === "pre-order" && order.status === "pending" && (
-              <Button size="small" variant="outlined" onClick={(e) => { e.stopPropagation(); onUpdateStatus("received"); }}>
+            {order.orderType === "PreOrder" && order.status === "Pending" && (
+              <Button size="small" variant="outlined" onClick={(e) => { e.stopPropagation(); onUpdateStatus("Delivered"); }}>
                 Received at warehouse
               </Button>
             )}
-            {order.orderType === "prescription" && order.status === "processing" && (
-              <Button size="small" variant="outlined" onClick={(e) => { e.stopPropagation(); onUpdateStatus("lens_fitting"); }}>
+            {order.orderType === "Prescription" && order.status === "Processing" && (
+              <Button size="small" variant="outlined" onClick={(e) => { e.stopPropagation(); onUpdateStatus("Confirmed"); }}>
                 Lens fitting
               </Button>
             )}
