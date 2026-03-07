@@ -7,7 +7,6 @@ import {
   Chip,
   Button,
   Pagination,
-  Grid,
 } from "@mui/material";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useStaffOrders } from "../../../lib/hooks/useStaffOrders";
@@ -107,15 +106,22 @@ export function OrdersScreen() {
         overflow: "hidden",
       }}
     >
-      <Typography sx={{ fontSize: 24, fontWeight: 900, mb: 3 }}>
-        Orders
-      </Typography>
-
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={4}>
-          <SummaryCard label="Orders" value={isLoading ? "—" : totalFilteredCount.toString()} />
-        </Grid>
-      </Grid>
+      <Box sx={{ mb: 4 }}>
+        <Typography sx={{ fontSize: 12, letterSpacing: 6, textTransform: "uppercase", color: "text.secondary" }}>
+          Sales Console
+        </Typography>
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2, mt: 1, mb: 2 }}>
+          <Typography sx={{ fontSize: 24, fontWeight: 900 }}>
+            ORDERS
+          </Typography>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2, minWidth: 200 }}>
+            <SummaryCard label="Total Order" value={isLoading ? "—" : totalFilteredCount.toString()} />
+          </Box>
+        </Box>
+        <Typography sx={{ color: "text.secondary", fontSize: 14 }}>
+          Manage and process customer orders.
+        </Typography>
+      </Box>
 
       <Box
         sx={{

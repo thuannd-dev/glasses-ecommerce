@@ -6,7 +6,6 @@ import {
   LinearProgress,
   Chip,
   Pagination,
-  Grid,
   Button,
 } from "@mui/material";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -95,17 +94,22 @@ export function ReturnRefundInspectionScreen() {
         overflow: "hidden",
       }}
     >
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2 }}>
-        <Typography sx={{ fontSize: 24, fontWeight: 900 }}>
-          Return/Refund Inspection
+      <Box sx={{ mb: 4 }}>
+        <Typography sx={{ fontSize: 12, letterSpacing: 5, textTransform: "uppercase", color: "text.secondary" }}>
+          Operations Center
+        </Typography>
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2, mt: 1, mb: 2 }}>
+          <Typography sx={{ fontSize: 24, fontWeight: 900 }}>
+            RETURN/REFUND INSPECTION
+          </Typography>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2, minWidth: 200 }}>
+            <SummaryCard label="Total Ticket" value={isLoading ? "—" : data?.totalCount ?? 0} />
+          </Box>
+        </Box>
+        <Typography sx={{ color: "text.secondary", fontSize: 14 }}>
+          Inspect and approve return and refund requests.
         </Typography>
       </Box>
-
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={4}>
-          <SummaryCard label="Return/Refund" value={isLoading ? "—" : safeTickets.length} />
-        </Grid>
-      </Grid>
 
       {isLoading && (
         <Box sx={{ maxWidth: 720, mx: "auto", mt: 2 }}>

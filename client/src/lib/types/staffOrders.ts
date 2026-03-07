@@ -58,6 +58,16 @@ export interface StaffOrderPaymentDto {
   paymentAt: string | null;
 }
 
+export interface ShipmentInfoDto {
+  carrierName: string;
+  trackingCode?: string | null;
+  trackingUrl?: string | null;
+  shippedAt?: string | null;
+  estimatedDeliveryAt?: string | null;
+  actualDeliveryAt?: string | null;
+  shippingNotes?: string | null;
+}
+
 export interface StaffOrderStatusHistoryDto {
   fromStatus: string;
   toStatus: string;
@@ -88,7 +98,7 @@ export interface StaffOrderDetailDto {
   items: StaffOrderItemDto[];
   payment: StaffOrderPaymentDto | null;
   prescription: unknown;
-  shipment: unknown;
+  shipment?: ShipmentInfoDto | null;
   statusHistories: StaffOrderStatusHistoryDto[];
 }
 

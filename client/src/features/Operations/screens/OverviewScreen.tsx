@@ -1,7 +1,6 @@
 import {
   Box,
   Chip,
-  Grid,
   LinearProgress,
   Paper,
   Table,
@@ -59,31 +58,34 @@ export function OverviewScreen() {
         <Typography sx={{ fontSize: 12, letterSpacing: 5, textTransform: "uppercase", color: "text.secondary" }}>
           Operations Center
         </Typography>
-        <Typography sx={{ mt: 1, fontSize: 26, fontWeight: 900 }} color="text.primary">
-          Overview
-        </Typography>
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 3, mt: 1, mb: 2 }}>
+          <Typography sx={{ fontSize: 26, fontWeight: 900 }} color="text.primary">
+            OVERVIEW
+          </Typography>
+          <Box sx={{ display: "flex", gap: 2, overflowX: "auto", pb: 1, minWidth: 0, flex: 1, justifyContent: "flex-end", scrollbarWidth: "none", "&::-webkit-scrollbar": { display: "none" } }}>
+            <Box sx={{ display: "flex", gap: 2, whiteSpace: "nowrap" }}>
+              <Box sx={{ minWidth: 180 }}>
+                <SummaryCard label="Orders to process" value={ordersLoading ? "—" : pendingCount} />
+              </Box>
+              <Box sx={{ minWidth: 180 }}>
+                <SummaryCard label="Orders shipped" value={ordersLoading ? "—" : shippedCount} />
+              </Box>
+              <Box sx={{ minWidth: 180 }}>
+                <SummaryCard label="In transit" value={shipmentsLoading ? "—" : inTransitCount} />
+              </Box>
+              <Box sx={{ minWidth: 180 }}>
+                <SummaryCard label="Pre-order" value={ordersLoading ? "—" : preOrderCount} />
+              </Box>
+              <Box sx={{ minWidth: 180 }}>
+                <SummaryCard label="Prescription" value={ordersLoading ? "—" : prescriptionCount} />
+              </Box>
+            </Box>
+          </Box>
+        </Box>
         <Typography sx={{ mt: 0.5, color: "text.secondary", fontSize: 14 }}>
           Summary and order list.
         </Typography>
       </Box>
-
-      <Grid container spacing={2} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={4}>
-          <SummaryCard label="Orders to process" value={ordersLoading ? "—" : pendingCount} />
-        </Grid>
-        <Grid item xs={12} sm={4}>
-          <SummaryCard label="Orders shipped" value={ordersLoading ? "—" : shippedCount} />
-        </Grid>
-        <Grid item xs={12} sm={4}>
-          <SummaryCard label="In transit" value={shipmentsLoading ? "—" : inTransitCount} />
-        </Grid>
-        <Grid item xs={12} sm={4}>
-          <SummaryCard label="Pre-order" value={ordersLoading ? "—" : preOrderCount} />
-        </Grid>
-        <Grid item xs={12} sm={4}>
-          <SummaryCard label="Prescription" value={ordersLoading ? "—" : prescriptionCount} />
-        </Grid>
-      </Grid>
 
       <Paper
         elevation={0}

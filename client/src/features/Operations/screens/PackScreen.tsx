@@ -2,7 +2,6 @@ import { useState } from "react";
 import {
   Box,
   Chip,
-  Grid,
   LinearProgress,
   Pagination,
   Paper,
@@ -12,7 +11,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useOperationsOrders } from "../../../lib/hooks/useOperationsOrders";
 import { SummaryCard } from "../components";
-import type { StaffOrderDto } from "../../../lib/types/staffOrders";
+import type { OperationsOrderDto } from "../../../lib/types/operations";
 
 export function PackScreen() {
   const navigate = useNavigate();
@@ -25,8 +24,8 @@ export function PackScreen() {
     status: "Confirmed",
   });
 
-  const safeOrders: StaffOrderDto[] = Array.isArray(data?.items)
-    ? (data!.items as StaffOrderDto[])
+  const safeOrders: OperationsOrderDto[] = Array.isArray(data?.items)
+    ? (data!.items as OperationsOrderDto[])
     : [];
   const totalPages = data?.totalPages ?? 1;
 
@@ -72,24 +71,23 @@ export function PackScreen() {
         >
           Operations Center
         </Typography>
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2, mt: 1, mb: 2 }}>
+          <Typography
+            sx={{ fontSize: 26, fontWeight: 900 }}
+            color="text.primary"
+          >
+            CONFIRMED ORDERS
+          </Typography>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2, minWidth: 200 }}>
+            <SummaryCard label="Total Order" value={isLoading ? "—" : data?.totalCount ?? 0} />
+          </Box>
+        </Box>
         <Typography
-          sx={{ mt: 1, fontSize: 26, fontWeight: 900 }}
-          color="text.primary"
+          sx={{ color: "text.secondary", fontSize: 14 }}
         >
-          Confirmed orders
-        </Typography>
-        <Typography
-          sx={{ mt: 0.5, color: "text.secondary", fontSize: 14 }}
-        >
-          Orders to pick and prepare before creating shipments.
+          View confirmed order list, pick and pack order, and manage shipping information
         </Typography>
       </Box>
-
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={4}>
-          <SummaryCard label="Confirmed Orders" value={isLoading ? "—" : safeOrders.length} />
-        </Grid>
-      </Grid>
 
       <Box
         sx={{

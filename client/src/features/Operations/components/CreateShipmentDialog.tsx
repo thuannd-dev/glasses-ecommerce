@@ -22,6 +22,8 @@ type CreateShipmentDialogProps = {
   setCarrier: (v: string) => void;
   trackingNumber: string;
   setTrackingNumber: (v: string) => void;
+  trackingUrl: string;
+  setTrackingUrl: (v: string) => void;
   onSubmit: () => void;
   isPending: boolean;
 };
@@ -34,6 +36,8 @@ export function CreateShipmentDialog({
   setCarrier,
   trackingNumber,
   setTrackingNumber,
+  trackingUrl,
+  setTrackingUrl,
   onSubmit,
   isPending,
 }: CreateShipmentDialogProps) {
@@ -140,6 +144,15 @@ export function CreateShipmentDialog({
           onChange={(e) => setTrackingNumber(e.target.value)}
           placeholder="e.g. VN123456789"
           sx={{ mt: 2 }}
+        />
+        <TextField
+          fullWidth
+          label="Tracking URL"
+          value={trackingUrl}
+          onChange={(e) => setTrackingUrl(e.target.value)}
+          placeholder="https://tracking.example.com/..."
+          sx={{ mt: 2 }}
+          type="url"
         />
       </DialogContent>
       <DialogActions>

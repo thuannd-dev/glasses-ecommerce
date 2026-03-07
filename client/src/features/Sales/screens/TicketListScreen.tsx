@@ -7,7 +7,6 @@ import {
   Chip,
   Button,
   Pagination,
-  Grid,
 } from "@mui/material";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useStaffAfterSalesTickets } from "../../../lib/hooks/useStaffAfterSalesTickets";
@@ -22,6 +21,7 @@ import {
 
 interface TicketListScreenProps {
   readonly title: string;
+  readonly description: string;
   readonly ticketTypes: readonly AfterSalesTicketType[];
   readonly navPrefix: string;
 }
@@ -49,7 +49,7 @@ const TYPE_COLORS: Record<AfterSalesTicketType, string> = {
   [AfterSalesTicketTypeValues.Refund]: "#10b981",
 };
 
-export function TicketListScreen({ title, ticketTypes, navPrefix }: TicketListScreenProps) {
+export function TicketListScreen({ title, description, ticketTypes, navPrefix }: TicketListScreenProps) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -73,46 +73,34 @@ export function TicketListScreen({ title, ticketTypes, navPrefix }: TicketListSc
   };
 
   const apiStatus = statusMap[statusFilter];
-  const isSingleType = ticketTypes.length === 1;
-  const isMultipleTypes = ticketTypes.length > 1;
 
-  // Single type fetch (Warranty)
-  const singleTypeResult = isSingleType
-    ? useStaffAfterSalesTickets({
-        pageNumber,
-        pageSize,
-        status: apiStatus,
-        ticketType: ticketTypes[0],
-      })
-    : { data: undefined, isLoading: false };
+  // Always call both hooks unconditionally - required by React rules of hooks
+  const type1Result = useStaffAfterSalesTickets({
+    pageNumber,
+    pageSize,
+    status: apiStatus,
+    ticketType: ticketTypes[0],
+  });
 
-  // Multiple types fetch (Return/Refund)
-  const returnResult = isMultipleTypes
-    ? useStaffAfterSalesTickets({
-        pageNumber,
-        pageSize,
-        status: apiStatus,
-        ticketType: ticketTypes[0],
-      })
-    : { data: undefined, isLoading: false };
+  const dummyTicketType = ticketTypes.length > 1
+    ? ticketTypes[1]
+    : ticketTypes[0]; // Use a valid type even for single-type screens
 
-  const refundResult = isMultipleTypes && ticketTypes.length > 1
-    ? useStaffAfterSalesTickets({
-        pageNumber,
-        pageSize,
-        status: apiStatus,
-        ticketType: ticketTypes[1],
-      })
-    : { data: undefined, isLoading: false };
+  const type2Result = useStaffAfterSalesTickets({
+    pageNumber,
+    pageSize,
+    status: apiStatus,
+    ticketType: dummyTicketType,
+  });
 
   // Merge results based on type
-  const isLoading = isSingleType ? singleTypeResult.isLoading : (returnResult.isLoading || refundResult.isLoading);
-  const allItems = isSingleType
-    ? singleTypeResult.data?.items ?? []
-    : [...(returnResult.data?.items ?? []), ...(refundResult.data?.items ?? [])];
-  const totalCountAcrossAllTypes = isSingleType
-    ? singleTypeResult.data?.totalCount ?? 0
-    : (returnResult.data?.totalCount ?? 0) + (refundResult.data?.totalCount ?? 0);
+  const isLoading = type1Result.isLoading || type2Result.isLoading;
+  const allItems = ticketTypes.length === 1
+    ? type1Result.data?.items ?? []
+    : [...(type1Result.data?.items ?? []), ...(type2Result.data?.items ?? [])];
+  const totalCountAcrossAllTypes = ticketTypes.length === 1
+    ? type1Result.data?.totalCount ?? 0
+    : (type1Result.data?.totalCount ?? 0) + (type2Result.data?.totalCount ?? 0);
 
   // For pagination display
   const displayedItems = allItems.slice(0, pageSize);
@@ -148,15 +136,22 @@ export function TicketListScreen({ title, ticketTypes, navPrefix }: TicketListSc
         overflow: "hidden",
       }}
     >
-      <Typography sx={{ fontSize: 24, fontWeight: 900, mb: 2 }}>
-        {title}
-      </Typography>
-
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={4}>
-          <SummaryCard label={title} value={isLoading ? "—" : totalCountAcrossAllTypes} />
-        </Grid>
-      </Grid>
+      <Box sx={{ mb: 4 }}>
+        <Typography sx={{ fontSize: 12, letterSpacing: 6, textTransform: "uppercase", color: "text.secondary" }}>
+          Sales Console
+        </Typography>
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2, mt: 1, mb: 2 }}>
+          <Typography sx={{ fontSize: 24, fontWeight: 900 }}>
+            {title}
+          </Typography>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2, minWidth: 200 }}>
+            <SummaryCard label="Total Ticket" value={isLoading ? "—" : totalCountAcrossAllTypes} />
+          </Box>
+        </Box>
+        <Typography sx={{ color: "text.secondary", fontSize: 14 }}>
+          {description}
+        </Typography>
+      </Box>
 
       {isLoading && (
         <Box sx={{ maxWidth: 720, mx: "auto", mt: 2 }}>
@@ -182,9 +177,7 @@ export function TicketListScreen({ title, ticketTypes, navPrefix }: TicketListSc
   );
 }
 
-interface NoTicketsFoundProps {}
-
-function NoTicketsFound({}: NoTicketsFoundProps) {
+function NoTicketsFound() {
   return (
     <Box sx={{ maxWidth: 720, mx: "auto", mt: 3 }}>
       <Paper
@@ -205,10 +198,10 @@ function NoTicketsFound({}: NoTicketsFoundProps) {
 
 interface TicketListContentProps {
   readonly filteredTickets: readonly TicketListDto[];
-  readonly meta: any;
+  readonly meta: { totalPages: number };
   readonly pageNumber: number;
   readonly handlePageChange: (event: React.ChangeEvent<unknown>, value: number) => void;
-  readonly navigate: any;
+  readonly navigate: ReturnType<typeof useNavigate>;
   readonly navPrefix: string;
   readonly getTypeLabel: (type: AfterSalesTicketType) => string;
   readonly statusFilter: string;

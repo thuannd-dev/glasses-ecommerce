@@ -11,6 +11,7 @@ import axios from "axios";
 import type { LocationIQAddress, LocationIQSuggestion } from "../../../lib/types/location";
 
 /** Map LocationIQ suggestion → venue, ward, district, city, postalCode */
+// eslint-disable-next-line react-refresh/only-export-components
 export function mapLocationToAddress(
   loc: LocationIQSuggestion,
 ): Pick<ShippingAddressFromAutocomplete, "venue" | "ward" | "district" | "city" | "postalCode"> {

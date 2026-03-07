@@ -92,8 +92,8 @@ export function TicketDetailScreen() {
         onSuccess: () => {
           navigate(`/sales/${navPrefix}`);
         },
-        onError: (err: any) => {
-          setError(err.message || "Failed to update ticket");
+        onError: (err: Error | unknown) => {
+          setError(err instanceof Error ? err.message : "Failed to update ticket");
         },
       }
     );

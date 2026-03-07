@@ -3,18 +3,77 @@ import {
   Typography,
   Grid,
   Paper,
-  Chip,
   LinearProgress,
+  Avatar,
 } from "@mui/material";
 import { useAccount } from "../../../lib/hooks/useAccount";
 import { useSales } from "../context/SalesContext";
+import agent from "../../../lib/api/agent";
+import { useEffect, useState } from "react";
 
 export function OverviewScreen() {
   const { currentUser } = useAccount();
-  const { orders, ordersLoading } = useSales();
+  const { orders, ordersLoading, meta } = useSales();
+  const [topSellingProducts, setTopSellingProducts] = useState<Array<{
+    name: string;
+    quantity: number;
+    imageUrl: string | null;
+  }>>([]);
+  const [topSellingLoading, setTopSellingLoading] = useState(false);
 
   const safeOrders = Array.isArray(orders) ? orders : [];
   const totalRevenue = safeOrders.reduce((sum, o) => sum + (o.totalAmount ?? 0), 0);
+
+  useEffect(() => {
+    const calculateTopSelling = async () => {
+      if (safeOrders.length === 0) return;
+      
+      setTopSellingLoading(true);
+      try {
+        // Aggregate product sales by fetching order details
+        type ProductSale = { name: string; totalAmount: number; quantity: number; imageUrl: string | null };
+        const productSales = new Map<string, ProductSale>();
+
+        for (const order of safeOrders) {
+          try {
+            const response = await agent.get(`/staff/orders/${order.id}`);
+            const detail = response.data;
+            
+            if (detail.items && Array.isArray(detail.items)) {
+              for (const item of detail.items) {
+                const key = item.productName;
+                const existing = productSales.get(key);
+                productSales.set(key, {
+                  name: item.productName,
+                  totalAmount: (existing?.totalAmount || 0) + (item.totalPrice || 0),
+                  quantity: (existing?.quantity || 0) + (item.quantity || 0),
+                  imageUrl: item.productImageUrl || null,
+                });
+              }
+            }
+          } catch (err) {
+            console.error(`Failed to fetch order ${order.id}:`, err);
+          }
+        }
+
+        // Find top 3 selling by quantity
+        if (productSales.size > 0) {
+          const topProducts = Array.from(productSales.values())
+            .sort((a, b) => b.quantity - a.quantity)
+            .slice(0, 3);
+          setTopSellingProducts(topProducts);
+        }
+      } catch (err) {
+        console.error("Failed to calculate top selling product:", err);
+      } finally {
+        setTopSellingLoading(false);
+      }
+    };
+
+    if (!ordersLoading) {
+      calculateTopSelling();
+    }
+  }, [safeOrders, ordersLoading]);
 
   return (
     <Box
@@ -70,13 +129,10 @@ export function OverviewScreen() {
             }}
           >
             <Typography fontSize={13} color="text.secondary">
-              Orders
+              Total Order
             </Typography>
             <Typography fontSize={26} fontWeight={900} mt={1} color="text.primary">
-              {ordersLoading ? "—" : safeOrders.length}
-            </Typography>
-            <Typography fontSize={12} color="text.secondary" mt={1}>
-              Based on /api/staff/orders
+              {ordersLoading ? "—" : meta?.totalCount ?? 0}
             </Typography>
           </Paper>
         </Grid>
@@ -92,21 +148,40 @@ export function OverviewScreen() {
             }}
           >
             <Typography fontSize={13} color="text.secondary">
-              Sample metric
+              Top Selling Products
             </Typography>
-            <Typography fontSize={26} fontWeight={900} mt={1} color="text.primary">
-              0
-            </Typography>
-            <Chip
-              label="Coming soon"
-              size="small"
-              sx={{
-                mt: 1.5,
-                bgcolor: "rgba(25,118,210,0.08)",
-                color: "primary.main",
-                fontWeight: 700,
-              }}
-            />
+            {topSellingLoading || ordersLoading ? (
+              <>
+                <Typography fontSize={26} fontWeight={900} mt={1} color="text.primary">
+                  —
+                </Typography>
+                <LinearProgress sx={{ mt: 1.5, borderRadius: 1 }} />
+              </>
+            ) : topSellingProducts.length > 0 ? (
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 2 }}>
+                {topSellingProducts.map((product, index) => (
+                  <Box key={index} sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                    <Typography fontSize={24} fontWeight={900} color="primary.main" sx={{ minWidth: 40 }}>
+                      {product.quantity}
+                    </Typography>
+                    <Avatar
+                      src={product.imageUrl || ""}
+                      alt={product.name}
+                      sx={{ width: 48, height: 48, borderRadius: 1, flexShrink: 0 }}
+                    />
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography fontSize={13} fontWeight={600} color="text.primary" sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {product.name}
+                      </Typography>
+                    </Box>
+                  </Box>
+                ))}
+              </Box>
+            ) : (
+              <Typography fontSize={12} color="text.secondary" mt={2}>
+                No data available
+              </Typography>
+            )}
           </Paper>
         </Grid>
       </Grid>
