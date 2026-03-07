@@ -5,14 +5,24 @@ import {
   Paper,
   Divider,
   Button,
+  Select,
+  MenuItem,
+  FormControl,
+  CircularProgress,
 } from "@mui/material";
 import { useNavigate, useParams } from "react-router-dom";
-import { useOperationsOrderDetail } from "../../../lib/hooks/useOperationsOrders";
+import { useState } from "react";
+import { useOperationsOrderDetail, useUpdateOrderStatus } from "../../../lib/hooks/useOperationsOrders";
+import type { OrderStatus } from "../../../lib/types/operations";
 
 export function OperationsOrderDetailScreen() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const { data, isLoading, isError } = useOperationsOrderDetail(id);
+  const updateStatus = useUpdateOrderStatus();
+  
+  const [newStatus, setNewStatus] = useState<OrderStatus | null>(null);
+  const [showSave, setShowSave] = useState(false);
 
   if (isLoading) {
     return (
@@ -40,6 +50,36 @@ export function OperationsOrderDetailScreen() {
   }
 
   const order = data;
+
+  const statusOptions: OrderStatus[] = [
+    "pending",
+    "confirmed",
+    "processing",
+    "ready_to_ship",
+    "shipped",
+    "delivered",
+    "received",
+    "cancelled",
+  ];
+
+  const handleStatusChange = (status: OrderStatus) => {
+    setNewStatus(status);
+    setShowSave(true);
+  };
+
+  const handleSaveStatus = () => {
+    if (newStatus && id) {
+      updateStatus.mutate(
+        { orderId: id, status: newStatus },
+        {
+          onSuccess: () => {
+            setShowSave(false);
+            setNewStatus(null);
+          },
+        }
+      );
+    }
+  };
 
   return (
     <Box sx={{ px: { xs: 2, md: 4, lg: 6 }, py: 4 }}>
@@ -80,9 +120,10 @@ export function OperationsOrderDetailScreen() {
           display: "flex",
           flexDirection: "column",
           gap: 2,
+          mb: 3,
         }}
       >
-        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, fontSize: 13 }}>
+        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, fontSize: 13, alignItems: "center" }}>
           <Typography>
             <b>Source:</b> {order.orderSource}
           </Typography>
@@ -90,14 +131,99 @@ export function OperationsOrderDetailScreen() {
             <b>Type:</b> {order.orderType}
           </Typography>
           <Typography>
-            <b>Status:</b> {order.orderStatus}
+            <b>Status:</b>{" "}
+            <span
+              style={{
+                textTransform: "capitalize",
+                fontWeight: 600,
+                color: newStatus ? "#1565c0" : "inherit",
+              }}
+            >
+              {newStatus || order.orderStatus}
+            </span>
           </Typography>
           <Typography>
             <b>Created:</b> {new Date(order.createdAt).toLocaleString()}
           </Typography>
         </Box>
+      </Paper>
 
-        <Divider />
+      <Paper
+        elevation={0}
+        sx={{
+          borderRadius: 3,
+          border: "1px solid rgba(0,0,0,0.08)",
+          p: 3,
+          display: "flex",
+          flexDirection: "column",
+          gap: 2,
+        }}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: 2,
+            mb: 2,
+            flexWrap: "wrap",
+            pb: 2,
+            borderBottom: "1px solid rgba(0,0,0,0.08)",
+          }}
+        >
+          <Typography sx={{ fontWeight: 700, fontSize: 14 }}>Change Order Status</Typography>
+          <Box sx={{ display: "flex", gap: 1, alignItems: "center", flexWrap: "wrap" }}>
+            <FormControl sx={{ minWidth: 180 }}>
+              <Select
+                value={newStatus || order.orderStatus}
+                onChange={(e) => handleStatusChange(e.target.value as OrderStatus)}
+                size="small"
+                sx={{
+                  textTransform: "capitalize",
+                  fontSize: 13,
+                  fontWeight: 500,
+                }}
+              >
+                <MenuItem value={order.orderStatus} disabled sx={{ textTransform: "capitalize", color: "text.secondary", fontSize: 12, fontStyle: "italic" }}>
+                  Current: {order.orderStatus}
+                </MenuItem>
+                {statusOptions
+                  .filter((status) => status !== order.orderStatus.toLowerCase())
+                  .map((status) => (
+                    <MenuItem key={status} value={status} sx={{ textTransform: "capitalize" }}>
+                      {status}
+                    </MenuItem>
+                  ))}
+              </Select>
+            </FormControl>
+            {showSave && (
+              <Button
+                variant="contained"
+                size="small"
+                onClick={handleSaveStatus}
+                disabled={updateStatus.isPending}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: 700,
+                  borderRadius: 2,
+                  bgcolor: "#16a34a",
+                  "&:hover": {
+                    bgcolor: "#15803d",
+                  },
+                  "&:disabled": {
+                    opacity: 0.7,
+                  },
+                }}
+              >
+                {updateStatus.isPending ? (
+                  <CircularProgress size={16} sx={{ color: "white" }} />
+                ) : (
+                  "Save"
+                )}
+              </Button>
+            )}
+          </Box>
+        </Box>
 
         <Box>
           <Typography sx={{ fontWeight: 700, mb: 1 }}>Items</Typography>
