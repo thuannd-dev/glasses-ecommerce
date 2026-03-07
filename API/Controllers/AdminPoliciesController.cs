@@ -43,7 +43,8 @@ public sealed class AdminPoliciesController : BaseApiController
     public async Task<IActionResult> CreatePolicy([FromBody] CreatePolicyDto dto)
     {
         Result<PolicyConfigurationDto> result = await Mediator.Send(new CreatePolicy.Command { Dto = dto });
-        return HandleResult(result);
+        if (!result.IsSuccess) return HandleResult(result);
+        return CreatedAtAction(nameof(GetPolicyDetails), new { id = result.Value!.Id }, result.Value);
     }
 
     [HttpPut("{id}")]

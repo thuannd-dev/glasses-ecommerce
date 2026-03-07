@@ -32,21 +32,24 @@ public sealed class CreatePolicy
                 return Result<PolicyConfigurationDto>.Failure("EffectiveTo must be greater than EffectiveFrom.", 400);
             }
 
-            // Date Overlap Validation
-            // Overlap condition: P.Start <= E.End && P.End >= E.Start
-            DateTime pStart = dto.EffectiveFrom;
-            DateTime pEnd = dto.EffectiveTo ?? DateTime.MaxValue;
-
-            bool isOverlap = await context.PolicyConfigurations
-                .Where(p => p.PolicyType == dto.PolicyType && p.IsActive && !p.IsDeleted)
-                .AnyAsync(existing => 
-                    pStart <= (existing.EffectiveTo ?? DateTime.MaxValue) && 
-                    pEnd >= existing.EffectiveFrom, ct);
-
-            if (isOverlap)
+            // Date Overlap Validation (only if it's being set to active)
+            if (dto.IsActive)
             {
-                return Result<PolicyConfigurationDto>.Failure(
-                    $"Cannot create policy. The effective dates overlap with an existing active policy for type {dto.PolicyType}.", 409);
+                // Overlap condition: P.Start <= E.End && P.End >= E.Start
+                DateTime pStart = dto.EffectiveFrom;
+                DateTime pEnd = dto.EffectiveTo ?? DateTime.MaxValue;
+
+                bool isOverlap = await context.PolicyConfigurations
+                    .Where(p => p.PolicyType == dto.PolicyType && p.IsActive && !p.IsDeleted)
+                    .AnyAsync(existing => 
+                        pStart <= (existing.EffectiveTo ?? DateTime.MaxValue) && 
+                        pEnd >= existing.EffectiveFrom, ct);
+
+                if (isOverlap)
+                {
+                    return Result<PolicyConfigurationDto>.Failure(
+                        $"Cannot create policy. The effective dates overlap with an existing active policy for type {dto.PolicyType}.", 409);
+                }
             }
 
             PolicyConfiguration policy = new PolicyConfiguration
