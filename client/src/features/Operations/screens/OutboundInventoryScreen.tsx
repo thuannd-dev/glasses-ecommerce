@@ -439,7 +439,9 @@ export function OutboundInventoryScreen() {
             <Autocomplete
               options={filteredOrders}
               value={selectedOrderOption}
-              onChange={(_, value) => setOrderId(value?.id ?? "")}
+              onChange={(_, value) =>
+                setOrderId(value == null ? "" : typeof value === "string" ? value : value.id)
+              }
               onInputChange={(_, value) => {
                 setOrderSearch(value);
                 setOrderId(value);
