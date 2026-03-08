@@ -31,29 +31,6 @@ interface TicketListScreenProps {
   readonly navPrefix: string;
 }
 
-const STATUS_LABELS: Record<AfterSalesTicketStatus, string> = {
-  [AfterSalesTicketStatusValues.Pending]: "Pending",
-  [AfterSalesTicketStatusValues.InProgress]: "In Progress",
-  [AfterSalesTicketStatusValues.Resolved]: "Resolved",
-  [AfterSalesTicketStatusValues.Rejected]: "Rejected",
-  [AfterSalesTicketStatusValues.Closed]: "Closed",
-};
-
-const STATUS_COLORS: Record<AfterSalesTicketStatus, string> = {
-  [AfterSalesTicketStatusValues.Pending]: "#fbbf24",
-  [AfterSalesTicketStatusValues.InProgress]: "#3b82f6",
-  [AfterSalesTicketStatusValues.Resolved]: "#10b981",
-  [AfterSalesTicketStatusValues.Rejected]: "#ef4444",
-  [AfterSalesTicketStatusValues.Closed]: "#6b7280",
-};
-
-const TYPE_COLORS: Record<AfterSalesTicketType, string> = {
-  [AfterSalesTicketTypeValues.Unknown]: "#9ca3af",
-  [AfterSalesTicketTypeValues.Return]: "#f59e0b",
-  [AfterSalesTicketTypeValues.Warranty]: "#3b82f6",
-  [AfterSalesTicketTypeValues.Refund]: "#10b981",
-};
-
 export function TicketListScreen({ title, description, ticketTypes, navPrefix }: TicketListScreenProps) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();

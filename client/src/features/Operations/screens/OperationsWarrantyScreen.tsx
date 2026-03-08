@@ -13,7 +13,6 @@ import { useOperationsTickets } from "../../../lib/hooks/useStaffAfterSalesTicke
 import { SummaryCard } from "../components";
 import {
   AfterSalesTicketStatusValues,
-  TicketResolutionTypeValues,
   type AfterSalesTicketStatus,
 } from "../../../lib/types/afterSales";
 import { formatDate } from "../constants";

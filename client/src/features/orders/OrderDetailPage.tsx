@@ -370,7 +370,7 @@ export default function OrderDetailPage() {
         <SubmitTicketDialog
           open={ticketDialogOpen}
           onClose={() => setTicketDialogOpen(false)}
-          order={order}
+          order={order as unknown as any}
         />
       )}
     </Box>
