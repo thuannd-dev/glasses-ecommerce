@@ -56,13 +56,18 @@ public class ExceptionMiddleware(ILogger<ExceptionMiddleware> logger, IHostEnvir
         {
             foreach (var error in ex.Errors)
             {
-                if (validationErrors.TryGetValue(error.PropertyName, out var existingErrors))
+                // Strip internal DTO prefix: "AddCartItemDto.Quantity" → "Quantity"
+                var propertyName = error.PropertyName.Contains('.')
+                    ? error.PropertyName[(error.PropertyName.LastIndexOf('.') + 1)..]
+                    : error.PropertyName;
+
+                if (validationErrors.TryGetValue(propertyName, out var existingErrors))
                 {
-                    validationErrors[error.PropertyName] = [.. existingErrors, error.ErrorMessage];
+                    validationErrors[propertyName] = [.. existingErrors, error.ErrorMessage];
                 }
                 else
                 {
-                    validationErrors[error.PropertyName] = [error.ErrorMessage];
+                    validationErrors[propertyName] = [error.ErrorMessage];
                 }
 
             }
@@ -71,7 +76,8 @@ public class ExceptionMiddleware(ILogger<ExceptionMiddleware> logger, IHostEnvir
         context.Response.StatusCode = StatusCodes.Status400BadRequest;
 
         //ValidationProblemDetails is a built-in class in ASP.NET Core to represent validation errors
-        var validationProblemDetails = new ValidationProblemDetails(validationErrors) { 
+        var validationProblemDetails = new ValidationProblemDetails(validationErrors)
+        {
             Status = StatusCodes.Status400BadRequest,
             Type = "ValidationFailure",
             Title = "Validation error",

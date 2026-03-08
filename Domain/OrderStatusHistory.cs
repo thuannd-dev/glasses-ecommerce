@@ -12,9 +12,12 @@ public class OrderStatusHistory
     public OrderStatus ToStatus { get; set; }
     public string? Notes { get; set; }
 
+    public Guid? ChangedBy { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    // Navigation property
+    // Navigation properties
     public Order Order { get; set; } = null!;
+    public User? ChangedByUser { get; set; }
 
 }

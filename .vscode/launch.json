@@ -1,19 +1,39 @@
+//Debug for VS Code
+
+// {
+//   // Use IntelliSense to learn about possible attributes.
+//   // Hover to view descriptions of existing attributes.
+//   // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+//   "version": "0.2.0",
+//   "configurations": [
+//     {
+//       "name": "C#: API Debug",
+//       "type": "dotnet",
+//       "request": "launch",
+//       "projectPath": "${workspaceFolder}/API/API.csproj"
+//     },
+//     {
+//       "name": ".NET Core Attach",
+//       "type": "coreclr",
+//       "request": "attach"
+//     }
+//   ]
+// }
+
+//Debug for DotRush
 {
-  // Use IntelliSense to learn about possible attributes.
-  // Hover to view descriptions of existing attributes.
-  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "C#: API Debug",
-      "type": "dotnet",
-      "request": "launch",
-      "projectPath": "${workspaceFolder}/API/API.csproj"
-    },
-    {
-      "name": ".NET Core Attach",
+      "name": "API Debug (DotRush)",
       "type": "coreclr",
-      "request": "attach"
+      "request": "launch",
+      "program": "${command:dotrush.activeTargetPath}",
+      "preLaunchTask": "dotrush: Build",
+      "cwd": "${workspaceFolder}/API",
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
     }
   ]
 }

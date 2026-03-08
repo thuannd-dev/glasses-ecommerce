@@ -36,20 +36,24 @@ public sealed class GetProductList
         public decimal? MinPrice { get; set; }
         public decimal? MaxPrice { get; set; }
         public string? SearchTerm { get; set; }
-        
+
         [JsonConverter(typeof(JsonStringEnumConverter))]
         public SortByOption SortBy { get; set; } = SortByOption.CreatedAt;
-        
+
         [JsonConverter(typeof(JsonStringEnumConverter))]
         public SortOrderOption SortOrder { get; set; } = SortOrderOption.Desc;
     }
 
-    public sealed class Handler(AppDbContext context, IMapper mapper) 
+    public sealed class Handler(AppDbContext context, IMapper mapper)
         : IRequestHandler<Query, Result<PagedResult<ProductListDto>>>
     {
         public async Task<Result<PagedResult<ProductListDto>>> Handle(Query request, CancellationToken cancellationToken)
         {
-            var query = context.Products.AsQueryable();
+            if (request.PageNumber < 1 || request.PageSize < 1 || request.PageSize > 100)
+                return Result<PagedResult<ProductListDto>>
+                    .Failure("Invalid pagination parameters.", 400);
+
+            IQueryable<Product> query = context.Products.AsNoTracking();
 
             // Apply filters
             if (request.CategoryIds != null && request.CategoryIds.Count > 0)
@@ -67,6 +71,16 @@ public sealed class GetProductList
             var statusFilter = request.Status ?? ProductStatus.Active;
             query = query.Where(p => p.Status == statusFilter);
 
+            // IMPORTANT: Ensure product has at least one active variant when needed
+            // (required for price-based filtering and sorting to avoid default price edge cases)
+            if (statusFilter == ProductStatus.Active
+                || request.MinPrice.HasValue
+                || request.MaxPrice.HasValue
+                || request.SortBy == SortByOption.Price)
+            {
+                query = query.Where(p => p.Variants.Any(v => v.IsActive));
+            }
+
             if (request.Type.HasValue)
             {
                 query = query.Where(p => p.Type == request.Type.Value);
@@ -79,17 +93,18 @@ public sealed class GetProductList
             if (!string.IsNullOrWhiteSpace(request.SearchTerm))
             {
                 string searchPattern = $"%{request.SearchTerm}%";
-                query = query.Where(p => 
+                query = query.Where(p =>
                     EF.Functions.Like(p.ProductName, searchPattern) ||
                     (p.Description != null && EF.Functions.Like(p.Description, searchPattern)) ||
                     (p.Brand != null && EF.Functions.Like(p.Brand, searchPattern))
                 );
             }
 
-            // Price range filtering (based on variant prices)
+            // Price range filtering (based on active variant prices)
             if (request.MinPrice.HasValue || request.MaxPrice.HasValue)
             {
-                query = query.Where(p => p.Variants.Any(v => 
+                query = query.Where(p => p.Variants.Any(v =>
+                    v.IsActive &&
                     (!request.MinPrice.HasValue || v.Price >= request.MinPrice.Value) &&
                     (!request.MaxPrice.HasValue || v.Price <= request.MaxPrice.Value)
                 ));
@@ -102,8 +117,8 @@ public sealed class GetProductList
             query = request.SortBy switch
             {
                 SortByOption.Price => request.SortOrder == SortOrderOption.Asc
-                    ? query.OrderBy(p => p.Variants.Any() ? p.Variants.Min(v => v.Price) : decimal.MaxValue)
-                    : query.OrderByDescending(p => p.Variants.Any() ? p.Variants.Min(v => v.Price) : decimal.MinValue),
+                    ? query.OrderBy(p => p.Variants.Any(v => v.IsActive) ? p.Variants.Where(v => v.IsActive).Min(v => v.Price) : decimal.MaxValue)
+                    : query.OrderByDescending(p => p.Variants.Any(v => v.IsActive) ? p.Variants.Where(v => v.IsActive).Min(v => v.Price) : decimal.MinValue),
                 SortByOption.Name => request.SortOrder == SortOrderOption.Asc
                     ? query.OrderBy(p => p.ProductName)
                     : query.OrderByDescending(p => p.ProductName),
@@ -113,13 +128,12 @@ public sealed class GetProductList
             };
 
             // Apply pagination and projection
-            //ProjectTo generates optimized SQL SELECT based on ProductListDto mapping
-            var items = await query
+            // ProjectTo generates optimized SQL SELECT with scalar subqueries (no collections to split)
+            ProductListDto[] items = await query
                 .Skip((request.PageNumber - 1) * request.PageSize)
                 .Take(request.PageSize)
                 .ProjectTo<ProductListDto>(mapper.ConfigurationProvider)
-                .AsNoTracking()
-                .ToListAsync(cancellationToken);
+                .ToArrayAsync(cancellationToken);
 
             var pagedResult = new PagedResult<ProductListDto>
             {

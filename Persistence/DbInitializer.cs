@@ -36,15 +36,8 @@ public class DbInitializer
             new() {DisplayName = "Admin User", UserName = "admin@test.com", Email = "admin@test.com"} ,
         };
 
-        if (userManager.Users.Count() < 100) // Changed from .Any() to force reseed - change back to .Any() after deployment
+        if (!userManager.Users.Any())
         {
-            // Delete existing users to avoid conflicts
-            var existingUsers = userManager.Users.ToList();
-            foreach (var existingUser in existingUsers)
-            {
-                await userManager.DeleteAsync(existingUser);
-            }
-            
             for (int i = 0; i < users.Count; i++)
             {
                 //doc: The password for the user to hash and store.
@@ -53,19 +46,15 @@ public class DbInitializer
                 await userManager.CreateAsync(users[i], "Pa$$w0rd");
                 //don't need to save changes because DOC: Creates the specified user in the backing store with given password, as an asynchronous operation.
                 //backing store which means where the data is stored (database)
-                
+
                 // Assign role to user
                 await userManager.AddToRoleAsync(users[i], roles[i]);
             }
         }
 
         // Seed Activities
-        if (context.Activities.Count() < 100) // Changed from .Any() to force reseed - change back to .Any() after deployment
+        if (!context.Activities.Any())
         {
-            // Delete existing activities to avoid conflicts
-            context.Activities.RemoveRange(context.Activities);
-            await context.SaveChangesAsync();
-            
             var activities = new List<Activity>
         {
             new()
@@ -298,16 +287,8 @@ public class DbInitializer
         }
 
         // Seed Product Categories
-        if (context.ProductCategories.Count() < 200) // Changed from .Any() to force reseed - change back to .Any() after deployment
+        if (!context.ProductCategories.Any())
         {
-            // Delete existing data to avoid conflicts (in correct order due to FK constraints)
-            context.ProductImages.RemoveRange(context.ProductImages);
-            context.Stocks.RemoveRange(context.Stocks);
-            context.ProductVariants.RemoveRange(context.ProductVariants);
-            context.Products.RemoveRange(context.Products);
-            context.ProductCategories.RemoveRange(context.ProductCategories);
-            await context.SaveChangesAsync();
-            
             var categories = new List<ProductCategory>
             {
                 new()
@@ -1149,6 +1130,73 @@ public class DbInitializer
             }
 
             await context.Stocks.AddRangeAsync(stocks);
+            await context.SaveChangesAsync();
+        }
+
+        // Seed Policy Configurations
+        if (!context.PolicyConfigurations.Any())
+        {
+            var policies = new List<PolicyConfiguration>
+            {
+                new()
+                {
+                    PolicyType = PolicyType.Return,
+                    PolicyName = "Default Return Policy",
+                    ReturnWindowDays = 7,
+                    WarrantyMonths = null,
+                    RefundAllowed = true,
+                    CustomizedLensRefundable = false,
+                    EvidenceRequired = true,
+                    MinOrderAmount = 0,
+                    IsActive = true,
+                    EffectiveFrom = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                    EffectiveTo = null,
+                },
+                new()
+                {
+                    PolicyType = PolicyType.Warranty,
+                    PolicyName = "Standard Frame Warranty",
+                    ReturnWindowDays = null,
+                    WarrantyMonths = 6,
+                    RefundAllowed = false,
+                    CustomizedLensRefundable = true,
+                    EvidenceRequired = true,
+                    MinOrderAmount = null,
+                    IsActive = true,
+                    EffectiveFrom = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                    EffectiveTo = null,
+                },
+                new()
+                {
+                    PolicyType = PolicyType.Refund,
+                    PolicyName = "Refund Only Policy",
+                    ReturnWindowDays = null,
+                    WarrantyMonths = null,
+                    RefundAllowed = true,
+                    CustomizedLensRefundable = false,
+                    EvidenceRequired = true,
+                    MinOrderAmount = 500000,
+                    IsActive = true,
+                    EffectiveFrom = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                    EffectiveTo = null,
+                },
+                new()
+                {
+                    PolicyType = PolicyType.Return,
+                    PolicyName = "Draft: Holiday Return Policy 2026",
+                    ReturnWindowDays = 15,
+                    WarrantyMonths = null,
+                    RefundAllowed = false,
+                    CustomizedLensRefundable = false,
+                    EvidenceRequired = true,
+                    MinOrderAmount = null,
+                    IsActive = false,
+                    EffectiveFrom = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                    EffectiveTo = new DateTime(2026, 2, 28, 23, 59, 59, DateTimeKind.Utc),
+                }
+            };
+
+            await context.PolicyConfigurations.AddRangeAsync(policies);
             await context.SaveChangesAsync();
         }
     }

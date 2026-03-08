@@ -30,6 +30,7 @@ public class Promotion
     public DateTime ValidTo { get; set; }
 
     public bool IsActive { get; set; } = true;
+    public bool IsPublic { get; set; } = false; // By default, marketing must actively make it public
 
     // Navigation properties
     public ICollection<PromoUsageLog> UsageLogs { get; set; } = [];
