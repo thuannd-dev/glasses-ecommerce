@@ -66,7 +66,7 @@ export function useCheckoutPage() {
 
   const handleApplyPromo = async (code: string) => {
     if (!code.trim() || totalAmount <= 0) {
-      setSnackbar({ open: true, message: "Giỏ hàng trống.", severity: "warning" });
+      setSnackbar({ open: true, message: "Giỏ hàng trống.", severity: "info" });
       return;
     }
     try {

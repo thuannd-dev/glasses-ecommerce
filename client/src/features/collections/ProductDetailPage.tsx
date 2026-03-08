@@ -7,7 +7,6 @@ import {
     Chip,
     Divider,
     Grid,
-    IconButton,
     Typography,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";

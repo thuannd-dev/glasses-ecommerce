@@ -104,8 +104,7 @@ function CartItemRow({
                         component="span"
                         fontSize={12}
                         fontWeight={700}
-                        sx={{ color: "#B68C5A" }}
-                        sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, mt: 0.5 }}
+                        sx={{ color: "#B68C5A", display: "inline-flex", alignItems: "center", gap: 0.5, mt: 0.5 }}
                     >
                         Prescription
                     </Typography>

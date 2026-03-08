@@ -48,7 +48,7 @@ function getStatusChipStyle(status: string | undefined) {
   if (lower.includes("shipped")) key = "Shipped";
   else if (lower.includes("ready")) key = "ReadyStock";
 
-  const config = PALETTE.status[key];
+  const config = key !== undefined ? PALETTE.status[key] : undefined;
   if (!config) {
     return {
       bgcolor: "#F5F5F5",

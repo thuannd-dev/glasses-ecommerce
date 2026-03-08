@@ -449,7 +449,13 @@ export function OutboundInventoryScreen() {
                   ? option
                   : `${option.id}${option.walkInCustomerName ? ` · ${option.walkInCustomerName}` : ""}`
               }
-              isOptionEqualToValue={(option, value) => option.id === value.id}
+              isOptionEqualToValue={(option, value) =>
+                typeof option === "string" && typeof value === "string"
+                  ? option === value
+                  : typeof option === "object" && option != null && typeof value === "object" && value != null && "id" in option && "id" in value
+                    ? option.id === value.id
+                    : false
+              }
               loading={isOrdersLoading}
               freeSolo
               renderInput={(params) => (
