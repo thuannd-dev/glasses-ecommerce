@@ -45,6 +45,7 @@ import ManagerProductEdit from "../../features/Manager/ProductDetail";
 import {
   InboundRecordsScreen,
   InboundRecordDetailScreen,
+  PromotionsScreen,
 } from "../../features/Manager/screens";
 import { ManagerProductCreateWizardScreen } from "../../features/Manager/screens";
 import AdminDashboard from "../../features/Admin/AdminDashboard";
@@ -134,6 +135,7 @@ export const router = createBrowserRouter([
               { path: "products/:id/edit", element: <ManagerProductEdit /> },
               { path: "inbound", element: <InboundRecordsScreen /> },
               { path: "inbound/:id", element: <InboundRecordDetailScreen /> },
+              { path: "promotions", element: <PromotionsScreen /> },
             ],
           },
         ],

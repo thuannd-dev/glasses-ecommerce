@@ -27,6 +27,7 @@ import SecurityIcon from "@mui/icons-material/Security";
 import DashboardOutlined from "@mui/icons-material/DashboardOutlined";
 import StorefrontOutlined from "@mui/icons-material/StorefrontOutlined";
 import MoveToInboxOutlined from "@mui/icons-material/MoveToInboxOutlined";
+import LocalOfferOutlined from "@mui/icons-material/LocalOfferOutlined";
 import ExpandLess from "@mui/icons-material/ExpandLess";
 import ExpandMore from "@mui/icons-material/ExpandMore";
 import { useAccount } from "../../lib/hooks/useAccount";
@@ -57,6 +58,7 @@ const MANAGER_SUB_LINKS: { path: string; label: string; icon: React.ReactNode }[
   { path: "/manager", label: "Dashboard", icon: <DashboardOutlined /> },
   { path: "/manager/products", label: "Products", icon: <StorefrontOutlined /> },
   { path: "/manager/inbound", label: "Inbound", icon: <MoveToInboxOutlined /> },
+  { path: "/manager/promotions", label: "Promotions", icon: <LocalOfferOutlined /> },
 ];
 
 const ADMIN_SUB_LINKS: { path: string; label: string; icon: React.ReactNode }[] = [
