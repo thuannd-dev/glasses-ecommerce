@@ -12,6 +12,9 @@ import {
   TicketResolutionTypeValues,
 } from "../types/afterSales";
 
+// -------- Re-export types --------
+export type { TicketDetailDto };
+
 // -------- API wrappers --------
 
 export interface StaffAfterSalesQueryParams {

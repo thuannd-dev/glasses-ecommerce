@@ -39,8 +39,10 @@ import {
   CreateShipmentScreen,
   TrackingScreen,
   ReturnRefundInspectionScreen,
+  ReturnRefundDetailScreen,
   OperationsWarrantyScreen,
   OperationsOrderDetailScreen,
+  OperationsWarrantyDetailScreen,
 } from "../../features/Operations/screens";
 import ManagerDashboard from "../../features/Manager/ManagerDashboard";
 import AdminDashboard from "../../features/Admin/AdminDashboard";
@@ -114,9 +116,9 @@ export const router = createBrowserRouter([
               { path: "create-shipment", element: <CreateShipmentScreen /> },
               { path: "tracking", element: <TrackingScreen /> },
               { path: "return-refund", element: <ReturnRefundInspectionScreen /> },
-              { path: "return-refund/:ticketId", element: <TicketDetailScreen /> },
+              { path: "return-refund/:ticketId", element: <ReturnRefundDetailScreen /> },
               { path: "warranty", element: <OperationsWarrantyScreen /> },
-              { path: "warranty/:ticketId", element: <TicketDetailScreen /> },
+              { path: "warranty/:ticketId", element: <OperationsWarrantyDetailScreen /> },
               { path: "orders/:id", element: <OperationsOrderDetailScreen /> },
             ],
           },

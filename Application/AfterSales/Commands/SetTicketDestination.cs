@@ -10,11 +10,12 @@ using Persistence;
 
 namespace Application.AfterSales.Commands;
 
-public sealed class ReceiveReturn
+public sealed class SetTicketDestination
 {
     public sealed class Command : IRequest<Result<TicketDetailDto>>
     {
         public required Guid TicketId { get; set; }
+        public required SetTicketDestinationDto Dto { get; set; }
     }
 
     internal sealed class Handler(
@@ -25,7 +26,6 @@ public sealed class ReceiveReturn
         public async Task<Result<TicketDetailDto>> Handle(Command request, CancellationToken ct)
         {
             AfterSalesTicket? ticket = await context.AfterSalesTickets
-                .Include(t => t.Order)
                 .FirstOrDefaultAsync(t => t.Id == request.TicketId, ct);
 
             if (ticket == null)
@@ -33,37 +33,34 @@ public sealed class ReceiveReturn
 
             if (ticket.TicketStatus != AfterSalesTicketStatus.InProgress)
                 return Result<TicketDetailDto>.Failure(
-                    $"Cannot mark receipt on a ticket with status '{ticket.TicketStatus}'.", 400);
+                    $"Cannot set destination on a ticket with status '{ticket.TicketStatus}'.", 400);
 
-            if (ticket.ResolutionType == null ||
-                ticket.ResolutionType == TicketResolutionType.RefundOnly)
+            if (!ticket.ReceivedAt.HasValue)
                 return Result<TicketDetailDto>.Failure(
-                    "This ticket does not require physical goods return.", 400);
+                    "Ticket must be marked as received before setting destination.", 400);
 
-            if (ticket.ReceivedAt.HasValue)
-                return Result<TicketDetailDto>.Failure(
-                    "Goods have already been marked as received for this ticket.", 400);
-
-            ticket.ReceivedAt = DateTime.UtcNow;
-
-            // Update order status to Delivered and create OrderStatusHistory
-            if (ticket.Order != null && ticket.Order.OrderStatus != OrderStatus.Delivered)
+            // Handle Reject destination - sets ticket to Rejected status
+            if (request.Dto.Destination == "Reject")
             {
-                OrderStatus fromStatus = ticket.Order.OrderStatus;
-                ticket.Order.OrderStatus = OrderStatus.Delivered;
-                ticket.Order.UpdatedAt = DateTime.UtcNow;
+                ticket.TicketStatus = AfterSalesTicketStatus.Rejected;
+                ticket.ResolvedAt = DateTime.UtcNow;
+                ticket.StaffNotes = string.IsNullOrWhiteSpace(request.Dto.Notes)
+                    ? "Rejected at operations"
+                    : request.Dto.Notes;
+            }
+            else if (request.Dto.Destination == "Repair")
+            {
+                // Set resolution to WarrantyRepair if not already set
+                if (ticket.ResolutionType != TicketResolutionType.WarrantyRepair)
+                    ticket.ResolutionType = TicketResolutionType.WarrantyRepair;
 
-                OrderStatusHistory history = new()
-                {
-                    OrderId = ticket.Order.Id,
-                    FromStatus = fromStatus,
-                    ToStatus = OrderStatus.Delivered,
-                    Notes = "Warranty item received by operations",
-                    ChangedBy = userAccessor.GetUserId(),
-                    CreatedAt = DateTime.UtcNow
-                };
-
-                context.OrderStatusHistories.Add(history);
+                if (!string.IsNullOrWhiteSpace(request.Dto.Notes))
+                    ticket.StaffNotes = request.Dto.Notes;
+            }
+            else
+            {
+                return Result<TicketDetailDto>.Failure(
+                    "Invalid destination. Must be 'Repair' or 'Reject'.", 400);
             }
 
             bool isSuccess = await context.SaveChangesAsync(ct) > 0;

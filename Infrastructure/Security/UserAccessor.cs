@@ -36,6 +36,21 @@ public class UserAccessor(IHttpContextAccessor httpContextAccessor, AppDbContext
         return userId;
     }
 
+    public Guid? GetUserIdOrNull()
+    {
+        // Nullable version: returns null if user is not authenticated instead of throwing
+        var userIdValue = httpContextAccessor.HttpContext?.User
+            .FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrWhiteSpace(userIdValue))
+            return null;
+
+        if (!Guid.TryParse(userIdValue, out var userId))
+            return null;
+
+        return userId;
+    }
+
     public async Task<User> GetUserWithPhotosAsync()
     {
         return await dbContext.Users

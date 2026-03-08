@@ -58,6 +58,8 @@ export interface TicketListDto {
   isRequiredEvidence: boolean;
   createdAt: string;
   resolvedAt: string | null;
+  receivedAt: string | null;
+  resolutionType: TicketResolutionType | null;
 }
 
 export interface StaffAfterSalesResponse {
@@ -85,4 +87,6 @@ export interface TicketDetailDto {
   staffNotes: string | null;
   createdAt: string;
   resolvedAt: string | null;
+  receivedAt: string | null;
+  resolutionType: TicketResolutionType | null;
 }

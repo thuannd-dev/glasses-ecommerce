@@ -61,6 +61,34 @@ export function ReturnRefundInspectionScreen() {
   });
 
   const safeTickets = Array.isArray(data?.items) ? data.items : [];
+  
+  // Helper functions to count tickets by status
+  const countPending = () => safeTickets.filter((ticket) => 
+    ticket.ticketStatus === AfterSalesTicketStatusValues.InProgress && !ticket.receivedAt
+  ).length;
+
+  const countApproved = () => safeTickets.filter((ticket) =>
+    ticket.ticketStatus === AfterSalesTicketStatusValues.Resolved
+  ).length;
+
+  const countRejected = () => safeTickets.filter((ticket) =>
+    ticket.ticketStatus === AfterSalesTicketStatusValues.Rejected
+  ).length;
+
+  // Filter tickets based on status parameter
+  const filteredTickets = safeTickets.filter((ticket) => {
+    if (rawStatus === "Pending") {
+      return ticket.ticketStatus === AfterSalesTicketStatusValues.InProgress && !ticket.receivedAt;
+    }
+    if (rawStatus === "Approved") {
+      return ticket.ticketStatus === AfterSalesTicketStatusValues.Resolved;
+    }
+    if (rawStatus === "Rejected") {
+      return ticket.ticketStatus === AfterSalesTicketStatusValues.Rejected;
+    }
+    return false;
+  });
+  
   const meta = data ? { totalPages: Math.ceil(data.totalCount / pageSize) } : null;
 
   const handlePageChange = (_event: React.ChangeEvent<unknown>, value: number) => {
@@ -91,8 +119,19 @@ export function ReturnRefundInspectionScreen() {
           <Typography sx={{ fontSize: 24, fontWeight: 900 }}>
             RETURN/REFUND INSPECTION
           </Typography>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2, minWidth: 200 }}>
-            <SummaryCard label="Total Ticket" value={isLoading ? "—" : data?.totalCount ?? 0} />
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2, minWidth: 600 }}>
+            <SummaryCard 
+              label="Pending" 
+              value={isLoading ? "—" : countPending()} 
+            />
+            <SummaryCard 
+              label="Approved" 
+              value={isLoading ? "—" : countApproved()} 
+            />
+            <SummaryCard 
+              label="Rejected" 
+              value={isLoading ? "—" : countRejected()} 
+            />
           </Box>
         </Box>
         <Typography sx={{ color: "text.secondary", fontSize: 14 }}>
@@ -106,7 +145,7 @@ export function ReturnRefundInspectionScreen() {
         </Box>
       )}
 
-      {!isLoading && safeTickets.length === 0 && (
+      {!isLoading && filteredTickets.length === 0 && (
         <Box sx={{ maxWidth: 720, mx: "auto", mt: 3 }}>
           <Paper
             elevation={0}
@@ -123,7 +162,7 @@ export function ReturnRefundInspectionScreen() {
         </Box>
       )}
 
-      {!isLoading && safeTickets.length > 0 && (
+      {!isLoading && filteredTickets.length > 0 && (
         <Box
           sx={{
             display: "flex",
@@ -147,7 +186,7 @@ export function ReturnRefundInspectionScreen() {
               },
             }}
           >
-            {safeTickets.map((ticket) => (
+            {filteredTickets.map((ticket) => (
               <Paper
                 key={ticket.id}
                 elevation={0}

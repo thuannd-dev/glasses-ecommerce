@@ -5,6 +5,7 @@ using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Domain;
 using MediatR;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Persistence;
 
@@ -20,11 +21,32 @@ public sealed class AddItemToCart
     internal sealed class Handler(
         AppDbContext context,
         IMapper mapper,
-        IUserAccessor userAccessor) : IRequestHandler<Command, Result<CartItemDto>>
+        IUserAccessor userAccessor,
+        IHttpContextAccessor httpContextAccessor) : IRequestHandler<Command, Result<CartItemDto>>
     {
         public async Task<Result<CartItemDto>> Handle(Command request, CancellationToken cancellationToken)
         {
-            Guid userId = userAccessor.GetUserId();
+            // Try to get authenticated user ID, or null if not authenticated
+            Guid? userId = userAccessor.GetUserIdOrNull();
+
+            // If user is not authenticated, get or create an anonymous session ID
+            if (userId == null)
+            {
+                string? sessionId = httpContextAccessor.HttpContext?.Session.GetString("AnonymousCartSessionId");
+                if (string.IsNullOrWhiteSpace(sessionId))
+                {
+                    // Generate a new session ID for anonymous users
+                    sessionId = Guid.NewGuid().ToString();
+                    httpContextAccessor.HttpContext?.Session.SetString("AnonymousCartSessionId", sessionId);
+                }
+
+                // Use a special Guid format for anonymous session ID
+                // Format: Use first 16 bytes of sessionId hash as the Guid
+                byte[] sessionBytes = System.Text.Encoding.UTF8.GetBytes(sessionId);
+                using var hash = System.Security.Cryptography.SHA256.Create();
+                byte[] hashBytes = hash.ComputeHash(sessionBytes);
+                userId = new Guid(hashBytes[..16]);
+            }
 
             // Validate ProductVariant exists, is active, and has stock
             ProductVariant? productVariant = await context.ProductVariants

@@ -109,6 +109,7 @@ public sealed class ApproveTicket
                 else
                 {
                     // CASE B/C/D: physical goods must be received by Ops first
+                    // Set to InProgress (awaiting Operations inspection and approval)
                     ticket.TicketStatus = AfterSalesTicketStatus.InProgress;
                 }
 

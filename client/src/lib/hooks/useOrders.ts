@@ -13,14 +13,17 @@ export function useCreateOrder() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (payload: CreateOrderPayload) => {
-      // Backend expects CheckoutDto at ROOT of body (no wrapper).
-      const body = {
+      // Backend expects CheckoutDto with PascalCase property names
+      const body: Record<string, unknown> = {
+        selectedCartItemIds: payload.selectedCartItemIds,
         addressId: payload.addressId,
-        orderType: payload.orderType,
+        orderType: payload.orderType ?? "ReadyStock",
         paymentMethod: payload.paymentMethod,
         customerNote: payload.customerNote ?? null,
-        selectedCartItemIds: payload.selectedCartItemIds,
       };
+      if (payload.promoCode) {
+        body.promoCode = payload.promoCode;
+      }
       const res = await agent.post<MeOrderDto>("/me/orders", body);
       return res.data;
     },

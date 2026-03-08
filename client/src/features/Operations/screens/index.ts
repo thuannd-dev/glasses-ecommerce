@@ -3,5 +3,7 @@ export { PackScreen } from "./PackScreen";
 export { CreateShipmentScreen } from "./CreateShipmentScreen";
 export { TrackingScreen } from "./TrackingScreen";
 export { ReturnRefundInspectionScreen } from "./ReturnRefundInspectionScreen";
+export { ReturnRefundDetailScreen } from "./ReturnRefundDetailScreen";
 export { OperationsWarrantyScreen } from "./OperationsWarrantyScreen";
+export { OperationsWarrantyDetailScreen } from "./OperationsWarrantyDetailScreen";
 export { OperationsOrderDetailScreen } from "./OperationsOrderDetailScreen";

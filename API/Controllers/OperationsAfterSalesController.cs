@@ -43,12 +43,23 @@ public sealed class OperationsAfterSalesController : BaseApiController
 
     /// <summary>
     /// Confirm that the physical goods (returned/warranty item) have been received.
-    /// Must be called before Inspect. Sets ReceivedAt timestamp.
+    /// Must be called before Inspect. Sets ReceivedAt timestamp and updates order status to Delivered.
     /// </summary>
     [HttpPut("{id}/receive")]
     public async Task<IActionResult> ReceiveReturn(Guid id, CancellationToken ct)
     {
         return HandleResult(await Mediator.Send(new ReceiveReturn.Command { TicketId = id }, ct));
+    }
+
+    /// <summary>
+    /// Set the destination of a received warranty ticket (Repair, Replace, or Reject).
+    /// Only callable after the ticket has been marked as received.
+    /// </summary>
+    [HttpPut("{id}/set-destination")]
+    public async Task<IActionResult> SetTicketDestination(Guid id, SetTicketDestinationDto dto, CancellationToken ct)
+    {
+        return HandleResult(await Mediator.Send(
+            new SetTicketDestination.Command { TicketId = id, Dto = dto }, ct));
     }
 
     /// <summary>

@@ -13,6 +13,7 @@ import { useOperationsTickets } from "../../../lib/hooks/useStaffAfterSalesTicke
 import { SummaryCard } from "../components";
 import {
   AfterSalesTicketStatusValues,
+  TicketResolutionTypeValues,
   type AfterSalesTicketStatus,
 } from "../../../lib/types/afterSales";
 import { formatDate } from "../constants";
@@ -57,6 +58,40 @@ export function OperationsWarrantyScreen() {
   });
 
   const safeTickets = Array.isArray(data?.items) ? data.items : [];
+  
+  // Helper functions to count tickets by status
+  const countPending = () => safeTickets.filter((ticket) => 
+    ticket.ticketStatus === AfterSalesTicketStatusValues.InProgress && !ticket.receivedAt
+  ).length;
+
+  const countRepair = () => safeTickets.filter((ticket) =>
+    ticket.ticketStatus === AfterSalesTicketStatusValues.InProgress &&
+    ticket.receivedAt &&
+    ticket.resolutionType === TicketResolutionTypeValues.WarrantyRepair
+  ).length;
+
+  const countRejected = () => safeTickets.filter((ticket) =>
+    ticket.ticketStatus === AfterSalesTicketStatusValues.Rejected
+  ).length;
+  
+  // Filter tickets based on status parameter
+  const filteredTickets = safeTickets.filter((ticket) => {
+    if (rawStatus === "Pending") {
+      return ticket.ticketStatus === AfterSalesTicketStatusValues.InProgress && !ticket.receivedAt;
+    }
+    if (rawStatus === "Repair") {
+      return (
+        ticket.ticketStatus === AfterSalesTicketStatusValues.InProgress &&
+        ticket.receivedAt &&
+        ticket.resolutionType === TicketResolutionTypeValues.WarrantyRepair
+      );
+    }
+    if (rawStatus === "Rejected") {
+      return ticket.ticketStatus === AfterSalesTicketStatusValues.Rejected;
+    }
+    return false;
+  });
+
   const meta = data ? { totalPages: Math.ceil(data.totalCount / pageSize) } : null;
 
   const handlePageChange = (_event: React.ChangeEvent<unknown>, value: number) => {
@@ -87,8 +122,19 @@ export function OperationsWarrantyScreen() {
           <Typography sx={{ fontSize: 24, fontWeight: 900 }}>
             WARRANTY
           </Typography>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2, minWidth: 200 }}>
-            <SummaryCard label="Total Ticket" value={isLoading ? "—" : data?.totalCount ?? 0} />
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2, minWidth: 600 }}>
+            <SummaryCard 
+              label="Pending" 
+              value={isLoading ? "—" : countPending()} 
+            />
+            <SummaryCard 
+              label="Repair" 
+              value={isLoading ? "—" : countRepair()} 
+            />
+            <SummaryCard 
+              label="Rejected" 
+              value={isLoading ? "—" : countRejected()} 
+            />
           </Box>
         </Box>
         <Typography sx={{ color: "text.secondary", fontSize: 14 }}>
@@ -102,7 +148,7 @@ export function OperationsWarrantyScreen() {
         </Box>
       )}
 
-      {!isLoading && safeTickets.length === 0 && (
+      {!isLoading && filteredTickets.length === 0 && (
         <Box sx={{ maxWidth: 720, mx: "auto", mt: 3 }}>
           <Paper
             elevation={0}
@@ -119,7 +165,7 @@ export function OperationsWarrantyScreen() {
         </Box>
       )}
 
-      {!isLoading && safeTickets.length > 0 && (
+      {!isLoading && filteredTickets.length > 0 && (
         <Box
           sx={{
             display: "flex",
@@ -143,7 +189,7 @@ export function OperationsWarrantyScreen() {
               },
             }}
           >
-            {safeTickets.map((ticket) => (
+            {filteredTickets.map((ticket) => (
               <Paper
                 key={ticket.id}
                 elevation={0}
@@ -175,18 +221,6 @@ export function OperationsWarrantyScreen() {
                     </Typography>
                   </Box>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                    <Chip
-                      label="Await for delivery"
-                      size="small"
-                      sx={{
-                        fontWeight: 700,
-                        fontSize: 11,
-                        bgcolor: "#fbbf2422",
-                        color: "#92400e",
-                        border: "1px solid #fbbf24",
-                        flexShrink: 0,
-                      }}
-                    />
                     <Chip
                       label={STATUS_LABELS[ticket.ticketStatus]}
                       size="small"
