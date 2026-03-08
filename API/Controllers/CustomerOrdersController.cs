@@ -27,7 +27,7 @@ public sealed class CustomerOrdersController : BaseApiController
     /// - OrderStatusHistory (Pending → Pending, "Order placed by customer")
     /// </remarks>
     [HttpPost]
-    public async Task<IActionResult> Checkout(CheckoutDto dto, CancellationToken ct)
+    public async Task<IActionResult> Checkout([FromBody] CheckoutDto dto, CancellationToken ct)
     {
         return HandleResult(await Mediator.Send(new Checkout.Command { Dto = dto }, ct));
     }
