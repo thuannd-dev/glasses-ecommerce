@@ -20,10 +20,10 @@ public sealed class GetCategories
         public async Task<Result<List<ProductCategoryDto>>> Handle(Query request, CancellationToken cancellationToken)
         {
             List<ProductCategoryDto> categories = await context.ProductCategories
+                .AsNoTracking()
                 .Where(c => c.IsActive)
                 .OrderBy(c => c.Name)
                 .ProjectTo<ProductCategoryDto>(mapper.ConfigurationProvider)
-                .AsNoTracking()
                 .ToListAsync(cancellationToken);
 
             return Result<List<ProductCategoryDto>>.Success(categories);

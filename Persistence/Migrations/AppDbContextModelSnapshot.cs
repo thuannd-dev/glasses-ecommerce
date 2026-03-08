@@ -192,6 +192,9 @@ namespace Persistence.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<DateTime?>("ReceivedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<decimal?>("RefundAmount")
                         .HasColumnType("decimal(10,2)");
 
@@ -199,8 +202,14 @@ namespace Persistence.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<int?>("ResolutionType")
+                        .HasColumnType("int");
+
                     b.Property<DateTime?>("ResolvedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("StaffNotes")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("TicketStatus")
                         .HasColumnType("int");
@@ -239,6 +248,8 @@ namespace Persistence.Migrations
 
                     b.ToTable("AfterSalesTickets", t =>
                         {
+                            t.HasCheckConstraint("CK_AfterSalesTicket_ResolutionType", "[ResolutionType] IS NULL OR [ResolutionType] IN (1, 2, 3, 4)");
+
                             t.HasCheckConstraint("CK_AfterSalesTicket_TicketStatus", "[TicketStatus] IN (1, 2, 3, 4, 5)");
 
                             t.HasCheckConstraint("CK_AfterSalesTicket_TicketType", "[TicketType] IN (0, 1, 2, 3)");
@@ -591,7 +602,7 @@ namespace Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("AddressId")
+                    b.Property<Guid?>("AddressId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime?>("CancellationDeadline")
@@ -633,6 +644,14 @@ namespace Persistence.Migrations
 
                     b.Property<Guid?>("UserId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("WalkInCustomerName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("WalkInCustomerPhone")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.HasKey("Id");
 
@@ -719,6 +738,9 @@ namespace Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("ChangedBy")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -740,6 +762,9 @@ namespace Persistence.Migrations
                         .HasColumnType("nvarchar(30)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ChangedBy")
+                        .HasDatabaseName("IX_OrderStatusHistory_ChangedBy");
 
                     b.HasIndex("CreatedAt")
                         .HasDatabaseName("IX_OrderStatusHistory_CreatedAt");
@@ -805,7 +830,7 @@ namespace Persistence.Migrations
 
                             t.HasCheckConstraint("CK_Payment_Status_PaymentAt", "\r\n                    (\r\n                        PaymentStatus = 1 AND PaymentAt IS NULL\r\n                    )\r\n                    OR\r\n                    (\r\n                        PaymentStatus IN (2,3,4) AND PaymentAt IS NOT NULL\r\n                    )\r\n                    ");
 
-                            t.HasCheckConstraint("CK_Payment_Transaction_By_Method", "\r\n                    (\r\n                        PaymentMethod = 1\r\n                    )\r\n                    OR\r\n                    (\r\n                        PaymentMethod IN (2,3) AND TransactionId IS NOT NULL\r\n                    )\r\n                    ");
+                            t.HasCheckConstraint("CK_Payment_Transaction_By_Method", "\r\n                    (\r\n                        PaymentMethod = 1\r\n                    )\r\n                    OR\r\n                    (\r\n                        PaymentMethod IN (2,3) AND TransactionId IS NOT NULL\r\n                    )\r\n                    OR\r\n                    (\r\n                        PaymentMethod = 4\r\n                    )\r\n                    ");
 
                             t.HasCheckConstraint("CK_Payment_Type", "[PaymentType] > 0");
                         });
@@ -1219,6 +1244,9 @@ namespace Persistence.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("IsPreOrder")
+                        .HasColumnType("bit");
+
                     b.Property<decimal?>("LensWidth")
                         .HasColumnType("decimal(5,2)");
 
@@ -1296,6 +1324,9 @@ namespace Persistence.Migrations
                     b.Property<DateTime>("UsedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<Guid?>("UsedBy")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
 
                     b.HasIndex("OrderId")
@@ -1307,9 +1338,15 @@ namespace Persistence.Migrations
                     b.HasIndex("UsedAt")
                         .HasDatabaseName("IX_PromoUsageLog_UsedAt");
 
+                    b.HasIndex("UsedBy")
+                        .HasDatabaseName("IX_PromoUsageLog_UsedBy");
+
                     b.HasIndex("OrderId", "PromotionId")
                         .IsUnique()
                         .HasDatabaseName("UX_PromoUsageLog_Order_Promotion");
+
+                    b.HasIndex("PromotionId", "UsedBy")
+                        .HasDatabaseName("IX_PromoUsageLog_PromotionId_UsedBy");
 
                     b.ToTable("PromoUsageLogs", t =>
                         {
@@ -1331,6 +1368,9 @@ namespace Persistence.Migrations
                         .HasColumnType("decimal(10,2)");
 
                     b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsPublic")
                         .HasColumnType("bit");
 
                     b.Property<decimal?>("MaxDiscountValue")
@@ -1378,6 +1418,9 @@ namespace Persistence.Migrations
 
                     b.HasIndex("PromotionType", "ValidFrom", "ValidTo")
                         .HasDatabaseName("IX_Promotion_Type_ValidPeriod");
+
+                    b.HasIndex("IsActive", "IsPublic", "ValidFrom", "ValidTo")
+                        .HasDatabaseName("IX_Promotion_Active_Public_ValidPeriod");
 
                     b.ToTable("Promotions", t =>
                         {
@@ -1529,6 +1572,9 @@ namespace Persistence.Migrations
                         .HasComputedColumnSql("[QuantityOnHand] - [QuantityReserved]", true);
 
                     b.Property<int>("QuantityOnHand")
+                        .HasColumnType("int");
+
+                    b.Property<int>("QuantityPreOrdered")
                         .HasColumnType("int");
 
                     b.Property<int>("QuantityReserved")
@@ -1998,9 +2044,7 @@ namespace Persistence.Migrations
                 {
                     b.HasOne("Domain.Address", "Address")
                         .WithMany("Orders")
-                        .HasForeignKey("AddressId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("AddressId");
 
                     b.HasOne("Domain.User", "SalesStaff")
                         .WithMany()
@@ -2040,11 +2084,18 @@ namespace Persistence.Migrations
 
             modelBuilder.Entity("Domain.OrderStatusHistory", b =>
                 {
+                    b.HasOne("Domain.User", "ChangedByUser")
+                        .WithMany()
+                        .HasForeignKey("ChangedBy")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Domain.Order", "Order")
                         .WithMany("StatusHistories")
                         .HasForeignKey("OrderId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("ChangedByUser");
 
                     b.Navigation("Order");
                 });
@@ -2191,9 +2242,16 @@ namespace Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Domain.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UsedBy")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("Order");
 
                     b.Navigation("Promotion");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Domain.Refund", b =>

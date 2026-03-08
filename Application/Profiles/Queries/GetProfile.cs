@@ -9,18 +9,19 @@ using Persistence;
 
 namespace Application.Profiles.Queries;
 
-public class GetProfile
+public sealed class GetProfile
 {
-    public class Query : IRequest<Result<UserProfile>>
+    public sealed class Query : IRequest<Result<UserProfile>>
     {
         public required Guid UserId { get; set; }
     }
 
-    public class Handler(AppDbContext context, IMapper mapper) : IRequestHandler<Query, Result<UserProfile>>
+    internal sealed class Handler(AppDbContext context, IMapper mapper) : IRequestHandler<Query, Result<UserProfile>>
     {
         public async Task<Result<UserProfile>> Handle(Query request, CancellationToken cancellationToken)
         {
-            var profile = await context.Users
+            UserProfile? profile = await context.Users
+                .AsNoTracking()
                 .Where(x => x.Id == request.UserId)
                 .ProjectTo<UserProfile>(mapper.ConfigurationProvider)
                 .SingleOrDefaultAsync(cancellationToken);

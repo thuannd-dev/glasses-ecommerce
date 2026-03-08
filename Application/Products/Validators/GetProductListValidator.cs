@@ -14,8 +14,8 @@ public sealed class GetProductListValidator : AbstractValidator<GetProductList.Q
         RuleFor(x => x.PageSize)
             .GreaterThan(0)
             .WithMessage("Page size must be greater than 0")
-            .LessThanOrEqualTo(50)
-            .WithMessage("Page size must not exceed 50");
+            .LessThanOrEqualTo(100)
+            .WithMessage("Page size must not exceed 100");
 
         RuleFor(x => x.MinPrice)
             .GreaterThanOrEqualTo(0)

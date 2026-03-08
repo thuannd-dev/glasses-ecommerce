@@ -7,10 +7,8 @@ export default function AdminDashboard() {
   return (
     <Box
       sx={{
-        minHeight: "100vh",
-        px: { xs: 2, md: 6, lg: 10 },
+        px: { xs: 2, md: 4, lg: 6 },
         py: 6,
-        bgcolor: "#fafafa",
         color: "rgba(0,0,0,0.87)",
       }}
     >

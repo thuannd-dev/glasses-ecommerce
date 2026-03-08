@@ -26,14 +26,32 @@ public class AccountController(SignInManager<User> signInManager) : BaseApiContr
 
         var result = await signInManager.UserManager.CreateAsync(user, registerDto.Password);
 
-        if(result.Succeeded) return Ok();
-
-        foreach (var error in result.Errors)
+        if (!result.Succeeded)
         {
-            ModelState.AddModelError(error.Code, error.Description);
+            foreach (var error in result.Errors)
+            {
+                ModelState.AddModelError(error.Code, error.Description);
+            }
+            return ValidationProblem();
         }
 
-        return ValidationProblem();
+        // Assign default "Customer" role to new user
+        var roleResult = await signInManager.UserManager.AddToRoleAsync(user, "Customer");
+
+        if (!roleResult.Succeeded)
+        {
+            // Roll back: remove the user that was just created
+            // to prevent orphaned records that block re-registration
+            await signInManager.UserManager.DeleteAsync(user);
+
+            foreach (var error in roleResult.Errors)
+            {
+                ModelState.AddModelError(error.Code, error.Description);
+            }
+            return ValidationProblem();
+        }
+
+        return Ok();
     }
 
     //We use this endpoint to test if the user is authenticated or not and get user info
@@ -51,16 +69,16 @@ public class AccountController(SignInManager<User> signInManager) : BaseApiContr
     [HttpGet("user-info")]
     public async Task<ActionResult> GetUserInfo()
     {
-        if(User.Identity?.IsAuthenticated == false) return NoContent();
+        if (User.Identity?.IsAuthenticated == false) return NoContent();
         //passing the authenticated middleware, user has been authenticated - log in
-        
+
         var user = await signInManager.UserManager.GetUserAsync(User);
 
-        if(user == null) return Unauthorized();
+        if (user == null) return Unauthorized();
         //Passing the authorization middleware
         //user null when user have been deleted, security stamp mismatch, cookie no longer valid, user have been banned, ...
         //So we return Unauthorized instead of returning user info
-        
+
         // Get roles from claims (no additional DB query needed)
         // Roles are automatically included in claims after authentication
         var roles = User.Claims
@@ -70,7 +88,7 @@ public class AccountController(SignInManager<User> signInManager) : BaseApiContr
 
         return Ok(new
         {
-            user.DisplayName,    
+            user.DisplayName,
             user.Email,
             user.Id,
             user.ImageUrl,

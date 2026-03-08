@@ -32,7 +32,7 @@ public class Order
 {
     public Guid Id { get; set; } = Guid.CreateVersion7(TimeProvider.System.GetUtcNow());
 
-    public required Guid AddressId { get; set; }
+    public Guid? AddressId { get; set; }
 
     public Guid? UserId { get; set; } // NULL for offline orders
     public Guid? CreatedBySalesStaff { get; set; }
@@ -49,6 +49,9 @@ public class Order
 
     public string? CustomerNote { get; set; }
 
+    public string? WalkInCustomerName { get; set; }
+    public string? WalkInCustomerPhone { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
 
@@ -59,7 +62,7 @@ public class Order
     public DateTime? CancellationDeadline { get; set; }
 
     // Navigation properties
-    public Address Address { get; set; } = null!;
+    public Address? Address { get; set; }
 
     public User? User { get; set; }
 

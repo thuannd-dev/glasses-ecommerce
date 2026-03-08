@@ -14,6 +14,12 @@ public class Stock
 
     public int QuantityAvailable { get; private set; }
 
+    /// <summary>
+    /// Tổng số lượng đã được khách đặt trước (PreOrder) nhưng chưa có hàng trong kho.
+    /// Dùng để tracking demand — khi hàng về qua Inbound sẽ fulfill dựa vào field này.
+    /// </summary>
+    public int QuantityPreOrdered { get; set; } = 0;
+
     public string? Notes { get; set; }
 
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
