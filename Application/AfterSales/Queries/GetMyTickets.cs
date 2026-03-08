@@ -23,7 +23,7 @@ public sealed class GetMyTickets
         IMapper mapper,
         IUserAccessor userAccessor) : IRequestHandler<Query, Result<PagedResult<TicketListDto>>>
     {
-        public async Task<Result<PagedResult<TicketListDto>>> Handle(Query request, CancellationToken ct)
+        public async Task<Result<PagedResult<TicketListDto>>> Handle(Query request, CancellationToken cancellationToken)
         {
             if (request.PageNumber < 1 || request.PageSize < 1 || request.PageSize > 100)
                 return Result<PagedResult<TicketListDto>>.Failure("Invalid pagination parameters.", 400);
@@ -32,16 +32,20 @@ public sealed class GetMyTickets
 
             IQueryable<AfterSalesTicket> query = context.AfterSalesTickets
                 .AsNoTracking()
+                .Include(t => t.OrderItem)
+                    .ThenInclude(oi => oi!.ProductVariant)
+                        .ThenInclude(pv => pv!.Product)
+                            .ThenInclude(p => p.Images)
                 .Where(t => t.CustomerId == userId);
 
-            int totalCount = await query.CountAsync(ct);
+            int totalCount = await query.CountAsync(cancellationToken);
 
             List<TicketListDto> items = await query
                 .OrderByDescending(t => t.CreatedAt)
                 .Skip((request.PageNumber - 1) * request.PageSize)
                 .Take(request.PageSize)
                 .ProjectTo<TicketListDto>(mapper.ConfigurationProvider)
-                .ToListAsync(ct);
+                .ToListAsync(cancellationToken);
 
             PagedResult<TicketListDto> result = new()
             {

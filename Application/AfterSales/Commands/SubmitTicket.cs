@@ -39,14 +39,17 @@ public sealed class SubmitTicket
                 return Result<TicketDetailDto>.Failure(
                     "Order not found or is not eligible for after-sales request.", 404);
 
-            // 2. Validate OrderItemId belongs to the order
-            if (request.Dto.OrderItemId.HasValue)
-            {
-                bool itemExists = order.OrderItems.Any(i => i.Id == request.Dto.OrderItemId.Value);
-                if (!itemExists)
-                    return Result<TicketDetailDto>.Failure(
-                        "The specified order item does not belong to this order.", 400);
-            }
+            // 2. Validate OrderItemIds belong to the order
+            List<Guid> itemIdsToProcess = request.Dto.OrderItemIds ?? [];
+            if (itemIdsToProcess.Count == 0)
+                return Result<TicketDetailDto>.Failure(
+                    "Please select at least one item for the ticket.", 400);
+
+            List<Guid> validItemIds = order.OrderItems.Select(i => i.Id).ToList();
+            List<Guid> invalidIds = itemIdsToProcess.Where(id => !validItemIds.Contains(id)).ToList();
+            if (invalidIds.Count > 0)
+                return Result<TicketDetailDto>.Failure(
+                    "One or more specified order items do not belong to this order.", 400);
 
             // 3. Load active policy — map TicketType to PolicyType explicitly to avoid enum divergence issues
             PolicyType policyType = request.Dto.TicketType switch
@@ -112,69 +115,85 @@ public sealed class SubmitTicket
                         "Customized prescription lenses are non-refundable under the current policy.";
             }
 
-            // 6. Duplicate open ticket check (same order + same item + same type, not closed/rejected/resolved)
-            bool duplicateExists = await context.AfterSalesTickets
-                .AsNoTracking()
-                .AnyAsync(t =>
-                    t.OrderId == request.Dto.OrderId &&
-                    (request.Dto.OrderItemId == null ? t.OrderItemId == null : t.OrderItemId == request.Dto.OrderItemId) &&
-                    t.TicketType == request.Dto.TicketType &&
-                    t.TicketStatus != AfterSalesTicketStatus.Rejected &&
-                    t.TicketStatus != AfterSalesTicketStatus.Resolved &&
-                    t.TicketStatus != AfterSalesTicketStatus.Closed, ct);
-
-            if (duplicateExists)
-                return Result<TicketDetailDto>.Failure(
-                    "An open ticket of this type already exists for this order item.", 409);
-
-            // 7. Halt and Return 400 if Policy Violation occurs
+            // Halt and Return 400 if Policy Violation occurs
             if (policyViolation != null)
             {
                 return Result<TicketDetailDto>.Failure(policyViolation, 400);
             }
 
-            // 8. Build ticket entity
-            AfterSalesTicket ticket = new()
-            {
-                OrderId = request.Dto.OrderId,
-                OrderItemId = request.Dto.OrderItemId,
-                CustomerId = userId,
-                TicketType = request.Dto.TicketType,
-                Reason = request.Dto.Reason,
-                RequestedAction = string.IsNullOrWhiteSpace(request.Dto.RequestedAction)
-                    ? null
-                    : request.Dto.RequestedAction,
-                RefundAmount = request.Dto.RefundAmount,
-                IsRequiredEvidence = policy.EvidenceRequired,
-                PolicyViolation = null,
-                TicketStatus = AfterSalesTicketStatus.Pending
-            };
+            // 6. Determine which items to create tickets for
+            // Items are always required now, so create one ticket per selected item
+            List<Guid> itemsToTicket = itemIdsToProcess;
 
-            // 8. Attach evidence files
-            List<TicketAttachmentInputDto> attachments = request.Dto.Attachments ?? [];
-            foreach (TicketAttachmentInputDto attachment in attachments)
+            // 7. Check for duplicates and create tickets
+            AfterSalesTicket? firstTicket = null;
+            foreach (Guid itemId in itemsToTicket)
             {
-                ticket.Attachments.Add(new TicketAttachment
+                // Duplicate open ticket check (same order + same item + same type, not closed/rejected/resolved/cancelled)
+                bool duplicateExists = await context.AfterSalesTickets
+                    .AsNoTracking()
+                    .AnyAsync(t =>
+                        t.OrderId == request.Dto.OrderId &&
+                        t.OrderItemId == itemId &&
+                        t.TicketType == request.Dto.TicketType &&
+                        t.TicketStatus != AfterSalesTicketStatus.Rejected &&
+                        t.TicketStatus != AfterSalesTicketStatus.Resolved &&
+                        t.TicketStatus != AfterSalesTicketStatus.Closed &&
+                        t.TicketStatus != AfterSalesTicketStatus.Cancelled, ct);
+
+                if (duplicateExists)
+                    return Result<TicketDetailDto>.Failure(
+                        $"An open ticket of this type already exists for this order item.", 409);
+
+                // Build ticket entity
+                AfterSalesTicket ticket = new()
                 {
-                    TicketId = ticket.Id,
-                    FileName = attachment.FileName,
-                    FileUrl = attachment.FileUrl,
-                    FileExtension = string.IsNullOrWhiteSpace(attachment.FileExtension)
+                    OrderId = request.Dto.OrderId,
+                    OrderItemId = itemId,
+                    CustomerId = userId,
+                    TicketType = request.Dto.TicketType,
+                    Reason = request.Dto.Reason,
+                    RequestedAction = string.IsNullOrWhiteSpace(request.Dto.RequestedAction)
                         ? null
-                        : attachment.FileExtension
-                });
+                        : request.Dto.RequestedAction,
+                    RefundAmount = request.Dto.RefundAmount,
+                    IsRequiredEvidence = policy.EvidenceRequired,
+                    PolicyViolation = null,
+                    TicketStatus = AfterSalesTicketStatus.Pending
+                };
+
+                // Attach evidence files (same attachments for each ticket)
+                List<TicketAttachmentInputDto> attachments = request.Dto.Attachments ?? [];
+                foreach (TicketAttachmentInputDto attachment in attachments)
+                {
+                    ticket.Attachments.Add(new TicketAttachment
+                    {
+                        TicketId = ticket.Id,
+                        FileName = attachment.FileName,
+                        FileUrl = attachment.FileUrl,
+                        FileExtension = string.IsNullOrWhiteSpace(attachment.FileExtension)
+                            ? null
+                            : attachment.FileExtension
+                    });
+                }
+
+                context.AfterSalesTickets.Add(ticket);
+                firstTicket ??= ticket; // Keep track of first ticket for response
             }
 
-            context.AfterSalesTickets.Add(ticket);
             bool isSuccess = await context.SaveChangesAsync(ct) > 0;
 
-            if (!isSuccess)
+            if (!isSuccess || firstTicket == null)
                 return Result<TicketDetailDto>.Failure("Failed to submit after-sales ticket.", 500);
 
             // 9. Return full detail via projection
             TicketDetailDto? dto = await context.AfterSalesTickets
                 .AsNoTracking()
-                .Where(t => t.Id == ticket.Id)
+                .Include(t => t.OrderItem)
+                .ThenInclude(oi => oi!.ProductVariant)
+                .ThenInclude(pv => pv!.Product)
+                .Include(t => t.Attachments.Where(a => a.DeletedAt == null))
+                .Where(t => t.Id == firstTicket.Id)
                 .ProjectTo<TicketDetailDto>(mapper.ConfigurationProvider)
                 .FirstOrDefaultAsync(ct);
 

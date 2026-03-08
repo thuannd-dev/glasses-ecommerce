@@ -10,7 +10,7 @@ const QUERY_KEY_MY_TICKETS = ["me", "after-sales"];
 
 export interface SubmitTicketPayload {
   orderId: string;
-  orderItemId?: string | null;
+  orderItemIds?: string[];
   ticketType: AfterSalesTicketType;
   reason: string;
   requestedAction?: string | null;
@@ -27,10 +27,17 @@ export function useSubmitTicket() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (payload: SubmitTicketPayload) => {
+      // Map numeric enum to string representation for backend JsonStringEnumConverter
+      const ticketTypeMap: Record<number, string> = {
+        1: "Return",
+        2: "Warranty",
+        3: "Refund",
+      };
+      
       const body = {
         orderId: payload.orderId,
-        orderItemId: payload.orderItemId || null,
-        ticketType: payload.ticketType,
+        orderItemIds: payload.orderItemIds || [],
+        ticketType: ticketTypeMap[payload.ticketType] || "Unknown",
         reason: payload.reason,
         requestedAction: payload.requestedAction || null,
         refundAmount: payload.refundAmount || null,
@@ -54,6 +61,20 @@ export function useMyTickets(pageNumber = 1, pageSize = 10) {
         params: { pageNumber, pageSize },
       });
       return res.data;
+    },
+  });
+}
+
+/** DELETE /api/me/after-sales/{id} — cancel a pending ticket */
+export function useCancelTicket() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (ticketId: string) => {
+      const res = await agent.delete(`/me/after-sales/${ticketId}`);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY_MY_TICKETS });
     },
   });
 }

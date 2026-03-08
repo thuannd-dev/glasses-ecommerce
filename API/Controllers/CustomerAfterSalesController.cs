@@ -42,4 +42,14 @@ public sealed class CustomerAfterSalesController : BaseApiController
     {
         return HandleResult(await Mediator.Send(new GetMyTicketDetail.Query { Id = id }, ct));
     }
+
+    /// <summary>
+    /// Cancel a pending ticket submitted by the current customer.
+    /// Only pending tickets can be cancelled.
+    /// </summary>
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> CancelTicket(Guid id, CancellationToken ct)
+    {
+        return HandleResult(await Mediator.Send(new CancelTicket.Command { TicketId = id }, ct));
+    }
 }

@@ -16,7 +16,8 @@ public enum AfterSalesTicketStatus
     InProgress = 2,
     Resolved = 3,
     Rejected = 4,
-    Closed = 5
+    Closed = 5,
+    Cancelled = 6
 }
 
 public enum TicketResolutionType

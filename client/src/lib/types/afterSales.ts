@@ -1,6 +1,6 @@
 // Type matching Domain/.../AfterSalesTicket.cs
 export type AfterSalesTicketType = 0 | 1 | 2 | 3;
-export type AfterSalesTicketStatus = 1 | 2 | 3 | 4 | 5;
+export type AfterSalesTicketStatus = 1 | 2 | 3 | 4 | 5 | 6;
 export type TicketResolutionType = 1 | 2 | 3 | 4;
 
 export const AfterSalesTicketTypeValues = {
@@ -16,6 +16,7 @@ export const AfterSalesTicketStatusValues = {
   Resolved: 3 as const,
   Rejected: 4 as const,
   Closed: 5 as const,
+  Cancelled: 6 as const,
 } as const;
 
 export const TicketResolutionTypeValues = {

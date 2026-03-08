@@ -41,6 +41,7 @@ public sealed class InspectReturn
                 AfterSalesTicket? ticket = await context.AfterSalesTickets
                     .Include(t => t.Order)
                     .ThenInclude(o => o.OrderItems)
+                    .Include(t => t.Customer)
                     .FirstOrDefaultAsync(t => t.Id == request.TicketId, ct);
 
                 if (ticket == null)
@@ -76,6 +77,10 @@ public sealed class InspectReturn
 
                     TicketDetailDto? rejectedDto = await context.AfterSalesTickets
                         .AsNoTracking()
+                        .Include(t => t.OrderItem)
+                        .ThenInclude(oi => oi!.ProductVariant)
+                        .ThenInclude(pv => pv!.Product)
+                        .Include(t => t.Attachments.Where(a => a.DeletedAt == null))
                         .Where(t => t.Id == ticket.Id)
                         .ProjectTo<TicketDetailDto>(mapper.ConfigurationProvider)
                         .FirstOrDefaultAsync(ct);
@@ -221,6 +226,10 @@ public sealed class InspectReturn
 
                 TicketDetailDto? dto = await context.AfterSalesTickets
                     .AsNoTracking()
+                    .Include(t => t.OrderItem)
+                    .ThenInclude(oi => oi!.ProductVariant)
+                    .ThenInclude(pv => pv!.Product)
+                    .Include(t => t.Attachments.Where(a => a.DeletedAt == null))
                     .Where(t => t.Id == ticket.Id)
                     .ProjectTo<TicketDetailDto>(mapper.ConfigurationProvider)
                     .FirstOrDefaultAsync(ct);

@@ -12,6 +12,7 @@ import {
   RadioGroup,
   FormControlLabel,
   Radio,
+  Checkbox,
   Typography,
   Paper,
   CircularProgress,
@@ -59,7 +60,7 @@ export function SubmitTicketDialog({
   const [ticketType, setTicketType] = useState<AfterSalesTicketType | "">(
     AfterSalesTicketTypeValues.Warranty
   );
-  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
   const [reason, setReason] = useState("");
   const [requestedAction, setRequestedAction] = useState("");
   const [refundAmount, setRefundAmount] = useState<number | string>("");
@@ -138,6 +139,10 @@ export function SubmitTicketDialog({
       setFormError("Please select a ticket type");
       return;
     }
+    if (selectedItemIds.length === 0) {
+      setFormError("Please select at least one item");
+      return;
+    }
     if (!reason.trim()) {
       setFormError("Please enter a reason");
       return;
@@ -148,7 +153,7 @@ export function SubmitTicketDialog({
     try {
       await submitTicket.mutateAsync({
         orderId: order.id,
-        orderItemId: selectedItemId,
+        orderItemIds: selectedItemIds,
         ticketType: ticketType as AfterSalesTicketType,
         reason: reason.trim(),
         requestedAction: requestedAction.trim() || null,
@@ -174,7 +179,7 @@ export function SubmitTicketDialog({
   const handleClose = () => {
     // Reset form
     setTicketType(AfterSalesTicketTypeValues.Warranty);
-    setSelectedItemId(null);
+    setSelectedItemIds([]);
     setReason("");
     setRequestedAction("");
     setRefundAmount("");
@@ -257,44 +262,50 @@ export function SubmitTicketDialog({
             </RadioGroup>
           </FormControl>
 
-          {/* Item Selection (Optional) */}
-          {itemOptions.length > 1 && (
-            <FormControl fullWidth>
-              <FormLabel sx={{ mb: 1, fontWeight: 600 }}>
-                Item (optional — leave blank for entire order)
-              </FormLabel>
-              <RadioGroup
-                value={selectedItemId || ""}
-                onChange={(e) => {
-                  setSelectedItemId(e.target.value || null);
-                }}
-              >
+          {/* Item Selection */}
+          <FormControl fullWidth>
+            <FormLabel sx={{ mb: 1, fontWeight: 600 }}>
+              Items to include *
+            </FormLabel>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+              {itemOptions.map((item: MeOrderItemDto) => (
                 <FormControlLabel
-                  value=""
-                  control={<Radio />}
-                  label="Entire order"
+                  key={item.id}
+                  control={
+                    <Checkbox
+                      checked={selectedItemIds.includes(item.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedItemIds((prev) => [...prev, item.id]);
+                        } else {
+                          setSelectedItemIds((prev) =>
+                            prev.filter((id) => id !== item.id)
+                          );
+                        }
+                      }}
+                    />
+                  }
+                  label={
+                    <Typography fontSize={14}>
+                      {item.productName}
+                      <Chip
+                        label={`Qty: ${item.quantity}`}
+                        size="small"
+                        variant="outlined"
+                        sx={{ ml: 1 }}
+                      />
+                    </Typography>
+                  }
+                  sx={{ justifyContent: "flex-start" }}
                 />
-                {itemOptions.map((item: MeOrderItemDto) => (
-                  <FormControlLabel
-                    key={item.id}
-                    value={item.id}
-                    control={<Radio />}
-                    label={
-                      <Typography fontSize={14}>
-                        {item.productName}
-                        <Chip
-                          label={`Qty: ${item.quantity}`}
-                          size="small"
-                          variant="outlined"
-                          sx={{ ml: 1 }}
-                        />
-                      </Typography>
-                    }
-                  />
-                ))}
-              </RadioGroup>
-            </FormControl>
-          )}
+              ))}
+            </Box>
+            <FormHelperText>
+              {selectedItemIds.length > 0
+                ? `${selectedItemIds.length} item(s) selected`
+                : "Please select at least one item"}
+            </FormHelperText>
+          </FormControl>
 
           {/* Reason (Required) */}
           <TextField

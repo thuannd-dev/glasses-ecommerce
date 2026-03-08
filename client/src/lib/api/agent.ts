@@ -58,12 +58,40 @@ agent.interceptors.response.use(
       case 404:
         // Không redirect toàn cục — để từng trang/component xử lý (vd: OrderCard "Could not load", OrderDetailPage "Order not found")
         break;
+      case 409:
+        // Conflict errors (duplicate tickets, etc.)
+        if (typeof data === "string") {
+          throw new Error(data);
+        } else if (data.error) {
+          throw new Error(data.error);
+        } else if (data.message) {
+          throw new Error(data.message);
+        }
+        break;
       case 500:
         router.navigate("/server-error", { state: { error: data } });
         //state exist in memory of navigation so it just have value in the same session SPA
         //=> When user refresh the page or access directly, React Router not passing state and set location.state = null
         break;
+      case 503:
+        // Service unavailable (e.g., policy service down)
+        if (typeof data === "string") {
+          throw new Error(data);
+        } else if (data?.error) {
+          throw new Error(data.error);
+        } else {
+          throw new Error("Service temporarily unavailable. Please try again later.");
+        }
+        break;
       default:
+        // For any other error status, try to extract error message
+        if (typeof data === "string") {
+          throw new Error(data);
+        } else if (data?.error) {
+          throw new Error(data.error);
+        } else if (data?.message) {
+          throw new Error(data.message);
+        }
         break;
     }
 

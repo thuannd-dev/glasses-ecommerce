@@ -16,6 +16,10 @@ public sealed class SubmitTicketValidator : AbstractValidator<SubmitTicket.Comma
             RuleFor(x => x.Dto.OrderId)
                 .NotEmpty().WithMessage("Order ID is required.");
 
+            RuleFor(x => x.Dto.OrderItemIds)
+                .NotNull().WithMessage("Items list is required.")
+                .NotEmpty().WithMessage("Please select at least one item.");
+
             RuleFor(x => x.Dto.TicketType)
                 .IsInEnum()
                 .Must(t => t != AfterSalesTicketType.Unknown)

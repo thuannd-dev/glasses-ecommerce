@@ -52,6 +52,10 @@ public sealed class RequestEvidence
 
             TicketDetailDto? dto = await context.AfterSalesTickets
                 .AsNoTracking()
+                .Include(t => t.OrderItem)
+                .ThenInclude(oi => oi!.ProductVariant)
+                .ThenInclude(pv => pv!.Product)
+                .Include(t => t.Attachments.Where(a => a.DeletedAt == null))
                 .Where(t => t.Id == ticket.Id)
                 .ProjectTo<TicketDetailDto>(mapper.ConfigurationProvider)
                 .FirstOrDefaultAsync(ct);

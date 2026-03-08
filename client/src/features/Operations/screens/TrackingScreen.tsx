@@ -9,13 +9,15 @@ import {
   Collapse,
   Divider,
   IconButton,
+  Button,
+  Alert,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import CopyIcon from "@mui/icons-material/ContentCopy";
 import CheckIcon from "@mui/icons-material/Check";
 
-import { useOperationsOrders, useOperationsOrderDetail } from "../../../lib/hooks/useOperationsOrders";
+import { useOperationsOrders, useOperationsOrderDetail, useUpdateOrderStatus } from "../../../lib/hooks/useOperationsOrders";
 import { SummaryCard } from "../components";
 import type { StaffOrderDetailDto, ShipmentInfoDto } from "../../../lib/types/staffOrders";
 import type { OperationsOrderDto } from "../../../lib/types/operations";
@@ -197,7 +199,9 @@ function ShippedOrderRow({
 }) {
   const [expanded, setExpanded] = useState(false);
   const [copiedTrackingCode, setCopiedTrackingCode] = useState(false);
+  const [updateError, setUpdateError] = useState<string | null>(null);
   const { data, isLoading } = useOperationsOrderDetail(summary.id);
+  const { mutate: updateOrderStatus, isPending: isUpdating } = useUpdateOrderStatus();
   const detail = data as StaffOrderDetailDto | undefined;
 
   const { border, bg, color } = getStatusColors(summary.orderStatus);
@@ -206,6 +210,22 @@ function ShippedOrderRow({
     navigator.clipboard.writeText(trackingCode);
     setCopiedTrackingCode(true);
     setTimeout(() => setCopiedTrackingCode(false), 2000);
+  };
+
+  const handleMakeDelivered = () => {
+    setUpdateError(null);
+    updateOrderStatus(
+      {
+        orderId: summary.id,
+        status: "delivered",
+      },
+      {
+        onError: (error: any) => {
+          const errorMessage = error?.response?.data?.message || error?.message || "Failed to update order status";
+          setUpdateError(errorMessage);
+        },
+      }
+    );
   };
 
   return (
@@ -448,13 +468,35 @@ function ShippedOrderRow({
                   return (
                     <>
                       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1.5 }}>
-                        <Typography sx={{ fontWeight: 700, color: "text.primary" }}>Tracking the order</Typography>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                          <Typography sx={{ fontWeight: 700, color: "text.primary" }}>Tracking the order</Typography>
+                          {summary.orderStatus !== "Delivered" && (
+                            <Button
+                              variant="contained"
+                              size="small"
+                              onClick={handleMakeDelivered}
+                              disabled={isUpdating}
+                              sx={{
+                                fontSize: 12,
+                                fontWeight: 600,
+                                py: 0.5,
+                              }}
+                            >
+                              {isUpdating ? "Updating..." : "Make order Delivered"}
+                            </Button>
+                          )}
+                        </Box>
                         {shipment?.estimatedDeliveryAt && (
                           <Typography fontWeight={600} sx={{ fontSize: 13 }}>
                             Est. Arrival: {new Date(shipment.estimatedDeliveryAt).toLocaleDateString()}
                           </Typography>
                         )}
                       </Box>
+                      {updateError && (
+                        <Alert severity="error" sx={{ mb: 1.5 }}>
+                          {updateError}
+                        </Alert>
+                      )}
                       {trackingCode && (
                         <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}>
                           <Box sx={{ flex: 1 }}>

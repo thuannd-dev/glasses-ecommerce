@@ -8,7 +8,7 @@ namespace Application.AfterSales.DTOs;
 public sealed class SubmitTicketDto
 {
     public required Guid OrderId { get; set; }
-    public Guid? OrderItemId { get; set; }
+    public List<Guid> OrderItemIds { get; set; } = []; // Empty list = entire order, otherwise specific items
     public required AfterSalesTicketType TicketType { get; set; }
     public required string Reason { get; set; }
     public string? RequestedAction { get; set; }

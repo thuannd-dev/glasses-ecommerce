@@ -26,6 +26,7 @@ public sealed class ReceiveReturn
         {
             AfterSalesTicket? ticket = await context.AfterSalesTickets
                 .Include(t => t.Order)
+                .Include(t => t.Customer)
                 .FirstOrDefaultAsync(t => t.Id == request.TicketId, ct);
 
             if (ticket == null)
@@ -73,6 +74,10 @@ public sealed class ReceiveReturn
 
             TicketDetailDto? dto = await context.AfterSalesTickets
                 .AsNoTracking()
+                .Include(t => t.OrderItem)
+                .ThenInclude(oi => oi!.ProductVariant)
+                .ThenInclude(pv => pv!.Product)
+                .Include(t => t.Attachments.Where(a => a.DeletedAt == null))
                 .Where(t => t.Id == ticket.Id)
                 .ProjectTo<TicketDetailDto>(mapper.ConfigurationProvider)
                 .FirstOrDefaultAsync(ct);
