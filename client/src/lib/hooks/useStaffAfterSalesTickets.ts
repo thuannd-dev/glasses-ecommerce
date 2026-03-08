@@ -5,6 +5,11 @@ import type {
   TicketDetailDto,
   AfterSalesTicketStatus,
   AfterSalesTicketType,
+  TicketResolutionType,
+} from "../types/afterSales";
+import {
+  AfterSalesTicketTypeValues,
+  TicketResolutionTypeValues,
 } from "../types/afterSales";
 
 // -------- API wrappers --------
@@ -21,6 +26,7 @@ export interface UpdateTicketStatusPayload {
   ticketId: string;
   actionType: "approve" | "reject";
   reason?: string;
+  ticket?: TicketDetailDto; // Pass ticket data to determine resolution type
 }
 
 async function fetchStaffAfterSalesTickets(
@@ -57,12 +63,40 @@ async function updateTicketStatus(
     );
     return res.data;
   } else {
-    // For approve: use a simple RefundOnly approach with 0 refund for physical returns
+    // For approve: determine resolution type based on ticket type
+    if (!payload.ticket) {
+      throw new Error("Ticket data is required for approval");
+    }
+
+    let resolutionType: TicketResolutionType;
+    let refundAmount: number | null = null;
+
+    // Determine resolution type and refund amount based on ticket type
+    if (payload.ticket.ticketType === AfterSalesTicketTypeValues.Refund) {
+      resolutionType = TicketResolutionTypeValues.RefundOnly;
+      // For Refund: use the ticket's refundAmount if set, otherwise use order item total
+      refundAmount =
+        payload.ticket.refundAmount ||
+        (payload.ticket.orderItem?.totalPrice ?? 0);
+    } else if (
+      payload.ticket.ticketType === AfterSalesTicketTypeValues.Return
+    ) {
+      resolutionType = TicketResolutionTypeValues.ReturnAndRefund;
+      // For Return: refundAmount will be calculated by operations team
+    } else if (
+      payload.ticket.ticketType === AfterSalesTicketTypeValues.Warranty
+    ) {
+      // Default to Repair for warranty tickets
+      resolutionType = TicketResolutionTypeValues.WarrantyRepair;
+    } else {
+      throw new Error("Unknown ticket type");
+    }
+
     const res = await agent.put<TicketDetailDto>(
       `/staff/after-sales/${payload.ticketId}/approve`,
       {
-        resolutionType: 0, // RefundOnly - for now, ops will handle physical cases
-        refundAmount: 0,
+        resolutionType,
+        refundAmount: refundAmount || undefined,
         staffNotes: payload.reason ?? null,
       }
     );
@@ -102,5 +136,56 @@ export function useUpdateTicketStatus() {
       // Refresh list cache
       queryClient.invalidateQueries({ queryKey: ["staff", "after-sales", "list"] });
     },
+  });
+}
+
+// -------- Operations API wrappers --------
+
+export interface OperationsTicketsQueryParams {
+  pageNumber?: number;
+  pageSize?: number;
+  resolutionType?: number; // WarrantyRepair (2), WarrantyReplace (3), ReturnAndRefund (1)
+}
+
+async function fetchOperationsTickets(
+  params?: OperationsTicketsQueryParams
+): Promise<StaffAfterSalesResponse> {
+  const res = await agent.get<StaffAfterSalesResponse>("/operations/after-sales", {
+    params: {
+      pageNumber: params?.pageNumber ?? 1,
+      pageSize: params?.pageSize ?? 20,
+      resolutionType: params?.resolutionType,
+    },
+  });
+  return res.data;
+}
+
+async function fetchOperationsTicketDetail(
+  id: string
+): Promise<TicketDetailDto> {
+  const res = await agent.get<TicketDetailDto>(`/operations/after-sales/${id}`);
+  return res.data;
+}
+
+// -------- Operations Hooks --------
+
+export function useOperationsTickets(
+  params?: OperationsTicketsQueryParams
+) {
+  return useQuery({
+    queryKey: ["operations", "after-sales", "list", params],
+    queryFn: () => fetchOperationsTickets(params),
+  });
+}
+
+export function useOperationsTicketDetail(ticketId: string | undefined) {
+  return useQuery({
+    queryKey: ["operations", "after-sales", "detail", ticketId],
+    queryFn: () => {
+      if (!ticketId) throw new Error("Ticket ID is required");
+      return fetchOperationsTicketDetail(ticketId);
+    },
+    enabled: !!ticketId,
+    retry: false,
   });
 }

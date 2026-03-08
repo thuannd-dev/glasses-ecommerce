@@ -9,11 +9,11 @@ import {
   Button,
 } from "@mui/material";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useStaffAfterSalesTickets } from "../../../lib/hooks/useStaffAfterSalesTickets";
+import { useOperationsTickets } from "../../../lib/hooks/useStaffAfterSalesTickets";
 import { SummaryCard } from "../components";
 import {
   AfterSalesTicketStatusValues,
-  AfterSalesTicketTypeValues,
+  TicketResolutionTypeValues,
   type AfterSalesTicketStatus,
 } from "../../../lib/types/afterSales";
 import { formatDate } from "../constants";
@@ -46,28 +46,15 @@ export function OperationsWarrantyScreen() {
   const pageSize = 10;
 
   const rawStatus = searchParams.get("status") ?? "Pending";
-  const allowedStatuses = ["Pending", "Repair", "Replace", "Rejected"];
-
-  const statusMap: Record<string, AfterSalesTicketStatus> = {
-    Pending: AfterSalesTicketStatusValues.Pending,
-    Repair: AfterSalesTicketStatusValues.InProgress,
-    Replace: AfterSalesTicketStatusValues.InProgress,
-    Rejected: AfterSalesTicketStatusValues.Rejected,
-  };
-
-  const statusFilter = allowedStatuses.includes(rawStatus)
-    ? statusMap[rawStatus]
-    : AfterSalesTicketStatusValues.Pending;
 
   useEffect(() => {
     setPageNumber(1);
-  }, [statusFilter]);
+  }, [rawStatus]);
 
-  const { data, isLoading } = useStaffAfterSalesTickets({
+  // Operations sees both WarrantyRepair and WarrantyReplace tickets (don't filter by resolution type)
+  const { data, isLoading } = useOperationsTickets({
     pageNumber,
     pageSize,
-    status: statusFilter,
-    ticketType: AfterSalesTicketTypeValues.Warranty,
   });
 
   const safeTickets = Array.isArray(data?.items) ? data.items : [];
@@ -173,13 +160,14 @@ export function OperationsWarrantyScreen() {
                 }}
                 onClick={() => handleViewTicket(ticket.id)}
               >
-                {/* Header row: ID + Status chip */}
+                {/* Header row: ID + Status chip + Await badge */}
                 <Box
                   sx={{
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
                     gap: 2,
+                    flexWrap: "wrap",
                   }}
                 >
                   <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -187,18 +175,32 @@ export function OperationsWarrantyScreen() {
                       Ticket ID: {ticket.id}
                     </Typography>
                   </Box>
-                  <Chip
-                    label={STATUS_LABELS[ticket.ticketStatus]}
-                    size="small"
-                    sx={{
-                      fontWeight: 700,
-                      textTransform: "capitalize",
-                      border: `1px solid ${STATUS_COLORS[ticket.ticketStatus].border}`,
-                      bgcolor: `${STATUS_COLORS[ticket.ticketStatus].bg}`,
-                      color: STATUS_COLORS[ticket.ticketStatus].color,
-                      flexShrink: 0,
-                    }}
-                  />
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <Chip
+                      label="Await for delivery"
+                      size="small"
+                      sx={{
+                        fontWeight: 700,
+                        fontSize: 11,
+                        bgcolor: "#fbbf2422",
+                        color: "#92400e",
+                        border: "1px solid #fbbf24",
+                        flexShrink: 0,
+                      }}
+                    />
+                    <Chip
+                      label={STATUS_LABELS[ticket.ticketStatus]}
+                      size="small"
+                      sx={{
+                        fontWeight: 700,
+                        textTransform: "capitalize",
+                        border: `1px solid ${STATUS_COLORS[ticket.ticketStatus].border}`,
+                        bgcolor: `${STATUS_COLORS[ticket.ticketStatus].bg}`,
+                        color: STATUS_COLORS[ticket.ticketStatus].color,
+                        flexShrink: 0,
+                      }}
+                    />
+                  </Box>
                 </Box>
 
                 {/* Metadata row: Type + Created date */}

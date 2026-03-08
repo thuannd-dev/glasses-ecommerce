@@ -80,13 +80,14 @@ export function TicketDetailScreen() {
   };
 
   const handleSubmit = async () => {
-    if (!ticketId) return;
+    if (!ticketId || !ticket) return;
 
     updateStatus(
       {
         ticketId,
         actionType: actionType === "confirm" ? "approve" : "reject",
         reason: notes || undefined,
+        ticket, // Pass ticket data for resolution type determination
       },
       {
         onSuccess: () => {
@@ -134,8 +135,7 @@ export function TicketDetailScreen() {
   }
 
   const canTakeAction =
-    ticket.ticketStatus === AfterSalesTicketStatusValues.Pending ||
-    ticket.ticketStatus === AfterSalesTicketStatusValues.InProgress;
+    ticket.ticketStatus === AfterSalesTicketStatusValues.Pending;
 
   return (
     <Box

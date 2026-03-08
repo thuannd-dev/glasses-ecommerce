@@ -1,6 +1,7 @@
 // Type matching Domain/.../AfterSalesTicket.cs
 export type AfterSalesTicketType = 0 | 1 | 2 | 3;
 export type AfterSalesTicketStatus = 1 | 2 | 3 | 4 | 5;
+export type TicketResolutionType = 1 | 2 | 3 | 4;
 
 export const AfterSalesTicketTypeValues = {
   Unknown: 0 as const,
@@ -15,6 +16,13 @@ export const AfterSalesTicketStatusValues = {
   Resolved: 3 as const,
   Rejected: 4 as const,
   Closed: 5 as const,
+} as const;
+
+export const TicketResolutionTypeValues = {
+  RefundOnly: 1 as const,
+  ReturnAndRefund: 2 as const,
+  WarrantyRepair: 3 as const,
+  WarrantyReplace: 4 as const,
 } as const;
 
 // Order Item DTO for ticket details - matches OrderItemOutputDto from backend

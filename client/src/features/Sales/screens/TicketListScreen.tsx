@@ -7,7 +7,12 @@ import {
   Chip,
   Button,
   Pagination,
+  Collapse,
+  Divider,
+  IconButton,
 } from "@mui/material";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useStaffAfterSalesTickets } from "../../../lib/hooks/useStaffAfterSalesTickets";
 import { SummaryCard } from "../components";
@@ -217,6 +222,23 @@ function TicketListContent({
   getTypeLabel,
   statusFilter,
 }: TicketListContentProps) {
+  const [expandedTickets, setExpandedTickets] = useState<Set<string>>(new Set());
+
+  const isCollapsibleStatus =
+    statusFilter === "InProgress" ||
+    statusFilter === "Resolved" ||
+    statusFilter === "Rejected";
+
+  const toggleExpanded = (ticketId: string) => {
+    const newSet = new Set(expandedTickets);
+    if (newSet.has(ticketId)) {
+      newSet.delete(ticketId);
+    } else {
+      newSet.add(ticketId);
+    }
+    setExpandedTickets(newSet);
+  };
+
   return (
     <Box
       sx={{
@@ -242,169 +264,18 @@ function TicketListContent({
           },
         }}
       >
-      {filteredTickets.map((ticket) => (
-          <Paper
+        {filteredTickets.map((ticket) => (
+          <TicketRow
             key={ticket.id}
-            elevation={0}
-            sx={{
-              borderRadius: 3,
-              border: "1px solid rgba(0,0,0,0.08)",
-              px: 3,
-              py: 2.5,
-              display: "flex",
-              flexDirection: "column",
-              gap: 1.5,
-            }}
-          >
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                gap: 2,
-              }}
-            >
-              <Box sx={{ flex: 1, minWidth: 0 }}>
-                <Typography sx={{ fontWeight: 700, fontSize: 15, wordBreak: "break-all" }}>
-                  Ticket ID: {ticket.id}
-                </Typography>
-              </Box>
-              <Chip
-                label={STATUS_LABELS[ticket.ticketStatus]}
-                size="small"
-                sx={{
-                  fontWeight: 700,
-                  textTransform: "capitalize",
-                  border: `1px solid ${STATUS_COLORS[ticket.ticketStatus]}`,
-                  bgcolor: `${STATUS_COLORS[ticket.ticketStatus]}22`,
-                  color: STATUS_COLORS[ticket.ticketStatus],
-                  flexShrink: 0,
-                }}
-              />
-            </Box>
-
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 2,
-                fontSize: 13,
-                color: "text.secondary",
-                flexWrap: "wrap",
-              }}
-            >
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Typography sx={{ fontWeight: 600, color: "rgba(0,0,0,0.7)" }}>
-                  Type:
-                </Typography>
-                <Chip
-                  label={getTypeLabel(ticket.ticketType)}
-                  size="small"
-                  sx={{
-                    fontWeight: 600,
-                    borderRadius: 1,
-                    height: 24,
-                    bgcolor: `${TYPE_COLORS[ticket.ticketType]}22`,
-                    color: TYPE_COLORS[ticket.ticketType],
-                    border: `1px solid ${TYPE_COLORS[ticket.ticketType]}`,
-                    "& .MuiChip-label": {
-                      px: 1,
-                    },
-                  }}
-                />
-              </Box>
-              <Typography sx={{ fontWeight: 600, color: "rgba(0,0,0,0.7)" }}>
-                Created: {new Date(ticket.createdAt).toLocaleString()}
-              </Typography>
-            </Box>
-
-            {ticket.orderItem && (
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1.5,
-                  p: 1.5,
-                  bgcolor: "rgba(0,0,0,0.02)",
-                  borderRadius: 1.5,
-                  border: "1px solid rgba(0,0,0,0.06)",
-                }}
-              >
-                <Box
-                  sx={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 1,
-                    bgcolor: "rgba(0,0,0,0.05)",
-                    overflow: "hidden",
-                    flexShrink: 0,
-                  }}
-                >
-                  {ticket.orderItem.productImageUrl ? (
-                    <Box
-                      component="img"
-                      src={ticket.orderItem.productImageUrl}
-                      alt=""
-                      sx={{ width: "100%", height: "100%", objectFit: "cover" }}
-                    />
-                  ) : (
-                    <Box
-                      sx={{
-                        width: "100%",
-                        height: "100%",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        color: "text.secondary",
-                        fontSize: 10,
-                      }}
-                    >
-                      —
-                    </Box>
-                  )}
-                </Box>
-                <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography sx={{ fontWeight: 600, fontSize: 13, color: "rgba(0,0,0,0.8)" }}>
-                    {ticket.orderItem.productName || "Unknown Product"}
-                  </Typography>
-                  {ticket.orderItem.variantName && (
-                    <Typography sx={{ fontSize: 12, color: "text.secondary", mt: 0.25 }}>
-                      {ticket.orderItem.variantName}
-                    </Typography>
-                  )}
-                </Box>
-              </Box>
-            )}
-
-            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
-              <Box sx={{ flex: 1 }}>
-                <Typography sx={{ fontSize: 13, color: "text.secondary", mb: 0.5 }}>
-                  Reason
-                </Typography>
-                <Typography sx={{ fontWeight: 600, color: "rgba(0,0,0,0.7)" }}>
-                  {ticket.reason}
-                </Typography>
-              </Box>
-              <Button
-                variant="contained"
-                size="small"
-                sx={{
-                  textTransform: "none",
-                  fontWeight: 700,
-                  borderRadius: 2,
-                  bgcolor: "#1f2937",
-                  "&:hover": { bgcolor: "#111827" },
-                  ml: 2,
-                }}
-                onClick={() => {
-                  const url = `/sales/${navPrefix}/${ticket.id}?status=${statusFilter}`;
-                  navigate(url);
-                }}
-              >
-                View detail
-              </Button>
-            </Box>
-          </Paper>
+            ticket={ticket}
+            getTypeLabel={getTypeLabel}
+            navigate={navigate}
+            navPrefix={navPrefix}
+            statusFilter={statusFilter}
+            isCollapsibleStatus={isCollapsibleStatus}
+            isExpanded={expandedTickets.has(ticket.id)}
+            onToggleExpanded={() => toggleExpanded(ticket.id)}
+          />
         ))}
       </Box>
 
@@ -427,5 +298,439 @@ function TicketListContent({
         </Box>
       )}
     </Box>
+  );
+}
+
+interface TicketRowProps {
+  readonly ticket: TicketListDto;
+  readonly getTypeLabel: (type: AfterSalesTicketType) => string;
+  readonly navigate: ReturnType<typeof useNavigate>;
+  readonly navPrefix: string;
+  readonly statusFilter: string;
+  readonly isCollapsibleStatus: boolean;
+  readonly isExpanded: boolean;
+  readonly onToggleExpanded: () => void;
+}
+
+function TicketRow({
+  ticket,
+  getTypeLabel,
+  navigate,
+  navPrefix,
+  statusFilter,
+  isCollapsibleStatus,
+  isExpanded,
+  onToggleExpanded,
+}: TicketRowProps) {
+  const STATUS_COLORS: Record<AfterSalesTicketStatus, string> = {
+    [AfterSalesTicketStatusValues.Pending]: "#fbbf24",
+    [AfterSalesTicketStatusValues.InProgress]: "#3b82f6",
+    [AfterSalesTicketStatusValues.Resolved]: "#10b981",
+    [AfterSalesTicketStatusValues.Rejected]: "#ef4444",
+    [AfterSalesTicketStatusValues.Closed]: "#6b7280",
+  };
+
+  const STATUS_LABELS: Record<AfterSalesTicketStatus, string> = {
+    [AfterSalesTicketStatusValues.Pending]: "Pending",
+    [AfterSalesTicketStatusValues.InProgress]: "In Progress",
+    [AfterSalesTicketStatusValues.Resolved]: "Resolved",
+    [AfterSalesTicketStatusValues.Rejected]: "Rejected",
+    [AfterSalesTicketStatusValues.Closed]: "Closed",
+  };
+
+  const TYPE_COLORS: Record<AfterSalesTicketType, string> = {
+    [AfterSalesTicketTypeValues.Unknown]: "#9ca3af",
+    [AfterSalesTicketTypeValues.Return]: "#f59e0b",
+    [AfterSalesTicketTypeValues.Warranty]: "#3b82f6",
+    [AfterSalesTicketTypeValues.Refund]: "#10b981",
+  };
+
+  if (isCollapsibleStatus) {
+    // Collapsible layout for In Progress, Resolved, Rejected
+    return (
+      <Paper
+        elevation={0}
+        sx={{
+          borderRadius: 3,
+          border: "1px solid rgba(0,0,0,0.08)",
+          px: 3,
+          py: 2.5,
+          display: "flex",
+          flexDirection: "column",
+          gap: 1.25,
+        }}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: 1,
+          }}
+        >
+          <Typography sx={{ fontWeight: 700 }}>
+            Ticket ID: {ticket.id}
+          </Typography>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
+            <Chip
+              label={STATUS_LABELS[ticket.ticketStatus]}
+              size="small"
+              sx={{
+                fontWeight: 700,
+                textTransform: "capitalize",
+                border: `1px solid ${STATUS_COLORS[ticket.ticketStatus]}`,
+                bgcolor: `${STATUS_COLORS[ticket.ticketStatus]}22`,
+                color: STATUS_COLORS[ticket.ticketStatus],
+                flexShrink: 0,
+              }}
+            />
+            <IconButton
+              size="small"
+              onClick={onToggleExpanded}
+              sx={{ ml: 0.5 }}
+            >
+              {isExpanded ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
+            </IconButton>
+          </Box>
+        </Box>
+
+        <Box
+          sx={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 2,
+            fontSize: 13,
+            color: "text.secondary",
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Typography sx={{ fontWeight: 600, color: "rgba(0,0,0,0.7)" }}>
+              Type:
+            </Typography>
+            <Chip
+              label={getTypeLabel(ticket.ticketType)}
+              size="small"
+              sx={{
+                fontWeight: 600,
+                borderRadius: 1,
+                height: 24,
+                bgcolor: `${TYPE_COLORS[ticket.ticketType]}22`,
+                color: TYPE_COLORS[ticket.ticketType],
+                border: `1px solid ${TYPE_COLORS[ticket.ticketType]}`,
+                "& .MuiChip-label": {
+                  px: 1,
+                },
+              }}
+            />
+          </Box>
+          <Typography sx={{ fontWeight: 600, color: "rgba(0,0,0,0.7)" }}>
+            Created: {new Date(ticket.createdAt).toLocaleString()}
+          </Typography>
+          {ticket.resolvedAt && (
+            <Typography sx={{ fontWeight: 600, color: "rgba(0,0,0,0.7)" }}>
+              Resolved: {new Date(ticket.resolvedAt).toLocaleString()}
+            </Typography>
+          )}
+        </Box>
+
+        <Collapse in={isExpanded} timeout="auto" unmountOnExit>
+          <Divider sx={{ my: 1.5 }} />
+          <Box sx={{ fontSize: 13, color: "text.secondary", display: "flex", flexDirection: "column", gap: 1.5 }}>
+            {/* Reason */}
+            <Box>
+              <Typography sx={{ fontSize: 12, color: "text.secondary", mb: 0.5 }}>
+                Reason
+              </Typography>
+              <Typography sx={{ fontWeight: 600, color: "rgba(0,0,0,0.7)" }}>
+                {ticket.reason}
+              </Typography>
+            </Box>
+
+            {/* Product Details */}
+            {ticket.orderItem && (
+              <Box>
+                <Typography sx={{ fontWeight: 600, color: "text.primary", mb: 1 }}>
+                  Product Details
+                </Typography>
+                <Box
+                  sx={{
+                    display: "flex",
+                    gap: 2,
+                    p: 1.5,
+                    bgcolor: "rgba(0,0,0,0.02)",
+                    borderRadius: 1.5,
+                    border: "1px solid rgba(0,0,0,0.06)",
+                    alignItems: "flex-start",
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: 60,
+                      height: 60,
+                      borderRadius: 1,
+                      bgcolor: "rgba(0,0,0,0.05)",
+                      overflow: "hidden",
+                      flexShrink: 0,
+                    }}
+                  >
+                    {ticket.orderItem.productImageUrl ? (
+                      <Box
+                        component="img"
+                        src={ticket.orderItem.productImageUrl}
+                        alt=""
+                        sx={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      />
+                    ) : (
+                      <Box
+                        sx={{
+                          width: "100%",
+                          height: "100%",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: "text.secondary",
+                          fontSize: 10,
+                        }}
+                      >
+                        —
+                      </Box>
+                    )}
+                  </Box>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography sx={{ fontWeight: 600, color: "text.primary", mb: 0.5 }}>
+                      {ticket.orderItem.productName || "Unknown Product"}
+                    </Typography>
+                    {ticket.orderItem.variantName && (
+                      <Typography sx={{ fontSize: 12, color: "text.secondary" }}>
+                        {ticket.orderItem.variantName}
+                      </Typography>
+                    )}
+                  </Box>
+                  <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 0.75 }}>
+                    <Box sx={{ textAlign: "right" }}>
+                      <Typography sx={{ fontSize: 11, color: "text.secondary" }}>
+                        Qty
+                      </Typography>
+                      <Typography sx={{ fontWeight: 600, color: "rgba(0,0,0,0.7)" }}>
+                        {ticket.orderItem.quantity}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ textAlign: "right" }}>
+                      <Typography sx={{ fontSize: 11, color: "text.secondary" }}>
+                        Unit Price
+                      </Typography>
+                      <Typography sx={{ fontWeight: 600, color: "#059669" }}>
+                        ${ticket.orderItem.unitPrice.toFixed(2)}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Box>
+              </Box>
+            )}
+
+            {/* Refund Amount (if applicable) */}
+            {ticket.refundAmount !== null && ticket.refundAmount > 0 && (
+              <Box>
+                <Typography sx={{ fontSize: 12, color: "text.secondary", mb: 0.5 }}>
+                  Refund Amount
+                </Typography>
+                <Typography sx={{ fontWeight: 600, color: "#059669" }}>
+                  ${ticket.refundAmount.toFixed(2)}
+                </Typography>
+              </Box>
+            )}
+
+            <Divider sx={{ my: 1 }} />
+
+            <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+              <Button
+                variant="outlined"
+                size="small"
+                sx={{
+                  textTransform: "none",
+                  fontWeight: 700,
+                  borderRadius: 2,
+                  color: "#1f2937",
+                  borderColor: "rgba(0,0,0,0.2)",
+                  "&:hover": { bgcolor: "rgba(0,0,0,0.04)" },
+                }}
+                onClick={() => {
+                  const url = `/sales/${navPrefix}/${ticket.id}?status=${statusFilter}`;
+                  navigate(url);
+                }}
+              >
+                View detail
+              </Button>
+            </Box>
+          </Box>
+        </Collapse>
+      </Paper>
+    );
+  }
+
+  // Standard layout for Pending (unchanged)
+  return (
+    <Paper
+      elevation={0}
+      sx={{
+        borderRadius: 3,
+        border: "1px solid rgba(0,0,0,0.08)",
+        px: 3,
+        py: 2.5,
+        display: "flex",
+        flexDirection: "column",
+        gap: 1.5,
+      }}
+    >
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: 2,
+        }}
+      >
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Typography sx={{ fontWeight: 700, fontSize: 15, wordBreak: "break-all" }}>
+            Ticket ID: {ticket.id}
+          </Typography>
+        </Box>
+        <Chip
+          label={STATUS_LABELS[ticket.ticketStatus]}
+          size="small"
+          sx={{
+            fontWeight: 700,
+            textTransform: "capitalize",
+            border: `1px solid ${STATUS_COLORS[ticket.ticketStatus]}`,
+            bgcolor: `${STATUS_COLORS[ticket.ticketStatus]}22`,
+            color: STATUS_COLORS[ticket.ticketStatus],
+            flexShrink: 0,
+          }}
+        />
+      </Box>
+
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 2,
+          fontSize: 13,
+          color: "text.secondary",
+          flexWrap: "wrap",
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <Typography sx={{ fontWeight: 600, color: "rgba(0,0,0,0.7)" }}>
+            Type:
+          </Typography>
+          <Chip
+            label={getTypeLabel(ticket.ticketType)}
+            size="small"
+            sx={{
+              fontWeight: 600,
+              borderRadius: 1,
+              height: 24,
+              bgcolor: `${TYPE_COLORS[ticket.ticketType]}22`,
+              color: TYPE_COLORS[ticket.ticketType],
+              border: `1px solid ${TYPE_COLORS[ticket.ticketType]}`,
+              "& .MuiChip-label": {
+                px: 1,
+              },
+            }}
+          />
+        </Box>
+        <Typography sx={{ fontWeight: 600, color: "rgba(0,0,0,0.7)" }}>
+          Created: {new Date(ticket.createdAt).toLocaleString()}
+        </Typography>
+      </Box>
+
+      {ticket.orderItem && (
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1.5,
+            p: 1.5,
+            bgcolor: "rgba(0,0,0,0.02)",
+            borderRadius: 1.5,
+            border: "1px solid rgba(0,0,0,0.06)",
+          }}
+        >
+          <Box
+            sx={{
+              width: 48,
+              height: 48,
+              borderRadius: 1,
+              bgcolor: "rgba(0,0,0,0.05)",
+              overflow: "hidden",
+              flexShrink: 0,
+            }}
+          >
+            {ticket.orderItem.productImageUrl ? (
+              <Box
+                component="img"
+                src={ticket.orderItem.productImageUrl}
+                alt=""
+                sx={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
+            ) : (
+              <Box
+                sx={{
+                  width: "100%",
+                  height: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "text.secondary",
+                  fontSize: 10,
+                }}
+              >
+                —
+              </Box>
+            )}
+          </Box>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography sx={{ fontWeight: 600, fontSize: 13, color: "rgba(0,0,0,0.8)" }}>
+              {ticket.orderItem.productName || "Unknown Product"}
+            </Typography>
+            {ticket.orderItem.variantName && (
+              <Typography sx={{ fontSize: 12, color: "text.secondary", mt: 0.25 }}>
+                {ticket.orderItem.variantName}
+              </Typography>
+            )}
+          </Box>
+        </Box>
+      )}
+
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+        <Box sx={{ flex: 1 }}>
+          <Typography sx={{ fontSize: 13, color: "text.secondary", mb: 0.5 }}>
+            Reason
+          </Typography>
+          <Typography sx={{ fontWeight: 600, color: "rgba(0,0,0,0.7)" }}>
+            {ticket.reason}
+          </Typography>
+        </Box>
+        <Button
+          variant="contained"
+          size="small"
+          sx={{
+            textTransform: "none",
+            fontWeight: 700,
+            borderRadius: 2,
+            bgcolor: "#1f2937",
+            "&:hover": { bgcolor: "#111827" },
+            ml: 2,
+          }}
+          onClick={() => {
+            const url = `/sales/${navPrefix}/${ticket.id}?status=${statusFilter}`;
+            navigate(url);
+          }}
+        >
+          View detail
+        </Button>
+      </Box>
+    </Paper>
   );
 }

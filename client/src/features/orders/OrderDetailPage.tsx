@@ -15,14 +15,16 @@ import {
   Radio,
   TextField,
 } from "@mui/material";
+import WarningIcon from "@mui/icons-material/WarningAmber";
 import { NavLink } from "react-router-dom";
 import { useCancelOrder } from "../../lib/hooks/useOrders";
+import { SubmitTicketDialog } from "./SubmitTicketDialog";
 import { OrderItemRow, type OrderItemRowProps } from "./OrderItemRow";
 import { useOrderDetailPage } from "./hooks/useOrderDetailPage";
 import { formatMoney } from "./utils";
 import { CANCEL_ORDER_REASONS, type CancelReasonValue } from "./cancelReasons";
 
-const CANCELABLE_STATUSES = ["Pending", "pending"];
+const CANCELABLE_STATUSES = new Set(["Pending", "pending"]);
 
 export default function OrderDetailPage() {
   const {
@@ -41,8 +43,12 @@ export default function OrderDetailPage() {
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState<CancelReasonValue>("changed_mind");
   const [cancelOtherText, setCancelOtherText] = useState("");
+  const [ticketDialogOpen, setTicketDialogOpen] = useState(false);
 
-  const canCancel = order && CANCELABLE_STATUSES.includes(orderStatus);
+  const canCancel = order && CANCELABLE_STATUSES.has(orderStatus);
+  const canSubmitAfterSales = order && ["Delivered", "Completed"].some(
+    (status) => status.toLowerCase() === orderStatus.toLowerCase()
+  );
   const isOtherReason = cancelReason === "other";
 
   const handleOpenCancelDialog = () => setCancelDialogOpen(true);
@@ -184,8 +190,8 @@ export default function OrderDetailPage() {
                 <Divider sx={{ my: 1.5 }} />
                 <Typography fontSize={14} fontWeight={600} color="text.secondary" sx={{ mb: 1 }}>Status history</Typography>
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                  {order.statusHistories.map((h, i) => (
-                    <Box key={i}>
+                  {order.statusHistories.map((h) => (
+                    <Box key={`${h.toStatus}-${h.createdAt}`}>
                       <Typography fontSize={14} fontWeight={600}>
                         {h.toStatus}
                       </Typography>
@@ -279,6 +285,39 @@ export default function OrderDetailPage() {
         </Paper>
       )}
 
+      {canSubmitAfterSales && (
+        <Paper
+          elevation={0}
+          sx={{
+            border: "1px solid rgba(17,24,39,0.12)",
+            borderRadius: 3,
+            overflow: "hidden",
+            mb: 3,
+            p: 2,
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
+            <WarningIcon fontSize="small" color="info" />
+            <Typography fontSize={14} color="text.secondary">
+              Warranty, Return, or Refund?
+            </Typography>
+          </Box>
+          <Button
+            fullWidth
+            variant="contained"
+            size="medium"
+            onClick={() => setTicketDialogOpen(true)}
+            sx={{
+              textTransform: "none",
+              fontWeight: 600,
+              py: 1.5,
+            }}
+          >
+            Submit Warranty, Return, or Refund Request
+          </Button>
+        </Paper>
+      )}
+
       <Dialog open={cancelDialogOpen} onClose={handleCloseCancelDialog} maxWidth="sm" fullWidth>
         <DialogTitle>Cancel order</DialogTitle>
         <DialogContent>
@@ -326,6 +365,14 @@ export default function OrderDetailPage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {order && (
+        <SubmitTicketDialog
+          open={ticketDialogOpen}
+          onClose={() => setTicketDialogOpen(false)}
+          order={order}
+        />
+      )}
     </Box>
   );
 }
