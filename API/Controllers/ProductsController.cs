@@ -1,3 +1,4 @@
+using Application.Core;
 using Application.Products.DTOs;
 using Application.Products.Queries;
 using Domain;

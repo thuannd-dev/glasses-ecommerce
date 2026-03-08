@@ -24,6 +24,12 @@ public class DisableRouteMiddleware() : IMiddleware
         if (!string.IsNullOrEmpty(path) && HiddenRoutes.Contains(path))
         {
             context.Response.StatusCode = StatusCodes.Status404NotFound;
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsJsonAsync(new
+            {
+                error = "Not Found",
+                message = "The requested resource was not found"
+            });
             return;
         }
 

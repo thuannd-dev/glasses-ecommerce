@@ -6,7 +6,8 @@ public enum PaymentMethod
 {
     Cod = 1,
     QrCode = 2,
-    BankTransfer = 3
+    BankTransfer = 3,
+    Cash = 4
 }
 
 public enum PaymentStatus

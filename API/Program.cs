@@ -96,6 +96,18 @@ builder.Services.AddIdentityApiEndpoints<User>(opt =>
 }).AddRoles<IdentityRole<Guid>>()
 .AddEntityFrameworkStores<AppDbContext>();
 
+// Configure cookie for cross-site authentication scenarios
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.Cookie.SameSite = SameSiteMode.None;
+    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
+        ? CookieSecurePolicy.SameAsRequest
+        : CookieSecurePolicy.Always;
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+    options.Cookie.Name = "GlassesAuth";
+});
+
 // Configure Identity to include roles in claims
 builder.Services.Configure<IdentityOptions>(options =>
 {
@@ -128,7 +140,7 @@ app.UseCors(options => options.AllowAnyHeader()
                                 .WithOrigins("http://localhost:3000", "https://localhost:3000"));
 
 app.UseAuthentication();
-app.UseAuthorization();          
+app.UseAuthorization();
 
 //configure to serve static files (wwwroot)
 app.UseDefaultFiles();
@@ -148,7 +160,7 @@ app.MapControllers();
 //Routing (apply /api prefix) - Ex : api/login
 app.MapGroup("api").MapIdentityApi<User>();
 
-app.MapOpenApi(); 
+app.MapOpenApi();
 
 app.MapScalarApiReference("/api/docs", options =>
 {
@@ -164,10 +176,33 @@ app.MapScalarApiReference("/api/docs", options =>
         .SortOperationsByMethod()
         .PreserveSchemaPropertyOrder()//SHOULD HAVE
         .ShowSidebar = true;
-        
+
 });
 
-app.MapFallbackToController("Index", "Fallback");
+//MapFallbackToController inject MVC logic into pipeline API
+//=> use when app MVC / Razor Pages
+// app.MapFallbackToController("{*path:regex(^(?!api).*$)}", "Index", "Fallback");
+
+
+app.MapFallback(async context =>
+{
+    if (context.Request.Path.StartsWithSegments("/api"))
+    {
+        context.Response.StatusCode = StatusCodes.Status404NotFound;
+        await context.Response.WriteAsync("API endpoint not found");
+        return;
+    }
+
+    var indexPath = Path.Combine(
+        app.Environment.WebRootPath!,
+        "index.html"
+    );
+
+    context.Response.ContentType = "text/html";
+    await context.Response.SendFileAsync(indexPath);
+});
+
+
 
 
 /*
