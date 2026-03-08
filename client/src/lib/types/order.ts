@@ -17,6 +17,8 @@ export interface CreateOrderPayload {
   orderType?: OrderTypeLookup;
   /** IDs of cart items to checkout (matches CartItemDto.id) */
   selectedCartItemIds: string[];
+  /** Optional promo code (validated via POST /api/promotions/validate) */
+  promoCode?: string | null;
 }
 
 /** Line item in order (from API response) */

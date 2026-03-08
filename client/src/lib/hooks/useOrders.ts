@@ -14,13 +14,16 @@ export function useCreateOrder() {
   return useMutation({
     mutationFn: async (payload: CreateOrderPayload) => {
       // Backend expects CheckoutDto at ROOT of body (no wrapper).
-      const body = {
+      const body: Record<string, unknown> = {
         addressId: payload.addressId,
         orderType: payload.orderType ?? "ReadyStock",
         paymentMethod: payload.paymentMethod,
         orderNote: payload.orderNote ?? null,
         selectedCartItemIds: payload.selectedCartItemIds,
       };
+      if (payload.promoCode != null && payload.promoCode.trim() !== "") {
+        body.promoCode = payload.promoCode.trim();
+      }
       const res = await agent.post<MeOrderDto>("/me/orders", body);
       return res.data;
     },

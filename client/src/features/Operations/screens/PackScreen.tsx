@@ -1,10 +1,24 @@
 import { useState } from "react";
-import { Box, Chip, LinearProgress, Pagination, Paper, Typography, Button } from "@mui/material";
-import { useOperationsOrders, useUpdateOrderStatus } from "../../../lib/hooks/useOperationsOrders";
-import type { StaffOrderDto } from "../../../lib/types/staffOrders";
+import {
+  Box,
+  Chip,
+  Collapse,
+  IconButton,
+  LinearProgress,
+  Pagination,
+  Paper,
+  Typography,
+  Button,
+  Divider,
+} from "@mui/material";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import ExpandLessIcon from "@mui/icons-material/ExpandLess";
+import { useOperationsOrders, useOperationsOrderDetail, useUpdateOrderStatus } from "../../../lib/hooks/useOperationsOrders";
+import type { StaffOrderDto, StaffOrderDetailDto } from "../../../lib/types/staffOrders";
 import type { OrderStatus } from "../../../lib/types/operations";
 import { OperationsPageHeader } from "../components/OperationsPageHeader";
 import { OrdersTabs } from "../components/OrdersTabs";
+import { OrderDetailExpanded } from "../../../app/shared/components/OrderDetailExpanded";
 
 export function PackScreen() {
   const [pageNumber, setPageNumber] = useState(1);
@@ -51,6 +65,160 @@ export function PackScreen() {
         };
     }
   };
+
+  function PackOrderRow({ o }: { o: StaffOrderDto }) {
+    const [expanded, setExpanded] = useState(false);
+    const { data, isLoading } = useOperationsOrderDetail(expanded ? o.id : undefined);
+    const detail = data as StaffOrderDetailDto | undefined;
+    const { border, bg, color } = getStatusColors(o.orderStatus);
+
+    return (
+      <Paper
+        elevation={0}
+        sx={{
+          borderRadius: 3,
+          border: "1px solid rgba(0,0,0,0.08)",
+          px: 3,
+          py: 2.5,
+          display: "flex",
+          flexDirection: "column",
+          gap: 1.25,
+        }}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: 1,
+          }}
+        >
+          <Typography sx={{ fontWeight: 700 }}>Order ID: {o.id}</Typography>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, flexWrap: "wrap" }}>
+            <Chip
+              label={o.orderStatus}
+              size="small"
+              sx={{
+                fontWeight: 700,
+                textTransform: "capitalize",
+                border: `1px solid ${border}`,
+                bgcolor: bg,
+                color,
+              }}
+            />
+            {o.orderStatus === "Confirmed" && (
+              <Button
+                size="small"
+                variant="contained"
+                onClick={() =>
+                  updateStatus.mutate({
+                    orderId: o.id,
+                    status: "processing" as OrderStatus,
+                  })
+                }
+                sx={{
+                  textTransform: "none",
+                  fontWeight: 700,
+                  borderRadius: 2,
+                  px: 1.8,
+                  py: 0.2,
+                  fontSize: 12,
+                  bgcolor: "#f97316",
+                  "&:hover": { bgcolor: "#ea580c" },
+                }}
+              >
+                Processing
+              </Button>
+            )}
+            <IconButton
+              size="small"
+              onClick={() => setExpanded((e) => !e)}
+              aria-label={expanded ? "Collapse" : "Expand"}
+              sx={{ color: "#6B6B6B" }}
+            >
+              {expanded ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
+            </IconButton>
+          </Box>
+        </Box>
+
+        <Box
+          sx={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 2,
+            fontSize: 13,
+            color: "text.secondary",
+          }}
+        >
+          <Typography sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+            <b>Source:</b>
+            <Box
+              component="span"
+              sx={{
+                px: 1,
+                py: 0.25,
+                borderRadius: 1,
+                border: "1px solid #22c55e",
+                bgcolor: "rgba(34,197,94,0.12)",
+                color: "#15803d",
+                fontSize: 12,
+                fontWeight: 600,
+              }}
+            >
+              {o.orderSource}
+            </Box>
+          </Typography>
+          <Typography sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+            <b>Type:</b>
+            <Box
+              component="span"
+              sx={{
+                px: 1,
+                py: 0.25,
+                borderRadius: 1,
+                border: "1px solid #0ea5e9",
+                bgcolor: "rgba(14,165,233,0.12)",
+                color: "#0369a1",
+                fontSize: 12,
+                fontWeight: 600,
+              }}
+            >
+              {o.orderType}
+            </Box>
+          </Typography>
+          <Typography>
+            <b>Items:</b> {o.itemCount}
+          </Typography>
+          <Typography>
+            <b>Created:</b> {new Date(o.createdAt).toLocaleString()}
+          </Typography>
+        </Box>
+
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <Typography sx={{ fontSize: 13, color: "text.secondary" }}>Total amount</Typography>
+          <Typography sx={{ fontSize: 18, fontWeight: 900 }}>
+            {o.finalAmount.toLocaleString("en-US", { style: "currency", currency: "USD" })}
+          </Typography>
+        </Box>
+
+        <Collapse in={expanded} timeout="auto" unmountOnExit>
+          <Divider sx={{ borderColor: "rgba(0,0,0,0.06)", my: 1.5 }} />
+          {isLoading || !detail ? (
+            <Typography sx={{ fontSize: 13, color: "text.secondary" }}>Loading detail...</Typography>
+          ) : (
+            <OrderDetailExpanded detail={detail} />
+          )}
+        </Collapse>
+      </Paper>
+    );
+  }
 
   return (
     <>
@@ -107,158 +275,9 @@ export function PackScreen() {
                   },
                 }}
               >
-                {safeOrders.map((o) => {
-                  const { border, bg, color } = getStatusColors(o.orderStatus);
-                  return (
-                    <Paper
-                      key={o.id}
-                      elevation={0}
-                      sx={{
-                        borderRadius: 3,
-                        border: "1px solid rgba(0,0,0,0.08)",
-                        px: 3,
-                        py: 2.5,
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 1.25,
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          flexWrap: "wrap",
-                          gap: 1,
-                        }}
-                      >
-                        <Typography sx={{ fontWeight: 700 }}>
-                          Order ID: {o.id}
-                        </Typography>
-                        <Box
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 1.25,
-                            flexWrap: "wrap",
-                          }}
-                        >
-                          <Chip
-                            label={o.orderStatus}
-                            size="small"
-                            sx={{
-                              fontWeight: 700,
-                              textTransform: "capitalize",
-                              border: `1px solid ${border}`,
-                              bgcolor: bg,
-                              color,
-                            }}
-                          />
-                          {o.orderStatus === "Confirmed" && (
-                            <Button
-                              size="small"
-                              variant="contained"
-                              onClick={() =>
-                                updateStatus.mutate({
-                                  orderId: o.id,
-                                  status: "processing" as OrderStatus,
-                                })
-                              }
-                              sx={{
-                                textTransform: "none",
-                                fontWeight: 700,
-                                borderRadius: 2,
-                                px: 1.8,
-                                py: 0.2,
-                                fontSize: 12,
-                                bgcolor: "#f97316",
-                                "&:hover": {
-                                  bgcolor: "#ea580c",
-                                },
-                              }}
-                            >
-                              Processing
-                            </Button>
-                          )}
-                        </Box>
-                      </Box>
-
-                      <Box
-                        sx={{
-                          display: "flex",
-                          flexWrap: "wrap",
-                          gap: 2,
-                          fontSize: 13,
-                          color: "text.secondary",
-                        }}
-                      >
-                        <Typography sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-                          <b>Source:</b>
-                          <Box
-                            component="span"
-                            sx={{
-                              px: 1,
-                              py: 0.25,
-                              borderRadius: 1,
-                              border: "1px solid #22c55e",
-                              bgcolor: "rgba(34,197,94,0.12)",
-                              color: "#15803d",
-                              fontSize: 12,
-                              fontWeight: 600,
-                            }}
-                          >
-                            {o.orderSource}
-                          </Box>
-                        </Typography>
-                        <Typography sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-                          <b>Type:</b>
-                          <Box
-                            component="span"
-                            sx={{
-                              px: 1,
-                              py: 0.25,
-                              borderRadius: 1,
-                              border: "1px solid #0ea5e9",
-                              bgcolor: "rgba(14,165,233,0.12)",
-                              color: "#0369a1",
-                              fontSize: 12,
-                              fontWeight: 600,
-                            }}
-                          >
-                            {o.orderType}
-                          </Box>
-                        </Typography>
-                        <Typography>
-                          <b>Items:</b> {o.itemCount}
-                        </Typography>
-                        <Typography>
-                          <b>Created:</b>{" "}
-                          {new Date(o.createdAt).toLocaleString()}
-                        </Typography>
-                      </Box>
-
-                      <Box
-                        sx={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                        }}
-                      >
-                        <Typography
-                          sx={{ fontSize: 13, color: "text.secondary" }}
-                        >
-                          Total amount
-                        </Typography>
-                        <Typography sx={{ fontSize: 18, fontWeight: 900 }}>
-                          {o.finalAmount.toLocaleString("en-US", {
-                            style: "currency",
-                            currency: "USD",
-                          })}
-                        </Typography>
-                      </Box>
-                    </Paper>
-                  );
-                })}
+                {safeOrders.map((o) => (
+                  <PackOrderRow key={o.id} o={o} />
+                ))}
               </Box>
 
               {totalPages > 1 && (

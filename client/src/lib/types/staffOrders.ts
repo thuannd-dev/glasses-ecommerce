@@ -47,6 +47,7 @@ export interface StaffOrderItemDto {
   quantity: number;
   unitPrice: number;
   totalPrice: number;
+  productImageUrl?: string | null;
 }
 
 export interface StaffOrderPaymentDto {
@@ -64,6 +65,20 @@ export interface StaffOrderStatusHistoryDto {
   createdAt: string;
 }
 
+export interface StaffOrderShippingAddressDto {
+  id?: string;
+  recipientName?: string;
+  recipientPhone?: string;
+  venue?: string;
+  ward?: string;
+  district?: string;
+  city?: string;
+  postalCode?: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  isDefault?: boolean;
+}
+
 export interface StaffOrderDetailDto {
   id: string;
   orderSource: string;
@@ -76,6 +91,9 @@ export interface StaffOrderDetailDto {
   customerNote: string | null;
   walkInCustomerName: string | null;
   walkInCustomerPhone: string | null;
+  customerName?: string | null;
+  customerPhone?: string | null;
+  shippingAddress?: StaffOrderShippingAddressDto | null;
   createdBySalesStaff: string | null;
   salesStaffName: string | null;
   userId: string | null;

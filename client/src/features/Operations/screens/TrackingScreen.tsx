@@ -21,6 +21,7 @@ import { useOperationsOrders, useOperationsOrderDetail } from "../../../lib/hook
 import type { StaffOrderDto, StaffOrderDetailDto } from "../../../lib/types/staffOrders";
 import { OperationsPageHeader } from "../components/OperationsPageHeader";
 import { OrdersTabs } from "../components/OrdersTabs";
+import { OrderDetailExpanded } from "../../../app/shared/components/OrderDetailExpanded";
 
 const SHIPPED_PILL = {
   bg: "#EEF5EE",
@@ -364,104 +365,7 @@ function ShippedOrderRow({
         {isLoading || !detail ? (
           <Typography sx={{ fontSize: 13, color: "#6B6B6B" }}>Loading detail…</Typography>
         ) : (
-          <Box sx={{ fontSize: 13, color: "#6B6B6B", display: "flex", flexDirection: "column", gap: 1.5 }}>
-            {/* More details: Source & Type as small muted chips */}
-            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, alignItems: "center" }}>
-              <Typography component="span" sx={{ fontWeight: 600, color: "#171717", mr: 0.5 }}>
-                More details
-              </Typography>
-              <Chip
-                size="small"
-                label={`Source: ${detail.orderSource}`}
-                sx={{
-                  height: 22,
-                  fontSize: 11,
-                  fontWeight: 500,
-                  bgcolor: "rgba(0,0,0,0.06)",
-                  color: "#6B6B6B",
-                  border: "1px solid rgba(0,0,0,0.08)",
-                }}
-              />
-              <Chip
-                size="small"
-                label={`Type: ${detail.orderType}`}
-                sx={{
-                  height: 22,
-                  fontSize: 11,
-                  fontWeight: 500,
-                  bgcolor: "rgba(0,0,0,0.06)",
-                  color: "#6B6B6B",
-                  border: "1px solid rgba(0,0,0,0.08)",
-                }}
-              />
-            </Box>
-
-            <Typography sx={{ fontWeight: 700, color: "#171717" }}>Items</Typography>
-            {detail.items.map((item) => {
-              const lineTotal =
-                (item.totalPrice ?? item.unitPrice * item.quantity) || 0;
-              return (
-                <Box
-                  key={item.id}
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
-                >
-                  <Box>
-                    <Typography sx={{ fontWeight: 600, color: "#171717" }}>
-                      {item.productName}
-                    </Typography>
-                    <Typography sx={{ color: "#6B6B6B" }}>
-                      {item.variantName} · Qty {item.quantity}
-                    </Typography>
-                  </Box>
-                  <Typography sx={{ fontWeight: 600, color: "#171717" }}>
-                    {lineTotal.toLocaleString("en-US", {
-                      style: "currency",
-                      currency: "USD",
-                    })}
-                  </Typography>
-                </Box>
-              );
-            })}
-
-            {detail.payment && (
-              <>
-                <Divider sx={{ borderColor: "rgba(0,0,0,0.06)", my: 1 }} />
-                <Typography sx={{ fontWeight: 700, color: "#171717" }}>Payment</Typography>
-                <Typography>
-                  Method: {detail.payment.paymentMethod} · Status: {detail.payment.paymentStatus}
-                </Typography>
-                <Typography>
-                  Amount:{" "}
-                  {detail.payment.amount.toLocaleString("en-US", {
-                    style: "currency",
-                    currency: "USD",
-                  })}
-                </Typography>
-              </>
-            )}
-
-            {detail.statusHistories && detail.statusHistories.length > 0 && (
-              <>
-                <Divider sx={{ borderColor: "rgba(0,0,0,0.06)", my: 1 }} />
-                <Typography sx={{ fontWeight: 700, color: "#171717" }}>Status history</Typography>
-                {detail.statusHistories.map((h, idx) => (
-                  <Box key={idx}>
-                    <Typography>
-                      {h.fromStatus} → <b>{h.toStatus}</b>
-                    </Typography>
-                    <Typography sx={{ fontSize: 12, color: "#8A8A8A" }}>
-                      {h.notes ? `${h.notes} · ` : ""}
-                      {new Date(h.createdAt).toLocaleString()}
-                    </Typography>
-                  </Box>
-                ))}
-              </>
-            )}
-          </Box>
+          <OrderDetailExpanded detail={detail} />
         )}
       </Collapse>
     </Paper>

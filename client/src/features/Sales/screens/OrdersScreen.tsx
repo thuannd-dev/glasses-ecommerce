@@ -18,6 +18,7 @@ import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import { Link as RouterLink, useSearchParams } from "react-router-dom";
 import { useStaffOrder, useStaffOrders, useUpdateStaffOrderStatus } from "../../../lib/hooks/useStaffOrders";
 import type { StaffOrderDto, StaffOrderDetailDto } from "../../../lib/types/staffOrders";
+import { OrderDetailExpanded } from "../../../app/shared/components/OrderDetailExpanded";
 
 function getStatusColors(status: string) {
   switch (status) {
@@ -230,70 +231,7 @@ function SalesOrderRow({ summary }: { summary: StaffOrderDto }) {
         {isLoading || !detail ? (
           <Typography sx={{ fontSize: 13, color: "#6B6B6B" }}>Loading detail...</Typography>
         ) : (
-          <Box sx={{ fontSize: 13, color: "#6B6B6B", display: "flex", flexDirection: "column", gap: 1.25 }}>
-            <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1 }}>
-              <Typography sx={{ fontWeight: 700, color: "#171717" }}>More details</Typography>
-              <Box component="span" sx={{ px: 1, py: 0.25, borderRadius: 999, border: "1px solid rgba(0,0,0,0.08)", bgcolor: "rgba(0,0,0,0.06)", fontSize: 11, color: "#6B6B6B" }}>
-                Source: {detail.orderSource}
-              </Box>
-              <Box component="span" sx={{ px: 1, py: 0.25, borderRadius: 999, border: "1px solid rgba(0,0,0,0.08)", bgcolor: "rgba(0,0,0,0.06)", fontSize: 11, color: "#6B6B6B" }}>
-                Type: {detail.orderType}
-              </Box>
-            </Box>
-            <Typography sx={{ fontWeight: 700, color: "#171717" }}>Items</Typography>
-            {detail.items.map((item) => {
-              const lineTotal = item.totalPrice ?? item.unitPrice * item.quantity;
-              return (
-                <Box
-                  key={item.id}
-                  sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
-                >
-                  <Box>
-                    <Typography sx={{ fontWeight: 600, color: "#171717" }}>{item.productName}</Typography>
-                    <Typography>
-                      {item.variantName} · Qty {item.quantity}
-                    </Typography>
-                  </Box>
-                  <Typography sx={{ fontWeight: 600 }}>
-                    {lineTotal.toLocaleString("en-US", { style: "currency", currency: "USD" })}
-                  </Typography>
-                </Box>
-              );
-            })}
-            {detail.payment && (
-              <>
-                <Divider sx={{ borderColor: "rgba(0,0,0,0.06)", my: 1.25 }} />
-                <Typography sx={{ fontWeight: 700, color: "#171717" }}>Payment</Typography>
-                <Typography>
-                  <b>Method:</b> {detail.payment.paymentMethod}
-                </Typography>
-                <Typography>
-                  <b>Status:</b> {detail.payment.paymentStatus}
-                </Typography>
-                <Typography>
-                  <b>Amount:</b>{" "}
-                  {detail.payment.amount.toLocaleString("en-US", { style: "currency", currency: "USD" })}
-                </Typography>
-              </>
-            )}
-            {detail.statusHistories && detail.statusHistories.length > 0 && (
-              <>
-                <Divider sx={{ borderColor: "rgba(0,0,0,0.06)", my: 1.25 }} />
-                <Typography sx={{ fontWeight: 700, color: "#171717" }}>Status history</Typography>
-                {detail.statusHistories.map((h, idx) => (
-                  <Box key={idx}>
-                    <Typography>
-                      {h.fromStatus} → <b>{h.toStatus}</b>
-                    </Typography>
-                    <Typography sx={{ fontSize: 12 }}>
-                      {h.notes ? `${h.notes} · ` : ""}
-                      {new Date(h.createdAt).toLocaleString()}
-                    </Typography>
-                  </Box>
-                ))}
-              </>
-            )}
-          </Box>
+          <OrderDetailExpanded detail={detail} />
         )}
       </Collapse>
     </Paper>

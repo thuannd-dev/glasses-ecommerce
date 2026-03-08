@@ -24,6 +24,7 @@ import type { StaffOrderDto, StaffOrderDetailDto } from "../../../lib/types/staf
 import type { OrderStatus } from "../../../lib/types/operations";
 import { OperationsPageHeader } from "../components/OperationsPageHeader";
 import { OrdersTabs } from "../components/OrdersTabs";
+import { OrderDetailExpanded } from "../../../app/shared/components/OrderDetailExpanded";
 
 export function CreateShipmentScreen() {
   const [pageNumber, setPageNumber] = useState(1);
@@ -458,76 +459,7 @@ function OperationsOrderRow({
             Loading detail...
           </Typography>
         ) : (
-          <Box sx={{ fontSize: 13, color: "text.secondary", display: "flex", flexDirection: "column", gap: 1 }}>
-            <Typography sx={{ fontWeight: 700, color: "text.primary" }}>Items</Typography>
-            {detail.items.map((item) => {
-              const lineTotal =
-                (item.totalPrice ?? item.unitPrice * item.quantity) || 0;
-              return (
-                <Box
-                  key={item.id}
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
-                >
-                  <Box>
-                    <Typography sx={{ fontWeight: 600, color: "text.primary" }}>
-                      {item.productName}
-                    </Typography>
-                    <Typography>
-                      {item.variantName} · Qty {item.quantity}
-                    </Typography>
-                  </Box>
-                  <Typography sx={{ fontWeight: 600 }}>
-                    {lineTotal.toLocaleString("en-US", {
-                      style: "currency",
-                      currency: "USD",
-                    })}
-                  </Typography>
-                </Box>
-              );
-            })}
-
-            {detail.payment && (
-              <>
-                <Divider sx={{ my: 1.5 }} />
-                <Typography sx={{ fontWeight: 700, color: "text.primary" }}>Payment</Typography>
-                <Typography>
-                  <b>Method:</b> {detail.payment.paymentMethod}
-                </Typography>
-                <Typography>
-                  <b>Status:</b> {detail.payment.paymentStatus}
-                </Typography>
-                <Typography>
-                  <b>Amount:</b>{" "}
-                  {detail.payment.amount.toLocaleString("en-US", {
-                    style: "currency",
-                    currency: "USD",
-                  })}
-                </Typography>
-              </>
-            )}
-
-            {detail.statusHistories && detail.statusHistories.length > 0 && (
-              <>
-                <Divider sx={{ my: 1.5 }} />
-                <Typography sx={{ fontWeight: 700, color: "text.primary" }}>Status history</Typography>
-                {detail.statusHistories.map((h, idx) => (
-                  <Box key={idx}>
-                    <Typography>
-                      {h.fromStatus} → <b>{h.toStatus}</b>
-                    </Typography>
-                    <Typography sx={{ fontSize: 12 }}>
-                      {h.notes ? `${h.notes} · ` : ""}
-                      {new Date(h.createdAt).toLocaleString()}
-                    </Typography>
-                  </Box>
-                ))}
-              </>
-            )}
-          </Box>
+          <OrderDetailExpanded detail={detail} />
         )}
       </Collapse>
     </Paper>

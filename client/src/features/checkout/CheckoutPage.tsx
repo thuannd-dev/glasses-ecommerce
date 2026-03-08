@@ -23,6 +23,9 @@ export default function CheckoutPage() {
     const {
         items,
         totalAmount,
+        finalAmount,
+        discountAmount,
+        appliedPromo,
         isEmptyCart,
         itemPrescriptions,
         cartLoading,
@@ -32,6 +35,10 @@ export default function CheckoutPage() {
         setAddressSearch,
         paymentMethod,
         setPaymentMethod,
+        activePromotions,
+        handleApplyPromo,
+        handleRemovePromo,
+        isApplyingPromo,
         submitting,
         snackbar,
         setSnackbar,
@@ -692,6 +699,76 @@ export default function CheckoutPage() {
 
                                             <Divider sx={{ my: 2, borderColor: "#F1F1F1" }} />
 
+                                            {/* Mã giảm giá — chọn từ danh sách GET /promotions/active */}
+                                            <Box sx={{ mb: 2 }}>
+                                                <Typography sx={{ fontSize: 13, fontWeight: 600, color: "#171717", mb: 1 }}>
+                                                    Mã giảm giá
+                                                </Typography>
+                                                {appliedPromo ? (
+                                                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                                        <Typography sx={{ fontSize: 13, color: "#466A4A", fontWeight: 500 }}>
+                                                            {appliedPromo.promoCode}
+                                                            {appliedPromo.discountAmount > 0 && ` — Giảm ${formatMoney(appliedPromo.discountAmount)}`}
+                                                        </Typography>
+                                                        <Button
+                                                            size="small"
+                                                            onClick={handleRemovePromo}
+                                                            sx={{
+                                                                textTransform: "none",
+                                                                fontSize: 12,
+                                                                color: "#6B6B6B",
+                                                                "&:hover": { color: "#171717", bgcolor: "transparent" },
+                                                            }}
+                                                        >
+                                                            Bỏ mã
+                                                        </Button>
+                                                    </Box>
+                                                ) : activePromotions.length > 0 ? (
+                                                    <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+                                                        {activePromotions.map((promo) => (
+                                                            <Button
+                                                                key={promo.code}
+                                                                variant="outlined"
+                                                                size="small"
+                                                                onClick={() => handleApplyPromo(promo.code)}
+                                                                disabled={isApplyingPromo || totalAmount <= 0}
+                                                                sx={{
+                                                                    borderRadius: 1.5,
+                                                                    textTransform: "none",
+                                                                    fontWeight: 600,
+                                                                    fontSize: 13,
+                                                                    borderColor: "#B68C5A",
+                                                                    color: "#B68C5A",
+                                                                    "&:hover": { borderColor: "#9E7748", bgcolor: "rgba(182,140,90,0.08)" },
+                                                                }}
+                                                            >
+                                                                {promo.name || promo.code}
+                                                            </Button>
+                                                        ))}
+                                                    </Box>
+                                                ) : (
+                                                    <Typography sx={{ fontSize: 12, color: "#9E9E9E" }}>
+                                                        Hiện không có mã giảm giá.
+                                                    </Typography>
+                                                )}
+                                                {appliedPromo && discountAmount > 0 && (
+                                                    <Typography sx={{ fontSize: 12, color: "#466A4A", mt: 0.75 }}>
+                                                        Giảm {formatMoney(discountAmount)}
+                                                    </Typography>
+                                                )}
+                                            </Box>
+
+                                            {discountAmount > 0 && (
+                                                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
+                                                    <Typography sx={{ fontSize: 13, color: "#6B6B6B" }}>
+                                                        Giảm giá
+                                                    </Typography>
+                                                    <Typography sx={{ fontSize: 14, fontWeight: 600, color: "#466A4A" }}>
+                                                        - {formatMoney(discountAmount)}
+                                                    </Typography>
+                                                </Box>
+                                            )}
+
                                             <Box
                                                 sx={{
                                                     display: "flex",
@@ -728,7 +805,7 @@ export default function CheckoutPage() {
                                                         color: "#171717",
                                                     }}
                                                 >
-                                                    {formatMoney(totalAmount)}
+                                                    {formatMoney(finalAmount)}
                                                 </Typography>
                                             </Box>
 

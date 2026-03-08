@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useCart } from "../../../lib/hooks/useCart";
 import { useCreateAddress } from "../../../lib/hooks/useAddresses";
 import { useCreateOrder } from "../../../lib/hooks/useOrders";
+import { useValidatePromotion, useActivePromotions } from "../../../lib/hooks/usePromotions";
 import { setOrderItemImages } from "../../orders/orderImageCache";
 import { setOrderShippingAddress } from "../../orders/orderShippingAddressCache";
 import { setOrderPrescriptions } from "../../orders/orderPrescriptionCache";
@@ -36,6 +37,15 @@ export function useCheckoutPage() {
   const { cart, isLoading: cartLoading } = useCart();
   const createAddress = useCreateAddress();
   const createOrder = useCreateOrder();
+  const validatePromotion = useValidatePromotion();
+  const { data: activePromotions = [] } = useActivePromotions();
+
+  const [address, setAddress] = useState<CheckoutShippingForm>(initialAddress);
+  const [addressSearch, setAddressSearch] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodUI>("COD");
+  const [appliedPromo, setAppliedPromo] = useState<{ promoCode: string; discountAmount: number } | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [snackbar, setSnackbar] = useState<CheckoutSnackbarState>(initialSnackbar);
 
   const selectedCartItemIds = (location.state as { selectedCartItemIds?: string[] } | null)?.selectedCartItemIds;
   const cartItems = useMemo(() => cart?.items ?? [], [cart?.items]);
@@ -50,13 +60,37 @@ export function useCheckoutPage() {
     () => items.reduce((s, i) => s + (i.subtotal ?? i.price * i.quantity), 0),
     [items],
   );
+  const discountAmount = appliedPromo?.discountAmount ?? 0;
+  const finalAmount = Math.max(0, totalAmount - discountAmount);
   const isEmptyCart = items.length === 0;
 
-  const [address, setAddress] = useState<CheckoutShippingForm>(initialAddress);
-  const [addressSearch, setAddressSearch] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodUI>("COD");
-  const [submitting, setSubmitting] = useState(false);
-  const [snackbar, setSnackbar] = useState<CheckoutSnackbarState>(initialSnackbar);
+  const handleApplyPromo = async (code: string) => {
+    if (!code.trim() || totalAmount <= 0) {
+      setSnackbar({ open: true, message: "Giỏ hàng trống.", severity: "warning" });
+      return;
+    }
+    try {
+      const data = await validatePromotion.mutateAsync({
+        promoCode: code.trim(),
+        orderTotal: totalAmount,
+        shippingFee: 0,
+      });
+      const discount = typeof data?.discountAmount === "number" ? data.discountAmount : 0;
+      setAppliedPromo({ promoCode: code.trim(), discountAmount: discount });
+      setSnackbar({
+        open: true,
+        message: discount > 0 ? `Áp dụng mã giảm. Giảm ${discount.toLocaleString("en-US", { style: "currency", currency: "USD" })}` : "Đã áp dụng.",
+        severity: "success",
+      });
+    } catch {
+      setAppliedPromo(null);
+      setSnackbar({ open: true, message: "Mã không hợp lệ hoặc đã hết hạn.", severity: "error" });
+    }
+  };
+
+  const handleRemovePromo = () => {
+    setAppliedPromo(null);
+  };
 
   useEffect(() => {
     if (isEmptyCart) {
@@ -109,6 +143,7 @@ export function useCheckoutPage() {
         orderNote: address.orderNote || null,
         orderType: "ReadyStock",
         selectedCartItemIds: items.map((item) => item.id),
+        promoCode: appliedPromo?.promoCode ?? undefined,
       });
 
       queryClient.invalidateQueries({ queryKey: ["cart"] });
@@ -196,6 +231,9 @@ export function useCheckoutPage() {
   return {
     items,
     totalAmount,
+    finalAmount,
+    discountAmount,
+    appliedPromo,
     isEmptyCart,
     itemPrescriptions,
     cartLoading,
@@ -205,6 +243,10 @@ export function useCheckoutPage() {
     setAddressSearch,
     paymentMethod,
     setPaymentMethod,
+    activePromotions,
+    handleApplyPromo,
+    handleRemovePromo,
+    isApplyingPromo: validatePromotion.isPending,
     submitting,
     snackbar,
     setSnackbar,
