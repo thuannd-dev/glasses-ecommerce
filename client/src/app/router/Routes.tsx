@@ -38,9 +38,18 @@ import {
   PreOrderScreen,
   PrescriptionScreen,
 } from "../../features/Operations/screens";
+import ManagerLayout from "../../features/Manager/ManagerLayout";
 import ManagerDashboard from "../../features/Manager/ManagerDashboard";
+import ProductsList from "../../features/Manager/ProductsList";
+import ManagerProductEdit from "../../features/Manager/ProductDetail";
+import {
+  InboundRecordsScreen,
+  InboundRecordDetailScreen,
+} from "../../features/Manager/screens";
+import { ManagerProductCreateWizardScreen } from "../../features/Manager/screens";
 import AdminDashboard from "../../features/Admin/AdminDashboard";
 import RoleManagement from "../../features/Admin/RoleManagement";
+
 export const router = createBrowserRouter([
   // ======================
   // HOME (NO NAVBAR)
@@ -113,7 +122,21 @@ export const router = createBrowserRouter([
       },
       {
         element: <RequireRole allowedRoles={["Manager"]} />,
-        children: [{ path: "manager", element: <ManagerDashboard /> }],
+        children: [
+          {
+            path: "manager",
+            element: <ManagerLayout />,
+            children: [
+              { index: true, element: <ManagerDashboard /> },
+              { path: "products", element: <ProductsList /> },
+              { path: "products/create", element: <ManagerProductCreateWizardScreen /> },
+              { path: "products/:id", element: <ProductDetailPage /> },
+              { path: "products/:id/edit", element: <ManagerProductEdit /> },
+              { path: "inbound", element: <InboundRecordsScreen /> },
+              { path: "inbound/:id", element: <InboundRecordDetailScreen /> },
+            ],
+          },
+        ],
       },
       {
         element: <RequireRole allowedRoles={["Admin"]} />,

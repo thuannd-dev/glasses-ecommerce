@@ -6,6 +6,7 @@ using Domain;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Persistence;
+using Microsoft.Extensions.Logging;
 
 namespace Application.Inventory.Queries;
 
@@ -18,9 +19,11 @@ public sealed class GetInboundRecords
         public InboundRecordStatus? Status { get; set; }
     }
 
-    internal sealed class Handler(AppDbContext context, IMapper mapper)
+    internal sealed class Handler(AppDbContext context, IMapper mapper, ILogger<Handler> logger)
         : IRequestHandler<Query, Result<PagedResult<InboundRecordListDto>>>
     {
+        private readonly ILogger<Handler> _logger = logger;
+
         public async Task<Result<PagedResult<InboundRecordListDto>>> Handle(Query request, CancellationToken ct)
         {
             if (request.PageNumber < 1 || request.PageSize < 1 || request.PageSize > 100)
@@ -40,6 +43,8 @@ public sealed class GetInboundRecords
                 .Take(request.PageSize)
                 .ProjectTo<InboundRecordListDto>(mapper.ConfigurationProvider)
                 .ToListAsync(ct);
+
+            _logger.LogInformation("Inbound records: {@Records}", records);
 
             PagedResult<InboundRecordListDto> result = new()
             {
