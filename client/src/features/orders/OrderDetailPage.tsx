@@ -523,9 +523,7 @@ export default function OrderDetailPage() {
                       </Box>
 
                       {/* Delete button below status - only shown for pending tickets */}
-                      {(ticket.ticketStatus === AfterSalesTicketStatusValues.Pending || 
-                        ticket.ticketStatus === 1 || 
-                        (typeof ticket.ticketStatus === 'string' && ticket.ticketStatus.toLowerCase() === 'pending')) && (
+                      {ticket.ticketStatus === AfterSalesTicketStatusValues.Pending && (
                         <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
                           <Button
                             size="small"

@@ -24,6 +24,7 @@ const STATUS_LABELS: Record<AfterSalesTicketStatus, string> = {
   [AfterSalesTicketStatusValues.Resolved]: "Resolved",
   [AfterSalesTicketStatusValues.Rejected]: "Rejected",
   [AfterSalesTicketStatusValues.Closed]: "Closed",
+  [AfterSalesTicketStatusValues.Cancelled]: "Cancelled",
 };
 
 const STATUS_COLORS: Record<AfterSalesTicketStatus, { bg: string; border: string; color: string }> = {
@@ -32,6 +33,7 @@ const STATUS_COLORS: Record<AfterSalesTicketStatus, { bg: string; border: string
   [AfterSalesTicketStatusValues.Resolved]: { bg: "#10b98122", border: "#10b981", color: "#065f46" },
   [AfterSalesTicketStatusValues.Rejected]: { bg: "#ef444422", border: "#ef4444", color: "#7f1d1d" },
   [AfterSalesTicketStatusValues.Closed]: { bg: "#6b728022", border: "#6b7280", color: "#374151" },
+  [AfterSalesTicketStatusValues.Cancelled]: { bg: "#9ca3af22", border: "#9ca3af", color: "#4b5563" },
 };
 
 const TYPE_COLORS: Record<string, { bg: string; border: string; color: string }> = {

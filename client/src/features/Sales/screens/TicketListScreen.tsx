@@ -305,6 +305,7 @@ function TicketRow({
     [AfterSalesTicketStatusValues.Resolved]: "#10b981",
     [AfterSalesTicketStatusValues.Rejected]: "#ef4444",
     [AfterSalesTicketStatusValues.Closed]: "#6b7280",
+    [AfterSalesTicketStatusValues.Cancelled]: "#9ca3af",
   };
 
   const STATUS_LABELS: Record<AfterSalesTicketStatus, string> = {
@@ -313,6 +314,7 @@ function TicketRow({
     [AfterSalesTicketStatusValues.Resolved]: "Resolved",
     [AfterSalesTicketStatusValues.Rejected]: "Rejected",
     [AfterSalesTicketStatusValues.Closed]: "Closed",
+    [AfterSalesTicketStatusValues.Cancelled]: "Cancelled",
   };
 
   const TYPE_COLORS: Record<AfterSalesTicketType, string> = {

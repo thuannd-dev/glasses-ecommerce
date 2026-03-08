@@ -27,6 +27,7 @@ const STATUS_LABELS: Record<AfterSalesTicketStatus, string> = {
   [AfterSalesTicketStatusValues.Resolved]: "Resolved",
   [AfterSalesTicketStatusValues.Rejected]: "Rejected",
   [AfterSalesTicketStatusValues.Closed]: "Closed",
+  [AfterSalesTicketStatusValues.Cancelled]: "Cancelled",
 };
 
 const STATUS_COLORS: Record<AfterSalesTicketStatus, string> = {
@@ -35,6 +36,7 @@ const STATUS_COLORS: Record<AfterSalesTicketStatus, string> = {
   [AfterSalesTicketStatusValues.Resolved]: "#10b981",
   [AfterSalesTicketStatusValues.Rejected]: "#ef4444",
   [AfterSalesTicketStatusValues.Closed]: "#6b7280",
+  [AfterSalesTicketStatusValues.Cancelled]: "#9ca3af",
 };
 
 export function OperationsWarrantyDetailScreen() {
