@@ -16,9 +16,9 @@ export function useCreateOrder() {
       // Backend expects CheckoutDto at ROOT of body (no wrapper).
       const body = {
         addressId: payload.addressId,
-        orderType: payload.orderType ?? "ReadyStock",
+        orderType: payload.orderType,
         paymentMethod: payload.paymentMethod,
-        orderNote: payload.orderNote ?? null,
+        customerNote: payload.customerNote ?? null,
         selectedCartItemIds: payload.selectedCartItemIds,
       };
       const res = await agent.post<MeOrderDto>("/me/orders", body);

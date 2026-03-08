@@ -294,6 +294,20 @@ export default function DashboardLayout() {
                                         primaryTypographyProps={{ fontWeight: 500 }}
                                       />
                                     </ListItemButton>
+
+                                    <ListItemButton
+                                      component={NavLink}
+                                      to={`/sales/orders?status=Delivered&type=${currentTypes.join(",")}`}
+                                      sx={{
+                                        ...baseStyles,
+                                        ...(isOrdersRoute && currentStatus === "Delivered" ? activeStyles : {}),
+                                      }}
+                                    >
+                                      <ListItemText
+                                        primary="Complete"
+                                        primaryTypographyProps={{ fontWeight: 500 }}
+                                      />
+                                    </ListItemButton>
                                   </>
                                 );
                               })()}

@@ -9,8 +9,9 @@ import {
   Pagination,
 } from "@mui/material";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useStaffOrders } from "../../../lib/hooks/useStaffOrders";
+import { useStaffOrders, useStaffOrder } from "../../../lib/hooks/useStaffOrders";
 import { SummaryCard } from "../components";
+import type { StaffOrderDto, StaffOrderDetailDto } from "../../../lib/types/staffOrders";
 
 const getStatusColor = (
   status: string
@@ -31,6 +32,12 @@ const getStatusColor = (
         bgcolor: "rgba(59, 130, 246, 0.12)",
         color: "#3b82f6",
         border: "1px solid #3b82f6",
+      };
+    case "Delivered":
+      return {
+        bgcolor: "rgba(34, 197, 94, 0.12)",
+        color: "#22c55e",
+        border: "1px solid #22c55e",
       };
     case "Cancelled":
       return {
@@ -55,7 +62,7 @@ export function OrdersScreen() {
   const pageSize = 10;
 
   const rawStatus = searchParams.get("status") ?? "Pending";
-  const allowedStatuses = ["Pending", "Confirmed", "Cancelled"];
+  const allowedStatuses = ["Pending", "Confirmed", "Cancelled", "Delivered"];
   const statusFilter = allowedStatuses.includes(rawStatus) ? rawStatus : "Pending";
 
   const allowedTypes = ["ReadyStock", "PreOrder", "Prescription"];
@@ -203,142 +210,14 @@ export function OrdersScreen() {
             }}
           >
             {filteredOrders.map((o) => (
-              <Paper
-                key={o.id}
-                elevation={0}
-                sx={{
-                  borderRadius: 3,
-                  border: "1px solid rgba(0,0,0,0.08)",
-                  px: 3,
-                  py: 2.5,
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 1.25,
-                }}
-              >
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    flexWrap: "wrap",
-                    gap: 1,
-                  }}
-                >
-                  <Typography sx={{ fontWeight: 700 }}>
-                    Order ID: {o.id}
-                  </Typography>
-                  <Chip
-                    label={o.orderStatus}
-                    size="small"
-                    sx={{
-                      fontWeight: 700,
-                      textTransform: "capitalize",
-                      ...getStatusColor(o.orderStatus),
-                    }}
-                  />
-                </Box>
-
-                <Box
-                  sx={{
-                    display: "flex",
-                    flexWrap: "wrap",
-                    gap: 2,
-                    fontSize: 13,
-                    color: "text.secondary",
-                  }}
-                >
-                  <Typography sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-                    <b>Source:</b>
-                    <Box
-                      component="span"
-                      sx={{
-                        px: 1,
-                        py: 0.25,
-                        borderRadius: 1,
-                        border: "1px solid #22c55e",
-                        bgcolor: "rgba(34,197,94,0.12)",
-                        color: "#15803d",
-                        fontSize: 12,
-                        fontWeight: 600,
-                      }}
-                    >
-                      {o.orderSource}
-                    </Box>
-                  </Typography>
-                  <Typography sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-                    <b>Type:</b>
-                    <Box
-                      component="span"
-                      sx={{
-                        px: 1,
-                        py: 0.25,
-                        borderRadius: 1,
-                        border: "1px solid #0ea5e9",
-                        bgcolor: "rgba(14,165,233,0.12)",
-                        color: "#0369a1",
-                        fontSize: 12,
-                        fontWeight: 600,
-                      }}
-                    >
-                      {o.orderType}
-                    </Box>
-                  </Typography>
-                  <Typography>
-                    <b>Items:</b> {o.itemCount}
-                  </Typography>
-                  <Typography>
-                    <b>Created:</b>{" "}
-                    {new Date(o.createdAt).toLocaleString()}
-                  </Typography>
-                </Box>
-
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    mt: 0.75,
-                  }}
-                >
-                  <Typography sx={{ fontSize: 13, color: "text.secondary" }}>
-                    Total amount
-                  </Typography>
-                  <Typography sx={{ fontSize: 20, fontWeight: 900 }}>
-                    {o.finalAmount.toLocaleString("en-US", {
-                      style: "currency",
-                      currency: "USD",
-                    })}
-                  </Typography>
-                </Box>
-
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "flex-end",
-                    mt: 0.5,
-                  }}
-                >
-                  <Button
-                    size="small"
-                    variant="contained"
-                    sx={{
-                      textTransform: "none",
-                      fontWeight: 600,
-                      borderRadius: 2,
-                      px: 2.5,
-                      bgcolor: "#111827",
-                      "&:hover": { bgcolor: "#0f172a" },
-                    }}
-                    onClick={() => {
-                      const url = `/sales/orders/${o.id}?status=${statusFilter}&type=${typeFilters.join(",")}`;
-                      navigate(url);
-                    }}
-                  >
-                    View detail
-                  </Button>
-                </Box>
-              </Paper>
+              <OrderRow 
+                key={o.id} 
+                order={o} 
+                statusFilter={statusFilter}
+                typeFilters={typeFilters}
+                navigate={navigate}
+                getStatusColor={getStatusColor}
+              />
             ))}
           </Box>
 
@@ -356,6 +235,169 @@ export function OrdersScreen() {
         </Box>
       )}
     </Box>
+  );
+}
+
+function OrderRow({
+  order,
+  statusFilter,
+  typeFilters,
+  navigate,
+  getStatusColor,
+}: {
+  order: StaffOrderDto;
+  statusFilter: string;
+  typeFilters: string[];
+  navigate: ReturnType<typeof useNavigate>;
+  getStatusColor: (status: string) => { bgcolor: string; color: string; border: string };
+}) {
+  const { data: detail } = useStaffOrder(order.id);
+  const detailData = detail as StaffOrderDetailDto | undefined;
+
+  const deliveryDate = detailData?.shipment?.actualDeliveryAt
+    ? new Date(detailData.shipment.actualDeliveryAt).toLocaleString()
+    : null;
+
+  return (
+    <Paper
+      elevation={0}
+      sx={{
+        borderRadius: 3,
+        border: "1px solid rgba(0,0,0,0.08)",
+        px: 3,
+        py: 2.5,
+        display: "flex",
+        flexDirection: "column",
+        gap: 1.25,
+      }}
+    >
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: 1,
+        }}
+      >
+        <Typography sx={{ fontWeight: 700 }}>
+          Order ID: {order.id}
+        </Typography>
+        <Chip
+          label={order.orderStatus}
+          size="small"
+          sx={{
+            fontWeight: 700,
+            textTransform: "capitalize",
+            ...getStatusColor(order.orderStatus),
+          }}
+        />
+      </Box>
+
+      <Box
+        sx={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 2,
+          fontSize: 13,
+          color: "text.secondary",
+        }}
+      >
+        <Typography sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+          <b>Source:</b>
+          <Box
+            component="span"
+            sx={{
+              px: 1,
+              py: 0.25,
+              borderRadius: 1,
+              border: "1px solid #22c55e",
+              bgcolor: "rgba(34,197,94,0.12)",
+              color: "#15803d",
+              fontSize: 12,
+              fontWeight: 600,
+            }}
+          >
+            {order.orderSource}
+          </Box>
+        </Typography>
+        <Typography sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+          <b>Type:</b>
+          <Box
+            component="span"
+            sx={{
+              px: 1,
+              py: 0.25,
+              borderRadius: 1,
+              border: "1px solid #0ea5e9",
+              bgcolor: "rgba(14,165,233,0.12)",
+              color: "#0369a1",
+              fontSize: 12,
+              fontWeight: 600,
+            }}
+          >
+            {order.orderType}
+          </Box>
+        </Typography>
+        <Typography>
+          <b>Items:</b> {order.itemCount}
+        </Typography>
+        <Typography>
+          <b>Created:</b> {new Date(order.createdAt).toLocaleString()}
+        </Typography>
+        {statusFilter === "Delivered" && deliveryDate && (
+          <Typography sx={{ fontWeight: 600, color: "success.main" }}>
+            <b>Delivered:</b> {deliveryDate}
+          </Typography>
+        )}
+      </Box>
+
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mt: 0.75,
+        }}
+      >
+        <Typography sx={{ fontSize: 13, color: "text.secondary" }}>
+          Total amount
+        </Typography>
+        <Typography sx={{ fontSize: 20, fontWeight: 900 }}>
+          {order.finalAmount.toLocaleString("en-US", {
+            style: "currency",
+            currency: "USD",
+          })}
+        </Typography>
+      </Box>
+
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "flex-end",
+          mt: 0.5,
+        }}
+      >
+        <Button
+          size="small"
+          variant="contained"
+          sx={{
+            textTransform: "none",
+            fontWeight: 600,
+            borderRadius: 2,
+            px: 2.5,
+            bgcolor: "#111827",
+            "&:hover": { bgcolor: "#0f172a" },
+          }}
+          onClick={() => {
+            const url = `/sales/orders/${order.id}?status=${statusFilter}&type=${typeFilters.join(",")}`;
+            navigate(url);
+          }}
+        >
+          View detail
+        </Button>
+      </Box>
+    </Paper>
   );
 }
 

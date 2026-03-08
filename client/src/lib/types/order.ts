@@ -12,9 +12,9 @@ export interface CreateOrderPayload {
   /** Use values from lookups.paymentMethod: "Cod" | "QrCode" | "BankTransfer" | "Cash" */
   paymentMethod: string;
   /** Optional note for the order */
-  orderNote?: string | null;
-  /** Use values from lookups.orderType; default ReadyStock for normal checkout */
-  orderType?: OrderTypeLookup;
+  customerNote?: string | null;
+  /** Use values from lookups.orderType; ReadyStock for normal checkout, Prescription for custom prescriptions */
+  orderType: OrderTypeLookup;
   /** IDs of cart items to checkout (matches CartItemDto.id) */
   selectedCartItemIds: string[];
 }

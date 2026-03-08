@@ -24,16 +24,36 @@ export function TrackingScreen() {
   const [pageNumber, setPageNumber] = useState(1);
   const pageSize = 10;
 
-  const { data, isLoading } = useOperationsOrders({
-    pageNumber,
-    pageSize,
+  // Fetch both Shipped and Delivered orders
+  const { data: shippedData, isLoading: shippedLoading } = useOperationsOrders({
+    pageNumber: 1,
+    pageSize: 100, // Fetch more to show both statuses
     status: "Shipped",
   });
 
-  const safeOrders: OperationsOrderDto[] = Array.isArray(data?.items)
-    ? (data!.items as OperationsOrderDto[])
+  const { data: deliveredData, isLoading: deliveredLoading } = useOperationsOrders({
+    pageNumber: 1,
+    pageSize: 100,
+    status: "Delivered",
+  });
+
+  const isLoading = shippedLoading || deliveredLoading;
+
+  // Combine both lists
+  const shippedOrders: OperationsOrderDto[] = Array.isArray(shippedData?.items)
+    ? (shippedData!.items as OperationsOrderDto[])
     : [];
-  const totalPages = data?.totalPages ?? 1;
+  const deliveredOrders: OperationsOrderDto[] = Array.isArray(deliveredData?.items)
+    ? (deliveredData!.items as OperationsOrderDto[])
+    : [];
+  
+  const combinedOrders = [...shippedOrders, ...deliveredOrders];
+  
+  // Paginate combined results
+  const startIdx = (pageNumber - 1) * pageSize;
+  const endIdx = startIdx + pageSize;
+  const safeOrders = combinedOrders.slice(startIdx, endIdx);
+  const totalPages = Math.ceil(combinedOrders.length / pageSize);
 
   const getStatusColors = (status: string) => {
     switch (status) {
@@ -87,14 +107,14 @@ export function TrackingScreen() {
         </Typography>
         <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2, mt: 1, mb: 2 }}>
           <Typography sx={{ fontSize: 26, fontWeight: 900 }} color="text.primary">
-            SHIPPED ORDERS
+            SHIPPED & DELIVERED ORDERS
           </Typography>
           <Box sx={{ display: "flex", alignItems: "center", gap: 2, minWidth: 200 }}>
-            <SummaryCard label="Total Order" value={isLoading ? "—" : data?.totalCount ?? 0} />
+            <SummaryCard label="Total Order" value={isLoading ? "—" : combinedOrders.length} />
           </Box>
         </Box>
         <Typography sx={{ color: "text.secondary", fontSize: 14 }}>
-          View confirmed order list, pick and pack order, and manage shipping information
+          Track orders in transit and view delivered shipments with delivery confirmation details
         </Typography>
       </Box>
 
@@ -258,6 +278,12 @@ function ShippedOrderRow({
           <b>Created:</b>{" "}
           {new Date(summary.createdAt).toLocaleString()}
         </Typography>
+        {summary.orderStatus === "Delivered" && detail?.shipment?.actualDeliveryAt && (
+          <Typography sx={{ fontWeight: 600, color: "success.main" }}>
+            <b>Delivered:</b>{" "}
+            {new Date(detail.shipment.actualDeliveryAt).toLocaleString()}
+          </Typography>
+        )}
       </Box>
 
       <Collapse in={expanded} timeout="auto" unmountOnExit>

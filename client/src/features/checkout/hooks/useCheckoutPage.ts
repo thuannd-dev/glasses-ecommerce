@@ -103,11 +103,15 @@ export function useCheckoutPage() {
         isDefault: false,
       });
 
+      // Determine order type based on whether items have custom prescriptions
+      const anyHasPrescription = items.some((item) => itemPrescriptions[item.id]);
+      const orderTypeValue = anyHasPrescription ? "Prescription" : "ReadyStock";
+
       const createdOrder = await createOrder.mutateAsync({
         addressId: createdAddress.id,
         paymentMethod: toApiPaymentMethod(paymentMethod),
-        orderNote: address.orderNote || null,
-        orderType: "ReadyStock",
+        customerNote: address.orderNote || null,
+        orderType: orderTypeValue,
         selectedCartItemIds: items.map((item) => item.id),
       });
 
