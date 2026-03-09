@@ -94,7 +94,7 @@ public sealed class UpdatePolicy
             policy.EffectiveFrom = dto.EffectiveFrom;
             policy.EffectiveTo = dto.EffectiveTo;
             
-            policy.UpdatedAt = DateTime.UtcNow;
+            policy.UpdatedAt = TimezoneHelper.GetVietnamNow();
             policy.UpdatedBy = userAccessor.GetUserId();
 
             bool success = await context.SaveChangesAsync(ct) > 0;

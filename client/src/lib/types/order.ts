@@ -7,7 +7,7 @@ export type OrderTypeLookup = "ReadyStock" | "PreOrder" | "Prescription";
 
 /** Prescription detail input for order checkout */
 export interface PrescriptionDetailInputDto {
-  /** Eye type: 1 = Left (OS), 2 = Right (OD) */
+  /** Eye type: 1 = Right (OD), 2 = Left (OS) */
   eye: 1 | 2;
   sph?: number | null;
   cyl?: number | null;

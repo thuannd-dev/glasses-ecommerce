@@ -41,7 +41,11 @@ public sealed class CheckoutValidator : AbstractValidator<Checkout.Command>
             When(x => x.Dto.Prescription != null, () =>
             {
                 RuleFor(x => x.Dto.Prescription!.Details)
-                    .NotEmpty().WithMessage("Prescription must have at least one eye detail.");
+                    .NotEmpty().WithMessage("Prescription must have at least one eye detail.")
+                    .Must(details => details.Count(d => d.Eye == EyeType.Left) <= 1)
+                    .WithMessage("Prescription can have at most one Left eye detail.")
+                    .Must(details => details.Count(d => d.Eye == EyeType.Right) <= 1)
+                    .WithMessage("Prescription can have at most one Right eye detail.");
 
                 RuleForEach(x => x.Dto.Prescription!.Details).ChildRules(detail =>
                 {

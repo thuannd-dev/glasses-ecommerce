@@ -45,7 +45,7 @@ public sealed class CancelMyOrder
                     return Result<Unit>.Failure("Order not found.", 404);
 
                 // Check if order can be cancelled using domain logic
-                if (!order.CanBeCancelled(DateTime.UtcNow))
+                if (!order.CanBeCancelled(TimezoneHelper.GetVietnamNow()))
                     return Result<Unit>.Failure("This order can no longer be cancelled.", 400);
 
                 if (order.OrderStatus is OrderStatus.Cancelled or OrderStatus.Completed or OrderStatus.Refunded)
@@ -122,14 +122,14 @@ public sealed class CancelMyOrder
                                 stock.QuantityReserved -= item.Quantity;
                             }
 
-                            stock.UpdatedAt = DateTime.UtcNow;
+                            stock.UpdatedAt = TimezoneHelper.GetVietnamNow();
                             stock.UpdatedBy = userId;
                         }
                     }
                 }
 
                 order.OrderStatus = OrderStatus.Cancelled;
-                order.UpdatedAt = DateTime.UtcNow;
+                order.UpdatedAt = TimezoneHelper.GetVietnamNow();
 
                 context.OrderStatusHistories.Add(new OrderStatusHistory
                 {

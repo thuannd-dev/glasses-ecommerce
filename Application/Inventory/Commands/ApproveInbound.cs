@@ -103,7 +103,7 @@ public sealed class ApproveInbound
                             "Ensure stock records exist before approving inbound.", 400);
 
                     stock.QuantityOnHand += item.Quantity;
-                    stock.UpdatedAt = DateTime.UtcNow;
+                    stock.UpdatedAt = TimezoneHelper.GetVietnamNow();
                     stock.UpdatedBy = managerUserId;
 
                     // Auto-fulfill PreOrder demand: chuyển demand sang QuantityReserved
@@ -127,14 +127,14 @@ public sealed class ApproveInbound
                         Status = InventoryTransactionStatus.Completed,
                         Notes = $"Inbound approved from record #{record.Id}",
                         CreatedBy = record.CreatedBy,
-                        ApprovedAt = DateTime.UtcNow,
+                        ApprovedAt = TimezoneHelper.GetVietnamNow(),
                         ApprovedBy = managerUserId,
                     });
                 }
 
                 // 6. Update record status
                 record.Status = InboundRecordStatus.Approved;
-                record.ApprovedAt = DateTime.UtcNow;
+                record.ApprovedAt = TimezoneHelper.GetVietnamNow();
                 record.ApprovedBy = managerUserId;
 
                 // 7. Save and commit

@@ -20,7 +20,7 @@ public sealed class GetActivePromotions
     {
         public async Task<Result<List<ActivePromotionDto>>> Handle(Query request, CancellationToken ct)
         {
-            DateTime now = DateTime.UtcNow;
+            DateTime now = TimezoneHelper.GetVietnamNow();
 
             List<ActivePromotionDto> items = await context.Promotions
                 .AsNoTracking()

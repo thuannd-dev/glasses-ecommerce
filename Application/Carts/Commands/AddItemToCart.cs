@@ -84,7 +84,7 @@ public sealed class AddItemToCart
                 {
                     UserId = userId,
                     Status = CartStatus.Active,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = TimezoneHelper.GetVietnamNow()
                 };
                 context.Carts.Add(cart);
                 await context.SaveChangesAsync(cancellationToken);
@@ -122,7 +122,7 @@ public sealed class AddItemToCart
                 context.CartItems.Add(cartItem);
             }
 
-            cart.UpdatedAt = DateTime.UtcNow;
+            cart.UpdatedAt = TimezoneHelper.GetVietnamNow();
             bool success = await context.SaveChangesAsync(cancellationToken) > 0;
 
             if (!success)

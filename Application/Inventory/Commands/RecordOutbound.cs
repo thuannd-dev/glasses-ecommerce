@@ -78,7 +78,7 @@ public sealed class RecordOutbound
                         Status = InventoryTransactionStatus.Completed,
                         Notes = $"Outbound for order #{order.Id}",
                         CreatedBy = staffUserId,
-                        ApprovedAt = DateTime.UtcNow,
+                        ApprovedAt = TimezoneHelper.GetVietnamNow(),
                         ApprovedBy = staffUserId,
                     });
                 }

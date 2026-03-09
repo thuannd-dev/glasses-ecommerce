@@ -24,7 +24,7 @@ public sealed class ValidatePromoCode
             ValidatePromoCodeDto dto = request.Dto;
             Guid userId = userAccessor.GetUserId();
 
-            DateTime now = DateTime.UtcNow;
+            DateTime now = TimezoneHelper.GetVietnamNow();
             Promotion? promotion = await context.Promotions
                 .AsNoTracking()
                 .FirstOrDefaultAsync(p =>

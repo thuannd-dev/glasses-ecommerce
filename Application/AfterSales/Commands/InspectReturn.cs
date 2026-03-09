@@ -67,7 +67,7 @@ public sealed class InspectReturn
                     ticket.StaffNotes = string.IsNullOrWhiteSpace(request.Dto.Notes)
                         ? null
                         : request.Dto.Notes;
-                    ticket.ResolvedAt = DateTime.UtcNow;
+                    ticket.ResolvedAt = TimezoneHelper.GetVietnamNow();
 
                     bool saved = await context.SaveChangesAsync(ct) > 0;
                     if (!saved)
@@ -127,7 +127,7 @@ public sealed class InspectReturn
                         {
                             // Restore returned goods to on-hand stock
                             stock.QuantityOnHand += item.Quantity;
-                            stock.UpdatedAt = DateTime.UtcNow;
+                            stock.UpdatedAt = TimezoneHelper.GetVietnamNow();
                             stock.UpdatedBy = staffId;
 
                             context.InventoryTransactions.Add(new InventoryTransaction
@@ -153,7 +153,7 @@ public sealed class InspectReturn
                                     $"Available: {stock.QuantityAvailable}, Required: {item.Quantity}.", 409);
 
                             stock.QuantityOnHand -= item.Quantity;
-                            stock.UpdatedAt = DateTime.UtcNow;
+                            stock.UpdatedAt = TimezoneHelper.GetVietnamNow();
                             stock.UpdatedBy = staffId;
 
                             context.InventoryTransactions.Add(new InventoryTransaction
@@ -167,7 +167,7 @@ public sealed class InspectReturn
                                 Status = InventoryTransactionStatus.Completed,
                                 CreatedBy = staffId,
                                 ApprovedBy = staffId,
-                                ApprovedAt = DateTime.UtcNow,
+                                ApprovedAt = TimezoneHelper.GetVietnamNow(),
                                 Notes = $"Warranty replacement dispatched for ticket #{ticket.Id}"
                             });
                         }
@@ -215,7 +215,7 @@ public sealed class InspectReturn
                 ticket.StaffNotes = string.IsNullOrWhiteSpace(request.Dto.Notes)
                     ? null
                     : request.Dto.Notes;
-                ticket.ResolvedAt = DateTime.UtcNow;
+                ticket.ResolvedAt = TimezoneHelper.GetVietnamNow();
 
                 bool isSuccess = await context.SaveChangesAsync(ct) > 0;
 

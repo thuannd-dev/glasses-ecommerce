@@ -27,7 +27,7 @@ public sealed class RejectInbound
                              ir.Status == InboundRecordStatus.PendingApproval)
                 .ExecuteUpdateAsync(setters => setters
                     .SetProperty(ir => ir.Status, InboundRecordStatus.Rejected)
-                    .SetProperty(ir => ir.RejectedAt, DateTime.UtcNow)
+                    .SetProperty(ir => ir.RejectedAt, TimezoneHelper.GetVietnamNow())
                     .SetProperty(ir => ir.RejectionReason, request.Dto.RejectionReason), ct);
 
             if (affected == 0)

@@ -26,7 +26,7 @@ public sealed class DeletePolicy
 
             policy.IsDeleted = true;
             policy.IsActive = false; // Automatically deactivate on delete
-            policy.DeletedAt = DateTime.UtcNow;
+            policy.DeletedAt = TimezoneHelper.GetVietnamNow();
             policy.DeletedBy = userAccessor.GetUserId();
 
             bool success = await context.SaveChangesAsync(ct) > 0;

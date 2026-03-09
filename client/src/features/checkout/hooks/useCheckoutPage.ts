@@ -105,40 +105,66 @@ export function useCheckoutPage() {
       });
 
       // Determine order type based on whether items have custom prescriptions
-      const anyHasPrescription = items.some((item) => itemPrescriptions[item.id]);
+      const itemsWithPrescription = items.filter((item) => itemPrescriptions[item.id]);
+      const anyHasPrescription = itemsWithPrescription.length > 0;
       const orderTypeValue = anyHasPrescription ? "Prescription" : "ReadyStock";
 
       // Build prescription data if order type is Prescription
       let prescriptionData: PrescriptionInputDto | undefined;
       if (orderTypeValue === "Prescription" && anyHasPrescription) {
-        const prescriptionDetails: PrescriptionDetailInputDto[] = [];
+        // VALIDATION: All items with prescriptions must have identical prescription details
+        // Because 1 Order → 1 Prescription, and each eye can only have 1 detail
+        const referencePrescription = itemsWithPrescription[0] ? itemPrescriptions[itemsWithPrescription[0].id] : null;
         
-        // Collect all unique prescription details from items
-        const prescriptionSet = new Set<string>();
-        items.forEach((item) => {
-          const prescription = itemPrescriptions[item.id];
-          if (prescription) {
-            prescription.details.forEach((detail) => {
-              // Use a key to avoid duplicates
-              const key = `${detail.eye}-${detail.sph}-${detail.cyl}-${detail.axis}-${detail.pd}-${detail.add}`;
-              if (!prescriptionSet.has(key)) {
-                prescriptionSet.add(key);
-                prescriptionDetails.push({
-                  // Map frontend eye values (1=OD/Right, 2=OS/Left) to backend values (1=Left, 2=Right)
-                  eye: detail.eye === 1 ? 2 : 1,
-                  sph: detail.sph,
-                  cyl: detail.cyl,
-                  axis: detail.axis,
-                  pd: detail.pd,
-                  add: detail.add,
-                });
-              }
+        if (referencePrescription) {
+          // Check if all items with prescriptions have identical details
+          const hasConflict = itemsWithPrescription.some((item) => {
+            const itemPrescription = itemPrescriptions[item.id];
+            if (!itemPrescription) return false;
+            
+            // Compare details: must have same number of details and same values
+            if (itemPrescription.details.length !== referencePrescription.details.length) {
+              return true; // Conflict: different number of details
+            }
+            
+            // Check each detail matches
+            return itemPrescription.details.some((detail) => {
+              const refDetail = referencePrescription.details.find((d) => d.eye === detail.eye);
+              if (!refDetail) return true; // Conflict: missing eye detail
+              
+              return (
+                detail.sph !== refDetail.sph ||
+                detail.cyl !== refDetail.cyl ||
+                detail.axis !== refDetail.axis ||
+                detail.pd !== refDetail.pd ||
+                detail.add !== refDetail.add
+              );
             });
+          });
+          
+          if (hasConflict) {
+            setSnackbar({
+              open: true,
+              message: itemsWithPrescription.length > 1 
+                ? "All items with prescriptions must have identical prescription details. Please update the prescription for all items to match."
+                : "Invalid prescription data. Please check the prescription details.",
+              severity: "error",
+            });
+            setSubmitting(false);
+            return;
           }
-        });
-        
-        if (prescriptionDetails.length > 0) {
-          prescriptionData = { details: prescriptionDetails };
+          
+          // All items have identical prescriptions, use the reference prescription
+          prescriptionData = {
+            details: referencePrescription.details.map((detail) => ({
+              eye: detail.eye === 1 ? 2 : 1, // Map frontend (1=Right, 2=Left) to backend (2=Right, 1=Left)
+              sph: detail.sph,
+              cyl: detail.cyl,
+              axis: detail.axis,
+              pd: detail.pd,
+              add: detail.add,
+            })),
+          };
         }
       }
 

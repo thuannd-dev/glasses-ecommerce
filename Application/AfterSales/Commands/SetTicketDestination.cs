@@ -45,7 +45,7 @@ public sealed class SetTicketDestination
             if (request.Dto.Destination == "Reject")
             {
                 ticket.TicketStatus = AfterSalesTicketStatus.Rejected;
-                ticket.ResolvedAt = DateTime.UtcNow;
+                ticket.ResolvedAt = TimezoneHelper.GetVietnamNow();
                 ticket.StaffNotes = string.IsNullOrWhiteSpace(request.Dto.Notes)
                     ? "Rejected at operations"
                     : request.Dto.Notes;

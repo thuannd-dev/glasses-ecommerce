@@ -18,7 +18,7 @@ public class BaseActivityValidator<T, TDto> : AbstractValidator<T> where TDto
         RuleFor(x => selector(x).Description)
             .NotEmpty().WithMessage("Description is required");
         RuleFor(x => selector(x).Date)
-            .GreaterThan(_ => DateTime.UtcNow).WithMessage("Date must be in the future");
+            .GreaterThan(_ => TimezoneHelper.GetVietnamNow()).WithMessage("Date must be in the future");
         //Don't use directly DateTime.Now because the value will calculated just once when the validator is created
         //Above code is a solution to make sure that the current time is calculated each time the validation is performed
         //The best practice is create a interface IDateTimeProvider and implement it in a class DateTimeProvider to provide current date time

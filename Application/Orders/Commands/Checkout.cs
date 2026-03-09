@@ -184,7 +184,7 @@ public sealed class Checkout
 
                 if (!string.IsNullOrWhiteSpace(dto.PromoCode))
                 {
-                    DateTime now = DateTime.UtcNow;
+                    DateTime now = TimezoneHelper.GetVietnamNow();
                     promotion = await context.Promotions
                         .AsNoTracking()
                         .FirstOrDefaultAsync(p => p.PromoCode == dto.PromoCode.ToUpper()
@@ -240,7 +240,7 @@ public sealed class Checkout
                     ShippingFee = shippingFee,
                     CustomerNote = dto.CustomerNote,
                     CancellationDeadline = resolvedOrderType == OrderType.Prescription
-                        ? DateTime.UtcNow.AddHours(24) : null,
+                        ? TimezoneHelper.GetVietnamNow().AddHours(24) : null,
                 };
 
                 context.Orders.Add(order);
@@ -259,7 +259,7 @@ public sealed class Checkout
                     {
                         Stock stock = variants.First(v => v.Id == mergedItem.ProductVariantId).Stock!;
                         stock.QuantityReserved += mergedItem.Quantity;
-                        stock.UpdatedAt = DateTime.UtcNow;
+                        stock.UpdatedAt = TimezoneHelper.GetVietnamNow();
                         stock.UpdatedBy = userId;
                     }
                 }
@@ -273,7 +273,7 @@ public sealed class Checkout
                         if (variant.IsPreOrder && variant.Stock != null)
                         {
                             variant.Stock.QuantityPreOrdered += mergedItem.Quantity;
-                            variant.Stock.UpdatedAt = DateTime.UtcNow;
+                            variant.Stock.UpdatedAt = TimezoneHelper.GetVietnamNow();
                             variant.Stock.UpdatedBy = userId;
                         }
                         else if (variant.IsPreOrder && variant.Stock == null)
@@ -287,7 +287,7 @@ public sealed class Checkout
                             // (hàng có sẵn, chỉ cần giữ chỗ khi đợi PreOrder về)
                             Stock stock = variant.Stock!;
                             stock.QuantityReserved += mergedItem.Quantity;
-                            stock.UpdatedAt = DateTime.UtcNow;
+                            stock.UpdatedAt = TimezoneHelper.GetVietnamNow();
                             stock.UpdatedBy = userId;
                         }
                     }
@@ -312,7 +312,7 @@ public sealed class Checkout
                         OrderId = order.Id,
                         PromotionId = promotion.Id,
                         DiscountApplied = discountApplied,
-                        UsedAt = DateTime.UtcNow,
+                        UsedAt = TimezoneHelper.GetVietnamNow(),
                         UsedBy = userId,
                     });
                 }

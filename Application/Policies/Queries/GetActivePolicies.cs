@@ -18,7 +18,7 @@ public sealed class GetActivePolicies
     {
         public async Task<Result<List<ActivePolicyDto>>> Handle(Query request, CancellationToken ct)
         {
-            DateTime now = DateTime.UtcNow;
+            DateTime now = TimezoneHelper.GetVietnamNow();
 
             List<ActivePolicyDto> policies = await context.PolicyConfigurations
                 .Where(p => 

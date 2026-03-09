@@ -51,7 +51,7 @@ public sealed class RemoveCartItem
 
             // Remove item
             context.CartItems.Remove(cartItem);
-            cartItem.Cart.UpdatedAt = DateTime.UtcNow;
+            cartItem.Cart.UpdatedAt = TimezoneHelper.GetVietnamNow();
 
             bool success = await context.SaveChangesAsync(cancellationToken) > 0;
 

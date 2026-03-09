@@ -38,7 +38,7 @@ public sealed class GetCart
                     Id = Guid.Empty,
                     UserId = userId,
                     Status = CartStatus.Active.ToString(),
-                    CreatedAt = DateTime.UtcNow,
+                    CreatedAt = TimezoneHelper.GetVietnamNow(),
                     Items = [],
                     TotalItems = 0,
                     TotalPrice = 0

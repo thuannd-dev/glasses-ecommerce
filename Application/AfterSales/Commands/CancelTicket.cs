@@ -45,7 +45,7 @@ public sealed class CancelTicket
             int rowsAffected = await context.Database.ExecuteSqlInterpolatedAsync(
                 $@"UPDATE [AfterSalesTickets]
                    SET [TicketStatus] = {(int)AfterSalesTicketStatus.Cancelled},
-                       [ResolvedAt] = {DateTime.UtcNow}
+                       [ResolvedAt] = {TimezoneHelper.GetVietnamNow()}
                    WHERE [Id] = {request.TicketId}", ct);
 
             if (rowsAffected == 0)

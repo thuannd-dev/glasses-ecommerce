@@ -137,7 +137,7 @@ public sealed class UpdateOrderStatus
                                 stock.QuantityReserved -= item.Quantity;
                             }
 
-                            stock.UpdatedAt = DateTime.UtcNow;
+                            stock.UpdatedAt = TimezoneHelper.GetVietnamNow();
                             stock.UpdatedBy = staffUserId;
                         }
                     }
@@ -155,7 +155,7 @@ public sealed class UpdateOrderStatus
 
                             stock.QuantityOnHand -= item.Quantity;
                             stock.QuantityReserved -= item.Quantity;
-                            stock.UpdatedAt = DateTime.UtcNow;
+                            stock.UpdatedAt = TimezoneHelper.GetVietnamNow();
                             stock.UpdatedBy = staffUserId;
                         }
                     }
@@ -178,14 +178,14 @@ public sealed class UpdateOrderStatus
                         TrackingUrl = request.Dto.Shipment.TrackingUrl,
                         EstimatedDeliveryAt = request.Dto.Shipment.EstimatedDeliveryAt,
                         ShippingNotes = request.Dto.Shipment.ShippingNotes,
-                        ShippedAt = DateTime.UtcNow,
+                        ShippedAt = TimezoneHelper.GetVietnamNow(),
                         CreatedBy = staffUserId,
-                        UpdatedAt = DateTime.UtcNow,
+                        UpdatedAt = TimezoneHelper.GetVietnamNow(),
                     });
                 }
 
                 order.OrderStatus = newStatus;
-                order.UpdatedAt = DateTime.UtcNow;
+                order.UpdatedAt = TimezoneHelper.GetVietnamNow();
 
                 context.OrderStatusHistories.Add(new OrderStatusHistory
                 {

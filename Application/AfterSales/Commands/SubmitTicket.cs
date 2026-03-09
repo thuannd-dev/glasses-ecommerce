@@ -69,8 +69,8 @@ public sealed class SubmitTicket
                     p.PolicyType == policyType &&
                     p.IsActive &&
                     !p.IsDeleted &&
-                    p.EffectiveFrom <= DateTime.UtcNow &&
-                    (p.EffectiveTo == null || p.EffectiveTo >= DateTime.UtcNow), ct);
+                    p.EffectiveFrom <= TimezoneHelper.GetVietnamNow() &&
+                    (p.EffectiveTo == null || p.EffectiveTo >= TimezoneHelper.GetVietnamNow()), ct);
 
             if (policy == null)
                 return Result<TicketDetailDto>.Failure(
@@ -92,7 +92,7 @@ public sealed class SubmitTicket
                 if (deliveredAt == null)
                     policyViolation = "Order delivery date could not be verified.";
                 else if (policy.ReturnWindowDays.HasValue &&
-                         (DateTime.UtcNow - deliveredAt.Value).TotalDays > policy.ReturnWindowDays.Value)
+                         (TimezoneHelper.GetVietnamNow() - deliveredAt.Value).TotalDays > policy.ReturnWindowDays.Value)
                     policyViolation =
                         $"Return window of {policy.ReturnWindowDays} day(s) has expired.";
             }
@@ -101,7 +101,7 @@ public sealed class SubmitTicket
                 if (deliveredAt == null)
                     policyViolation = "Order delivery date could not be verified.";
                 else if (policy.WarrantyMonths.HasValue &&
-                         DateTime.UtcNow > deliveredAt.Value.AddMonths(policy.WarrantyMonths.Value))
+                         TimezoneHelper.GetVietnamNow() > deliveredAt.Value.AddMonths(policy.WarrantyMonths.Value))
                     policyViolation =
                         $"Warranty period of {policy.WarrantyMonths} month(s) has expired.";
             }

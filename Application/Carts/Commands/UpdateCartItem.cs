@@ -73,7 +73,7 @@ public sealed class UpdateCartItem
             if (cartItem.Quantity != request.UpdateCartItemDto.Quantity)
             {
                 cartItem.Quantity = request.UpdateCartItemDto.Quantity;
-                cartItem.Cart.UpdatedAt = DateTime.UtcNow;
+                cartItem.Cart.UpdatedAt = TimezoneHelper.GetVietnamNow();
             }
 
             bool success = await context.SaveChangesAsync(cancellationToken) > 0;

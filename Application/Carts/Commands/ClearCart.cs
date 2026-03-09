@@ -36,7 +36,7 @@ public sealed class ClearCart
 
             // Remove all items
             context.CartItems.RemoveRange(cart.Items);
-            cart.UpdatedAt = DateTime.UtcNow;
+            cart.UpdatedAt = TimezoneHelper.GetVietnamNow();
 
             bool success = await context.SaveChangesAsync(cancellationToken) > 0;
 

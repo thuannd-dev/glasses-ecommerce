@@ -162,7 +162,7 @@ public sealed class CreateStaffOrder
 
                 if (!string.IsNullOrWhiteSpace(dto.PromoCode))
                 {
-                    DateTime now = DateTime.UtcNow;
+                    DateTime now = TimezoneHelper.GetVietnamNow();
                     promotion = await context.Promotions
                         .AsNoTracking()
                         .FirstOrDefaultAsync(p => p.PromoCode == dto.PromoCode.ToUpper()
@@ -229,7 +229,7 @@ public sealed class CreateStaffOrder
                     WalkInCustomerName = dto.WalkInCustomerName,
                     WalkInCustomerPhone = dto.WalkInCustomerPhone,
                     CancellationDeadline = dto.OrderType == OrderType.Prescription
-                        ? DateTime.UtcNow.AddHours(24)
+                        ? TimezoneHelper.GetVietnamNow().AddHours(24)
                         : null,
                 };
 
@@ -249,7 +249,7 @@ public sealed class CreateStaffOrder
                     {
                         Stock stock = variants.First(v => v.Id == item.ProductVariantId).Stock!;
                         stock.QuantityReserved += item.Quantity;
-                        stock.UpdatedAt = DateTime.UtcNow;
+                        stock.UpdatedAt = TimezoneHelper.GetVietnamNow();
                         stock.UpdatedBy = staffUserId;
                     }
                 }

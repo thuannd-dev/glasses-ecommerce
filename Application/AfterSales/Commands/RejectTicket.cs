@@ -43,7 +43,7 @@ public sealed class RejectTicket
             ticket.TicketStatus = AfterSalesTicketStatus.Rejected;
             ticket.StaffNotes = request.Dto.Reason;
             ticket.AssignedTo = staffId;
-            ticket.ResolvedAt = DateTime.UtcNow;
+            ticket.ResolvedAt = TimezoneHelper.GetVietnamNow();
 
             bool isSuccess = await context.SaveChangesAsync(ct) > 0;
 

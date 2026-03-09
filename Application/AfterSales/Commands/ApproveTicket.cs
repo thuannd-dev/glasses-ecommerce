@@ -104,7 +104,7 @@ public sealed class ApproveTicket
 
                     ticket.RefundAmount = request.Dto.RefundAmount.Value;
                     ticket.TicketStatus = AfterSalesTicketStatus.Resolved;
-                    ticket.ResolvedAt = DateTime.UtcNow;
+                    ticket.ResolvedAt = TimezoneHelper.GetVietnamNow();
                 }
                 else
                 {

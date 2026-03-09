@@ -22,8 +22,9 @@ public sealed class GetRevenueReport
     {
         public async Task<Result<RevenueReportDto>> Handle(Query request, CancellationToken ct)
         {
-            DateTime from = request.FromDate ?? DateTime.UtcNow.AddMonths(-1);
-            DateTime to = request.ToDate ?? DateTime.UtcNow;
+            DateTime vietnamNow = TimezoneHelper.GetVietnamNow();
+            DateTime from = request.FromDate ?? vietnamNow.AddMonths(-1);
+            DateTime to = request.ToDate ?? vietnamNow;
 
             IQueryable<Order> query = context.Orders
                 .AsNoTracking()

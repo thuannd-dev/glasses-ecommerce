@@ -35,7 +35,7 @@ public sealed class DeleteAddress
 
             // Perform soft delete
             address.IsDeleted = true;
-            address.DeletedAt = DateTime.UtcNow;
+            address.DeletedAt = TimezoneHelper.GetVietnamNow();
             address.IsDefault = false;
 
             bool success = await context.SaveChangesAsync(cancellationToken) > 0;

@@ -39,7 +39,7 @@ public sealed class DeleteProductImage
             Guid currentUserId = userAccessor.GetUserId();
 
             image.IsDeleted = true;
-            image.DeletedAt = DateTime.UtcNow;
+            image.DeletedAt = TimezoneHelper.GetVietnamNow();
             image.DeletedBy = currentUserId;
 
             bool success = await context.SaveChangesAsync(ct) > 0;

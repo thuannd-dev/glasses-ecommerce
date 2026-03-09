@@ -45,14 +45,14 @@ public sealed class ReceiveReturn
                 return Result<TicketDetailDto>.Failure(
                     "Goods have already been marked as received for this ticket.", 400);
 
-            ticket.ReceivedAt = DateTime.UtcNow;
+            ticket.ReceivedAt = TimezoneHelper.GetVietnamNow();
 
             // Update order status to Delivered and create OrderStatusHistory
             if (ticket.Order != null && ticket.Order.OrderStatus != OrderStatus.Delivered)
             {
                 OrderStatus fromStatus = ticket.Order.OrderStatus;
                 ticket.Order.OrderStatus = OrderStatus.Delivered;
-                ticket.Order.UpdatedAt = DateTime.UtcNow;
+                ticket.Order.UpdatedAt = TimezoneHelper.GetVietnamNow();
 
                 OrderStatusHistory history = new()
                 {
@@ -61,7 +61,7 @@ public sealed class ReceiveReturn
                     ToStatus = OrderStatus.Delivered,
                     Notes = "Warranty item received by operations",
                     ChangedBy = userAccessor.GetUserId(),
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = TimezoneHelper.GetVietnamNow()
                 };
 
                 context.OrderStatusHistories.Add(history);
