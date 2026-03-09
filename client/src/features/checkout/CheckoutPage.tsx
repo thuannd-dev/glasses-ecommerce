@@ -699,16 +699,16 @@ export default function CheckoutPage() {
 
                                             <Divider sx={{ my: 2, borderColor: "#F1F1F1" }} />
 
-                                            {/* Mã giảm giá — chọn từ danh sách GET /promotions/active */}
+                                            {/* Promo code — from GET /promotions/active */}
                                             <Box sx={{ mb: 2 }}>
                                                 <Typography sx={{ fontSize: 13, fontWeight: 600, color: "#171717", mb: 1 }}>
-                                                    Mã giảm giá
+                                                    Promo code
                                                 </Typography>
                                                 {appliedPromo ? (
                                                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                                                         <Typography sx={{ fontSize: 13, color: "#466A4A", fontWeight: 500 }}>
                                                             {appliedPromo.promoCode}
-                                                            {appliedPromo.discountAmount > 0 && ` — Giảm ${formatMoney(appliedPromo.discountAmount)}`}
+                                                            {appliedPromo.discountAmount > 0 && ` — Discount ${formatMoney(appliedPromo.discountAmount)}`}
                                                         </Typography>
                                                         <Button
                                                             size="small"
@@ -720,7 +720,7 @@ export default function CheckoutPage() {
                                                                 "&:hover": { color: "#171717", bgcolor: "transparent" },
                                                             }}
                                                         >
-                                                            Bỏ mã
+                                                            Remove
                                                         </Button>
                                                     </Box>
                                                 ) : activePromotions.length > 0 ? (
@@ -748,12 +748,12 @@ export default function CheckoutPage() {
                                                     </Box>
                                                 ) : (
                                                     <Typography sx={{ fontSize: 12, color: "#9E9E9E" }}>
-                                                        Hiện không có mã giảm giá.
+                                                        No promo codes available.
                                                     </Typography>
                                                 )}
                                                 {appliedPromo && discountAmount > 0 && (
                                                     <Typography sx={{ fontSize: 12, color: "#466A4A", mt: 0.75 }}>
-                                                        Giảm {formatMoney(discountAmount)}
+                                                        Discount {formatMoney(discountAmount)}
                                                     </Typography>
                                                 )}
                                             </Box>
@@ -761,7 +761,7 @@ export default function CheckoutPage() {
                                             {discountAmount > 0 && (
                                                 <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
                                                     <Typography sx={{ fontSize: 13, color: "#6B6B6B" }}>
-                                                        Giảm giá
+                                                        Discount
                                                     </Typography>
                                                     <Typography sx={{ fontSize: 14, fontWeight: 600, color: "#466A4A" }}>
                                                         - {formatMoney(discountAmount)}

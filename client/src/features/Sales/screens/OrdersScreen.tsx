@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Box,
   Button,
@@ -15,10 +15,11 @@ import {
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
-import { Link as RouterLink, useSearchParams } from "react-router-dom";
-import { useStaffOrder, useStaffOrders, useUpdateStaffOrderStatus } from "../../../lib/hooks/useStaffOrders";
+import { Link as RouterLink } from "react-router-dom";
+import { useStaffOrder, useUpdateStaffOrderStatus } from "../../../lib/hooks/useStaffOrders";
 import type { StaffOrderDto, StaffOrderDetailDto } from "../../../lib/types/staffOrders";
 import { OrderDetailExpanded } from "../../../app/shared/components/OrderDetailExpanded";
+import { useOrdersScreen } from "../hooks/useOrdersScreen";
 
 function getStatusColors(status: string) {
   switch (status) {
@@ -239,28 +240,8 @@ function SalesOrderRow({ summary }: { summary: StaffOrderDto }) {
 }
 
 export function OrdersScreen() {
-  const [searchParams] = useSearchParams();
-
-  const [pageNumber, setPageNumber] = useState(1);
-  const pageSize = 10;
-
-  const rawStatus = searchParams.get("status") ?? "Pending";
-  const allowedStatuses = ["Pending", "Confirmed", "Cancelled"];
-  const statusFilter = allowedStatuses.includes(rawStatus) ? rawStatus : "Pending";
-
-  useEffect(() => {
-    setPageNumber(1);
-  }, [statusFilter]);
-
-  const { data, isLoading } = useStaffOrders({ pageNumber, pageSize, status: statusFilter });
-  const safeOrders = Array.isArray(data?.items) ? data!.items : [];
-  const filteredOrders = safeOrders.filter((o) => o.orderStatus === statusFilter);
-  const meta = data ? { totalPages: data.totalPages } : null;
-  const statusTabs = [
-    { label: "Pending", value: "Pending" },
-    { label: "Confirmed", value: "Confirmed" },
-    { label: "Rejected", value: "Cancelled" },
-  ] as const;
+  const { pageNumber, setPageNumber, statusFilter, filteredOrders, isLoading, meta, statusTabs } =
+    useOrdersScreen();
 
   return (
     <Box

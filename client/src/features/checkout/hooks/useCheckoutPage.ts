@@ -66,7 +66,7 @@ export function useCheckoutPage() {
 
   const handleApplyPromo = async (code: string) => {
     if (!code.trim() || totalAmount <= 0) {
-      setSnackbar({ open: true, message: "Giỏ hàng trống.", severity: "info" });
+      setSnackbar({ open: true, message: "Your cart is empty.", severity: "info" });
       return;
     }
     try {
@@ -79,12 +79,12 @@ export function useCheckoutPage() {
       setAppliedPromo({ promoCode: code.trim(), discountAmount: discount });
       setSnackbar({
         open: true,
-        message: discount > 0 ? `Áp dụng mã giảm. Giảm ${discount.toLocaleString("en-US", { style: "currency", currency: "USD" })}` : "Đã áp dụng.",
+        message: discount > 0 ? `Promo applied. Discount ${discount.toLocaleString("en-US", { style: "currency", currency: "USD" })}` : "Applied.",
         severity: "success",
       });
     } catch {
       setAppliedPromo(null);
-      setSnackbar({ open: true, message: "Mã không hợp lệ hoặc đã hết hạn.", severity: "error" });
+      setSnackbar({ open: true, message: "Invalid or expired promo code.", severity: "error" });
     }
   };
 

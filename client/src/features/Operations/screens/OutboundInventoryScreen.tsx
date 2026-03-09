@@ -1,4 +1,3 @@
-import { useMemo, useState } from "react";
 import { NavLink } from "react-router";
 import {
   Alert,
@@ -28,16 +27,9 @@ import {
 import SearchIcon from "@mui/icons-material/Search";
 import RemoveCircleOutlineIcon from "@mui/icons-material/RemoveCircleOutline";
 import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
-import { toast } from "react-toastify";
 
 import { OperationsPageHeader } from "../components/OperationsPageHeader";
-import {
-  useCreateInventoryOutbound,
-  useInventoryCatalog,
-} from "../../../lib/hooks/useOperationsInventory";
-import { useDebouncedValue } from "../../../lib/hooks/useDebouncedValue";
-import { useOperationsOrderDetail, useOperationsOrders } from "../../../lib/hooks/useOperationsOrders";
-import type { StaffOrderDto } from "../../../lib/types/staffOrders";
+import { useOutboundInventoryScreen } from "../hooks/useOutboundInventoryScreen";
 
 function getStockChipStyles(stock: number) {
   if (stock >= 200) {
@@ -50,66 +42,32 @@ function getStockChipStyles(stock: number) {
 }
 
 export function OutboundInventoryScreen() {
-  const [inventorySearch, setInventorySearch] = useState("");
-  const [pageNumber, setPageNumber] = useState(1);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [orderSearch, setOrderSearch] = useState("");
-  const [orderId, setOrderId] = useState("");
-  const [notes, setNotes] = useState("");
-  const debouncedInventorySearch = useDebouncedValue(inventorySearch, 250);
-
-  const outboundMutation = useCreateInventoryOutbound();
-  const { data: inventoryData, isLoading: isInventoryLoading, isFetching: isInventoryFetching } =
-    useInventoryCatalog({
-      pageNumber,
-      pageSize: 12,
-      search: debouncedInventorySearch,
-    });
-  const { data: ordersData, isLoading: isOrdersLoading } = useOperationsOrders({
-    pageNumber: 1,
-    pageSize: 80,
-  });
-  const { data: selectedOrderDetail, isLoading: isOrderDetailLoading } = useOperationsOrderDetail(
-    orderId.trim() || undefined,
-  );
-  const inventoryItems = inventoryData?.items ?? [];
-  const safeOrders: StaffOrderDto[] = Array.isArray(ordersData?.items)
-    ? (ordersData!.items as unknown as StaffOrderDto[])
-    : [];
-  const filteredOrders = useMemo(() => {
-    const q = orderSearch.trim().toLowerCase();
-    if (!q) return safeOrders;
-    return safeOrders.filter(
-      (o) =>
-        o.id.toLowerCase().includes(q) ||
-        (o.walkInCustomerName || "").toLowerCase().includes(q),
-    );
-  }, [safeOrders, orderSearch]);
-  const selectedOrderOption = safeOrders.find((o) => o.id === orderId) ?? null;
-  const totalPages = inventoryData?.totalPages ?? 1;
-  const totalCount = inventoryData?.totalCount ?? 0;
-
-  const normalizedOrderId = orderId.trim();
-  const hasValidOrderDetail =
-    !!selectedOrderDetail && selectedOrderDetail.id.toLowerCase() === normalizedOrderId.toLowerCase();
-  const isFormValid = normalizedOrderId.length > 0 && hasValidOrderDetail;
-
-  const handleSubmit = async () => {
-    if (!isFormValid) return;
-    try {
-      await outboundMutation.mutateAsync({
-        orderId: normalizedOrderId,
-        notes,
-      });
-
-      toast.success("Outbound recorded successfully.");
-      setOrderId("");
-      setNotes("");
-      setDialogOpen(false);
-    } catch {
-      // handled by mutation state + global interceptor
-    }
-  };
+  const {
+    inventorySearch,
+    setInventorySearch,
+    pageNumber,
+    setPageNumber,
+    dialogOpen,
+    setDialogOpen,
+    orderId,
+    setOrderId,
+    notes,
+    setNotes,
+    inventoryItems,
+    totalPages,
+    totalCount,
+    isInventoryLoading,
+    isInventoryFetching,
+    outboundMutation,
+    filteredOrders,
+    selectedOrderOption,
+    isOrdersLoading,
+    normalizedOrderId,
+    selectedOrderDetail,
+    isOrderDetailLoading,
+    isFormValid,
+    handleSubmit,
+  } = useOutboundInventoryScreen();
 
   return (
     <>
@@ -445,7 +403,7 @@ export function OutboundInventoryScreen() {
                 else setOrderId(value.id);
               }}
               onInputChange={(_, value) => {
-                setOrderSearch(value);
+                // order search state is handled inside the logic hook
                 setOrderId(value);
               }}
               getOptionLabel={(option) =>
