@@ -20,18 +20,24 @@ public sealed class CheckFeatureEnabled
     {
         public async Task<Result<bool>> Handle(Query request, CancellationToken ct)
         {
-            IQueryable<FeatureToggle> query = context.FeatureToggles
+            bool hasScope = !string.IsNullOrWhiteSpace(request.Scope);
+
+            // Fetch both the scoped toggle (if requested) and the global toggle (Scope=null) in one round-trip.
+            // Resolution priority: Scoped > Global > false (fail-safe).
+            List<FeatureToggle> candidates = await context.FeatureToggles
                 .AsNoTracking()
-                .Where(ft => ft.FeatureName == request.FeatureName);
+                .Where(ft => ft.FeatureName == request.FeatureName
+                    && (ft.Scope == null
+                        || (hasScope && ft.Scope == request.Scope && ft.ScopeValue == request.ScopeValue)))
+                .ToListAsync(ct);
 
-            if (!string.IsNullOrWhiteSpace(request.Scope))
-                query = query.Where(ft => ft.Scope == request.Scope && ft.ScopeValue == request.ScopeValue);
-            else
-                query = query.Where(ft => ft.Scope == null);
+            // Prefer the scoped record; fall back to the global one
+            FeatureToggle? toggle = hasScope
+                ? candidates.FirstOrDefault(ft => ft.Scope == request.Scope && ft.ScopeValue == request.ScopeValue)
+                    ?? candidates.FirstOrDefault(ft => ft.Scope == null)
+                : candidates.FirstOrDefault(ft => ft.Scope == null);
 
-            FeatureToggle? toggle = await query.FirstOrDefaultAsync(ct);
-
-            // Fail-safe default: return false when toggle is not found
+            // Fail-safe default: feature is off when no toggle is configured
             if (toggle == null)
                 return Result<bool>.Success(false);
 
