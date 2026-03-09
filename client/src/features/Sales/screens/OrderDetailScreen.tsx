@@ -175,6 +175,53 @@ export function OrderDetailScreen() {
 
         <Divider />
 
+        {/* Customer Information Section */}
+        {(order.customerName || order.customerPhone || order.shippingAddress) && (
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+              gap: 2,
+            }}
+          >
+            {order.customerName && (
+              <Box>
+                <Typography sx={{ fontSize: 12, color: "text.secondary", mb: 0.5 }}>
+                  Customer Name
+                </Typography>
+                <Typography sx={{ fontWeight: 700 }}>
+                  {order.customerName}
+                </Typography>
+              </Box>
+            )}
+            {order.customerPhone && (
+              <Box>
+                <Typography sx={{ fontSize: 12, color: "text.secondary", mb: 0.5 }}>
+                  Phone
+                </Typography>
+                <Typography sx={{ fontWeight: 700 }}>
+                  {order.customerPhone}
+                </Typography>
+              </Box>
+            )}
+            {order.shippingAddress && (
+              <Box sx={{ gridColumn: { xs: "1fr", md: "1 / -1" } }}>
+                <Typography sx={{ fontSize: 12, color: "text.secondary", mb: 0.5 }}>
+                  Delivery Address
+                </Typography>
+                <Typography sx={{ fontWeight: 700, lineHeight: 1.5 }}>
+                  {order.shippingAddress.venue && `${order.shippingAddress.venue}, `}
+                  {order.shippingAddress.ward && `${order.shippingAddress.ward}, `}
+                  {order.shippingAddress.district && `${order.shippingAddress.district}, `}
+                  {order.shippingAddress.city}
+                </Typography>
+              </Box>
+            )}
+          </Box>
+        )}
+
+        <Divider />
+
         <Box>
           <Typography sx={{ fontWeight: 700, mb: 1 }}>Items</Typography>
           {Array.isArray(order.items) &&

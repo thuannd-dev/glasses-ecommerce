@@ -146,6 +146,53 @@ export function OperationsOrderDetailScreen() {
             <b>Created:</b> {new Date(order.createdAt).toLocaleString()}
           </Typography>
         </Box>
+
+        {/* Customer Information Section */}
+        {(order.customerName || order.customerPhone || order.shippingAddress) && (
+          <Box
+            sx={{
+              pt: 2,
+              borderTop: "1px solid rgba(0,0,0,0.08)",
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+              gap: 2,
+            }}
+          >
+            {order.customerName && (
+              <Box>
+                <Typography sx={{ fontSize: 12, color: "text.secondary", mb: 0.5 }}>
+                  Customer Name
+                </Typography>
+                <Typography sx={{ fontWeight: 700 }}>
+                  {order.customerName}
+                </Typography>
+              </Box>
+            )}
+            {order.customerPhone && (
+              <Box>
+                <Typography sx={{ fontSize: 12, color: "text.secondary", mb: 0.5 }}>
+                  Phone
+                </Typography>
+                <Typography sx={{ fontWeight: 700 }}>
+                  {order.customerPhone}
+                </Typography>
+              </Box>
+            )}
+            {order.shippingAddress && (
+              <Box sx={{ gridColumn: { xs: "1fr", md: "1 / -1" } }}>
+                <Typography sx={{ fontSize: 12, color: "text.secondary", mb: 0.5 }}>
+                  Delivery Address
+                </Typography>
+                <Typography sx={{ fontWeight: 700, lineHeight: 1.5 }}>
+                  {order.shippingAddress.venue && `${order.shippingAddress.venue}, `}
+                  {order.shippingAddress.ward && `${order.shippingAddress.ward}, `}
+                  {order.shippingAddress.district && `${order.shippingAddress.district}, `}
+                  {order.shippingAddress.city}
+                </Typography>
+              </Box>
+            )}
+          </Box>
+        )}
       </Paper>
 
       <Paper
@@ -159,6 +206,87 @@ export function OperationsOrderDetailScreen() {
           gap: 2,
         }}
       >
+        {/* Prescription Information Section */}
+        {order.prescription && (
+          <Box>
+            <Typography sx={{ fontSize: 13, color: "text.secondary", mb: 1, fontWeight: 700 }}>
+              👁️ Prescription Information
+            </Typography>
+            <Box
+              sx={{
+                bgcolor: "rgba(99, 182, 255, 0.05)",
+                borderRadius: 2,
+                p: 2,
+                border: "1px solid rgba(99, 182, 255, 0.2)",
+                display: "flex",
+                flexDirection: "column",
+                gap: 1.5,
+              }}
+            >
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                {order.prescription.isVerified && (
+                  <Box
+                    sx={{
+                      px: 1,
+                      py: 0.25,
+                      borderRadius: 1,
+                      bgcolor: "#d1fae5",
+                      border: "1px solid #6ee7b7",
+                    }}
+                  >
+                    <Typography sx={{ fontSize: 10, fontWeight: 700, color: "#059669" }}>
+                      VERIFIED
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+
+              {order.prescription.details && order.prescription.details.length > 0 ? (
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                  {order.prescription.details.map((detail, idx) => (
+                    <Box
+                      key={idx}
+                      sx={{
+                        p: 1,
+                        bgcolor: "white",
+                        borderRadius: 1,
+                        border: "1px solid rgba(99, 182, 255, 0.1)",
+                        fontSize: 12,
+                      }}
+                    >
+                      <Typography sx={{ fontWeight: 700, mb: 0.5 }}>
+                        {detail.eye || "Both Eyes"}
+                      </Typography>
+                      <Box sx={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(70px, 1fr))", gap: 0.5 }}>
+                        {detail.sph !== null && detail.sph !== undefined && (
+                          <Typography><b>SPH:</b> {detail.sph}</Typography>
+                        )}
+                        {detail.cyl !== null && detail.cyl !== undefined && (
+                          <Typography><b>CYL:</b> {detail.cyl}</Typography>
+                        )}
+                        {detail.axis !== null && detail.axis !== undefined && (
+                          <Typography><b>AXIS:</b> {detail.axis}</Typography>
+                        )}
+                        {detail.pd !== null && detail.pd !== undefined && (
+                          <Typography><b>PD:</b> {detail.pd}</Typography>
+                        )}
+                        {detail.add !== null && detail.add !== undefined && (
+                          <Typography><b>ADD:</b> {detail.add}</Typography>
+                        )}
+                      </Box>
+                    </Box>
+                  ))}
+                </Box>
+              ) : (
+                <Typography sx={{ fontSize: 12, color: "text.secondary", fontStyle: "italic" }}>
+                  No prescription details available
+                </Typography>
+              )}
+            </Box>
+            <Divider sx={{ my: 1.5 }} />
+          </Box>
+        )}
+
         <Box
           sx={{
             display: "flex",

@@ -9,6 +9,7 @@ import { setOrderShippingAddress } from "../../orders/orderShippingAddressCache"
 import { setOrderPrescriptions } from "../../orders/orderPrescriptionCache";
 import { getCartItemPrescriptions } from "../../cart/prescriptionCache";
 import type { PrescriptionData } from "../../../lib/types/prescription";
+import type { PrescriptionDetailInputDto, PrescriptionInputDto } from "../../../lib/types/order";
 import type { CheckoutShippingForm, CheckoutSnackbarState, PaymentMethodUI } from "../types";
 import { toApiPaymentMethod, isValidVietnamPhone } from "../utils";
 
@@ -107,12 +108,47 @@ export function useCheckoutPage() {
       const anyHasPrescription = items.some((item) => itemPrescriptions[item.id]);
       const orderTypeValue = anyHasPrescription ? "Prescription" : "ReadyStock";
 
+      // Build prescription data if order type is Prescription
+      let prescriptionData: PrescriptionInputDto | undefined;
+      if (orderTypeValue === "Prescription" && anyHasPrescription) {
+        const prescriptionDetails: PrescriptionDetailInputDto[] = [];
+        
+        // Collect all unique prescription details from items
+        const prescriptionSet = new Set<string>();
+        items.forEach((item) => {
+          const prescription = itemPrescriptions[item.id];
+          if (prescription) {
+            prescription.details.forEach((detail) => {
+              // Use a key to avoid duplicates
+              const key = `${detail.eye}-${detail.sph}-${detail.cyl}-${detail.axis}-${detail.pd}-${detail.add}`;
+              if (!prescriptionSet.has(key)) {
+                prescriptionSet.add(key);
+                prescriptionDetails.push({
+                  // Map frontend eye values (1=OD/Right, 2=OS/Left) to backend values (1=Left, 2=Right)
+                  eye: detail.eye === 1 ? 2 : 1,
+                  sph: detail.sph,
+                  cyl: detail.cyl,
+                  axis: detail.axis,
+                  pd: detail.pd,
+                  add: detail.add,
+                });
+              }
+            });
+          }
+        });
+        
+        if (prescriptionDetails.length > 0) {
+          prescriptionData = { details: prescriptionDetails };
+        }
+      }
+
       const createdOrder = await createOrder.mutateAsync({
         addressId: createdAddress.id,
         paymentMethod: toApiPaymentMethod(paymentMethod),
         customerNote: address.orderNote || null,
         orderType: orderTypeValue,
         selectedCartItemIds: items.map((item) => item.id),
+        prescription: prescriptionData || null,
       });
 
       queryClient.invalidateQueries({ queryKey: ["cart"] });

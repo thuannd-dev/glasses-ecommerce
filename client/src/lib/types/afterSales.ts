@@ -1,3 +1,5 @@
+import type { AddressDto } from "./address";
+
 // Type matching Domain/.../AfterSalesTicket.cs
 export type AfterSalesTicketType = 0 | 1 | 2 | 3;
 export type AfterSalesTicketStatus = 1 | 2 | 3 | 4 | 5 | 6;
@@ -79,6 +81,10 @@ export interface TicketDetailDto {
   orderItemId: string | null;
   orderItem: OrderItemDto | null;
   customerId: string;
+  customerName: string | null;
+  customerPhone: string | null;
+  shippingAddress: AddressDto | null;
+  orderPrescription: OrderPrescriptionDto | null;
   ticketType: AfterSalesTicketType;
   ticketStatus: AfterSalesTicketStatus;
   reason: string;
@@ -90,4 +96,22 @@ export interface TicketDetailDto {
   resolvedAt: string | null;
   receivedAt: string | null;
   resolutionType: TicketResolutionType | null;
+}
+
+export interface PrescriptionDetailDto {
+  id: string;
+  eye: string | null;
+  sph: number | null;
+  cyl: number | null;
+  axis: number | null;
+  pd: number | null;
+  add: number | null;
+}
+
+export interface OrderPrescriptionDto {
+  id: string;
+  isVerified: boolean;
+  verifiedAt: string | null;
+  verificationNotes: string | null;
+  details: PrescriptionDetailDto[];
 }

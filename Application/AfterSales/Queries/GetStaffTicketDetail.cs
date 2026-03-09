@@ -28,6 +28,11 @@ public sealed class GetStaffTicketDetail
                 .ThenInclude(oi => oi!.ProductVariant)
                 .ThenInclude(pv => pv!.Product)
                 .Include(t => t.Attachments.Where(a => a.DeletedAt == null))
+                .Include(t => t.Order)
+                .ThenInclude(o => o!.Address)
+                .Include(t => t.Order)
+                .ThenInclude(o => o!.Prescription)
+                .ThenInclude(p => p!.Details)
                 .Where(t => t.Id == request.Id)
                 .ProjectTo<TicketDetailDto>(mapper.ConfigurationProvider)
                 .FirstOrDefaultAsync(cancellationToken);

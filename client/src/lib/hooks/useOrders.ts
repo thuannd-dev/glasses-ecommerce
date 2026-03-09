@@ -24,6 +24,9 @@ export function useCreateOrder() {
       if (payload.promoCode) {
         body.promoCode = payload.promoCode;
       }
+      if (payload.prescription) {
+        body.prescription = payload.prescription;
+      }
       const res = await agent.post<MeOrderDto>("/me/orders", body);
       return res.data;
     },

@@ -308,6 +308,169 @@ export function OperationsWarrantyDetailScreen() {
           )}
         </Box>
 
+        {/* Customer Information Section */}
+        {(ticket.customerName || ticket.customerPhone || ticket.shippingAddress) && (
+          <Box
+            sx={{
+              pt: 2,
+              borderTop: "1px solid rgba(0,0,0,0.08)",
+            }}
+          >
+            <Typography sx={{ fontSize: 12, color: "text.secondary", mb: 1 }}>
+              Customer Information
+            </Typography>
+            <Box
+              sx={{
+                bgcolor: "rgba(0,0,0,0.02)",
+                borderRadius: 2,
+                p: 2,
+                border: "1px solid rgba(0,0,0,0.06)",
+                display: "grid",
+                gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+                gap: 2,
+              }}
+            >
+              {ticket.customerName && (
+                <Box>
+                  <Typography sx={{ fontSize: 11, color: "text.secondary" }}>
+                    Customer Name
+                  </Typography>
+                  <Typography sx={{ fontWeight: 700, fontSize: 14 }}>
+                    {ticket.customerName}
+                  </Typography>
+                </Box>
+              )}
+              {ticket.customerPhone && (
+                <Box>
+                  <Typography sx={{ fontSize: 11, color: "text.secondary" }}>
+                    Phone
+                  </Typography>
+                  <Typography sx={{ fontWeight: 700, fontSize: 14 }}>
+                    {ticket.customerPhone}
+                  </Typography>
+                </Box>
+              )}
+              {ticket.shippingAddress && (
+                <Box sx={{ gridColumn: { xs: "1fr", md: "1 / -1" } }}>
+                  <Typography sx={{ fontSize: 11, color: "text.secondary" }}>
+                    Delivery Address
+                  </Typography>
+                  <Typography sx={{ fontWeight: 700, fontSize: 13, lineHeight: 1.5 }}>
+                    {ticket.shippingAddress.venue && `${ticket.shippingAddress.venue}, `}
+                    {ticket.shippingAddress.ward && `${ticket.shippingAddress.ward}, `}
+                    {ticket.shippingAddress.district && `${ticket.shippingAddress.district}, `}
+                    {ticket.shippingAddress.city}
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+          </Box>
+        )}
+
+        {/* Prescription Information Section */}
+        {ticket.orderPrescription && (
+          <Box
+            sx={{
+              pt: 2,
+              borderTop: "1px solid rgba(0,0,0,0.08)",
+            }}
+          >
+            <Typography sx={{ fontSize: 12, color: "text.secondary", mb: 1 }}>
+              Prescription Information
+            </Typography>
+            <Box
+              sx={{
+                bgcolor: "rgba(99, 182, 255, 0.05)",
+                borderRadius: 2,
+                p: 2,
+                border: "1px solid rgba(99, 182, 255, 0.2)",
+              }}
+            >
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}>
+                <Typography sx={{ fontWeight: 700, fontSize: 13 }}>👁️ Prescription Details</Typography>
+                {ticket.orderPrescription.isVerified && (
+                  <Box
+                    sx={{
+                      px: 1,
+                      py: 0.25,
+                      borderRadius: 1,
+                      bgcolor: "#d1fae5",
+                      border: "1px solid #6ee7b7",
+                    }}
+                  >
+                    <Typography sx={{ fontSize: 10, fontWeight: 700, color: "#059669" }}>
+                      VERIFIED
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+
+              {ticket.orderPrescription.details && ticket.orderPrescription.details.length > 0 ? (
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+                  {ticket.orderPrescription.details.map((detail, idx) => (
+                    <Box
+                      key={`${detail.eye || 'both'}-${idx}`}
+                      sx={{
+                        p: 1.5,
+                        bgcolor: "white",
+                        borderRadius: 1,
+                        border: "1px solid rgba(99, 182, 255, 0.1)",
+                      }}
+                    >
+                      <Typography sx={{ fontWeight: 700, fontSize: 12, mb: 1 }}>
+                        {detail.eye || "Both Eyes"}
+                      </Typography>
+                      <Box sx={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(80px, 1fr))", gap: 1 }}>
+                        {detail.sph !== null && detail.sph !== undefined && (
+                          <Box>
+                            <Typography sx={{ fontSize: 10, color: "text.secondary" }}>SPH</Typography>
+                            <Typography sx={{ fontWeight: 600, fontSize: 12 }}>{detail.sph}</Typography>
+                          </Box>
+                        )}
+                        {detail.cyl !== null && detail.cyl !== undefined && (
+                          <Box>
+                            <Typography sx={{ fontSize: 10, color: "text.secondary" }}>CYL</Typography>
+                            <Typography sx={{ fontWeight: 600, fontSize: 12 }}>{detail.cyl}</Typography>
+                          </Box>
+                        )}
+                        {detail.axis !== null && detail.axis !== undefined && (
+                          <Box>
+                            <Typography sx={{ fontSize: 10, color: "text.secondary" }}>AXIS</Typography>
+                            <Typography sx={{ fontWeight: 600, fontSize: 12 }}>{detail.axis}</Typography>
+                          </Box>
+                        )}
+                        {detail.pd !== null && detail.pd !== undefined && (
+                          <Box>
+                            <Typography sx={{ fontSize: 10, color: "text.secondary" }}>PD</Typography>
+                            <Typography sx={{ fontWeight: 600, fontSize: 12 }}>{detail.pd}</Typography>
+                          </Box>
+                        )}
+                        {detail.add !== null && detail.add !== undefined && (
+                          <Box>
+                            <Typography sx={{ fontSize: 10, color: "text.secondary" }}>ADD</Typography>
+                            <Typography sx={{ fontWeight: 600, fontSize: 12 }}>{detail.add}</Typography>
+                          </Box>
+                        )}
+                      </Box>
+                    </Box>
+                  ))}
+                </Box>
+              ) : (
+                <Typography sx={{ fontSize: 12, color: "text.secondary", fontStyle: "italic" }}>
+                  No prescription details available
+                </Typography>
+              )}
+
+              {ticket.orderPrescription.verificationNotes && (
+                <Box sx={{ mt: 1.5, pt: 1.5, borderTop: "1px solid rgba(99, 182, 255, 0.1)" }}>
+                  <Typography sx={{ fontSize: 10, color: "text.secondary" }}>Verification Notes</Typography>
+                  <Typography sx={{ fontSize: 12, mt: 0.5 }}>{ticket.orderPrescription.verificationNotes}</Typography>
+                </Box>
+              )}
+            </Box>
+          </Box>
+        )}
+
         {ticket.staffNotes && (
           <Box
             sx={{

@@ -22,8 +22,22 @@ public sealed class GetOperationsOrderDetail
         {
             StaffOrderDto? order = await context.Orders
                 .Where(o => o.Id == request.Id)
+                .Include(o => o.Address)
+                .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.ProductVariant)
+                    .ThenInclude(pv => pv!.Product)
+                .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.ProductVariant)
+                    .ThenInclude(pv => pv!.Images)
+                .Include(o => o.Payments)
+                .Include(o => o.Prescription)
+                    .ThenInclude(p => p!.Details)
+                .Include(o => o.ShipmentInfo)
                 .Include(o => o.StatusHistories)
                     .ThenInclude(sh => sh.ChangedByUser)
+                .Include(o => o.PromoUsageLogs)
+                    .ThenInclude(p => p.Promotion)
+                .Include(o => o.SalesStaff)
                 .ProjectTo<StaffOrderDto>(mapper.ConfigurationProvider)
                 .FirstOrDefaultAsync(ct);
 

@@ -296,6 +296,12 @@ public sealed class MappingProfiles : Profile
 
         CreateMap<AfterSalesTicket, TicketDetailDto>()
             .ForMember(d => d.OrderItem, o => o.MapFrom(s => s.OrderItem))
+            .ForMember(d => d.CustomerName, o => o.MapFrom(s =>
+                GetCustomerName(s.Order)))
+            .ForMember(d => d.CustomerPhone, o => o.MapFrom(s =>
+                GetCustomerPhone(s.Order)))
+            .ForMember(d => d.ShippingAddress, o => o.MapFrom(s => s.Order != null ? s.Order.Address : null))
+            .ForMember(d => d.OrderPrescription, o => o.MapFrom(s => s.Order != null ? s.Order.Prescription : null))
             .ForMember(d => d.Attachments, o => o.MapFrom(s =>
                 s.Attachments.Where(a => a.DeletedAt == null).OrderBy(a => a.CreatedAt)));
 
@@ -311,5 +317,27 @@ public sealed class MappingProfiles : Profile
         //=== POLICIES ===
         CreateMap<PolicyConfiguration, PolicyConfigurationDto>();
         CreateMap<PolicyConfiguration, ActivePolicyDto>();
+    }
+
+    private static string? GetCustomerName(Order? order)
+    {
+        if (order == null)
+            return null;
+        
+        if (order.Address != null)
+            return order.Address.RecipientName;
+        
+        return order.WalkInCustomerName;
+    }
+
+    private static string? GetCustomerPhone(Order? order)
+    {
+        if (order == null)
+            return null;
+        
+        if (order.Address != null)
+            return order.Address.RecipientPhone;
+        
+        return order.WalkInCustomerPhone;
     }
 }

@@ -1,3 +1,6 @@
+import type { AddressDto } from "./address";
+import type { OrderPrescriptionDto } from "./afterSales";
+
 export interface StaffOrderDto {
   id: string;
   orderSource: string;
@@ -88,8 +91,11 @@ export interface StaffOrderDetailDto {
   finalAmount: number;
   discountApplied: number | null;
   customerNote: string | null;
+  customerName: string | null;
+  customerPhone: string | null;
   walkInCustomerName: string | null;
   walkInCustomerPhone: string | null;
+  shippingAddress: AddressDto | null;
   createdBySalesStaff: string | null;
   salesStaffName: string | null;
   userId: string | null;
@@ -97,9 +103,7 @@ export interface StaffOrderDetailDto {
   updatedAt: string | null;
   items: StaffOrderItemDto[];
   payment: StaffOrderPaymentDto | null;
-  prescription: unknown;
+  prescription: OrderPrescriptionDto | null;
   shipment?: ShipmentInfoDto | null;
   statusHistories: StaffOrderStatusHistoryDto[];
 }
-
-

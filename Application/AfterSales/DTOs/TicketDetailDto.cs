@@ -1,6 +1,7 @@
 using Domain;
 using System.Collections.Generic;
 using Application.Orders.DTOs;
+using Application.Addresses.DTOs;
 
 namespace Application.AfterSales.DTOs;
 /// <summary>
@@ -13,6 +14,10 @@ public sealed class TicketDetailDto
     public Guid? OrderItemId { get; set; }
     public OrderItemOutputDto? OrderItem { get; set; }
     public Guid CustomerId { get; set; }
+    public string? CustomerName { get; set; }
+    public string? CustomerPhone { get; set; }
+    public AddressDto? ShippingAddress { get; set; }
+    public OrderPrescriptionDto? OrderPrescription { get; set; }
     public AfterSalesTicketType TicketType { get; set; }
     public AfterSalesTicketStatus TicketStatus { get; set; }
     public TicketResolutionType? ResolutionType { get; set; }

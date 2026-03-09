@@ -5,6 +5,22 @@
 /** Order type: use values from GET /api/lookups (orderType array) */
 export type OrderTypeLookup = "ReadyStock" | "PreOrder" | "Prescription";
 
+/** Prescription detail input for order checkout */
+export interface PrescriptionDetailInputDto {
+  /** Eye type: 1 = Left (OS), 2 = Right (OD) */
+  eye: 1 | 2;
+  sph?: number | null;
+  cyl?: number | null;
+  axis?: number | null;
+  pd?: number | null;
+  add?: number | null;
+}
+
+/** Prescription input for order checkout */
+export interface PrescriptionInputDto {
+  details: PrescriptionDetailInputDto[];
+}
+
 /** Request body for POST /api/me/orders — create order from current cart */
 export interface CreateOrderPayload {
   /** Saved address ID from POST /api/me/addresses */
@@ -19,6 +35,8 @@ export interface CreateOrderPayload {
   selectedCartItemIds: string[];
   /** Promo code (optional) */
   promoCode?: string | null;
+  /** Prescription details (required when orderType is "Prescription") */
+  prescription?: PrescriptionInputDto | null;
 }
 
 /** Line item in order (from API response) */
