@@ -64,6 +64,7 @@ const MANAGER_SUB_LINKS: { path: string; label: string; icon: React.ReactNode }[
 const ADMIN_SUB_LINKS: { path: string; label: string; icon: React.ReactNode }[] = [
   { path: "/admin", label: "Dashboard", icon: <AdminPanelSettingsIcon /> },
   { path: "/admin/roles", label: "Role Management", icon: <SecurityIcon /> },
+  { path: "/admin/policies", label: "Policies", icon: <SecurityIcon /> },
 ];
 
 export default function DashboardLayout() {

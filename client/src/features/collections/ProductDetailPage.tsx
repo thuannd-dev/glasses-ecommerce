@@ -17,6 +17,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 
 import { useProductDetailPage } from "./hooks/useProductDetailPage";
 import { RelatedProductsCarousel } from "./components/ProductDetailPageComponents/RelatedProductsCarousel";
+import { usePreOrderButton } from "./components/ProductDetailPageComponents/PreOrderDialog";
 
 const NAV_H = 56;
 const GAP_TOP = 24;
@@ -25,6 +26,7 @@ const FOOT_H = 0;
 
 export default function ProductDetailPage() {
     const nav = useNavigate();
+    const { handlePreOrder } = usePreOrderButton();
     const {
         product,
         isLoading,
@@ -211,8 +213,8 @@ export default function ProductDetailPage() {
                             )}
                     </Box>
 
-                    {/* Status + sku */}
-                    <Box sx={{ mt: 1.5, display: "flex", alignItems: "center", gap: 1.5 }}>
+                    {/* Status + Stock Status + Quantity + sku */}
+                    <Box sx={{ mt: 1.5, display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
                         <Chip
                             label={product.status}
                             size="small"
@@ -229,6 +231,28 @@ export default function ProductDetailPage() {
                                         : "rgba(71,85,105,0.95)",
                             }}
                         />
+                        {/* Stock Status Indicator */}
+                        <Chip
+                            label={(currentVariant?.quantityAvailable ?? 0) > 0 ? "Ready Stock" : "Out of Stock"}
+                            size="small"
+                            sx={{
+                                borderRadius: 999,
+                                fontWeight: 700,
+                                bgcolor: (currentVariant?.quantityAvailable ?? 0) > 0 
+                                    ? "rgba(59,130,246,0.12)"
+                                    : "rgba(239,68,68,0.12)",
+                                color: (currentVariant?.quantityAvailable ?? 0) > 0 
+                                    ? "rgba(37,99,235,0.95)"
+                                    : "rgba(220,38,38,0.95)",
+                            }}
+                        />
+                        {/* Quantity */}
+                        <Typography
+                            fontSize={13}
+                            sx={{ color: "rgba(17,24,39,0.65)", fontWeight: 600 }}
+                        >
+                            {currentVariant?.quantityAvailable ?? 0} available
+                        </Typography>
                         {product.sku && (
                             <Typography
                                 fontSize={13}
@@ -311,42 +335,84 @@ export default function ProductDetailPage() {
                     )}
 
                     {/* Actions */}
-                    <Box sx={{ display: "flex", gap: 1.2, mt: 1 }}>
-        {isEyeglasses ? (
+                    <Box sx={{ display: "flex", gap: 1.2, mt: 1, flexWrap: "wrap" }}>
+                        {/* Show Add to Cart / Select Lenses only if in stock */}
+                        {(currentVariant?.quantityAvailable ?? 0) > 0 && (
                             <>
-                                <Button
-                                    variant="contained"
-                                    onClick={() =>
-                                        nav(`/product/${product.id}/lenses`, {
-                                            state: { variantId: currentVariant?.id ?? null },
-                                        })
-                                    }
-                                    sx={{
-                                        bgcolor: "#111827",
-                                        borderRadius: 2,
-                                        height: 46,
-                                        px: 3,
-                                        fontWeight: 900,
-                                        "&:hover": { bgcolor: "#0b1220" },
-                                    }}
-                                >
-                                    Select lenses
-                                </Button>
+                                {isEyeglasses ? (
+                                    <>
+                                        <Button
+                                            variant="contained"
+                                            onClick={() =>
+                                                nav(`/product/${product.id}/lenses`, {
+                                                    state: { variantId: currentVariant?.id ?? null },
+                                                })
+                                            }
+                                            sx={{
+                                                bgcolor: "#111827",
+                                                borderRadius: 2,
+                                                height: 46,
+                                                px: 3,
+                                                fontWeight: 900,
+                                                "&:hover": { bgcolor: "#0b1220" },
+                                            }}
+                                        >
+                                            Select lenses
+                                        </Button>
+                                    </>
+                                ) : (
+                                    <Button
+                                        variant="contained"
+                                        onClick={handleAddToCart}
+                                        sx={{
+                                            bgcolor: "#111827",
+                                            borderRadius: 2,
+                                            height: 46,
+                                            px: 3,
+                                            fontWeight: 900,
+                                            "&:hover": { bgcolor: "#0b1220" },
+                                        }}
+                                    >
+                                        Add to cart
+                                    </Button>
+                                )}
                             </>
-                        ) : (
+                        )}
+
+                        {/* Show Pre-Order only if out of stock */}
+                        {(currentVariant?.quantityAvailable ?? 0) === 0 && (
                             <Button
-                                variant="contained"
-                                onClick={handleAddToCart}
+                                variant="outlined"
+                                onClick={() => {
+                                    if (isEyeglasses) {
+                                        // For eyeglasses: navigate to select lenses with pre-order flag
+                                        nav(`/product/${product.id}/lenses`, {
+                                            state: { 
+                                                variantId: currentVariant?.id ?? null,
+                                                isPreOrder: true 
+                                            },
+                                        });
+                                    } else {
+                                        // For sunglasses: direct pre-order
+                                        handlePreOrder({
+                                            variant: currentVariant,
+                                        });
+                                    }
+                                }}
                                 sx={{
-                                    bgcolor: "#111827",
                                     borderRadius: 2,
                                     height: 46,
                                     px: 3,
                                     fontWeight: 900,
-                                    "&:hover": { bgcolor: "#0b1220" },
+                                    borderColor: "#111827",
+                                    color: "#111827",
+                                    "&:hover": {
+                                        bgcolor: "rgba(17,24,39,0.08)",
+                                        borderColor: "#111827",
+                                    },
                                 }}
                             >
-                                Add to cart
+                                {isEyeglasses ? "Select lenses for Pre-Order" : "Pre-Order"}
                             </Button>
                         )}
 

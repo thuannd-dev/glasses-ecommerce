@@ -18,6 +18,7 @@ public sealed class CartItemDto
     // Stock information
     public int QuantityAvailable { get; set; }
     public bool IsInStock { get; set; }
+    public bool IsPreOrder { get; set; }
     
     // Product basic info
     public Guid ProductId { get; set; }
