@@ -182,7 +182,7 @@ export default function InboundRecordsScreen() {
   };
 
   return (
-    <Box sx={{ px: { xs: 2, md: 6, lg: 10 }, py: 4 }}>
+    <Box sx={{ px: { xs: 2, md: 4, lg: 6 }, py: 4 }}>
       <Stack direction={{ xs: "column", md: "row" }} justifyContent="space-between" spacing={1.5}>
         <Box>
           <Typography sx={{ fontSize: 22, fontWeight: 900 }} color="text.primary">
@@ -295,19 +295,19 @@ export default function InboundRecordsScreen() {
           elevation={0}
           sx={{ borderRadius: 3, border: "1px solid rgba(0,0,0,0.08)" }}
         >
-          <Table size="small">
+          <Table>
             <TableHead>
               <TableRow>
-                <TableCell sx={{ fontWeight: 900 }}>ID</TableCell>
-                <TableCell sx={{ fontWeight: 900 }}>Source Type</TableCell>
-                <TableCell sx={{ fontWeight: 900 }}>Source Ref</TableCell>
-                <TableCell sx={{ fontWeight: 900 }} align="right">
+                <TableCell sx={{ fontWeight: 900, fontSize: 14 }}>ID</TableCell>
+                <TableCell sx={{ fontWeight: 900, fontSize: 14 }}>Source Type</TableCell>
+                <TableCell sx={{ fontWeight: 900, fontSize: 14 }}>Source Ref</TableCell>
+                <TableCell sx={{ fontWeight: 900, fontSize: 14 }} align="right">
                   Items
                 </TableCell>
-                <TableCell sx={{ fontWeight: 900 }}>Status</TableCell>
-                <TableCell sx={{ fontWeight: 900 }}>Created At</TableCell>
-                <TableCell sx={{ fontWeight: 900 }}>Created By</TableCell>
-                <TableCell sx={{ fontWeight: 900 }} align="right">
+                <TableCell sx={{ fontWeight: 900, fontSize: 14 }}>Status</TableCell>
+                <TableCell sx={{ fontWeight: 900, fontSize: 14 }}>Created At</TableCell>
+                <TableCell sx={{ fontWeight: 900, fontSize: 14 }}>Created By</TableCell>
+                <TableCell sx={{ fontWeight: 900, fontSize: 14 }} align="right">
                   Actions
                 </TableCell>
               </TableRow>
@@ -330,7 +330,7 @@ export default function InboundRecordsScreen() {
               ) : visibleItems.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} align="center" sx={{ py: 6 }}>
-                    <Typography color="text.secondary" fontSize={13}>
+                    <Typography color="text.secondary" fontSize={14}>
                       No records found.
                     </Typography>
                   </TableCell>
@@ -341,16 +341,16 @@ export default function InboundRecordsScreen() {
                     key={record.id}
                     hover
                     onClick={() => navigate(`/manager/inbound/${record.id}`)}
-                    sx={{ cursor: "pointer" }}
+                    sx={{ cursor: "pointer", "& td": { py: 1.8 } }}
                   >
-                    <TableCell sx={{ fontFamily: "monospace", fontSize: 12 }}>
+                    <TableCell sx={{ fontFamily: "monospace", fontSize: 13.5 }}>
                       {record.id.slice(0, 8)}…
                     </TableCell>
-                    <TableCell>{record.sourceType}</TableCell>
-                    <TableCell sx={{ fontSize: 12, color: "text.secondary" }}>
+                    <TableCell sx={{ fontSize: 14 }}>{record.sourceType}</TableCell>
+                    <TableCell sx={{ fontSize: 13.5, color: "text.secondary" }}>
                       {record.sourceReference ?? "—"}
                     </TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 800 }}>
+                    <TableCell align="right" sx={{ fontWeight: 800, fontSize: 14 }}>
                       {record.totalItems}
                     </TableCell>
                     <TableCell>
@@ -361,8 +361,8 @@ export default function InboundRecordsScreen() {
                         variant="outlined"
                       />
                     </TableCell>
-                    <TableCell>{new Date(record.createdAt).toLocaleDateString()}</TableCell>
-                    <TableCell>{record.createdByName ?? "—"}</TableCell>
+                    <TableCell sx={{ fontSize: 14 }}>{new Date(record.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell sx={{ fontSize: 14 }}>{record.createdByName ?? "—"}</TableCell>
                     <TableCell align="right">
                       <Stack direction="row" spacing={0.5} justifyContent="flex-end">
                         <Button
