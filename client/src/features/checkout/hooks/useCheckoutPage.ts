@@ -9,7 +9,7 @@ import { setOrderShippingAddress } from "../../orders/orderShippingAddressCache"
 import { setOrderPrescriptions } from "../../orders/orderPrescriptionCache";
 import { getCartItemPrescriptions } from "../../cart/prescriptionCache";
 import type { PrescriptionData } from "../../../lib/types/prescription";
-import type { PrescriptionDetailInputDto, PrescriptionInputDto } from "../../../lib/types/order";
+import type { PrescriptionInputDto } from "../../../lib/types/order";
 import type { CheckoutShippingForm, CheckoutSnackbarState, PaymentMethodUI } from "../types";
 import { toApiPaymentMethod, isValidVietnamPhone } from "../utils";
 
