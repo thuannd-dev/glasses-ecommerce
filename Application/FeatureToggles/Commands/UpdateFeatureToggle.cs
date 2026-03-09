@@ -80,7 +80,9 @@ public sealed class UpdateFeatureToggle
                 if (!success)
                     return Result<FeatureToggleDto>.Failure("Failed to update feature toggle.", 500);
             }
-            catch (DbUpdateException ex) when (ex.InnerException?.Message.Contains("UX_") == true || ex.InnerException?.Message.Contains("unique index") == true || ex.InnerException?.Message.Contains("Violation of UNIQUE KEY constraint") == true)
+            catch (DbUpdateException ex) when (
+                ex.InnerException?.Message.Contains("UX_FeatureToggle_FeatureName_Global", StringComparison.OrdinalIgnoreCase) == true ||
+                ex.InnerException?.Message.Contains("UX_FeatureToggle_FeatureName_Scoped", StringComparison.OrdinalIgnoreCase) == true)
             {
                 string scopeLabel = normalizedScope == null
                     ? "global scope"

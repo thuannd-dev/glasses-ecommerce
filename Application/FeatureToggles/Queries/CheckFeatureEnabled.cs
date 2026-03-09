@@ -68,7 +68,7 @@ public sealed class CheckFeatureEnabled
 
             var cacheOptions = new MemoryCacheEntryOptions
             {
-                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10)
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
             };
             cache.Set(cacheKey, isEffective, cacheOptions);
 
