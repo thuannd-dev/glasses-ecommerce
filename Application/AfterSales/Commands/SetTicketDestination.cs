@@ -20,8 +20,7 @@ public sealed class SetTicketDestination
 
     internal sealed class Handler(
         AppDbContext context,
-        IMapper mapper,
-        IUserAccessor userAccessor) : IRequestHandler<Command, Result<TicketDetailDto>>
+        IMapper mapper) : IRequestHandler<Command, Result<TicketDetailDto>>
     {
         public async Task<Result<TicketDetailDto>> Handle(Command request, CancellationToken ct)
         {

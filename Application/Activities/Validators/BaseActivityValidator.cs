@@ -1,5 +1,6 @@
 using System;
 using Application.Activities.DTOs;
+using Application.Core;
 using FluentValidation;
 
 namespace Application.Activities.Validators;

@@ -80,12 +80,12 @@ public sealed class ApproveInbound
 
                 // 5. Load stocks with UPDLOCK to prevent race condition
                 List<Guid> variantIds = [.. record.Items.Select(i => i.ProductVariantId)];
-                string paramList = string.Join(", ", variantIds.Select((_, i) => $"@p{i}"));
+                string paramList = string.Join(", ", variantIds.Select((_, i) => "@p" + i));
                 object[] sqlParams = variantIds
-                    .Select((id, i) => (object)new SqlParameter($"@p{i}", id)).ToArray();
+                    .Select((id, i) => (object)new SqlParameter("@p" + i, id)).ToArray();
 
                 List<Stock> stocks = await context.Stocks
-                    .FromSqlRaw($"SELECT * FROM Stocks WITH (UPDLOCK) WHERE ProductVariantId IN ({paramList})", sqlParams)
+                    .FromSqlRaw("SELECT * FROM Stocks WITH (UPDLOCK) WHERE ProductVariantId IN (" + paramList + ")", sqlParams)
                     .ToListAsync(ct);
 
                 // 6. Update stock for each item
