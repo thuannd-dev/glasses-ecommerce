@@ -18,15 +18,15 @@ public sealed class CreateFeatureToggleValidator : AbstractValidator<CreateFeatu
 
             RuleFor(x => x.Dto.Description)
                 .MaximumLength(500).WithMessage("Description cannot exceed 500 characters.")
-                .When(x => x.Dto.Description != null);
+                .When(x => !string.IsNullOrWhiteSpace(x.Dto.Description));
 
             RuleFor(x => x.Dto.Scope)
                 .MaximumLength(50).WithMessage("Scope cannot exceed 50 characters.")
-                .When(x => x.Dto.Scope != null);
+                .When(x => !string.IsNullOrWhiteSpace(x.Dto.Scope));
 
             RuleFor(x => x.Dto.ScopeValue)
                 .MaximumLength(200).WithMessage("ScopeValue cannot exceed 200 characters.")
-                .When(x => x.Dto.ScopeValue != null);
+                .When(x => !string.IsNullOrWhiteSpace(x.Dto.ScopeValue));
 
             RuleFor(x => x.Dto.ScopeValue)
                 .NotEmpty().WithMessage("ScopeValue is required when Scope is specified.")

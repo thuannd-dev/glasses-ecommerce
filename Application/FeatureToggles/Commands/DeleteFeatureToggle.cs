@@ -2,6 +2,7 @@ using Application.Core;
 using Domain;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Persistence;
 
 namespace Application.FeatureToggles.Commands;
@@ -13,7 +14,7 @@ public sealed class DeleteFeatureToggle
         public required Guid Id { get; set; }
     }
 
-    internal sealed class Handler(AppDbContext context, Microsoft.Extensions.Caching.Memory.IMemoryCache cache)
+    internal sealed class Handler(AppDbContext context, IMemoryCache cache)
         : IRequestHandler<Command, Result<Unit>>
     {
         public async Task<Result<Unit>> Handle(Command request, CancellationToken ct)

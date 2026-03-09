@@ -27,9 +27,14 @@ public sealed class UpdateFeatureToggle
         {
             UpdateFeatureToggleDto dto = request.Dto;
 
-            if (dto.EffectiveTo.HasValue && dto.EffectiveFrom.HasValue
-                && dto.EffectiveTo <= dto.EffectiveFrom)
-                return Result<FeatureToggleDto>.Failure("EffectiveTo must be after EffectiveFrom.", 400);
+            if (dto.EffectiveTo.HasValue)
+            {
+                if (!dto.EffectiveFrom.HasValue)
+                    return Result<FeatureToggleDto>.Failure("EffectiveFrom must be provided if EffectiveTo is set.", 400);
+
+                if (dto.EffectiveTo <= dto.EffectiveFrom)
+                    return Result<FeatureToggleDto>.Failure("EffectiveTo must be after EffectiveFrom.", 400);
+            }
 
             FeatureToggle? toggle = await context.FeatureToggles
                 .FirstOrDefaultAsync(ft => ft.Id == request.Id, ct);

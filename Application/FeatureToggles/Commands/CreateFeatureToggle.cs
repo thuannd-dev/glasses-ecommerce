@@ -26,9 +26,14 @@ public sealed class CreateFeatureToggle
         {
             CreateFeatureToggleDto dto = request.Dto;
 
-            if (dto.EffectiveTo.HasValue && dto.EffectiveFrom.HasValue
-                && dto.EffectiveTo <= dto.EffectiveFrom)
-                return Result<FeatureToggleDto>.Failure("EffectiveTo must be after EffectiveFrom.", 400);
+            if (dto.EffectiveTo.HasValue)
+            {
+                if (!dto.EffectiveFrom.HasValue)
+                    return Result<FeatureToggleDto>.Failure("EffectiveFrom must be provided if EffectiveTo is set.", 400);
+
+                if (dto.EffectiveTo <= dto.EffectiveFrom)
+                    return Result<FeatureToggleDto>.Failure("EffectiveTo must be after EffectiveFrom.", 400);
+            }
 
             string? normalizedScope = string.IsNullOrWhiteSpace(dto.Scope) ? null : dto.Scope;
             string? normalizedScopeValue = string.IsNullOrWhiteSpace(dto.ScopeValue) ? null : dto.ScopeValue;
