@@ -49,21 +49,22 @@ public sealed class CheckFeatureEnabled
                         || (hasScope && ft.Scope == normScope && ft.ScopeValue == normScopeValue)))
                 .ToListAsync(ct);
 
-            // Prefer the scoped record; fall back to the global one
+            DateTime utcNow = DateTime.UtcNow;
+
+            // Filter candidates that are ACTUALLY effective right now
+            var effectiveCandidates = candidates.Where(ft => 
+                ft.IsEnabled 
+                && (ft.EffectiveFrom == null || ft.EffectiveFrom <= utcNow)
+                && (ft.EffectiveTo == null || ft.EffectiveTo > utcNow)
+            ).ToList();
+
+            // Prefer the EFFECTIVE scoped record; fall back to the EFFECTIVE global one
             FeatureToggle? toggle = hasScope
-                ? candidates.FirstOrDefault(ft => ft.Scope == normScope && ft.ScopeValue == normScopeValue)
-                    ?? candidates.FirstOrDefault(ft => ft.Scope == null)
-                : candidates.FirstOrDefault(ft => ft.Scope == null);
+                ? effectiveCandidates.FirstOrDefault(ft => ft.Scope == normScope && ft.ScopeValue == normScopeValue)
+                    ?? effectiveCandidates.FirstOrDefault(ft => ft.Scope == null)
+                : effectiveCandidates.FirstOrDefault(ft => ft.Scope == null);
 
-            bool isEffective = false;
-
-            if (toggle != null)
-            {
-                DateTime utcNow = DateTime.UtcNow;
-                isEffective = toggle.IsEnabled
-                    && (toggle.EffectiveFrom == null || toggle.EffectiveFrom <= utcNow)
-                    && (toggle.EffectiveTo == null || toggle.EffectiveTo > utcNow);
-            }
+            bool isEffective = toggle != null;
 
             var cacheOptions = new MemoryCacheEntryOptions
             {
