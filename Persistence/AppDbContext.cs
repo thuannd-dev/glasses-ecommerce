@@ -1377,16 +1377,21 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
                 .HasMaxLength(200);
 
             // Indexes
+            // Unique: only one global (Scope=NULL) flag per feature name
             entity.HasIndex(e => e.FeatureName)
                 .IsUnique()
-                .HasDatabaseName("UX_FeatureToggle_FeatureName");
+                .HasFilter("[Scope] IS NULL")
+                .HasDatabaseName("UX_FeatureToggle_FeatureName_Global");
+
+            // Unique: only one scoped flag per (FeatureName, Scope, ScopeValue) combination
+            entity.HasIndex(e => new { e.FeatureName, e.Scope, e.ScopeValue })
+                .IsUnique()
+                .HasFilter("[Scope] IS NOT NULL")
+                .HasDatabaseName("UX_FeatureToggle_FeatureName_Scoped");
 
             entity.HasIndex(e => e.IsEnabled)
                 .HasDatabaseName("IX_FeatureToggle_IsEnabled")
                 .HasFilter("[IsEnabled] = 1");
-
-            entity.HasIndex(e => new { e.Scope, e.ScopeValue })
-                .HasDatabaseName("IX_FeatureToggle_Scope_ScopeValue");
 
             entity.HasIndex(e => new { e.FeatureName, e.IsEnabled })
                 .HasDatabaseName("IX_FeatureToggle_FeatureName_IsEnabled");

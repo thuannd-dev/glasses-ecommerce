@@ -50,7 +50,7 @@ import {
 import { ManagerProductCreateWizardScreen } from "../../features/Manager/screens";
 import AdminDashboard from "../../features/Admin/AdminDashboard";
 import RoleManagement from "../../features/Admin/RoleManagement";
-
+import AdminPolicies from "../../features/Admin/AdminPolicies";
 export const router = createBrowserRouter([
   // ======================
   // HOME (NO NAVBAR)
@@ -149,6 +149,7 @@ export const router = createBrowserRouter([
             children: [
               { index: true, element: <AdminDashboard /> },
               { path: "roles", element: <RoleManagement /> },
+              { path: "policies", element: <AdminPolicies /> },
             ],
           },
         ],
