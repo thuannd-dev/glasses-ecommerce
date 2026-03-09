@@ -4,6 +4,7 @@ using Application.Addresses.DTOs;
 using Application.AfterSales.DTOs;
 using Application.Carts.DTOs;
 using Application.Categories.DTOs;
+using Application.FeatureToggles.DTOs;
 using Application.Orders.DTOs;
 using Application.Products.DTOs;
 using Application.Profiles.DTOs;
@@ -295,5 +296,12 @@ public sealed class MappingProfiles : Profile
         //=== POLICIES ===
         CreateMap<PolicyConfiguration, PolicyConfigurationDto>();
         CreateMap<PolicyConfiguration, ActivePolicyDto>();
+
+        //=== FEATURE TOGGLES ===
+        CreateMap<FeatureToggle, FeatureToggleDto>()
+            .ForMember(d => d.IsEffectivelyActive, o => o.MapFrom(s =>
+                s.IsEnabled
+                && (s.EffectiveFrom == null || s.EffectiveFrom <= DateTime.UtcNow)
+                && (s.EffectiveTo == null || s.EffectiveTo > DateTime.UtcNow)));
     }
 }
