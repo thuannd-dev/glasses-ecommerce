@@ -61,6 +61,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         });
 });
 
+builder.Services.AddMemoryCache();
 builder.Services.AddCors();
 
 /*

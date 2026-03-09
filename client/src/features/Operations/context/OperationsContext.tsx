@@ -7,10 +7,10 @@ import {
   useUpdateTracking,
 } from "../../../lib/hooks/useOperationsOrders";
 import { CreateShipmentDialog } from "../components";
-import type { ShipmentDto, OperationsOrdersResponse, OperationsOrderDto } from "../../../lib/types";
+import type { ShipmentDto, OrderDto } from "../../../lib/types";
 
 type OperationsContextValue = {
-  orders: OperationsOrderDto[];
+  orders: OrderDto[];
   ordersLoading: boolean;
   shipments: ShipmentDto[];
   shipmentsLoading: boolean;
@@ -64,10 +64,10 @@ export function OperationsProvider({ children }: { children: React.ReactNode }) 
     );
   }, [createShipOrderId, createShipCarrier, createShipTracking, createShipTrackingUrl, createShipment]);
 
-  const safeOrders: OperationsOrderDto[] = Array.isArray(ordersData)
-    ? (ordersData as OperationsOrderDto[])
-    : Array.isArray((ordersData as OperationsOrdersResponse | undefined)?.items)
-    ? ((ordersData as OperationsOrdersResponse).items as OperationsOrderDto[])
+  const safeOrders: OrderDto[] = Array.isArray(ordersData)
+    ? ordersData
+    : Array.isArray((ordersData as any)?.items)
+    ? ((ordersData as any).items as any[]) // Backend returns StaffOrderDto-like structure with orderStatus, not status
     : [];
 
   const safeShipments: ShipmentDto[] =  

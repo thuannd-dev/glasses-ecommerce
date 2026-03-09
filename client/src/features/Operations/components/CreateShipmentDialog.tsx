@@ -86,21 +86,21 @@ export function CreateShipmentDialog({
               <Typography fontSize={13} color="text.secondary" sx={{ mt: 0.5 }}>
                 {formatDate((order as OrderDto).createdAt)}
               </Typography>
-              {(order as OrderDto).orderType === "pre-order" && (order as OrderDto).expectedStockDate && (
+              {order.orderType === "PreOrder" && order.expectedStockDate && (
                 <Typography fontSize={13} color="text.secondary" sx={{ mt: 0.5 }}>
                   Expected stock: {(order as OrderDto).expectedStockDate}
                 </Typography>
               )}
-              {(order as OrderDto).orderType === "prescription" && (order as OrderDto).prescriptionStatus && (
+              {order.orderType === "Prescription" && order.prescriptionStatus && (
                 <Typography fontSize={13} color="text.secondary" sx={{ mt: 0.5 }}>
                   Prescription: {(order as OrderDto).prescriptionStatus}
                 </Typography>
               )}
               <Divider sx={{ my: 1.5 }} />
               <Typography fontSize={12} fontWeight={700} color="text.secondary" sx={{ mb: 0.5 }}>
-                Items ({(order as OrderDto).items.length})
+                Items ({order.items?.length || 0})
               </Typography>
-              {(order as OrderDto).items.map((item) => (
+              {(order.items || []).map((item) => (
                 <Box
                   key={item.id}
                   sx={{

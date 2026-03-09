@@ -14,24 +14,18 @@ import {
 
 import { useOperations } from "../context/OperationsContext";
 import { SummaryCard } from "../components";
-import { ORDER_TYPE_LABEL, formatDate } from "../constants";
+import { ORDER_TYPE_LABEL, ORDER_STATUS_LABEL, formatDate } from "../constants";
+import type { OrderStatus } from "../../../lib/types";
 
-const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
-  Pending: { bg: "rgba(255,193,7,0.12)", color: "#f57f17" },
+const STATUS_COLORS: Record<OrderStatus, { bg: string; color: string }> = {
+  Pending: { bg: "rgba(25,118,210,0.08)", color: "#1565c0" },
   Confirmed: { bg: "rgba(25,118,210,0.08)", color: "#1565c0" },
   Processing: { bg: "rgba(255,152,0,0.12)", color: "#ef6c00" },
-  Shipped: { bg: "rgba(46,125,50,0.12)", color: "#2e7d32" },
+  Shipped: { bg: "rgba(2,136,209,0.12)", color: "#0277bd" },
   Delivered: { bg: "rgba(46,125,50,0.12)", color: "#2e7d32" },
-  Rejected: { bg: "rgba(211,47,47,0.10)", color: "#c62828" },
-};
-
-const ORDER_STATUS_LABEL: Record<string, string> = {
-  Pending: "Pending",
-  Confirmed: "Confirmed",
-  Processing: "Processing",
-  Shipped: "Shipped",
-  Delivered: "Delivered",
-  Rejected: "Rejected",
+  Completed: { bg: "rgba(46,125,50,0.12)", color: "#2e7d32" },
+  Cancelled: { bg: "rgba(211,47,47,0.10)", color: "#c62828" },
+  Refunded: { bg: "rgba(211,47,47,0.10)", color: "#c62828" },
 };
 
 export function OverviewScreen() {
@@ -41,10 +35,10 @@ export function OverviewScreen() {
   const safeShipments = Array.isArray(shipments) ? shipments : [];
 
   const pendingCount = safeOrders.filter(
-    (o) => o.orderStatus === "Pending" || o.orderStatus === "Processing"
+    (o) => ((o as any).orderStatus || o.status) === "Pending" || ((o as any).orderStatus || o.status) === "Processing" || ((o as any).orderStatus || o.status) === "Shipped"
   ).length;
   const shippedCount = safeOrders.filter(
-    (o) => o.orderStatus === "Shipped" || o.orderStatus === "Delivered"
+    (o) => ((o as any).orderStatus || o.status) === "Shipped" || ((o as any).orderStatus || o.status) === "Delivered"
   ).length;
   const inTransitCount = safeShipments.filter(
     (s) => s.status === "in_transit" || s.status === "picked"
@@ -231,15 +225,15 @@ export function OverviewScreen() {
                     </TableCell>
                     <TableCell>
                       <Chip
-                        label={ORDER_STATUS_LABEL[order.orderStatus]}
+                        label={ORDER_STATUS_LABEL[((order as any).orderStatus || order.status) as OrderStatus]}
                         size="small"
                         sx={{
                           fontWeight: 700,
                           textTransform: "capitalize",
                           borderRadius: 1,
-                          border: `1px solid ${STATUS_COLORS[order.orderStatus].color}`,
-                          bgcolor: STATUS_COLORS[order.orderStatus].bg,
-                          color: STATUS_COLORS[order.orderStatus].color,
+                          border: `1px solid ${STATUS_COLORS[((order as any).orderStatus || order.status) as OrderStatus].color}`,
+                          bgcolor: STATUS_COLORS[((order as any).orderStatus || order.status) as OrderStatus].bg,
+                          color: STATUS_COLORS[((order as any).orderStatus || order.status) as OrderStatus].color,
                           flexShrink: 0,
                         }}
                       />

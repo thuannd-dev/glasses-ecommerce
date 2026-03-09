@@ -61,12 +61,15 @@ public sealed class UpdateCartItem
                 return Result<CartItemDto>.Failure("Product variant is no longer available.", 400);
             }
 
-            // Check stock availability for new quantity
-            if (cartItem.ProductVariant.Stock == null
-                || cartItem.ProductVariant.Stock.QuantityAvailable < request.UpdateCartItemDto.Quantity)
+            // Only check stock for non-pre-order items
+            if (!cartItem.ProductVariant.IsPreOrder)
             {
-                return Result<CartItemDto>.Failure(
-                    $"Insufficient stock. Only {cartItem.ProductVariant.Stock?.QuantityAvailable ?? 0} items available.", 400);
+                if (cartItem.ProductVariant.Stock == null
+                    || cartItem.ProductVariant.Stock.QuantityAvailable < request.UpdateCartItemDto.Quantity)
+                {
+                    return Result<CartItemDto>.Failure(
+                        $"Insufficient stock. Only {cartItem.ProductVariant.Stock?.QuantityAvailable ?? 0} items available.", 400);
+                }
             }
 
             // Update quantity

@@ -67,3 +67,11 @@ export type {
   StaffAfterSalesResponse,
   TicketDetailDto,
 } from "./afterSales";
+export type {
+  PolicyConfigurationDto,
+  CreatePolicyPayload,
+  UpdatePolicyPayload,
+  AdminPoliciesQueryParams,
+  PagedPoliciesResponse,
+} from "./policy";
+export { PolicyTypeEnum, POLICY_TYPE_LABELS, getPolicyTypeLabel } from "./policy";

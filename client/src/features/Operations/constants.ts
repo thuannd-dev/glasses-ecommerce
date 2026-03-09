@@ -1,12 +1,12 @@
-import type { ShipmentDto } from "../../lib/types";
+import type { OrderType, OrderStatus, ShipmentDto } from "../../lib/types";
 
-export const ORDER_TYPE_LABEL: Record<string, string> = {
-  ReadyStock: "Ready Stock",
+export const ORDER_TYPE_LABEL: Record<OrderType, string> = {
+  ReadyStock: "Standard",
   PreOrder: "Pre-order",
   Prescription: "Prescription",
 };
 
-export const ORDER_STATUS_LABEL: Record<string, string> = {
+export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
   Pending: "Pending",
   Confirmed: "Confirmed",
   Processing: "Processing",
