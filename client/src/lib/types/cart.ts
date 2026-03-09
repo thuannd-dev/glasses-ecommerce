@@ -12,6 +12,7 @@ export type CartItemDto = {
   material: string | null;
   quantityAvailable: number;
   isInStock: boolean;
+  isPreOrder: boolean;
   productId: string;
   productName: string;
   productImageUrl: string;

@@ -1,0 +1,160 @@
+@HostAddress = https://localhost:5001
+# 🚨 Nhập JWT Token có quyền Admin vào biến dưới đây trước khi test:
+@AdminToken = YOUR_ADMIN_TOKEN_HERE
+
+### =========================================================================
+### KỊCH BẢN 1: BẬT TÍNH NĂNG "THANH TOÁN VNPay" TOÀN CẦU (GLOBAL SCOPE)
+### =========================================================================
+
+### 1.1 Khởi tạo tính năng VNPay (Global)
+# @name createVnPayGlobal
+POST {{HostAddress}}/api/admin/feature-toggles
+Authorization: Bearer {{AdminToken}}
+Content-Type: application/json
+
+{
+  "featureName": "Payment_VNPay",
+  "isEnabled": true,
+  "description": "Bật cổng thanh toán VNPay cho tất cả người dùng"
+}
+
+### Lưu ID để dọn dẹp sau
+@VnPayGlobalId = {{createVnPayGlobal.response.body.$.id}}
+
+
+### 1.2 User (Khách) vào giỏ hàng và kiểm tra xem VNPay có bật không?
+# Kỳ vọng: HTTP 200 OK. Kết quả: true (do cờ Global đang bật)
+GET {{HostAddress}}/api/feature-toggles/check/Payment_VNPay?scope=&scopeValue=
+Accept: application/json
+
+
+### =========================================================================
+### KỊCH BẢN 2: THỬ NGHIỆM GIAO DIỆN "MẮT KÍNH 3D" CHO RIÊNG TẬP KHÁCH HÀNG VIP
+### =========================================================================
+
+### 2.1 Cấu hình tắt tính năng 3D trên toàn cầu (Global)
+# @name create3DGlobal
+POST {{HostAddress}}/api/admin/feature-toggles
+Authorization: Bearer {{AdminToken}}
+Content-Type: application/json
+
+{
+  "featureName": "UI_3D_Glasses_Viewer",
+  "isEnabled": false,
+  "description": "Tính năng thử kính 3D (Đang tắt với khách thường)"
+}
+
+### 2.2 Nhưng BẬT tính năng 3D cho các User thuộc nhóm VIP (Scoped)
+# @name create3DVip
+POST {{HostAddress}}/api/admin/feature-toggles
+Authorization: Bearer {{AdminToken}}
+Content-Type: application/json
+
+{
+  "featureName": "UI_3D_Glasses_Viewer",
+  "isEnabled": true,
+  "description": "Mở thử nghiệm kính 3D cho khách VIP",
+  "scope": "Role",
+  "scopeValue": "VIP"
+}
+
+### 2.3 Khách vãng lai (hoặc khách thường) vào trang sản phẩm kiểm tra tính năng 3D
+# Kỳ vọng: HTTP 200 OK. Kết quả: false (rớt vào fallback cờ Global đang tắt)
+GET {{HostAddress}}/api/feature-toggles/check/UI_3D_Glasses_Viewer
+Accept: application/json
+
+### 2.4 Khách có thẻ VIP đăng nhập và kiểm tra tính năng 3D
+# Kỳ vọng: HTTP 200 OK. Kết quả: true (Frontend gửi Role=VIP, DB match được cờ Override ưu tiên cao hơn)
+GET {{HostAddress}}/api/feature-toggles/check/UI_3D_Glasses_Viewer?scope=Role&scopeValue=VIP
+Accept: application/json
+
+
+### =========================================================================
+### KỊCH BẢN 3: SỰ KIỆN ƯU ĐÃI NỬA ĐÊM (HẸN GIỜ) HẾT HẠN LÀ TỰ TẮT
+### =========================================================================
+
+### 3.1 Khởi tạo tính năng FlashSale chỉ bật trong tháng 12/2025
+# @name createFlashSale
+POST {{HostAddress}}/api/admin/feature-toggles
+Authorization: Bearer {{AdminToken}}
+Content-Type: application/json
+
+{
+  "featureName": "Promo_Midnight_FlashSale",
+  "isEnabled": true,
+  "description": "Chỉ hiển thị banner Flashsale vào tháng 12/2025",
+  "effectiveFrom": "2025-12-01T00:00:00Z",
+  "effectiveTo": "2025-12-31T23:59:59Z"
+}
+
+### 3.2 Khách vào test (Nếu hiện tại không phải tháng 12/2025)
+# Kỳ vọng: HTTP 200 OK. Kết quả: false (Do isEffective chặn đường EffectiveTo hoặc EffectiveFrom)
+GET {{HostAddress}}/api/feature-toggles/check/Promo_Midnight_FlashSale
+Accept: application/json
+
+
+### =========================================================================
+### KỊCH BẢN 4: TEST VÀ BẮT LỖI VALIDATION & RACE CONDITIONS
+### =========================================================================
+
+### 4.1 Test lỗi trùng lặp cờ Global (Unique Constraint V1)
+# Cố tình tạo thêm một cờ Payment_VNPay không có Scope
+# Kỳ vọng: HTTP 409 Conflict. Báo lỗi cờ đã tồn tại for global scope.
+POST {{HostAddress}}/api/admin/feature-toggles
+Authorization: Bearer {{AdminToken}}
+Content-Type: application/json
+
+{
+  "featureName": "Payment_VNPay",
+  "isEnabled": false
+}
+
+### 4.2 Test lỗi trùng lặp cờ Scoped (Unique Constraint V2)
+# Cố tình tạo thêm 1 cờ UI_3D_Glasses_Viewer cho Role VIP
+# Kỳ vọng: HTTP 409 Conflict. Báo lỗi cờ đã tồn tại for scope 'Role:VIP'.
+POST {{HostAddress}}/api/admin/feature-toggles
+Authorization: Bearer {{AdminToken}}
+Content-Type: application/json
+
+{
+  "featureName": "UI_3D_Glasses_Viewer",
+  "isEnabled": false,
+  "scope": "Role",
+  "scopeValue": "VIP"
+}
+
+### 4.3 Quản lý: Lấy danh sách toàn bộ cờ đang có trong hệ thống
+# Kỳ vọng: HTTP 200 OK. Trả về list có tính trang (pageNumber, pageSize). Có cờ của VNPay, 3D, FlashSale...
+GET {{HostAddress}}/api/admin/feature-toggles?pageNumber=1&pageSize=10
+Authorization: Bearer {{AdminToken}}
+Accept: application/json
+
+### 4.4 Cập nhật (Sửa) cờ VNPay Global -> Có truyền sai Validation Ngày Tháng
+# Kỳ vọng: HTTP 400 Bad Request. Vì EffectiveTo bé hơn EffectiveFrom
+PUT {{HostAddress}}/api/admin/feature-toggles/{{VnPayGlobalId}}
+Authorization: Bearer {{AdminToken}}
+Content-Type: application/json
+
+{
+  "featureName": "Payment_VNPay",
+  "isEnabled": true,
+  "effectiveFrom": "2024-12-31T00:00:00Z",
+  "effectiveTo": "2024-01-01T00:00:00Z"
+}
+
+### 4.5 Khẩn cấp TẮT tính năng VNPay (Dùng PATCH Toggle nhanh)
+# Khi VNPay sập, Admin có thể ấn vào nút On/Off để tắt nóng.
+# Nhờ có hệ thống Clear Cache, lập tức nhát sau gọi Check sẽ văng false.
+# Kỳ vọng: HTTP 200 OK. Thuộc tính IsEnabled chuyển thành false.
+PATCH {{HostAddress}}/api/admin/feature-toggles/{{VnPayGlobalId}}/enabled
+Authorization: Bearer {{AdminToken}}
+Content-Type: application/json
+
+{
+  "isEnabled": false
+}
+
+### 4.6 (Test dọn dẹp) Xóa cờ VNPay
+DELETE {{HostAddress}}/api/admin/feature-toggles/{{VnPayGlobalId}}
+Authorization: Bearer {{AdminToken}}
+Accept: application/json

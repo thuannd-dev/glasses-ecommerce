@@ -38,6 +38,7 @@ export function useCheckoutPage() {
   const createOrder = useCreateOrder();
 
   const selectedCartItemIds = (location.state as { selectedCartItemIds?: string[] } | null)?.selectedCartItemIds;
+  
   const cartItems = useMemo(() => cart?.items ?? [], [cart?.items]);
   const items = useMemo(() => {
     if (selectedCartItemIds != null && selectedCartItemIds.length > 0) {

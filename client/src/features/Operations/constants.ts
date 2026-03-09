@@ -1,22 +1,20 @@
 import type { OrderType, OrderStatus, ShipmentDto } from "../../lib/types";
 
 export const ORDER_TYPE_LABEL: Record<OrderType, string> = {
-  standard: "Standard",
-  "pre-order": "Pre-order",
-  prescription: "Prescription",
+  ReadyStock: "Standard",
+  PreOrder: "Pre-order",
+  Prescription: "Prescription",
 };
 
 export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
-  pending: "Pending",
-  confirmed: "Confirmed",
-  processing: "Processing",
-  ready_to_ship: "Ready to ship",
-  shipped: "Shipped",
-  delivered: "Delivered",
-  received: "Received at warehouse",
-  lens_ordered: "Lens ordered",
-  lens_fitting: "Lens fitting",
-  cancelled: "Cancelled",
+  Pending: "Pending",
+  Confirmed: "Confirmed",
+  Processing: "Processing",
+  Shipped: "Shipped",
+  Delivered: "Delivered",
+  Completed: "Completed",
+  Cancelled: "Cancelled",
+  Refunded: "Refunded",
 };
 
 export const SHIPMENT_STATUS_LABEL: Record<ShipmentDto["status"], string> = {
