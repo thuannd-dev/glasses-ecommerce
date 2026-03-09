@@ -74,7 +74,14 @@ export function useCheckoutPage() {
       setSnackbar({ open: true, message: "Your cart is empty.", severity: "error" });
       return;
     }
-    if (!address.recipientName || !address.recipientPhone || !address.venue) {
+    if (
+      !address.recipientName?.trim() ||
+      !address.recipientPhone?.trim() ||
+      !address.venue?.trim() ||
+      !address.ward?.trim() ||
+      !address.district?.trim() ||
+      !address.city?.trim()
+    ) {
       setSnackbar({
         open: true,
         message: "Please fill all required shipping information.",
@@ -241,9 +248,45 @@ export function useCheckoutPage() {
         state: { order: { ...orderForState, items: orderItemsWithImage }, address: shippingAddr },
       });
     } catch (err) {
+      let errorMessage = "Failed to save address or place order. Please try again.";
+      
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (Array.isArray(err)) {
+        // Validation errors from API interceptor
+        const messages = err.filter((e) => typeof e === "string" || (typeof e === "object" && e !== null));
+        if (messages.length > 0) {
+          errorMessage = messages.map((m) => {
+            if (typeof m === "string") return m;
+            if (Array.isArray(m)) return m.join(", ");
+            return String(m);
+          }).join("; ");
+        }
+      } else if (typeof err === "object" && err !== null) {
+        const error = err as Record<string, unknown>;
+        if (error.response && typeof error.response === "object") {
+          const response = error.response as Record<string, unknown>;
+          if (response.data && typeof response.data === "object") {
+            const data = response.data as Record<string, unknown>;
+            if (data.message && typeof data.message === "string") {
+              errorMessage = data.message;
+            } else if (data.errors && typeof data.errors === "object") {
+              const errors = data.errors as Record<string, unknown>;
+              const errorMessages = Object.values(errors)
+                .filter((v) => Array.isArray(v) || typeof v === "string")
+                .flatMap((v) => typeof v === "string" ? [v] : v)
+                .filter((msg) => typeof msg === "string");
+              if (errorMessages.length > 0) {
+                errorMessage = errorMessages.join("; ");
+              }
+            }
+          }
+        }
+      }
+      
       setSnackbar({
         open: true,
-        message: err instanceof Error ? err.message : "Failed to save address or place order. Please try again.",
+        message: errorMessage,
         severity: "error",
       });
     } finally {

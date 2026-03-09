@@ -176,6 +176,7 @@ export default function CheckoutPage() {
                                         <TextField
                                             label="Ward"
                                             fullWidth
+                                            required
                                             value={address.ward}
                                             onChange={(e) =>
                                                 setAddress((prev) => ({
@@ -190,6 +191,7 @@ export default function CheckoutPage() {
                                         <TextField
                                             label="District"
                                             fullWidth
+                                            required
                                             value={address.district}
                                             onChange={(e) =>
                                                 setAddress((prev) => ({
@@ -204,6 +206,7 @@ export default function CheckoutPage() {
                                         <TextField
                                             label="City"
                                             fullWidth
+                                            required
                                             value={address.city}
                                             onChange={(e) =>
                                                 setAddress((prev) => ({

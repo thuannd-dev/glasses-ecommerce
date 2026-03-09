@@ -27,7 +27,11 @@ public sealed class GetStaffOrderDetail
             StaffOrderDto? order = await context.Orders
                 .Where(o => o.Id == request.Id && (o.CreatedBySalesStaff == staffUserId ||
                            (o.OrderSource == OrderSource.Online &&
-                            (o.OrderStatus == OrderStatus.Pending || o.OrderStatus == OrderStatus.Confirmed || o.OrderStatus == OrderStatus.Cancelled))))
+                            (o.OrderStatus == OrderStatus.Pending || 
+                             o.OrderStatus == OrderStatus.Confirmed || 
+                             o.OrderStatus == OrderStatus.Cancelled ||
+                             o.OrderStatus == OrderStatus.Delivered ||
+                             o.OrderStatus == OrderStatus.Completed))))
                 .Include(o => o.Address)
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.ProductVariant)

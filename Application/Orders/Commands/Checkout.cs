@@ -320,8 +320,10 @@ public sealed class Checkout
                 // 11. Prescription
                 if (resolvedOrderType == OrderType.Prescription && dto.Prescription != null)
                 {
+                    Guid prescriptionId = Guid.CreateVersion7();
                     Prescription prescription = new Prescription
                     {
+                        Id = prescriptionId,
                         OrderId = order.Id,
                         IsVerified = false,
                     };
@@ -331,7 +333,7 @@ public sealed class Checkout
                     {
                         context.PrescriptionDetails.Add(new PrescriptionDetail
                         {
-                            PrescriptionId = prescription.Id,
+                            PrescriptionId = prescriptionId,
                             Eye = detail.Eye,
                             SPH = detail.SPH,
                             CYL = detail.CYL,

@@ -36,7 +36,11 @@ public sealed class GetStaffOrders
                 .Include(o => o.OrderItems)
                 .Where(o => o.CreatedBySalesStaff == staffUserId ||
                            (o.OrderSource == OrderSource.Online &&
-                            (o.OrderStatus == OrderStatus.Pending || o.OrderStatus == OrderStatus.Confirmed || o.OrderStatus == OrderStatus.Cancelled)));
+                            (o.OrderStatus == OrderStatus.Pending || 
+                             o.OrderStatus == OrderStatus.Confirmed || 
+                             o.OrderStatus == OrderStatus.Cancelled ||
+                             o.OrderStatus == OrderStatus.Delivered ||
+                             o.OrderStatus == OrderStatus.Completed)));
 
             if (request.Status.HasValue)
             {
