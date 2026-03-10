@@ -1,3 +1,4 @@
+import { Suspense, lazy, useState } from "react";
 import {
     Accordion,
     AccordionDetails,
@@ -12,10 +13,14 @@ import {
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import CameraAltIcon from "@mui/icons-material/CameraAlt";
 import { NavLink, useNavigate } from "react-router-dom";
 
 import { useProductDetailPage } from "./hooks/useProductDetailPage";
 import { RelatedProductsCarousel } from "./components/ProductDetailPageComponents/RelatedProductsCarousel";
+import { usePreOrderButton } from "./components/ProductDetailPageComponents/PreOrderDialog";
+
+const VirtualTryOn = lazy(() => import("../Manager/components/VirtualTryOn"));
 
 const NAV_H = 56;
 const GAP_TOP = 24;
@@ -25,6 +30,7 @@ const ACCENT = "#B68C5A";
 
 export default function ProductDetailPage() {
     const nav = useNavigate();
+    const { handlePreOrder } = usePreOrderButton();
     const {
         product,
         isLoading,
@@ -36,6 +42,8 @@ export default function ProductDetailPage() {
         handleVariantSelect,
         isEyeglasses,
     } = useProductDetailPage();
+
+    const [tryOnOpen, setTryOnOpen] = useState(false);
 
     if (isLoading) {
         return (
@@ -112,7 +120,6 @@ export default function ProductDetailPage() {
                 px: { xs: 2, md: 3 },
             }}
         >
-            {/* Back + breadcrumb */}
             <Box
                 sx={{
                     display: "flex",
@@ -140,6 +147,7 @@ export default function ProductDetailPage() {
                 >
                     Back to Eyewear
                 </Button>
+
                 <Typography sx={{ color: "#8A8A8A", fontSize: 12.5 }}>
                     <Box
                         component={NavLink}
@@ -164,7 +172,6 @@ export default function ProductDetailPage() {
             </Box>
 
             <Grid container spacing={4}>
-                {/* Gallery */}
                 <Grid item xs={12} md={7}>
                     <Box
                         sx={{
@@ -175,6 +182,7 @@ export default function ProductDetailPage() {
                             px: { xs: 2.5, md: 3 },
                             pt: { xs: 2.5, md: 3 },
                             pb: { xs: 2.75, md: 3 },
+                            position: "relative",
                         }}
                     >
                         <Box
@@ -199,6 +207,30 @@ export default function ProductDetailPage() {
                                 }}
                             />
                         </Box>
+
+                        <Button
+                            variant="contained"
+                            startIcon={<CameraAltIcon />}
+                            onClick={() => setTryOnOpen(true)}
+                            sx={{
+                                position: "absolute",
+                                bottom: 22,
+                                left: 22,
+                                borderRadius: 999,
+                                textTransform: "none",
+                                fontWeight: 800,
+                                fontSize: 13,
+                                bgcolor: "rgba(17,24,39,0.85)",
+                                backdropFilter: "blur(6px)",
+                                "&:hover": { bgcolor: "rgba(17,24,39,0.95)" },
+                                px: 2.5,
+                                py: 1,
+                                boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
+                            }}
+                        >
+                            Virtual Try-On
+                        </Button>
+
                         <Box
                             sx={{
                                 mt: 1.75,
@@ -209,9 +241,10 @@ export default function ProductDetailPage() {
                         >
                             {images.map((src, idx) => {
                                 const isActive = idx === activeImg;
+
                                 return (
                                     <Box
-                                        key={src}
+                                        key={`${src}-${idx}`}
                                         onClick={() => setActiveImg(idx)}
                                         sx={{
                                             width: 70,
@@ -236,6 +269,7 @@ export default function ProductDetailPage() {
                                         <Box
                                             component="img"
                                             src={src}
+                                            alt={`${product.name}-${idx + 1}`}
                                             sx={{
                                                 width: "100%",
                                                 height: "100%",
@@ -250,7 +284,6 @@ export default function ProductDetailPage() {
                     </Box>
                 </Grid>
 
-                {/* Info */}
                 <Grid item xs={12} md={5}>
                     <Typography
                         sx={{
@@ -263,6 +296,7 @@ export default function ProductDetailPage() {
                     >
                         {product.brand}
                     </Typography>
+
                     <Typography
                         sx={{
                             fontWeight: 800,
@@ -275,7 +309,6 @@ export default function ProductDetailPage() {
                         {product.name}
                     </Typography>
 
-                    {/* Price + compareAtPrice */}
                     <Box sx={{ mt: 2, display: "flex", alignItems: "baseline", gap: 1.5 }}>
                         <Typography sx={{ fontWeight: 800, fontSize: 22, color: "#121212" }}>
                             {(currentVariant?.price ?? product.price).toLocaleString("en-US", {
@@ -285,6 +318,7 @@ export default function ProductDetailPage() {
                                 maximumFractionDigits: 2,
                             })}
                         </Typography>
+
                         {currentVariant?.compareAtPrice &&
                             currentVariant.compareAtPrice > (currentVariant.price ?? product.price) && (
                                 <Typography
@@ -304,8 +338,15 @@ export default function ProductDetailPage() {
                             )}
                     </Box>
 
-                    {/* Status + sku */}
-                    <Box sx={{ mt: 1.5, display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <Box
+                        sx={{
+                            mt: 1.5,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1.5,
+                            flexWrap: "wrap",
+                        }}
+                    >
                         <Chip
                             label={product.status.toLowerCase() === "active" ? "In stock" : product.status}
                             size="small"
@@ -326,11 +367,33 @@ export default function ProductDetailPage() {
                                         : "1px solid rgba(148,163,184,0.35)",
                             }}
                         />
+
+                        <Chip
+                            label={(currentVariant?.quantityAvailable ?? 0) > 0 ? "Ready Stock" : "Out of Stock"}
+                            size="small"
+                            sx={{
+                                borderRadius: 999,
+                                fontWeight: 700,
+                                bgcolor:
+                                    (currentVariant?.quantityAvailable ?? 0) > 0
+                                        ? "rgba(59,130,246,0.12)"
+                                        : "rgba(239,68,68,0.12)",
+                                color:
+                                    (currentVariant?.quantityAvailable ?? 0) > 0
+                                        ? "rgba(37,99,235,0.95)"
+                                        : "rgba(220,38,38,0.95)",
+                            }}
+                        />
+
+                        <Typography
+                            fontSize={13}
+                            sx={{ color: "rgba(17,24,39,0.65)", fontWeight: 600 }}
+                        >
+                            {currentVariant?.quantityAvailable ?? 0} available
+                        </Typography>
+
                         {product.sku && (
-                            <Typography
-                                fontSize={12}
-                                sx={{ color: "#8A8A8A" }}
-                            >
+                            <Typography fontSize={12} sx={{ color: "#8A8A8A" }}>
                                 SKU: {product.sku}
                             </Typography>
                         )}
@@ -338,32 +401,41 @@ export default function ProductDetailPage() {
 
                     <Divider sx={{ my: 2.5 }} />
 
-                    {/* Variants (color) */}
                     {!!product.variants?.length && (
                         <Box mb={2} mt={2}>
-                            <Typography sx={{ fontWeight: 600, fontSize: 13, mb: 1, color: "#5B5B5B" }}>
+                            <Typography
+                                sx={{
+                                    fontWeight: 600,
+                                    fontSize: 13,
+                                    mb: 1,
+                                    color: "#5B5B5B",
+                                }}
+                            >
                                 Colour options
                             </Typography>
+
                             <Box
                                 sx={{
                                     display: "flex",
                                     flexWrap: "wrap",
-                                    gap: 2, // cách nhau ra 1 xíu cho đẹp
+                                    gap: 2,
                                 }}
                             >
                                 {product.variants.map((v) => {
                                     const isActive = currentVariant?.id === v.id;
                                     const colorName = (v.color ?? v.variantName ?? "").toLowerCase();
+
                                     const bgColor =
                                         colorName === "black" || colorName.includes("black")
                                             ? "#111827"
                                             : colorName.includes("tortoise")
-                                                ? "#7c2d12"
-                                                : colorName.includes("gold")
-                                                    ? "#facc15"
-                                                    : colorName.includes("silver")
-                                                        ? "#e5e7eb"
-                                                        : "rgba(148,163,184,0.6)";
+                                              ? "#7c2d12"
+                                              : colorName.includes("gold")
+                                                ? "#facc15"
+                                                : colorName.includes("silver")
+                                                  ? "#e5e7eb"
+                                                  : "rgba(148,163,184,0.6)";
+
                                     return (
                                         <Box
                                             key={v.id}
@@ -408,12 +480,11 @@ export default function ProductDetailPage() {
                                                     />
                                                 )}
                                             </Box>
+
                                             <Typography
                                                 sx={{
                                                     fontSize: 11,
-                                                    color: isActive
-                                                        ? "#121212"
-                                                        : "#6B6B6B",
+                                                    color: isActive ? "#121212" : "#6B6B6B",
                                                 }}
                                             >
                                                 {v.variantName ?? v.color}
@@ -425,51 +496,85 @@ export default function ProductDetailPage() {
                         </Box>
                     )}
 
-                    {/* Actions */}
                     <Box sx={{ display: "flex", flexDirection: "column", gap: 1, mt: 2 }}>
-                        {isEyeglasses ? (
-                            <Button
-                                variant="contained"
-                                onClick={() =>
-                                    nav(`/product/${product.id}/lenses`, {
-                                        state: { variantId: currentVariant?.id ?? null },
-                                    })
-                                }
-                                sx={{
-                                    bgcolor: "#111827",
-                                    borderRadius: 1.75,
-                                    height: 50,
-                                    px: 3,
-                                    fontWeight: 700,
-                                    textTransform: "none",
-                                    boxShadow: "0 12px 32px rgba(0,0,0,0.18)",
-                                    "&:hover": {
-                                        bgcolor: "#020617",
-                                        boxShadow: "0 14px 36px rgba(0,0,0,0.2)",
-                                    },
-                                }}
-                            >
-                                Select lenses
-                            </Button>
+                        {(currentVariant?.quantityAvailable ?? 0) > 0 ? (
+                            isEyeglasses ? (
+                                <Button
+                                    variant="contained"
+                                    onClick={() =>
+                                        nav(`/product/${product.id}/lenses`, {
+                                            state: { variantId: currentVariant?.id ?? null },
+                                        })
+                                    }
+                                    sx={{
+                                        bgcolor: "#111827",
+                                        borderRadius: 1.75,
+                                        height: 50,
+                                        px: 3,
+                                        fontWeight: 700,
+                                        textTransform: "none",
+                                        boxShadow: "0 12px 32px rgba(0,0,0,0.18)",
+                                        "&:hover": {
+                                            bgcolor: "#020617",
+                                            boxShadow: "0 14px 36px rgba(0,0,0,0.2)",
+                                        },
+                                    }}
+                                >
+                                    Select lenses
+                                </Button>
+                            ) : (
+                                <Button
+                                    variant="contained"
+                                    onClick={handleAddToCart}
+                                    sx={{
+                                        bgcolor: "#111827",
+                                        borderRadius: 1.75,
+                                        height: 50,
+                                        px: 3,
+                                        fontWeight: 700,
+                                        textTransform: "none",
+                                        boxShadow: "0 12px 32px rgba(0,0,0,0.18)",
+                                        "&:hover": {
+                                            bgcolor: "#020617",
+                                            boxShadow: "0 14px 36px rgba(0,0,0,0.2)",
+                                        },
+                                    }}
+                                >
+                                    Add to cart
+                                </Button>
+                            )
                         ) : (
                             <Button
-                                variant="contained"
-                                onClick={handleAddToCart}
+                                variant="outlined"
+                                onClick={() => {
+                                    if (isEyeglasses) {
+                                        nav(`/product/${product.id}/lenses`, {
+                                            state: {
+                                                variantId: currentVariant?.id ?? null,
+                                                isPreOrder: true,
+                                            },
+                                        });
+                                    } else {
+                                        handlePreOrder({
+                                            variant: currentVariant,
+                                        });
+                                    }
+                                }}
                                 sx={{
-                                    bgcolor: "#111827",
                                     borderRadius: 1.75,
                                     height: 50,
                                     px: 3,
                                     fontWeight: 700,
                                     textTransform: "none",
-                                    boxShadow: "0 12px 32px rgba(0,0,0,0.18)",
+                                    borderColor: "#111827",
+                                    color: "#111827",
                                     "&:hover": {
-                                        bgcolor: "#020617",
-                                        boxShadow: "0 14px 36px rgba(0,0,0,0.2)",
+                                        bgcolor: "rgba(17,24,39,0.08)",
+                                        borderColor: "#111827",
                                     },
                                 }}
                             >
-                                Add to cart
+                                {isEyeglasses ? "Select lenses for Pre-Order" : "Pre-Order"}
                             </Button>
                         )}
 
@@ -501,7 +606,6 @@ export default function ProductDetailPage() {
 
                     <Divider sx={{ my: 2.75, borderColor: "rgba(0,0,0,0.06)" }} />
 
-                    {/* Accordions */}
                     <Accordion
                         defaultExpanded
                         disableGutters
@@ -525,7 +629,6 @@ export default function ProductDetailPage() {
                         </AccordionDetails>
                     </Accordion>
 
-                    {/* Specs */}
                     <Accordion
                         disableGutters
                         elevation={0}
@@ -540,95 +643,98 @@ export default function ProductDetailPage() {
                             <Box sx={{ display: "grid", rowGap: 0.5, fontSize: 13.5 }}>
                                 {currentVariant?.color && (
                                     <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                                        <Typography color="rgba(15,23,42,0.6)">
-                                            Color
-                                        </Typography>
-                                        <Typography fontWeight={600}>
-                                            {currentVariant.color}
-                                        </Typography>
+                                        <Typography color="rgba(15,23,42,0.6)">Color</Typography>
+                                        <Typography fontWeight={600}>{currentVariant.color}</Typography>
                                     </Box>
                                 )}
+
                                 {currentVariant?.size && (
                                     <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                                        <Typography color="rgba(15,23,42,0.6)">
-                                            Size
-                                        </Typography>
-                                        <Typography fontWeight={600}>
-                                            {currentVariant.size}
-                                        </Typography>
+                                        <Typography color="rgba(15,23,42,0.6)">Size</Typography>
+                                        <Typography fontWeight={600}>{currentVariant.size}</Typography>
                                     </Box>
                                 )}
+
                                 {currentVariant?.material && (
                                     <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                                        <Typography color="rgba(15,23,42,0.6)">
-                                            Material
-                                        </Typography>
-                                        <Typography fontWeight={600}>
-                                            {currentVariant.material}
-                                        </Typography>
+                                        <Typography color="rgba(15,23,42,0.6)">Material</Typography>
+                                        <Typography fontWeight={600}>{currentVariant.material}</Typography>
                                     </Box>
                                 )}
+
                                 {currentVariant?.frameWidth != null && (
                                     <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                                        <Typography color="rgba(15,23,42,0.6)">
-                                            Frame width
-                                        </Typography>
+                                        <Typography color="rgba(15,23,42,0.6)">Frame width</Typography>
                                         <Typography fontWeight={600}>
                                             {currentVariant.frameWidth} mm
                                         </Typography>
                                     </Box>
                                 )}
+
                                 {currentVariant?.lensWidth != null && (
                                     <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                                        <Typography color="rgba(15,23,42,0.6)">
-                                            Lens width
-                                        </Typography>
+                                        <Typography color="rgba(15,23,42,0.6)">Lens width</Typography>
                                         <Typography fontWeight={600}>
                                             {currentVariant.lensWidth} mm
                                         </Typography>
                                     </Box>
                                 )}
+
                                 {currentVariant?.bridgeWidth != null && (
                                     <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                                        <Typography color="rgba(15,23,42,0.6)">
-                                            Bridge width
-                                        </Typography>
+                                        <Typography color="rgba(15,23,42,0.6)">Bridge width</Typography>
                                         <Typography fontWeight={600}>
                                             {currentVariant.bridgeWidth} mm
                                         </Typography>
                                     </Box>
                                 )}
+
                                 {currentVariant?.templeLength != null && (
                                     <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                                        <Typography color="rgba(15,23,42,0.6)">
-                                            Temple length
-                                        </Typography>
+                                        <Typography color="rgba(15,23,42,0.6)">Temple length</Typography>
                                         <Typography fontWeight={600}>
                                             {currentVariant.templeLength} mm
                                         </Typography>
                                     </Box>
                                 )}
-                                {currentVariant?.quantityAvailable && currentVariant.quantityAvailable > 0 && (
-                                    <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                                        <Typography color="rgba(15,23,42,0.6)">
-                                            In stock
-                                        </Typography>
-                                        <Typography fontWeight={600}>
-                                            {currentVariant.quantityAvailable} units
-                                        </Typography>
-                                    </Box>
-                                )}
+
+                                {currentVariant?.quantityAvailable != null &&
+                                    currentVariant.quantityAvailable > 0 && (
+                                        <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                                            <Typography color="rgba(15,23,42,0.6)">In stock</Typography>
+                                            <Typography fontWeight={600}>
+                                                {currentVariant.quantityAvailable} units
+                                            </Typography>
+                                        </Box>
+                                    )}
                             </Box>
                         </AccordionDetails>
                     </Accordion>
                 </Grid>
             </Grid>
 
-            {/* Related products carousel */}
             <RelatedProductsCarousel
                 categorySlug={product.categorySlug}
                 currentProductId={product.id}
             />
+
+            {tryOnOpen && product && (
+                <Suspense fallback={null}>
+                    <VirtualTryOn
+                        open={tryOnOpen}
+                        onClose={() => setTryOnOpen(false)}
+                        productName={product.name}
+                        variantImages={(product.variants || [])
+                            .filter((v) => v.images?.length > 0)
+                            .map((v) => ({
+                                id: v.id,
+                                variantName: v.variantName ?? undefined,
+                                color: v.color ?? undefined,
+                                imageUrl: v.images[0],
+                            }))}
+                    />
+                </Suspense>
+            )}
         </Box>
     );
 }

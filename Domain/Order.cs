@@ -88,7 +88,7 @@ public class Order
         return OrderType switch
         {
             OrderType.ReadyStock => true,
-            OrderType.PreOrder => true, // Additional logic in service layer to check goods arrival
+            OrderType.PreOrder => true, // Can cancel until goods arrive and are shipped
             OrderType.Prescription => CancellationDeadline.HasValue && now <= CancellationDeadline.Value,
             _ => false
         };

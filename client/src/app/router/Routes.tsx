@@ -40,16 +40,27 @@ import {
   OutboundInventoryScreen,
   InventoryTransactionsScreen,
 } from "../../features/Operations/screens";
+import ManagerLayout from "../../features/Manager/ManagerLayout";
 import ManagerDashboard from "../../features/Manager/ManagerDashboard";
+import ProductsList from "../../features/Manager/ProductsList";
+import ManagerProductEdit from "../../features/Manager/ProductDetail";
+import {
+  InboundRecordsScreen,
+  InboundRecordDetailScreen,
+  PromotionsScreen,
+} from "../../features/Manager/screens";
+import { ManagerProductCreateWizardScreen } from "../../features/Manager/screens";
 import AdminDashboard from "../../features/Admin/AdminDashboard";
 import RoleManagement from "../../features/Admin/RoleManagement";
+import AdminPolicies from "../../features/Admin/AdminPolicies";
+import ChatbotWidget from "../../features/chatbot/ChatbotWidget";
 export const router = createBrowserRouter([
   // ======================
   // HOME (NO NAVBAR)
   // ======================
   {
     path: "/",
-    element: <HomePage />,
+    element: <><HomePage /><ChatbotWidget /></>,
   },
 
   // ======================
@@ -117,7 +128,22 @@ export const router = createBrowserRouter([
       },
       {
         element: <RequireRole allowedRoles={["Manager"]} />,
-        children: [{ path: "manager", element: <ManagerDashboard /> }],
+        children: [
+          {
+            path: "manager",
+            element: <ManagerLayout />,
+            children: [
+              { index: true, element: <ManagerDashboard /> },
+              { path: "products", element: <ProductsList /> },
+              { path: "products/create", element: <ManagerProductCreateWizardScreen /> },
+              { path: "products/:id", element: <ProductDetailPage /> },
+              { path: "products/:id/edit", element: <ManagerProductEdit /> },
+              { path: "inbound", element: <InboundRecordsScreen /> },
+              { path: "inbound/:id", element: <InboundRecordDetailScreen /> },
+              { path: "promotions", element: <PromotionsScreen /> },
+            ],
+          },
+        ],
       },
       {
         element: <RequireRole allowedRoles={["Admin"]} />,
@@ -128,6 +154,7 @@ export const router = createBrowserRouter([
             children: [
               { index: true, element: <AdminDashboard /> },
               { path: "roles", element: <RoleManagement /> },
+              { path: "policies", element: <AdminPolicies /> },
             ],
           },
         ],

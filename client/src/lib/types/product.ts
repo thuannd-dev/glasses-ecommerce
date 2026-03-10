@@ -69,6 +69,7 @@ export type ProductDetailApi = {
     templeLength: number | null;
     price: number;
     compareAtPrice: number | null;
+    isPreOrder: boolean;
     isActive: boolean;
     quantityAvailable: number;
     images: Array<{
@@ -103,6 +104,16 @@ export type CategoryDto = {
   name: string;
   slug: string;
   description: string | null;
+};
+
+/** DTO for creating a new product */
+export type CreateProductDto = {
+  categoryId: string; // Required, GUID
+  productName: string; // Required, max 255 chars
+  type: number; // 1=Frame, 2=Lens, 3=Combo, 4=Accessory, 5=Service
+  description?: string | null; // Optional, max 1000 chars
+  brand?: string | null; // Optional, max 100 chars
+  status?: number; // 0=Active, 1=Inactive, 2=Draft (default: Draft)
 };
 
 /** View model for product detail page */

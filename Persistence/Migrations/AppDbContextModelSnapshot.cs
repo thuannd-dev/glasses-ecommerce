@@ -377,7 +377,8 @@ namespace Persistence.Migrations
 
                     b.HasIndex("FeatureName")
                         .IsUnique()
-                        .HasDatabaseName("UX_FeatureToggle_FeatureName");
+                        .HasDatabaseName("UX_FeatureToggle_FeatureName_Global")
+                        .HasFilter("[Scope] IS NULL");
 
                     b.HasIndex("IsEnabled")
                         .HasDatabaseName("IX_FeatureToggle_IsEnabled")
@@ -388,8 +389,10 @@ namespace Persistence.Migrations
                     b.HasIndex("FeatureName", "IsEnabled")
                         .HasDatabaseName("IX_FeatureToggle_FeatureName_IsEnabled");
 
-                    b.HasIndex("Scope", "ScopeValue")
-                        .HasDatabaseName("IX_FeatureToggle_Scope_ScopeValue");
+                    b.HasIndex("FeatureName", "Scope", "ScopeValue")
+                        .IsUnique()
+                        .HasDatabaseName("UX_FeatureToggle_FeatureName_Scoped")
+                        .HasFilter("[Scope] IS NOT NULL");
 
                     b.ToTable("FeatureToggles", t =>
                         {
