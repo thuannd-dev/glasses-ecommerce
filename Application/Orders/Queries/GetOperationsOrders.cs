@@ -1,7 +1,6 @@
 using Application.Core;
 using Application.Orders.DTOs;
 using AutoMapper;
-using AutoMapper.QueryableExtensions;
 using Domain;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -42,16 +41,60 @@ public sealed class GetOperationsOrders
 
             int totalCount = await query.CountAsync(ct);
 
-            List<StaffOrderListDto> orders = await query
+            // Load orders with related data
+            List<Order> orders = await query
+                .AsNoTracking()
+                .Include(o => o.Address)
+                .Include(o => o.User)
+                .Include(o => o.SalesStaff)
+                .Include(o => o.ShipmentInfo)
+                .Include(o => o.Prescription)
+                .Include(o => o.OrderItems!)
+                    .ThenInclude(oi => oi.ProductVariant!)
+                    .ThenInclude(pv => pv.Product)
                 .OrderByDescending(o => o.CreatedAt)
                 .Skip((request.PageNumber - 1) * request.PageSize)
                 .Take(request.PageSize)
-                .ProjectTo<StaffOrderListDto>(mapper.ConfigurationProvider)
                 .ToListAsync(ct);
+
+            // Map to DTOs with items populated
+            List<StaffOrderListDto> mappedOrders = new();
+            foreach (Order order in orders)
+            {
+                StaffOrderListDto dto = mapper.Map<Order, StaffOrderListDto>(order);
+                
+                // Set ExpectedStockDate for pre-orders
+                if (order.OrderType == OrderType.PreOrder)
+                    dto.ExpectedStockDate = DateTime.UtcNow.AddDays(14).ToString("O");
+                
+                // Set PrescriptionStatus for prescriptions
+                if (order.Prescription != null)
+                    dto.PrescriptionStatus = "lens_ordered";
+                
+                // Set ShipmentInfo details
+                if (order.ShipmentInfo != null)
+                {
+                    dto.ShipmentId = order.ShipmentInfo.Id;
+                    dto.TrackingNumber = order.ShipmentInfo.TrackingCode;
+                    dto.Carrier = order.ShipmentInfo.CarrierName.ToString();
+                }
+                
+                dto.Items = order.OrderItems.Select(oi => new StaffOrderItemDto
+                {
+                    Id = oi.Id,
+                    ProductVariantId = oi.ProductVariantId,
+                    ProductName = oi.ProductVariant?.Product?.ProductName ?? "Unknown",
+                    Sku = oi.ProductVariant?.SKU ?? "N/A",
+                    Quantity = oi.Quantity,
+                    Price = oi.UnitPrice,
+                    PrescriptionId = null
+                }).ToList();
+                mappedOrders.Add(dto);
+            }
 
             PagedResult<StaffOrderListDto> result = new()
             {
-                Items = orders,
+                Items = mappedOrders,
                 TotalCount = totalCount,
                 PageNumber = request.PageNumber,
                 PageSize = request.PageSize

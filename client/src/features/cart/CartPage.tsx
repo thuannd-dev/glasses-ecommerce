@@ -222,7 +222,7 @@ export default function CartPage() {
     const items = cart?.items ?? [];
     const itemIds = useMemo(() => items.map((i) => i.id), [items]);
 
-    /** Split items: ones with prescription (from prescriptionCache) are prescription orders, others are standard orders. */
+    /** Split items: pre-order takes priority, then prescription, then standard. */
     const itemPrescriptions = useMemo(
         () => getCartItemPrescriptions(items),
         [items],
@@ -231,13 +231,39 @@ export default function CartPage() {
         () => new Set(Object.keys(itemPrescriptions)),
         [itemPrescriptions],
     );
-    const normalItems = useMemo(
-        () => items.filter((i) => !prescriptionItemIds.has(i.id)),
+    
+    // Pre-order items (regardless of whether they have prescriptions)
+    const preOrderItemIds = useMemo(
+        () => new Set(items.filter((i) => i.isPreOrder).map((i) => i.id)),
+        [items],
+    );
+    
+    // Prescription items (only if NOT pre-order)
+    const prescriptionOnlyItemIds = useMemo(
+        () => new Set(
+            items
+                .filter((i) => !i.isPreOrder && prescriptionItemIds.has(i.id))
+                .map((i) => i.id)
+        ),
         [items, prescriptionItemIds],
     );
+    
+    // Normal items are neither pre-order nor have prescriptions
+    const normalItems = useMemo(
+        () => items.filter((i) => !preOrderItemIds.has(i.id) && !prescriptionOnlyItemIds.has(i.id)),
+        [items, preOrderItemIds, prescriptionOnlyItemIds],
+    );
+    
+    // Prescription items (only non-pre-order items with prescriptions)
     const prescriptionItems = useMemo(
-        () => items.filter((i) => prescriptionItemIds.has(i.id)),
-        [items, prescriptionItemIds],
+        () => items.filter((i) => prescriptionOnlyItemIds.has(i.id)),
+        [items, prescriptionOnlyItemIds],
+    );
+    
+    // Pre-order items (includes pre-order items even if they have prescriptions)
+    const preOrderItems = useMemo(
+        () => items.filter((i) => preOrderItemIds.has(i.id)),
+        [items, preOrderItemIds],
     );
 
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set(itemIds));
@@ -293,6 +319,25 @@ export default function CartPage() {
             setSelectedIds((prev) => {
                 const next = new Set(prev);
                 prescriptionIds.forEach((id) => next.add(id));
+                return next;
+            });
+        }
+    };
+    const allPreOrderSelected =
+        preOrderItems.length > 0 &&
+        preOrderItems.every((i) => selectedIds.has(i.id));
+    const handleSelectAllPreOrder = () => {
+        const preOrderIds = preOrderItems.map((i) => i.id);
+        if (allPreOrderSelected) {
+            setSelectedIds((prev) => {
+                const next = new Set(prev);
+                preOrderIds.forEach((id) => next.delete(id));
+                return next;
+            });
+        } else {
+            setSelectedIds((prev) => {
+                const next = new Set(prev);
+                preOrderIds.forEach((id) => next.add(id));
                 return next;
             });
         }
@@ -539,6 +584,61 @@ export default function CartPage() {
                                                 handleDecrease(item.id, item.quantity)
                                             }
                                             onRemove={() => removeItem(item.id)}
+                                            formatMoney={formatMoney}
+                                        />
+                                    ))}
+                                </>
+                            )}
+
+                            {/* --- Pre-order orders --- */}
+                            {preOrderItems.length > 0 && (
+                                <>
+                                    {(normalItems.length > 0 || prescriptionItems.length > 0) && (
+                                        <Divider sx={{ my: 3 }} />
+                                    )}
+                                    <Box
+                                        sx={{
+                                            pb: 2,
+                                            borderBottom: "1px solid rgba(17,24,39,0.08)",
+                                        }}
+                                    >
+                                        <Typography
+                                            fontWeight={800}
+                                            fontSize={16}
+                                            color="text.secondary"
+                                            sx={{ mb: 1 }}
+                                        >
+                                            Pre-Order orders
+                                        </Typography>
+                                        <FormControlLabel
+                                            control={
+                                                <Checkbox
+                                                    checked={allPreOrderSelected}
+                                                    indeterminate={
+                                                        preOrderItems.some((i) =>
+                                                            selectedIds.has(i.id),
+                                                        ) &&
+                                                        !allPreOrderSelected
+                                                    }
+                                                    onChange={handleSelectAllPreOrder}
+                                                />
+                                            }
+                                            label="Select all pre-order orders"
+                                            sx={{ fontWeight: 600 }}
+                                        />
+                                    </Box>
+                                    {preOrderItems.map((item) => (
+                                        <CartItemRow
+                                            key={item.id}
+                                            item={item}
+                                            selected={selectedIds.has(item.id)}
+                                            onToggle={() => handleToggleItem(item.id)}
+                                            onIncrease={() =>
+                                                handleIncrease(item.id, item.quantity)
+                                            }
+                                            onDecrease={() =>
+                                                handleDecrease(item.id, item.quantity)
+                                            }
                                             formatMoney={formatMoney}
                                         />
                                     ))}

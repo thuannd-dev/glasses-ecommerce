@@ -6,7 +6,7 @@ import { useProductDetailPage } from "./hooks/useProductDetailPage";
 export default function SelectLensesPage() {
     const navigate = useNavigate();
     const location = useLocation();
-    const state = location.state as { variantId?: string | null } | null;
+    const state = location.state as { variantId?: string | null; isPreOrder?: boolean } | null;
     const initialVariantId = state?.variantId ?? null;
     const { product, isLoading, currentVariant, images, handleAddWithPrescription } =
         useProductDetailPage(initialVariantId);
