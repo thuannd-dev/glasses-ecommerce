@@ -14,7 +14,6 @@ import { SummaryCard } from "../components";
 import {
   AfterSalesTicketStatusValues,
   AfterSalesTicketTypeValues,
-  TicketResolutionTypeValues,
   type AfterSalesTicketStatus,
 } from "../../../lib/types/afterSales";
 import { formatDate } from "../constants";

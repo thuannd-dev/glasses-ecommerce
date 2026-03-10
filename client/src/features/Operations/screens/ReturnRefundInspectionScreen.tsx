@@ -21,6 +21,7 @@ import { formatDate } from "../constants";
 const STATUS_LABELS: Record<AfterSalesTicketStatus, string> = {
   [AfterSalesTicketStatusValues.Pending]: "Pending",
   [AfterSalesTicketStatusValues.InProgress]: "Approved",
+  [AfterSalesTicketStatusValues.Replacing]: "Replacing",
   [AfterSalesTicketStatusValues.Resolved]: "Resolved",
   [AfterSalesTicketStatusValues.Rejected]: "Rejected",
   [AfterSalesTicketStatusValues.Closed]: "Closed",
@@ -30,6 +31,7 @@ const STATUS_LABELS: Record<AfterSalesTicketStatus, string> = {
 const STATUS_COLORS: Record<AfterSalesTicketStatus, { bg: string; border: string; color: string }> = {
   [AfterSalesTicketStatusValues.Pending]: { bg: "#fbbf2422", border: "#fbbf24", color: "#92400e" },
   [AfterSalesTicketStatusValues.InProgress]: { bg: "#3b82f622", border: "#3b82f6", color: "#1e40af" },
+  [AfterSalesTicketStatusValues.Replacing]: { bg: "#8b5cf622", border: "#8b5cf6", color: "#5b21b6" },
   [AfterSalesTicketStatusValues.Resolved]: { bg: "#10b98122", border: "#10b981", color: "#065f46" },
   [AfterSalesTicketStatusValues.Rejected]: { bg: "#ef444422", border: "#ef4444", color: "#7f1d1d" },
   [AfterSalesTicketStatusValues.Closed]: { bg: "#6b728022", border: "#6b7280", color: "#374151" },

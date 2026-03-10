@@ -23,6 +23,7 @@ import {
 const STATUS_LABELS: Record<AfterSalesTicketStatus, string> = {
   [AfterSalesTicketStatusValues.Pending]: "Pending",
   [AfterSalesTicketStatusValues.InProgress]: "In Progress",
+  [AfterSalesTicketStatusValues.Replacing]: "Replacing",
   [AfterSalesTicketStatusValues.Resolved]: "Resolved",
   [AfterSalesTicketStatusValues.Rejected]: "Rejected",
   [AfterSalesTicketStatusValues.Closed]: "Closed",
@@ -40,6 +41,7 @@ function getDisplayLabel(status: AfterSalesTicketStatus, receivedAt: string | nu
 const STATUS_COLORS: Record<AfterSalesTicketStatus, string> = {
   [AfterSalesTicketStatusValues.Pending]: "#fbbf24",
   [AfterSalesTicketStatusValues.InProgress]: "#3b82f6",
+  [AfterSalesTicketStatusValues.Replacing]: "#8b5cf6",
   [AfterSalesTicketStatusValues.Resolved]: "#10b981",
   [AfterSalesTicketStatusValues.Rejected]: "#ef4444",
   [AfterSalesTicketStatusValues.Closed]: "#6b7280",

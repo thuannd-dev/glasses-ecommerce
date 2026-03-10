@@ -217,7 +217,7 @@ function ShippedOrderRow({
     updateOrderStatus(
       {
         orderId: summary.id,
-        status: "delivered",
+        status: "Delivered",
       },
       {
         onError: (error: any) => {

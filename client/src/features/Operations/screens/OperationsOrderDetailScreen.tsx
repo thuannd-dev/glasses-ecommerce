@@ -46,7 +46,7 @@ export function OperationsOrderDetailScreen() {
   const handleSendToPacking = () => {
     if (id) {
       updateStatus.mutate(
-        { orderId: id, status: "processing" },
+        { orderId: id, status: "Processing" },
         {
           onSuccess: () => {
             navigate("/operations/pack");

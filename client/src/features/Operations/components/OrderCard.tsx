@@ -105,7 +105,7 @@ export function OrderCard({
       <Collapse in={expanded}>
         <Box sx={{ mt: 2, pt: 2, borderTop: "1px solid rgba(0,0,0,0.06)" }}>
           <Typography fontSize={12} color="text.secondary">
-            {order.customerName} · {order.customerPhone}
+            {order.customerName}
           </Typography>
           <Typography fontSize={12} color="text.secondary" sx={{ mt: 0.5 }}>
             {formatDate(order.createdAt)} · {order.items?.length || 0} items · {order.totalAmount.toLocaleString("en-US", { style: "currency", currency: "USD" })}

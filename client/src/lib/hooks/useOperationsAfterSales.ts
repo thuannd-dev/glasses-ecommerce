@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import agent from "../api/agent";
-import type { TicketDetailDto, OrderItemDto } from "./useStaffAfterSalesTickets";
+import type { TicketDetailDto } from "./useStaffAfterSalesTickets";
+import type { OrderItemDto } from "../types/afterSales";
 
 interface ReceiveTicketPayload {
   ticketId: string;
