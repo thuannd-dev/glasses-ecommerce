@@ -59,7 +59,7 @@ export function OperationsProvider({ children }: { children: React.ReactNode }) 
   const safeOrders: OrderDto[] = Array.isArray(ordersData)
     ? ordersData
     : Array.isArray((ordersData as any)?.items)
-    ? ((ordersData as any).items as OrderDto[])
+    ? ((ordersData as any).items as any[]) // Backend returns StaffOrderDto-like structure with orderStatus, not status
     : [];
 
   const safeShipments: ShipmentDto[] = Array.isArray(shipmentsData)

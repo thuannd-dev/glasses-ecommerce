@@ -26,6 +26,10 @@ import MoveToInboxOutlined from "@mui/icons-material/MoveToInboxOutlined";
 import OutboxOutlined from "@mui/icons-material/OutboxOutlined";
 import HistoryOutlined from "@mui/icons-material/HistoryOutlined";
 import SecurityIcon from "@mui/icons-material/Security";
+import DashboardOutlined from "@mui/icons-material/DashboardOutlined";
+import StorefrontOutlined from "@mui/icons-material/StorefrontOutlined";
+import MoveToInboxOutlined from "@mui/icons-material/MoveToInboxOutlined";
+import LocalOfferOutlined from "@mui/icons-material/LocalOfferOutlined";
 import ExpandLess from "@mui/icons-material/ExpandLess";
 import ExpandMore from "@mui/icons-material/ExpandMore";
 import { useAccount } from "../../lib/hooks/useAccount";
@@ -55,9 +59,17 @@ const OPERATIONS_SUB_LINKS: { path: string; label: string; icon: React.ReactNode
   { path: "/operations/inventory-transactions", label: "History", icon: <HistoryOutlined /> },
 ];
 
+const MANAGER_SUB_LINKS: { path: string; label: string; icon: React.ReactNode }[] = [
+  { path: "/manager", label: "Dashboard", icon: <DashboardOutlined /> },
+  { path: "/manager/products", label: "Products", icon: <StorefrontOutlined /> },
+  { path: "/manager/inbound", label: "Inbound", icon: <MoveToInboxOutlined /> },
+  { path: "/manager/promotions", label: "Promotions", icon: <LocalOfferOutlined /> },
+];
+
 const ADMIN_SUB_LINKS: { path: string; label: string; icon: React.ReactNode }[] = [
   { path: "/admin", label: "Dashboard", icon: <AdminPanelSettingsIcon /> },
   { path: "/admin/roles", label: "Role Management", icon: <SecurityIcon /> },
+  { path: "/admin/policies", label: "Policies", icon: <SecurityIcon /> },
 ];
 
 export default function DashboardLayout() {
@@ -371,6 +383,54 @@ export default function DashboardLayout() {
                       })}
                     </List>
                   </Collapse>
+                </Fragment>
+              );
+            }
+
+            if (path === "/manager") {
+              return (
+                <Fragment key="manager">
+                  <Typography
+                    sx={{
+                      fontSize: 11,
+                      letterSpacing: 4,
+                      textTransform: "uppercase",
+                      color: "text.secondary",
+                      px: 2,
+                      py: 1,
+                      mt: 1,
+                    }}
+                  >
+                    Manager
+                  </Typography>
+                  {MANAGER_SUB_LINKS.map((sub) => {
+                    const isActive = sub.path === "/manager"
+                      ? location.pathname === "/manager"
+                      : location.pathname.startsWith(sub.path);
+                    return (
+                      <ListItemButton
+                        key={sub.path}
+                        component={NavLink}
+                        to={sub.path}
+                        end={sub.path === "/manager"}
+                        sx={{
+                          borderRadius: 2,
+                          mb: 0.5,
+                          color: "rgba(0,0,0,0.7)",
+                          ...(isActive
+                            ? { bgcolor: "rgba(25,118,210,0.12)", color: "primary.main" }
+                            : {}),
+                          "&:hover": {
+                            bgcolor: "rgba(0,0,0,0.04)",
+                            color: "rgba(0,0,0,0.9)",
+                          },
+                        }}
+                      >
+                        <ListItemIcon sx={{ minWidth: 40, color: "inherit" }}>{sub.icon}</ListItemIcon>
+                        <ListItemText primary={sub.label} primaryTypographyProps={{ fontWeight: 600 }} />
+                      </ListItemButton>
+                    );
+                  })}
                 </Fragment>
               );
             }

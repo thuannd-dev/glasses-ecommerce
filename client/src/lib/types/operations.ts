@@ -1,18 +1,16 @@
-/** Order type: standard | pre-order | prescription */
-export type OrderType = "standard" | "pre-order" | "prescription";
+/** Order type: ReadyStock | PreOrder | Prescription */
+export type OrderType = "ReadyStock" | "PreOrder" | "Prescription";
 
 /** Order status (by type) */
 export type OrderStatus =
-  | "pending"
-  | "confirmed"
-  | "processing"
-  | "ready_to_ship"
-  | "shipped"
-  | "delivered"
-  | "received"
-  | "lens_ordered"
-  | "lens_fitting"
-  | "cancelled";
+  | "Pending"
+  | "Confirmed"
+  | "Processing"
+  | "Shipped"
+  | "Delivered"
+  | "Completed"
+  | "Cancelled"
+  | "Refunded";
 
 export type ShipmentStatus = "created" | "picked" | "in_transit" | "delivered";
 
