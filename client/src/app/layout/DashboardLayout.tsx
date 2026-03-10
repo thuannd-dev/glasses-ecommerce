@@ -22,7 +22,7 @@ import AddBoxOutlined from "@mui/icons-material/AddBoxOutlined";
 import TrackChangesOutlined from "@mui/icons-material/TrackChangesOutlined";
 import ScheduleOutlined from "@mui/icons-material/ScheduleOutlined";
 import VisibilityOutlined from "@mui/icons-material/VisibilityOutlined";
-import MoveToInboxOutlined from "@mui/icons-material/MoveToInboxOutlined";
+import MoveToInboxOutlinedIcon from "@mui/icons-material/MoveToInboxOutlined";
 import OutboxOutlined from "@mui/icons-material/OutboxOutlined";
 import HistoryOutlined from "@mui/icons-material/HistoryOutlined";
 import SecurityIcon from "@mui/icons-material/Security";
@@ -50,7 +50,7 @@ const OPERATIONS_SUB_LINKS: { path: string; label: string; icon: React.ReactNode
   { path: "/operations/tracking", label: "Shipped", icon: <TrackChangesOutlined /> },
   { path: "/operations/pre-order", label: "Pre-order", icon: <ScheduleOutlined /> },
   { path: "/operations/prescription", label: "Prescription", icon: <VisibilityOutlined /> },
-  { path: "/operations/inbound", label: "Inbound", icon: <MoveToInboxOutlined /> },
+  { path: "/operations/inbound", label: "Inbound", icon: <MoveToInboxOutlinedIcon /> },
   { path: "/operations/outbound", label: "Outbound", icon: <OutboxOutlined /> },
   { path: "/operations/inventory-transactions", label: "History", icon: <HistoryOutlined /> },
 ];
