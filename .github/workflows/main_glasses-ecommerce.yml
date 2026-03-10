@@ -35,6 +35,9 @@ jobs:
         env:
           VITE_API_URL: /api
           VITE_LOCATIONIQ_API_KEY: ${{ secrets.LOCATIONIQ_API_KEY }}
+          VITE_OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          VITE_OPENAI_API_URL: ${{ secrets.OPENAI_API_URL }}
+          VITE_OPENAI_MODEL: ${{ secrets.OPENAI_MODEL }}
 
       - name: Set up .NET Core
         uses: actions/setup-dotnet@v4

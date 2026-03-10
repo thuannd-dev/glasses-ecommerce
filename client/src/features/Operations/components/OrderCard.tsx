@@ -3,7 +3,7 @@ import ExpandMore from "@mui/icons-material/ExpandMore";
 import ExpandLess from "@mui/icons-material/ExpandLess";
 
 import { ORDER_STATUS_LABEL, ORDER_TYPE_LABEL, formatDate } from "../constants";
-import type { OrderDto, OrderStatus } from "../../../lib/types";
+import type { OrderDto, OrderStatus, OrderType } from "../../../lib/types";
 
 export function OrderCard({
   order,
@@ -20,8 +20,50 @@ export function OrderCard({
   onCreateShipment: () => void;
   canCreateShipment: boolean;
 }) {
-  const statusLabel = ORDER_STATUS_LABEL[order.status];
-  const typeLabel = ORDER_TYPE_LABEL[order.orderType];
+  // Backend returns orderStatus, not status
+  const actualStatus = (order as any).orderStatus || order.status;
+  const statusLabel = ORDER_STATUS_LABEL[actualStatus as OrderStatus];
+  const actualOrderType = ((order as any).orderType || order.orderType) as OrderType;
+  const typeLabel = ORDER_TYPE_LABEL[actualOrderType];
+
+  const getStatusColors = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case "pending":
+        return {
+          bgcolor: "rgba(14,165,233,0.12)",
+          color: "#0369a1",
+        };
+      case "confirmed":
+        return {
+          bgcolor: "rgba(139,92,246,0.12)",
+          color: "#5b21b6",
+        };
+      case "processing":
+        return {
+          bgcolor: "rgba(249,115,22,0.12)",
+          color: "#c2410c",
+        };
+      case "shipped":
+        return {
+          bgcolor: "rgba(46,125,50,0.12)",
+          color: "#2e7d32",
+        };
+      case "delivered":
+      case "ready_to_ship":
+      case "received":
+        return {
+          bgcolor: "rgba(46,125,50,0.12)",
+          color: "#2e7d32",
+        };
+      default:
+        return {
+          bgcolor: "rgba(148,163,184,0.12)",
+          color: "#475569",
+        };
+    }
+  };
+
+  const statusColors = getStatusColors(actualStatus);
 
   return (
     <Paper
@@ -52,8 +94,8 @@ export function OrderCard({
             label={statusLabel}
             size="small"
             sx={{
-              bgcolor: order.status === "shipped" || order.status === "delivered" ? "rgba(46,125,50,0.12)" : "rgba(25,118,210,0.12)",
-              color: order.status === "shipped" || order.status === "delivered" ? "#2e7d32" : "#1976d2",
+              bgcolor: statusColors.bgcolor,
+              color: statusColors.color,
               fontWeight: 600,
             }}
           />
@@ -74,48 +116,47 @@ export function OrderCard({
             {order.shippingAddress}
           </Typography>
           <Typography fontSize={12} color="text.secondary" sx={{ mt: 0.5 }}>
-            {formatDate(order.createdAt)} · {order.items.length} items · {order.totalAmount.toLocaleString("en-US", { style: "currency", currency: "USD" })}
+            {formatDate(order.createdAt)} · {order.items?.length || 0} items · {order.totalAmount.toLocaleString("en-US", { style: "currency", currency: "USD" })}
           </Typography>
-          {order.orderType === "pre-order" && order.expectedStockDate && (
+          {(order.orderType === "PreOrder" || (order as any).orderType === "pre-order") && order.expectedStockDate && (
             <Typography fontSize={12} color="text.secondary" sx={{ mt: 0.5 }}>
               Expected stock: {order.expectedStockDate}
             </Typography>
           )}
-          {order.orderType === "prescription" && order.prescriptionStatus && (
+          {(order.orderType === "Prescription" || (order as any).orderType === "prescription") && order.prescriptionStatus && (
             <Typography fontSize={12} color="text.secondary" sx={{ mt: 0.5 }}>
               Prescription: {order.prescriptionStatus}
             </Typography>
           )}
           <Box sx={{ mt: 2, display: "flex", gap: 1, flexWrap: "wrap" }}>
-            {order.status === "pending" && (
-              <Button size="small" variant="outlined" onClick={(e) => { e.stopPropagation(); onUpdateStatus("confirmed"); }}>
-                Confirm
-              </Button>
-            )}
-            {(order.status === "confirmed" || order.status === "pending") && (
-              <Button size="small" variant="outlined" onClick={(e) => { e.stopPropagation(); onUpdateStatus("processing"); }}>
-                Processing
-              </Button>
-            )}
-            {order.status === "processing" && (
-              <Button size="small" variant="outlined" onClick={(e) => { e.stopPropagation(); onUpdateStatus("ready_to_ship"); }}>
-                Ready to ship
-              </Button>
-            )}
-            {order.orderType === "pre-order" && order.status === "pending" && (
-              <Button size="small" variant="outlined" onClick={(e) => { e.stopPropagation(); onUpdateStatus("received"); }}>
-                Received at warehouse
-              </Button>
-            )}
-            {order.orderType === "prescription" && order.status === "processing" && (
-              <Button size="small" variant="outlined" onClick={(e) => { e.stopPropagation(); onUpdateStatus("lens_fitting"); }}>
-                Lens fitting
-              </Button>
-            )}
-            {canCreateShipment && (
-              <Button size="small" variant="contained" onClick={(e) => { e.stopPropagation(); onCreateShipment(); }}>
-                Create shipment
-              </Button>
+            {((order as any).orderType?.toLowerCase() || order.orderType?.toLowerCase()) !== "pre-order" && (
+              <>
+                {actualStatus?.toLowerCase() === "pending" && ((order as any).orderType?.toLowerCase() || order.orderType?.toLowerCase()) !== "pre-order" && (
+                  <Button size="small" variant="outlined" onClick={(e) => { e.stopPropagation(); onUpdateStatus("Confirmed" as OrderStatus); }}>
+                    Confirm
+                  </Button>
+                )}
+                {(actualStatus?.toLowerCase() === "confirmed" || (actualStatus?.toLowerCase() === "pending" && ((order as any).orderType?.toLowerCase() || order.orderType?.toLowerCase()) !== "pre-order")) && (
+                  <Button size="small" variant="outlined" onClick={(e) => { e.stopPropagation(); onUpdateStatus("Processing" as OrderStatus); }}>
+                    Processing
+                  </Button>
+                )}
+                {actualStatus?.toLowerCase() === "processing" && (
+                  <Button size="small" variant="outlined" onClick={(e) => { e.stopPropagation(); onUpdateStatus("Shipped" as OrderStatus); }}>
+                    Ready to ship
+                  </Button>
+                )}
+                {((order as any).orderType?.toLowerCase() || order.orderType?.toLowerCase()) === "prescription" && actualStatus?.toLowerCase() === "processing" && (
+                  <Button size="small" variant="outlined" onClick={(e) => { e.stopPropagation(); onUpdateStatus("Confirmed" as OrderStatus); }}>
+                    Lens fitting
+                  </Button>
+                )}
+                {canCreateShipment && (
+                  <Button size="small" variant="contained" onClick={(e) => { e.stopPropagation(); onCreateShipment(); }}>
+                    Create shipment
+                  </Button>
+                )}
+              </>
             )}
           </Box>
         </Box>

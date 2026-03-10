@@ -8,6 +8,7 @@ interface AdminLayoutProps {
 const ADMIN_MENU_ITEMS = [
   { label: "Dashboard", path: "/admin" },
   { label: "Role Management", path: "/admin/roles" },
+  { label: "Policies", path: "/admin/policies" },
 ];
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
