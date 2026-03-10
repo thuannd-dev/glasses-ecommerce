@@ -19,16 +19,14 @@ import { ORDER_STATUS_LABEL, ORDER_TYPE_LABEL, formatDate } from "../constants";
 import type { OrderStatus } from "../../../lib/types";
 
 const STATUS_COLORS: Record<OrderStatus, { bg: string; color: string }> = {
-  pending: { bg: "rgba(25,118,210,0.08)", color: "#1565c0" },
-  confirmed: { bg: "rgba(25,118,210,0.08)", color: "#1565c0" },
-  processing: { bg: "rgba(255,152,0,0.12)", color: "#ef6c00" },
-  ready_to_ship: { bg: "rgba(2,136,209,0.12)", color: "#0277bd" },
-  shipped: { bg: "rgba(46,125,50,0.12)", color: "#2e7d32" },
-  delivered: { bg: "rgba(46,125,50,0.12)", color: "#2e7d32" },
-  received: { bg: "rgba(63,81,181,0.10)", color: "#3949ab" },
-  lens_ordered: { bg: "rgba(123,31,162,0.10)", color: "#7b1fa2" },
-  lens_fitting: { bg: "rgba(94,53,177,0.12)", color: "#5e35b1" },
-  cancelled: { bg: "rgba(211,47,47,0.10)", color: "#c62828" },
+  Pending: { bg: "rgba(25,118,210,0.08)", color: "#1565c0" },
+  Confirmed: { bg: "rgba(25,118,210,0.08)", color: "#1565c0" },
+  Processing: { bg: "rgba(255,152,0,0.12)", color: "#ef6c00" },
+  Shipped: { bg: "rgba(2,136,209,0.12)", color: "#0277bd" },
+  Delivered: { bg: "rgba(46,125,50,0.12)", color: "#2e7d32" },
+  Completed: { bg: "rgba(46,125,50,0.12)", color: "#2e7d32" },
+  Cancelled: { bg: "rgba(211,47,47,0.10)", color: "#c62828" },
+  Refunded: { bg: "rgba(211,47,47,0.10)", color: "#c62828" },
 };
 
 export function OverviewScreen() {
@@ -38,16 +36,16 @@ export function OverviewScreen() {
   const safeShipments = Array.isArray(shipments) ? shipments : [];
 
   const pendingCount = safeOrders.filter(
-    (o) => o.status === "pending" || o.status === "processing" || o.status === "ready_to_ship"
+    (o) => o.status === "Pending" || o.status === "Processing" || o.status === "Shipped"
   ).length;
   const shippedCount = safeOrders.filter(
-    (o) => o.status === "shipped" || o.status === "delivered"
+    (o) => o.status === "Shipped" || o.status === "Delivered"
   ).length;
   const inTransitCount = safeShipments.filter(
     (s) => s.status === "in_transit" || s.status === "picked"
   ).length;
-  const preOrderCount = safeOrders.filter((o) => o.orderType === "pre-order").length;
-  const prescriptionCount = safeOrders.filter((o) => o.orderType === "prescription").length;
+  const preOrderCount = safeOrders.filter((o) => o.orderType === "PreOrder").length;
+  const prescriptionCount = safeOrders.filter((o) => o.orderType === "Prescription").length;
 
   return (
     <>

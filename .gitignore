@@ -490,4 +490,7 @@ client/.env.development
 client/.env.production
 test_flows.ps1
 API/wwwroot
+
 API/ManualPolicyTests.http
+Persistence/Migrations/20260305170057_InitialCreate.Designer.cs
+API/ManualFeatureTogglesTests.http

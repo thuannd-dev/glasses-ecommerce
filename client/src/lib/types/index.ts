@@ -57,3 +57,11 @@ export type {
   OrderSuccessState,
 } from "./order";
 export type { LookupsResponse } from "./lookups";
+export type {
+  PolicyConfigurationDto,
+  CreatePolicyPayload,
+  UpdatePolicyPayload,
+  AdminPoliciesQueryParams,
+  PagedPoliciesResponse,
+} from "./policy";
+export { PolicyTypeEnum, POLICY_TYPE_LABELS, getPolicyTypeLabel } from "./policy";

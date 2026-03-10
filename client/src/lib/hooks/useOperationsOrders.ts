@@ -24,7 +24,17 @@ async function fetchOrders(params?: OperationsOrdersQueryParams): Promise<Operat
       orderType: params?.orderType,
     },
   });
-  return res.data;
+  const data = res.data;
+  // Ensure response is in correct format
+  return {
+    items: Array.isArray(data) ? data : Array.isArray(data?.items) ? data.items : [],
+    totalCount: data?.totalCount ?? 0,
+    pageNumber: data?.pageNumber ?? 1,
+    pageSize: data?.pageSize ?? 10,
+    totalPages: data?.totalPages ?? 0,
+    hasPreviousPage: data?.hasPreviousPage ?? false,
+    hasNextPage: data?.hasNextPage ?? false,
+  };
 }
 
 async function fetchOrderById(orderId: string): Promise<StaffOrderDetailDto> {
@@ -55,7 +65,7 @@ const ORDER_STATUS_TO_NEW_STATUS: Record<OrderStatus | string, number> = {
 async function apiUpdateOrderStatus(payload: UpdateOrderStatusPayload): Promise<OrderDto> {
   const newStatus = ORDER_STATUS_TO_NEW_STATUS[payload.status];
 
-  const isShipping = payload.status === "shipped";
+  const isShipping = payload.status === "Shipped";
 
   const res = await agent.put<OrderDto>(`/operations/orders/${payload.orderId}/status`, {
     newStatus,
