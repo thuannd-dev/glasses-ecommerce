@@ -41,7 +41,6 @@ export default function CheckoutPage() {
         setPrivatePromoInput,
         handleApplyActivePromo,
         handleApplyPrivatePromo,
-        handleRemovePromo,
         isApplyingPromo,
         submitting,
         snackbar,
@@ -49,8 +48,6 @@ export default function CheckoutPage() {
         handlePlaceOrder,
         savedAddresses,
         defaultAddress,
-        setAsDefault,
-        setSetAsDefault,
     } = useCheckoutPage();
 
     return (
