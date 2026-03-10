@@ -14,10 +14,11 @@ public enum AfterSalesTicketStatus
 {
     Pending = 1,
     InProgress = 2,
-    Resolved = 3,
-    Rejected = 4,
-    Closed = 5,
-    Cancelled = 6
+    Replacing = 3,    // Intermediate status for warranty replacement workflow
+    Resolved = 4,
+    Rejected = 5,
+    Closed = 6,
+    Cancelled = 7
 }
 
 public enum TicketResolutionType
@@ -63,6 +64,17 @@ public class AfterSalesTicket
     // Set by Operations Staff when physical goods are received (CASE B, C, D)
     public DateTime? ReceivedAt { get; set; }
 
+    // Set by Operations when selecting replacement item for warranty replacement (CASE D)
+    public Guid? ReplacementProductVariantId { get; set; }
+
+    // Flag to indicate ticket is awaiting replacement selection (for warranty replacement workflow)
+    // Allows ticket to be visible in both Sales (InProgress section) and Operations (Replacing section)
+    public bool IsAwaitingReplacement { get; set; } = false;
+
+    // Flag to indicate replacement selection has been completed
+    // Allows resolved replacement tickets to remain visible in Operations (Replacing section) with Resolved status
+    public bool IsReplacementCompleted { get; set; } = false;
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public DateTime? ResolvedAt { get; set; }
@@ -70,6 +82,7 @@ public class AfterSalesTicket
     // Navigation properties
     public Order Order { get; set; } = null!;
     public OrderItem? OrderItem { get; set; }
+    public ProductVariant? ReplacementProductVariant { get; set; }
     public User Customer { get; set; } = null!;
     public User? AssignedStaff { get; set; }
     public ICollection<TicketAttachment> Attachments { get; set; } = new List<TicketAttachment>();

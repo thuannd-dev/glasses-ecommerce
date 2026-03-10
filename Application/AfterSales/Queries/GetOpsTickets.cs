@@ -30,13 +30,17 @@ public sealed class GetOpsTickets
             if (request.ResolutionType == TicketResolutionType.RefundOnly)
                 return Result<PagedResult<TicketListDto>>.Failure("Operations team does not handle 'RefundOnly' tickets.", 400);
 
-            // Ops sees InProgress (confirmed by Sales, awaiting inspection) and Rejected tickets
+            // Ops sees InProgress (confirmed by Sales, awaiting inspection), Replacing (in warranty replacement workflow),
+            // Resolved tickets (both ReturnAndRefund inspected + accepted, and WarrantyReplace completed), and Rejected tickets
             // that require physical handling (not RefundOnly)
             IQueryable<AfterSalesTicket> query = context.AfterSalesTickets
                 .AsNoTracking()
                 .Where(t =>
                     (t.TicketStatus == AfterSalesTicketStatus.InProgress || 
-                     t.TicketStatus == AfterSalesTicketStatus.Rejected) &&
+                     t.TicketStatus == AfterSalesTicketStatus.Replacing ||
+                     t.TicketStatus == AfterSalesTicketStatus.Rejected ||
+                     (t.TicketStatus == AfterSalesTicketStatus.Resolved && 
+                      (t.ResolutionType == TicketResolutionType.ReturnAndRefund || t.IsReplacementCompleted))) &&
                     t.ResolutionType != null &&
                     t.ResolutionType != TicketResolutionType.RefundOnly);
 

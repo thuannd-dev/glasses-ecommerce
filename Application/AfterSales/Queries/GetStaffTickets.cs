@@ -36,7 +36,15 @@ public sealed class GetStaffTickets
                 .ThenInclude(pv => pv!.Product);
 
             if (request.Status.HasValue)
-                query = query.Where(t => t.TicketStatus == request.Status.Value);
+            {
+                // When filtering by InProgress status, also include Replacing tickets awaiting replacement selection
+                if (request.Status.Value == AfterSalesTicketStatus.InProgress)
+                    query = query.Where(t => 
+                        t.TicketStatus == AfterSalesTicketStatus.InProgress ||
+                        (t.TicketStatus == AfterSalesTicketStatus.Replacing && t.IsAwaitingReplacement));
+                else
+                    query = query.Where(t => t.TicketStatus == request.Status.Value);
+            }
 
             if (request.TicketType.HasValue)
                 query = query.Where(t => t.TicketType == request.TicketType.Value);

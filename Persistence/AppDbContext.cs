@@ -1178,6 +1178,11 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
                 .HasForeignKey(ast => ast.OrderItemId)
                 .OnDelete(DeleteBehavior.NoAction);
 
+            entity.HasOne(ast => ast.ReplacementProductVariant)
+                .WithMany()
+                .HasForeignKey(ast => ast.ReplacementProductVariantId)
+                .OnDelete(DeleteBehavior.NoAction);
+
             entity.HasOne(ast => ast.AssignedStaff)
                 .WithMany()
                 .HasForeignKey(ast => ast.AssignedTo)
@@ -1199,6 +1204,8 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
                 .HasDatabaseName("IX_AfterSalesTicket_OrderId");
             entity.HasIndex(e => e.OrderItemId)
                 .HasDatabaseName("IX_AfterSalesTicket_OrderItemId");
+            entity.HasIndex(e => e.ReplacementProductVariantId)
+                .HasDatabaseName("IX_AfterSalesTicket_ReplacementProductVariantId");
             entity.HasIndex(e => e.CustomerId)
                 .HasDatabaseName("IX_AfterSalesTicket_CustomerId");
             entity.HasIndex(e => e.TicketType)
@@ -1224,7 +1231,7 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
 
                 t.HasCheckConstraint(
                     "CK_AfterSalesTicket_TicketStatus",
-                    "[TicketStatus] IN (1, 2, 3, 4, 5)"
+                    "[TicketStatus] IN (1, 2, 3, 4, 5, 6, 7)"
                 );
 
                 t.HasCheckConstraint(

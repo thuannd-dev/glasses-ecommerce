@@ -83,7 +83,9 @@ function ensureAbsoluteUrl(url: string | null | undefined): string | null {
 async function apiUpdateOrderStatus(payload: UpdateOrderStatusPayload): Promise<OrderDto> {
   const newStatus = ORDER_STATUS_TO_NEW_STATUS[payload.status];
 
-  const isShipping = payload.status === "Shipped";
+  // Normalize status to Pascal case for comparison (e.g., "shipped" → "Shipped")
+  const capitalizedStatus = payload.status.charAt(0).toUpperCase() + payload.status.slice(1).toLowerCase();
+  const isShipping = capitalizedStatus === "Shipped";
 
   const carrierEnum = isShipping && payload.shipmentCarrierName 
     ? CARRIER_TO_ENUM[payload.shipmentCarrierName] ?? 1

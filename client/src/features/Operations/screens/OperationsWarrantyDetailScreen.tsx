@@ -11,10 +11,18 @@ import {
   DialogContent,
   DialogActions,
   Alert,
+  TextField,
+  MenuItem,
+  Select,
 } from "@mui/material";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useStaffAfterSalesTicketDetail } from "../../../lib/hooks/useStaffAfterSalesTickets";
-import { useReceiveWarrantyTicket, useSetTicketDestination } from "../../../lib/hooks/useOperationsAfterSales";
+import { 
+  useReceiveWarrantyTicket, 
+  useSetTicketDestination,
+  useGetReplacementItems,
+  useSelectReplacementItem,
+} from "../../../lib/hooks/useOperationsAfterSales";
 import {
   AfterSalesTicketStatusValues,
   TicketResolutionTypeValues,
@@ -24,6 +32,7 @@ import {
 const STATUS_LABELS: Record<AfterSalesTicketStatus, string> = {
   [AfterSalesTicketStatusValues.Pending]: "Pending",
   [AfterSalesTicketStatusValues.InProgress]: "In Progress",
+  [AfterSalesTicketStatusValues.Replacing]: "Replacing",
   [AfterSalesTicketStatusValues.Resolved]: "Resolved",
   [AfterSalesTicketStatusValues.Rejected]: "Rejected",
   [AfterSalesTicketStatusValues.Closed]: "Closed",
@@ -33,6 +42,7 @@ const STATUS_LABELS: Record<AfterSalesTicketStatus, string> = {
 const STATUS_COLORS: Record<AfterSalesTicketStatus, string> = {
   [AfterSalesTicketStatusValues.Pending]: "#fbbf24",
   [AfterSalesTicketStatusValues.InProgress]: "#3b82f6",
+  [AfterSalesTicketStatusValues.Replacing]: "#a855f7",
   [AfterSalesTicketStatusValues.Resolved]: "#10b981",
   [AfterSalesTicketStatusValues.Rejected]: "#ef4444",
   [AfterSalesTicketStatusValues.Closed]: "#6b7280",
@@ -47,14 +57,21 @@ export function OperationsWarrantyDetailScreen() {
   const backUrl = `/operations/warranty?${searchParams.toString()}`;
 
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [chosenDestination, setChosenDestination] = useState<"Repair" | "Reject" | null>(null);
+  const [chosenDestination, setChosenDestination] = useState<"Replace" | "Reject" | null>(null);
   const [error, setError] = useState("");
+  const [replacementDialogOpen, setReplacementDialogOpen] = useState(false);
+  const [selectedReplacementItemId, setSelectedReplacementItemId] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
   const { data: ticket, isLoading } = useStaffAfterSalesTicketDetail(
     ticketId || ""
   );
+  const { data: replacementItems, isLoading: isLoadingReplacementItems } = useGetReplacementItems(
+    ticketId || ""
+  );
   const { mutate: receiveTicket, isPending: isReceiving } = useReceiveWarrantyTicket();
   const { mutate: setDestinationMutation, isPending: isSettingDestination } = useSetTicketDestination();
+  const { mutate: selectReplacementMutation, isPending: isSelectingReplacement } = useSelectReplacementItem();
 
   const handleOpenDialog = () => {
     setChosenDestination(null);
@@ -66,8 +83,42 @@ export function OperationsWarrantyDetailScreen() {
     setDialogOpen(false);
   };
 
-  const handleChoose = (choice: "Repair" | "Reject") => {
+  const handleChoose = (choice: "Replace" | "Reject") => {
     setChosenDestination(choice);
+  };
+
+  const handleOpenReplacementDialog = () => {
+    setReplacementDialogOpen(true);
+    setSelectedReplacementItemId("");
+    setSearchQuery("");
+    setError("");
+  };
+
+  const handleCloseReplacementDialog = () => {
+    setReplacementDialogOpen(false);
+  };
+
+  const handleSelectReplacementItem = async () => {
+    if (!ticketId || !selectedReplacementItemId) {
+      setError("Please select a replacement item");
+      return;
+    }
+
+    selectReplacementMutation(
+      {
+        ticketId,
+        replacementOrderItemId: selectedReplacementItemId,
+      },
+      {
+        onSuccess: () => {
+          setReplacementDialogOpen(false);
+          navigate(backUrl);
+        },
+        onError: (err: Error | unknown) => {
+          setError(err instanceof Error ? err.message : "Failed to select replacement item");
+        },
+      }
+    );
   };
 
   const handleConfirmChoice = async () => {
@@ -225,6 +276,23 @@ export function OperationsWarrantyDetailScreen() {
               {isReceiving || isSettingDestination ? "Processing..." : "Received"}
             </Button>
           )}
+          {ticket.ticketStatus === AfterSalesTicketStatusValues.Replacing && (
+            <Button
+              variant="contained"
+              size="small"
+              sx={{
+                textTransform: "none",
+                fontWeight: 700,
+                borderRadius: 2,
+                bgcolor: "#a855f7",
+                "&:hover": { bgcolor: "#9333ea" },
+              }}
+              onClick={handleOpenReplacementDialog}
+              disabled={isSelectingReplacement}
+            >
+              {isSelectingReplacement ? "Saving..." : "Select Replacement"}
+            </Button>
+          )}
         </Box>
 
         <Box
@@ -308,6 +376,232 @@ export function OperationsWarrantyDetailScreen() {
           )}
         </Box>
 
+        {/* Item Details Section */}
+        {ticket.orderItem && (
+          <Box
+            sx={{
+              pt: 2,
+              borderTop: "1px solid rgba(0,0,0,0.08)",
+            }}
+          >
+            <Typography sx={{ fontSize: 12, color: "text.secondary", mb: 1 }}>
+              Item Details
+            </Typography>
+            <Box
+              sx={{
+                bgcolor: "rgba(0,0,0,0.02)",
+                borderRadius: 2,
+                p: 2,
+                border: "1px solid rgba(0,0,0,0.06)",
+                display: "grid",
+                gridTemplateColumns: { xs: "1fr", md: "auto 1fr" },
+                gap: 2,
+                alignItems: "start",
+              }}
+            >
+              {/* Product Image */}
+              {ticket.orderItem.productImageUrl && (
+                <Box
+                  sx={{
+                    width: { xs: "100%", md: 120 },
+                    height: { xs: "auto", md: 120 },
+                    borderRadius: 1.5,
+                    overflow: "hidden",
+                    bgcolor: "rgba(0,0,0,0.05)",
+                    border: "1px solid rgba(0,0,0,0.08)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    minWidth: 120,
+                  }}
+                >
+                  <img
+                    src={ticket.orderItem.productImageUrl}
+                    alt={ticket.orderItem.productName || "Product"}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                    }}
+                  />
+                </Box>
+              )}
+              {/* Item Details Grid */}
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+                  gap: 2,
+                  width: "100%",
+                }}
+              >
+                {ticket.orderItem.productName && (
+                  <Box>
+                    <Typography sx={{ fontSize: 11, color: "text.secondary" }}>
+                      Product Name
+                    </Typography>
+                    <Typography sx={{ fontWeight: 700, fontSize: 14 }}>
+                      {ticket.orderItem.productName}
+                    </Typography>
+                  </Box>
+                )}
+                {ticket.orderItem.variantName && (
+                  <Box>
+                    <Typography sx={{ fontSize: 11, color: "text.secondary" }}>
+                      Variant
+                    </Typography>
+                    <Typography sx={{ fontWeight: 700, fontSize: 14 }}>
+                      {ticket.orderItem.variantName}
+                    </Typography>
+                  </Box>
+                )}
+                {ticket.orderItem.sku && (
+                  <Box>
+                    <Typography sx={{ fontSize: 11, color: "text.secondary" }}>
+                      SKU
+                    </Typography>
+                    <Typography sx={{ fontWeight: 700, fontSize: 14 }}>
+                      {ticket.orderItem.sku}
+                    </Typography>
+                  </Box>
+                )}
+                {ticket.orderItem.quantity && (
+                  <Box>
+                    <Typography sx={{ fontSize: 11, color: "text.secondary" }}>
+                      Quantity
+                    </Typography>
+                    <Typography sx={{ fontWeight: 700, fontSize: 14 }}>
+                      {ticket.orderItem.quantity}
+                    </Typography>
+                  </Box>
+                )}
+                {ticket.orderItem.unitPrice && (
+                  <Box>
+                    <Typography sx={{ fontSize: 11, color: "text.secondary" }}>
+                      Unit Price
+                    </Typography>
+                    <Typography sx={{ fontWeight: 700, fontSize: 14 }}>
+                      {`$${ticket.orderItem.unitPrice.toFixed(2)}`}
+                    </Typography>
+                  </Box>
+                )}
+                {ticket.orderItem.totalPrice && (
+                  <Box>
+                    <Typography sx={{ fontSize: 11, color: "text.secondary" }}>
+                      Total Price
+                    </Typography>
+                    <Typography sx={{ fontWeight: 700, fontSize: 14 }}>
+                      {`$${ticket.orderItem.totalPrice.toFixed(2)}`}
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+            </Box>
+          </Box>
+        )}
+        {/* Replacement Item Details Section */}
+        {ticket.ticketStatus === AfterSalesTicketStatusValues.Resolved && ticket.replacementOrderItem && (
+          <Box
+            sx={{
+              pt: 2,
+              borderTop: "1px solid rgba(0,0,0,0.08)",
+            }}
+          >
+            <Typography sx={{ fontSize: 12, color: "text.secondary", mb: 1 }}>
+              Replacement Item Details
+            </Typography>
+            <Box
+              sx={{
+                bgcolor: "#10b98122",
+                borderRadius: 2,
+                p: 2,
+                border: "1px solid #10b981",
+                display: "grid",
+                gridTemplateColumns: { xs: "1fr", md: "auto 1fr" },
+                gap: 2,
+                alignItems: "start",
+              }}
+            >
+              {/* Product Image */}
+              {ticket.replacementOrderItem.productImageUrl && (
+                <Box
+                  sx={{
+                    width: { xs: "100%", md: 120 },
+                    height: { xs: "auto", md: 120 },
+                    borderRadius: 1.5,
+                    overflow: "hidden",
+                    bgcolor: "rgba(0,0,0,0.05)",
+                    border: "1px solid rgba(0,0,0,0.08)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    minWidth: 120,
+                  }}
+                >
+                  <img
+                    src={ticket.replacementOrderItem.productImageUrl}
+                    alt={ticket.replacementOrderItem.productName || "Replacement Product"}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                    }}
+                  />
+                </Box>
+              )}
+              {/* Replacement Item Details Grid */}
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+                  gap: 2,
+                  width: "100%",
+                }}
+              >
+                {ticket.replacementOrderItem.productName && (
+                  <Box>
+                    <Typography sx={{ fontSize: 11, color: "text.secondary" }}>
+                      Product Name
+                    </Typography>
+                    <Typography sx={{ fontWeight: 700, fontSize: 14 }}>
+                      {ticket.replacementOrderItem.productName}
+                    </Typography>
+                  </Box>
+                )}
+                {ticket.replacementOrderItem.variantName && (
+                  <Box>
+                    <Typography sx={{ fontSize: 11, color: "text.secondary" }}>
+                      Variant
+                    </Typography>
+                    <Typography sx={{ fontWeight: 700, fontSize: 14 }}>
+                      {ticket.replacementOrderItem.variantName}
+                    </Typography>
+                  </Box>
+                )}
+                {ticket.replacementOrderItem.sku && (
+                  <Box>
+                    <Typography sx={{ fontSize: 11, color: "text.secondary" }}>
+                      SKU
+                    </Typography>
+                    <Typography sx={{ fontWeight: 700, fontSize: 14 }}>
+                      {ticket.replacementOrderItem.sku}
+                    </Typography>
+                  </Box>
+                )}
+                {ticket.replacementOrderItem.unitPrice && (
+                  <Box>
+                    <Typography sx={{ fontSize: 11, color: "text.secondary" }}>
+                      Unit Price
+                    </Typography>
+                    <Typography sx={{ fontWeight: 700, fontSize: 14 }}>
+                      {`$${ticket.replacementOrderItem.unitPrice.toFixed(2)}`}
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+            </Box>
+          </Box>
+        )}
         {/* Customer Information Section */}
         {(ticket.customerName || ticket.customerPhone || ticket.shippingAddress) && (
           <Box
@@ -486,6 +780,79 @@ export function OperationsWarrantyDetailScreen() {
             </Typography>
           </Box>
         )}
+
+        {/* Attachments Section */}
+        <Box
+          sx={{
+            pt: 2,
+            borderTop: "1px solid rgba(0,0,0,0.08)",
+          }}
+        >
+          <Typography sx={{ fontSize: 12, color: "text.secondary", mb: 1.5 }}>
+            Attachments
+          </Typography>
+          {ticket.attachments && ticket.attachments.length > 0 ? (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+              {ticket.attachments.map((attachment) => (
+                <Box
+                  key={attachment.id}
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1.5,
+                    p: 1.5,
+                    bgcolor: "rgba(59, 130, 246, 0.05)",
+                    borderRadius: 1.5,
+                    border: "1px solid rgba(59, 130, 246, 0.2)",
+                  }}
+                >
+                  <Box
+                    sx={{
+                      fontSize: 20,
+                      flexShrink: 0,
+                    }}
+                  >
+                    {attachment.fileExtension?.toLowerCase() === 'pdf' ? '📄' : '🖼️'}
+                  </Box>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography
+                      sx={{
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: "rgb(59, 130, 246)",
+                        wordBreak: "break-word",
+                        textDecoration: "none",
+                      }}
+                      component="a"
+                      href={attachment.fileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {attachment.fileName}
+                    </Typography>
+                    <Typography sx={{ fontSize: 11, color: "text.secondary", mt: 0.25 }}>
+                      Uploaded · {new Date(attachment.createdAt).toLocaleString()}
+                    </Typography>
+                  </Box>
+                </Box>
+              ))}
+            </Box>
+          ) : (
+            <Box
+              sx={{
+                p: 2,
+                bgcolor: "rgba(0,0,0,0.02)",
+                borderRadius: 1.5,
+                border: "1px solid rgba(0,0,0,0.06)",
+                textAlign: "center",
+              }}
+            >
+              <Typography sx={{ fontSize: 13, color: "text.secondary" }}>
+                No attachment included
+              </Typography>
+            </Box>
+          )}
+        </Box>
       </Paper>
 
       <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
@@ -501,13 +868,13 @@ export function OperationsWarrantyDetailScreen() {
                 <Button
                   variant="contained"
                   fullWidth
-                  onClick={() => handleChoose("Repair")}
+                  onClick={() => handleChoose("Replace")}
                   sx={{
-                    bgcolor: "#3b82f6",
-                    "&:hover": { bgcolor: "#1d4ed8" },
+                    bgcolor: "#8b5cf6",
+                    "&:hover": { bgcolor: "#7c3aed" },
                   }}
                 >
-                  Repair
+                  Replace
                 </Button>
                 <Button
                   variant="contained"
@@ -556,9 +923,86 @@ export function OperationsWarrantyDetailScreen() {
             variant="contained"
             onClick={handleConfirmChoice}
             disabled={!chosenDestination || isReceiving || isSettingDestination}
-            sx={{ bgcolor: chosenDestination === "Repair" ? "#3b82f6" : "#ef4444" }}
+            sx={{ bgcolor: "#ef4444" }}
           >
             {isReceiving || isSettingDestination ? "Processing..." : "Confirm"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={replacementDialogOpen} onClose={handleCloseReplacementDialog} maxWidth="sm" fullWidth>
+        <DialogTitle>Select Replacement Item</DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2 }}>
+            <Typography sx={{ mb: 2 }}>
+              Choose which item from the order to use as a replacement:
+            </Typography>
+
+            <TextField
+              fullWidth
+              size="small"
+              placeholder="Search by product name..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              sx={{ mb: 2 }}
+            />
+
+            {isLoadingReplacementItems ? (
+              <Typography sx={{ color: "text.secondary", textAlign: "center", py: 2 }}>
+                Loading items...
+              </Typography>
+            ) : ! replacementItems || replacementItems.length === 0 ? (
+              <Typography sx={{ color: "text.secondary", textAlign: "center", py: 2 }}>
+                No items available for replacement
+              </Typography>
+            ) : (
+              <Select
+                fullWidth
+                value={selectedReplacementItemId}
+                onChange={(e) => setSelectedReplacementItemId(e.target.value)}
+                displayEmpty
+                sx={{ mb: 2 }}
+              >
+                <MenuItem value="">
+                  <em>--- Select an item ---</em>
+                </MenuItem>
+                {replacementItems
+                  .filter((item) =>
+                    !searchQuery ||
+                    (item.productName || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    (item.variantName || "").toLowerCase().includes(searchQuery.toLowerCase())
+                  )
+                  .map((item) => (
+                    <MenuItem key={item.id} value={item.id}>
+                      <Typography sx={{ fontSize: 14 }}>
+                        {item.productName} {item.variantName && `- ${item.variantName}`}
+                      </Typography>
+                    </MenuItem>
+                  ))}
+              </Select>
+            )}
+
+            {error && (
+              <Alert severity="error" sx={{ mt: 2 }}>
+                {error}
+              </Alert>
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={handleCloseReplacementDialog}
+            disabled={isSelectingReplacement}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleSelectReplacementItem}
+            disabled={!selectedReplacementItemId || isSelectingReplacement}
+            sx={{ bgcolor: "#a855f7" }}
+          >
+            {isSelectingReplacement ? "Saving..." : "Confirm Replacement"}
           </Button>
         </DialogActions>
       </Dialog>

@@ -54,6 +54,16 @@ public sealed class ReceiveReturn
                 ticket.Order.OrderStatus = OrderStatus.Delivered;
                 ticket.Order.UpdatedAt = TimezoneHelper.GetVietnamNow();
 
+                // Mark payment as completed when order is delivered
+                Payment? payment = await context.Payments
+                    .FirstOrDefaultAsync(p => p.OrderId == ticket.Order.Id, ct);
+                
+                if (payment != null)
+                {
+                    payment.PaymentStatus = PaymentStatus.Completed;
+                    payment.PaymentAt = TimezoneHelper.GetVietnamNow();
+                }
+
                 OrderStatusHistory history = new()
                 {
                     OrderId = ticket.Order.Id,

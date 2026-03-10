@@ -45,15 +45,18 @@ const getTicketStatusColor = (status: number | string) => {
     case AfterSalesTicketStatusValues.InProgress:
       return { border: "#f97316", bg: "rgba(249,115,22,0.12)", color: "#c2410c" };
     case 3:
+    case AfterSalesTicketStatusValues.Replacing:
+      return { border: "#a855f7", bg: "rgba(168,85,247,0.12)", color: "#7c3aed" };
+    case 4:
     case AfterSalesTicketStatusValues.Resolved:
       return { border: "#22c55e", bg: "rgba(34,197,94,0.12)", color: "#15803d" };
-    case 4:
+    case 5:
     case AfterSalesTicketStatusValues.Rejected:
       return { border: "#ef4444", bg: "rgba(239,68,68,0.12)", color: "#b91c1c" };
-    case 5:
+    case 6:
     case AfterSalesTicketStatusValues.Closed:
       return { border: "#8b5cf6", bg: "rgba(139,92,246,0.12)", color: "#5b21b6" };
-    case 6:
+    case 7:
     case AfterSalesTicketStatusValues.Cancelled:
       return { border: "#6b7280", bg: "rgba(107,114,128,0.12)", color: "#374151" };
     default:
@@ -71,15 +74,18 @@ const getTicketStatusLabel = (status: number | string): string => {
     case AfterSalesTicketStatusValues.InProgress:
       return "In Progress";
     case 3:
+    case AfterSalesTicketStatusValues.Replacing:
+      return "Replacing";
+    case 4:
     case AfterSalesTicketStatusValues.Resolved:
       return "Resolved";
-    case 4:
+    case 5:
     case AfterSalesTicketStatusValues.Rejected:
       return "Rejected";
-    case 5:
+    case 6:
     case AfterSalesTicketStatusValues.Closed:
       return "Closed";
-    case 6:
+    case 7:
     case AfterSalesTicketStatusValues.Cancelled:
       return "Cancelled";
     default:

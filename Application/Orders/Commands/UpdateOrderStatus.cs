@@ -187,6 +187,19 @@ public sealed class UpdateOrderStatus
                 order.OrderStatus = newStatus;
                 order.UpdatedAt = TimezoneHelper.GetVietnamNow();
 
+                // Mark payment as completed when order is delivered
+                if (newStatus == OrderStatus.Delivered)
+                {
+                    Payment? payment = await context.Payments
+                        .FirstOrDefaultAsync(p => p.OrderId == order.Id, ct);
+                    
+                    if (payment != null)
+                    {
+                        payment.PaymentStatus = PaymentStatus.Completed;
+                        payment.PaymentAt = TimezoneHelper.GetVietnamNow();
+                    }
+                }
+
                 context.OrderStatusHistories.Add(new OrderStatusHistory
                 {
                     OrderId = order.Id,

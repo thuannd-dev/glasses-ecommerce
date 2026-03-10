@@ -257,6 +257,18 @@ function OperationsOrderRow({
       return;
     }
 
+    const trimmedTrackingCode = trackingCode.trim();
+    if (!trimmedTrackingCode) {
+      setShipmentError("Tracking code is required");
+      return;
+    }
+
+    const trimmedTrackingUrl = trackingUrl.trim();
+    if (trimmedTrackingUrl && !trimmedTrackingUrl.match(/^https?:\/\/.+/i)) {
+      setShipmentError("Tracking URL must be a valid URL (starting with http:// or https://)");
+      return;
+    }
+
     setShipmentError(null);
     const isoEstimated =
       estimatedDelivery.trim().length > 0
@@ -267,10 +279,10 @@ function OperationsOrderRow({
       orderId: summary.id,
       status: "shipped" as OrderStatus,
       shipmentCarrierName: trimmedCarrier,
-      shipmentTrackingCode: trackingCode || null,
-      shipmentTrackingUrl: trackingUrl || null,
+      shipmentTrackingCode: trimmedTrackingCode,
+      shipmentTrackingUrl: trimmedTrackingUrl || null,
       shipmentEstimatedDeliveryAt: isoEstimated,
-      shipmentNotes: shippingNotes || null,
+      shipmentNotes: shippingNotes?.trim() || null,
     });
   };
 
@@ -403,6 +415,51 @@ function OperationsOrderRow({
             })}
 
             <Divider sx={{ my: 1.5 }} />
+
+            {/* Delivery Information Section */}
+            {(detail.customerName || detail.customerPhone || detail.shippingAddress) && (
+              <>
+                <Typography sx={{ fontWeight: 700, color: "text.primary", mb: 1 }}>
+                  Delivery Information
+                </Typography>
+                <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 1.5, mb: 1.5 }}>
+                  {detail.customerName && (
+                    <Box>
+                      <Typography sx={{ fontSize: 12, color: "text.secondary", mb: 0.5 }}>
+                        Customer Name
+                      </Typography>
+                      <Typography sx={{ fontWeight: 700, color: "text.primary" }}>
+                        {detail.customerName}
+                      </Typography>
+                    </Box>
+                  )}
+                  {detail.customerPhone && (
+                    <Box>
+                      <Typography sx={{ fontSize: 12, color: "text.secondary", mb: 0.5 }}>
+                        Phone
+                      </Typography>
+                      <Typography sx={{ fontWeight: 700, color: "text.primary" }}>
+                        {detail.customerPhone}
+                      </Typography>
+                    </Box>
+                  )}
+                  {detail.shippingAddress && (
+                    <Box sx={{ gridColumn: { xs: "1fr", md: "1 / -1" } }}>
+                      <Typography sx={{ fontSize: 12, color: "text.secondary", mb: 0.5 }}>
+                        Delivery Address
+                      </Typography>
+                      <Typography sx={{ fontWeight: 700, color: "text.primary", lineHeight: 1.5 }}>
+                        {detail.shippingAddress.venue && `${detail.shippingAddress.venue}, `}
+                        {detail.shippingAddress.ward && `${detail.shippingAddress.ward}, `}
+                        {detail.shippingAddress.district && `${detail.shippingAddress.district}, `}
+                        {detail.shippingAddress.city}
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+                <Divider sx={{ my: 1.5 }} />
+              </>
+            )}
             
             <Box>
               <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.75 }}>
@@ -521,70 +578,116 @@ function OperationsOrderRow({
           {isLoading || !detail ? (
             <Typography sx={{ fontSize: 13, color: "text.secondary" }}>Loading order details...</Typography>
           ) : (
-            <Box sx={{ pb: 1.5, borderBottom: "1px solid rgba(0,0,0,0.1)" }}>
-              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 2 }}>
-                <Box>
-                  <Typography sx={{ fontSize: 12, color: "text.secondary", mb: 0.75 }}>Order ID</Typography>
-                  <Typography sx={{ fontWeight: 700, color: "text.primary", mb: 1 }}>{summary.id}</Typography>
-                  <Box sx={{ display: "flex", gap: 2 }}>
-                    <Box>
-                      <Typography sx={{ fontSize: 12, color: "text.secondary", mb: 0.25 }}>Source</Typography>
-                      <Typography sx={{ fontWeight: 600 }}>{summary.orderSource}</Typography>
-                    </Box>
-                    <Box>
-                      <Typography sx={{ fontSize: 12, color: "text.secondary", mb: 0.25 }}>Type</Typography>
-                      <Typography sx={{ fontWeight: 600 }}>{summary.orderType}</Typography>
-                    </Box>
-                    <Box>
-                      <Typography sx={{ fontSize: 12, color: "text.secondary", mb: 0.25 }}>Items</Typography>
-                      <Typography sx={{ fontWeight: 600 }}>{summary.itemCount}</Typography>
+            <>
+              <Box sx={{ pb: 1.5, borderBottom: "1px solid rgba(0,0,0,0.1)" }}>
+                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 2 }}>
+                  <Box>
+                    <Typography sx={{ fontSize: 12, color: "text.secondary", mb: 0.75 }}>Order ID</Typography>
+                    <Typography sx={{ fontWeight: 700, color: "text.primary", mb: 1 }}>{summary.id}</Typography>
+                    <Box sx={{ display: "flex", gap: 2 }}>
+                      <Box>
+                        <Typography sx={{ fontSize: 12, color: "text.secondary", mb: 0.25 }}>Source</Typography>
+                        <Typography sx={{ fontWeight: 600 }}>{summary.orderSource}</Typography>
+                      </Box>
+                      <Box>
+                        <Typography sx={{ fontSize: 12, color: "text.secondary", mb: 0.25 }}>Type</Typography>
+                        <Typography sx={{ fontWeight: 600 }}>{summary.orderType}</Typography>
+                      </Box>
+                      <Box>
+                        <Typography sx={{ fontSize: 12, color: "text.secondary", mb: 0.25 }}>Items</Typography>
+                        <Typography sx={{ fontWeight: 600 }}>{summary.itemCount}</Typography>
+                      </Box>
                     </Box>
                   </Box>
-                </Box>
-                <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75, minWidth: 130 }}>
-                  <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                    <Typography sx={{ color: "text.secondary", fontSize: 12 }}>Subtotal</Typography>
-                    <Typography sx={{ fontWeight: 600, fontSize: 12 }}>
-                      {detail.totalAmount.toLocaleString("en-US", {
-                        style: "currency",
-                        currency: "USD",
-                      })}
-                    </Typography>
-                  </Box>
-                  {detail.discountApplied && detail.discountApplied > 0 && (
+                  <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75, minWidth: 130 }}>
                     <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                      <Typography sx={{ color: "text.secondary", fontSize: 12 }}>Discount</Typography>
-                      <Typography sx={{ fontWeight: 600, fontSize: 12, color: "#10b981" }}>
-                        -{detail.discountApplied.toLocaleString("en-US", {
-                          style: "currency",
-                          currency: "USD",
-                        })}
-                      </Typography>
-                    </Box>
-                  )}
-                  {detail.shippingFee > 0 && (
-                    <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                      <Typography sx={{ color: "text.secondary", fontSize: 12 }}>Shipping</Typography>
+                      <Typography sx={{ color: "text.secondary", fontSize: 12 }}>Subtotal</Typography>
                       <Typography sx={{ fontWeight: 600, fontSize: 12 }}>
-                        {detail.shippingFee.toLocaleString("en-US", {
+                        {detail.totalAmount.toLocaleString("en-US", {
                           style: "currency",
                           currency: "USD",
                         })}
                       </Typography>
                     </Box>
-                  )}
-                  <Box sx={{ display: "flex", justifyContent: "space-between", pt: 0.5, borderTop: "1px solid rgba(0,0,0,0.1)" }}>
-                    <Typography sx={{ fontWeight: 700, color: "text.primary", fontSize: 12 }}>Total</Typography>
-                    <Typography sx={{ fontWeight: 900, fontSize: 13, color: "text.primary" }}>
-                      {detail.finalAmount.toLocaleString("en-US", {
-                        style: "currency",
-                        currency: "USD",
-                      })}
-                    </Typography>
+                    {detail.discountApplied && detail.discountApplied > 0 && (
+                      <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                        <Typography sx={{ color: "text.secondary", fontSize: 12 }}>Discount</Typography>
+                        <Typography sx={{ fontWeight: 600, fontSize: 12, color: "#10b981" }}>
+                          -{detail.discountApplied.toLocaleString("en-US", {
+                            style: "currency",
+                            currency: "USD",
+                          })}
+                        </Typography>
+                      </Box>
+                    )}
+                    {detail.shippingFee > 0 && (
+                      <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                        <Typography sx={{ color: "text.secondary", fontSize: 12 }}>Shipping</Typography>
+                        <Typography sx={{ fontWeight: 600, fontSize: 12 }}>
+                          {detail.shippingFee.toLocaleString("en-US", {
+                            style: "currency",
+                            currency: "USD",
+                          })}
+                        </Typography>
+                      </Box>
+                    )}
+                    <Box sx={{ display: "flex", justifyContent: "space-between", pt: 0.5, borderTop: "1px solid rgba(0,0,0,0.1)" }}>
+                      <Typography sx={{ fontWeight: 700, color: "text.primary", fontSize: 12 }}>Total</Typography>
+                      <Typography sx={{ fontWeight: 900, fontSize: 13, color: "text.primary" }}>
+                        {detail.finalAmount.toLocaleString("en-US", {
+                          style: "currency",
+                          currency: "USD",
+                        })}
+                      </Typography>
+                    </Box>
                   </Box>
                 </Box>
               </Box>
-            </Box>
+
+              {/* Customer Information Section */}
+              {(detail.customerName || detail.customerPhone || detail.shippingAddress) && (
+                <Box sx={{ pb: 1.5, borderBottom: "1px solid rgba(0,0,0,0.1)" }}>
+                  <Typography sx={{ fontSize: 12, fontWeight: 700, color: "text.primary", mb: 1 }}>
+                    Delivery Information
+                  </Typography>
+                  <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 1.5 }}>
+                    {detail.customerName && (
+                      <Box>
+                        <Typography sx={{ fontSize: 11, color: "text.secondary", mb: 0.25 }}>
+                          Customer Name
+                        </Typography>
+                        <Typography sx={{ fontWeight: 600, fontSize: 12 }}>
+                          {detail.customerName}
+                        </Typography>
+                      </Box>
+                    )}
+                    {detail.customerPhone && (
+                      <Box>
+                        <Typography sx={{ fontSize: 11, color: "text.secondary", mb: 0.25 }}>
+                          Phone
+                        </Typography>
+                        <Typography sx={{ fontWeight: 600, fontSize: 12 }}>
+                          {detail.customerPhone}
+                        </Typography>
+                      </Box>
+                    )}
+                    {detail.shippingAddress && (
+                      <Box sx={{ gridColumn: { xs: "1fr", sm: "1 / -1" } }}>
+                        <Typography sx={{ fontSize: 11, color: "text.secondary", mb: 0.25 }}>
+                          Delivery Address
+                        </Typography>
+                        <Typography sx={{ fontWeight: 600, fontSize: 12, lineHeight: 1.4 }}>
+                          {detail.shippingAddress.venue && `${detail.shippingAddress.venue}, `}
+                          {detail.shippingAddress.ward && `${detail.shippingAddress.ward}, `}
+                          {detail.shippingAddress.district && `${detail.shippingAddress.district}, `}
+                          {detail.shippingAddress.city}
+                        </Typography>
+                      </Box>
+                    )}
+                  </Box>
+                </Box>
+              )}
+            </>
           )}
           <FormControl fullWidth required>
             <InputLabel>Shipping carrier</InputLabel>
@@ -600,8 +703,11 @@ function OperationsOrderRow({
           <TextField
             label="Tracking code"
             fullWidth
+            required
             value={trackingCode}
             onChange={(e) => setTrackingCode(e.target.value)}
+            error={!trackingCode.trim().length}
+            helperText={!trackingCode.trim().length ? "Tracking code is required" : ""}
           />
           <TextField
             label="Tracking URL"
@@ -639,7 +745,7 @@ function OperationsOrderRow({
           <Button
             variant="contained"
             onClick={handleConfirmShipped}
-            disabled={updateStatus.isPending || !carrierName.trim()}
+            disabled={updateStatus.isPending || !carrierName.trim() || !trackingCode.trim()}
             sx={{
               textTransform: "none",
               fontWeight: 700,

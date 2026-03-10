@@ -220,18 +220,20 @@ export function ReturnRefundInspectionScreen() {
                     </Typography>
                   </Box>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                    <Chip
-                      label="Await for delivery"
-                      size="small"
-                      sx={{
-                        fontWeight: 700,
-                        fontSize: 11,
-                        bgcolor: "#fbbf2422",
-                        color: "#92400e",
-                        border: "1px solid #fbbf24",
-                        flexShrink: 0,
-                      }}
-                    />
+                    {!ticket.receivedAt && (
+                      <Chip
+                        label="Await for delivery"
+                        size="small"
+                        sx={{
+                          fontWeight: 700,
+                          fontSize: 11,
+                          bgcolor: "#fbbf2422",
+                          color: "#92400e",
+                          border: "1px solid #fbbf24",
+                          flexShrink: 0,
+                        }}
+                      />
+                    )}
                     <Chip
                       label={STATUS_LABELS[ticket.ticketStatus]}
                       size="small"

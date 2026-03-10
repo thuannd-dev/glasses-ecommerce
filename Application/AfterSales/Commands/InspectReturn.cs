@@ -191,7 +191,7 @@ public sealed class InspectReturn
                             ?? scopedItems.Sum(i => i.UnitPrice * i.Quantity);
 
                         decimal existingRefunds = await context.Refunds
-                            .Where(r => r.PaymentId == payment.Id && r.RefundStatus != RefundStatus.Rejected)
+                            .Where(r => r.PaymentId == payment.Id && r.RefundStatus == RefundStatus.Completed)
                             .SumAsync(r => r.Amount, ct);
 
                         if (existingRefunds + refundAmount > payment.Amount)

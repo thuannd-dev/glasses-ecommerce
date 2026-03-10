@@ -13,6 +13,7 @@ import { useOperationsTickets } from "../../../lib/hooks/useStaffAfterSalesTicke
 import { SummaryCard } from "../components";
 import {
   AfterSalesTicketStatusValues,
+  AfterSalesTicketTypeValues,
   TicketResolutionTypeValues,
   type AfterSalesTicketStatus,
 } from "../../../lib/types/afterSales";
@@ -21,6 +22,7 @@ import { formatDate } from "../constants";
 const STATUS_LABELS: Record<AfterSalesTicketStatus, string> = {
   [AfterSalesTicketStatusValues.Pending]: "Pending",
   [AfterSalesTicketStatusValues.InProgress]: "In Progress",
+  [AfterSalesTicketStatusValues.Replacing]: "Replacing",
   [AfterSalesTicketStatusValues.Resolved]: "Resolved",
   [AfterSalesTicketStatusValues.Rejected]: "Rejected",
   [AfterSalesTicketStatusValues.Closed]: "Closed",
@@ -30,6 +32,7 @@ const STATUS_LABELS: Record<AfterSalesTicketStatus, string> = {
 const STATUS_COLORS: Record<AfterSalesTicketStatus, { bg: string; border: string; color: string }> = {
   [AfterSalesTicketStatusValues.Pending]: { bg: "#fbbf2422", border: "#fbbf24", color: "#92400e" },
   [AfterSalesTicketStatusValues.InProgress]: { bg: "#3b82f622", border: "#3b82f6", color: "#1e40af" },
+  [AfterSalesTicketStatusValues.Replacing]: { bg: "#a855f722", border: "#a855f7", color: "#6b21a8" },
   [AfterSalesTicketStatusValues.Resolved]: { bg: "#10b98122", border: "#10b981", color: "#065f46" },
   [AfterSalesTicketStatusValues.Rejected]: { bg: "#ef444422", border: "#ef4444", color: "#7f1d1d" },
   [AfterSalesTicketStatusValues.Closed]: { bg: "#6b728022", border: "#6b7280", color: "#374151" },
@@ -53,7 +56,7 @@ export function OperationsWarrantyScreen() {
     setPageNumber(1);
   }, [rawStatus]);
 
-  // Operations sees both WarrantyRepair and WarrantyReplace tickets (don't filter by resolution type)
+  // Operations sees both WarrantyRepair and WarrantyReplace tickets
   const { data, isLoading } = useOperationsTickets({
     pageNumber,
     pageSize,
@@ -61,32 +64,34 @@ export function OperationsWarrantyScreen() {
 
   const safeTickets = Array.isArray(data?.items) ? data.items : [];
   
+  // Filter to only show Warranty type tickets (exclude Return/Refund tickets)
+  const warrantyTickets = safeTickets.filter(ticket => 
+    ticket.ticketType === AfterSalesTicketTypeValues.Warranty
+  );
+  
   // Helper functions to count tickets by status
-  const countPending = () => safeTickets.filter((ticket) => 
+  const countPending = () => warrantyTickets.filter((ticket) => 
     ticket.ticketStatus === AfterSalesTicketStatusValues.InProgress && !ticket.receivedAt
   ).length;
 
-  const countRepair = () => safeTickets.filter((ticket) =>
-    ticket.ticketStatus === AfterSalesTicketStatusValues.InProgress &&
-    ticket.receivedAt &&
-    ticket.resolutionType === TicketResolutionTypeValues.WarrantyRepair
+  const countReplacing = () => warrantyTickets.filter((ticket) =>
+    ticket.ticketStatus === AfterSalesTicketStatusValues.Replacing ||
+    (ticket.ticketStatus === AfterSalesTicketStatusValues.Resolved && ticket.isReplacementCompleted)
   ).length;
 
-  const countRejected = () => safeTickets.filter((ticket) =>
+  const countRejected = () => warrantyTickets.filter((ticket) =>
     ticket.ticketStatus === AfterSalesTicketStatusValues.Rejected
   ).length;
   
   // Filter tickets based on status parameter
-  const filteredTickets = safeTickets.filter((ticket) => {
+  // For "Replacing" section: show both Replacing status AND Resolved replacement tickets
+  const filteredTickets = warrantyTickets.filter((ticket) => {
     if (rawStatus === "Pending") {
       return ticket.ticketStatus === AfterSalesTicketStatusValues.InProgress && !ticket.receivedAt;
     }
-    if (rawStatus === "Repair") {
-      return (
-        ticket.ticketStatus === AfterSalesTicketStatusValues.InProgress &&
-        ticket.receivedAt &&
-        ticket.resolutionType === TicketResolutionTypeValues.WarrantyRepair
-      );
+    if (rawStatus === "Replacing") {
+      return ticket.ticketStatus === AfterSalesTicketStatusValues.Replacing || 
+             (ticket.ticketStatus === AfterSalesTicketStatusValues.Resolved && ticket.isReplacementCompleted);
     }
     if (rawStatus === "Rejected") {
       return ticket.ticketStatus === AfterSalesTicketStatusValues.Rejected;
@@ -124,14 +129,14 @@ export function OperationsWarrantyScreen() {
           <Typography sx={{ fontSize: 24, fontWeight: 900 }}>
             WARRANTY
           </Typography>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2, minWidth: 600 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2, minWidth: 400 }}>
             <SummaryCard 
               label="Pending" 
               value={isLoading ? "—" : countPending()} 
             />
             <SummaryCard 
-              label="Repair" 
-              value={isLoading ? "—" : countRepair()} 
+              label="Replacing" 
+              value={isLoading ? "—" : countReplacing()} 
             />
             <SummaryCard 
               label="Rejected" 

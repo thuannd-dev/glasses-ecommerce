@@ -29,6 +29,14 @@ const STATUS_LABELS: Record<AfterSalesTicketStatus, string> = {
   [AfterSalesTicketStatusValues.Cancelled]: "Cancelled",
 };
 
+// Helper function: For InProgress tickets, show "Approved" if they've been received
+function getDisplayLabel(status: AfterSalesTicketStatus, receivedAt: string | null): string {
+  if (status === AfterSalesTicketStatusValues.InProgress && receivedAt) {
+    return "Approved";
+  }
+  return STATUS_LABELS[status];
+}
+
 const STATUS_COLORS: Record<AfterSalesTicketStatus, string> = {
   [AfterSalesTicketStatusValues.Pending]: "#fbbf24",
   [AfterSalesTicketStatusValues.InProgress]: "#3b82f6",
@@ -85,7 +93,10 @@ export function ReturnRefundDetailScreen() {
               },
               {
                 onSuccess: () => {
-                  navigate(backUrl);
+                  // Show the resolved status for a moment before navigating back
+                  setTimeout(() => {
+                    navigate(backUrl);
+                  }, 1000);
                 },
                 onError: (err: Error | unknown) => {
                   const errorMsg = err instanceof Error 
@@ -195,7 +206,7 @@ export function ReturnRefundDetailScreen() {
               Return/Refund Details
             </Typography>
             <Chip
-              label={STATUS_LABELS[ticket.ticketStatus]}
+              label={getDisplayLabel(ticket.ticketStatus, ticket.receivedAt)}
               size="small"
               sx={{
                 fontWeight: 700,
@@ -366,6 +377,140 @@ export function ReturnRefundDetailScreen() {
           </Box>
         )}
 
+        {/* Product Details Section */}
+        {ticket.orderItem && (
+          <Box
+            sx={{
+              pt: 2,
+              borderTop: "1px solid rgba(0,0,0,0.08)",
+            }}
+          >
+            <Typography sx={{ fontSize: 12, color: "text.secondary", mb: 1 }}>
+              Product Details
+            </Typography>
+            <Box
+              sx={{
+                bgcolor: "rgba(0,0,0,0.02)",
+                borderRadius: 2,
+                p: 2,
+                border: "1px solid rgba(0,0,0,0.06)",
+              }}
+            >
+              <Box sx={{ display: "flex", gap: 2, mb: 2, alignItems: "flex-start" }}>
+                <Box
+                  sx={{
+                    width: 80,
+                    height: 80,
+                    borderRadius: 1.5,
+                    bgcolor: "rgba(0,0,0,0.05)",
+                    overflow: "hidden",
+                    flexShrink: 0,
+                  }}
+                >
+                  {ticket.orderItem.productImageUrl ? (
+                    <Box
+                      component="img"
+                      src={ticket.orderItem.productImageUrl}
+                      alt=""
+                      sx={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                  ) : (
+                    <Box
+                      sx={{
+                        width: "100%",
+                        height: "100%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "text.secondary",
+                        fontSize: 12,
+                      }}
+                    >
+                      —
+                    </Box>
+                  )}
+                </Box>
+                <Box sx={{ flex: 1 }}>
+                  <Typography sx={{ fontWeight: 700, fontSize: 14, mb: 0.5, color: "#1f2937" }}>
+                    {ticket.orderItem.productName || "Unknown Product"}
+                  </Typography>
+                  {ticket.orderItem.variantName && (
+                    <Typography sx={{ fontSize: 12, color: "text.secondary", mb: 0.5 }}>
+                      {ticket.orderItem.variantName}
+                    </Typography>
+                  )}
+                  <Box sx={{ display: "flex", gap: 2, fontSize: 12 }}>
+                    <Box>
+                      <Typography sx={{ fontSize: 11, color: "text.secondary" }}>
+                        Qty
+                      </Typography>
+                      <Typography sx={{ fontWeight: 600, color: "rgba(0,0,0,0.7)" }}>
+                        {ticket.orderItem.quantity}
+                      </Typography>
+                    </Box>
+                    <Box>
+                      <Typography sx={{ fontSize: 11, color: "text.secondary" }}>
+                        Unit Price
+                      </Typography>
+                      <Typography sx={{ fontWeight: 600, color: "#059669" }}>
+                        ${ticket.orderItem.unitPrice.toFixed(2)}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Box>
+              </Box>
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: 1.5,
+                  borderTop: "1px solid rgba(0,0,0,0.08)",
+                  pt: 1.5,
+                }}
+              >
+                <Box>
+                  <Typography sx={{ fontSize: 12, color: "text.secondary", mb: 0.5 }}>
+                    SKU
+                  </Typography>
+                  <Typography sx={{ fontWeight: 700, fontSize: 13, color: "#1f2937", wordBreak: "break-word" }}>
+                    {ticket.orderItem.sku || "N/A"}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography sx={{ fontSize: 12, color: "text.secondary", mb: 0.5 }}>
+                    Total Price
+                  </Typography>
+                  <Typography sx={{ fontWeight: 600, color: "rgba(0,0,0,0.7)" }}>
+                    ${ticket.orderItem.totalPrice.toFixed(2)}
+                  </Typography>
+                </Box>
+              </Box>
+            </Box>
+          </Box>
+        )}
+
+        {!ticket.orderItem && (
+          <Box
+            sx={{
+              pt: 2,
+              borderTop: "1px solid rgba(0,0,0,0.08)",
+            }}
+          >
+            <Box
+              sx={{
+                bgcolor: "rgba(59, 130, 246, 0.05)",
+                borderRadius: 2,
+                p: 2,
+                border: "1px solid rgba(59, 130, 246, 0.2)",
+              }}
+            >
+              <Typography sx={{ fontSize: 13, color: "rgb(59, 130, 246)", fontStyle: "italic" }}>
+                📦 This ticket is not linked to a specific product. It applies to the entire order.
+              </Typography>
+            </Box>
+          </Box>
+        )}
+
         {/* Prescription Information Section */}
         {ticket.orderPrescription && (
           <Box
@@ -485,6 +630,79 @@ export function ReturnRefundDetailScreen() {
             </Typography>
           </Box>
         )}
+
+        {/* Attachments Section */}
+        <Box
+          sx={{
+            pt: 2,
+            borderTop: "1px solid rgba(0,0,0,0.08)",
+          }}
+        >
+          <Typography sx={{ fontSize: 12, color: "text.secondary", mb: 1.5 }}>
+            Attachments
+          </Typography>
+          {ticket.attachments && ticket.attachments.length > 0 ? (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+              {ticket.attachments.map((attachment) => (
+                <Box
+                  key={attachment.id}
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1.5,
+                    p: 1.5,
+                    bgcolor: "rgba(59, 130, 246, 0.05)",
+                    borderRadius: 1.5,
+                    border: "1px solid rgba(59, 130, 246, 0.2)",
+                  }}
+                >
+                  <Box
+                    sx={{
+                      fontSize: 20,
+                      flexShrink: 0,
+                    }}
+                  >
+                    {attachment.fileExtension?.toLowerCase() === 'pdf' ? '📄' : '🖼️'}
+                  </Box>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography
+                      sx={{
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: "rgb(59, 130, 246)",
+                        wordBreak: "break-word",
+                        textDecoration: "none",
+                      }}
+                      component="a"
+                      href={attachment.fileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {attachment.fileName}
+                    </Typography>
+                    <Typography sx={{ fontSize: 11, color: "text.secondary", mt: 0.25 }}>
+                      Uploaded · {new Date(attachment.createdAt).toLocaleString()}
+                    </Typography>
+                  </Box>
+                </Box>
+              ))}
+            </Box>
+          ) : (
+            <Box
+              sx={{
+                p: 2,
+                bgcolor: "rgba(0,0,0,0.02)",
+                borderRadius: 1.5,
+                border: "1px solid rgba(0,0,0,0.06)",
+                textAlign: "center",
+              }}
+            >
+              <Typography sx={{ fontSize: 13, color: "text.secondary" }}>
+                No attachment included
+              </Typography>
+            </Box>
+          )}
+        </Box>
       </Paper>
 
       <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="sm" fullWidth>

@@ -5,24 +5,16 @@ import {
   Paper,
   Divider,
   Button,
-  Select,
-  MenuItem,
-  FormControl,
   CircularProgress,
 } from "@mui/material";
 import { useNavigate, useParams } from "react-router-dom";
-import { useState } from "react";
 import { useOperationsOrderDetail, useUpdateOrderStatus } from "../../../lib/hooks/useOperationsOrders";
-import type { OrderStatus } from "../../../lib/types/operations";
 
 export function OperationsOrderDetailScreen() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const { data, isLoading, isError } = useOperationsOrderDetail(id);
   const updateStatus = useUpdateOrderStatus();
-  
-  const [newStatus, setNewStatus] = useState<OrderStatus | null>(null);
-  const [showSave, setShowSave] = useState(false);
 
   if (isLoading) {
     return (
@@ -51,30 +43,13 @@ export function OperationsOrderDetailScreen() {
 
   const order = data;
 
-  const statusOptions: OrderStatus[] = [
-    "pending",
-    "confirmed",
-    "processing",
-    "ready_to_ship",
-    "shipped",
-    "delivered",
-    "received",
-    "cancelled",
-  ];
-
-  const handleStatusChange = (status: OrderStatus) => {
-    setNewStatus(status);
-    setShowSave(true);
-  };
-
-  const handleSaveStatus = () => {
-    if (newStatus && id) {
+  const handleSendToPacking = () => {
+    if (id) {
       updateStatus.mutate(
-        { orderId: id, status: newStatus },
+        { orderId: id, status: "processing" },
         {
           onSuccess: () => {
-            setShowSave(false);
-            setNewStatus(null);
+            navigate("/operations/pack");
           },
         }
       );
@@ -136,10 +111,9 @@ export function OperationsOrderDetailScreen() {
               style={{
                 textTransform: "capitalize",
                 fontWeight: 600,
-                color: newStatus ? "#1565c0" : "inherit",
               }}
             >
-              {newStatus || order.orderStatus}
+              {order.orderStatus}
             </span>
           </Typography>
           <Typography>
@@ -300,57 +274,28 @@ export function OperationsOrderDetailScreen() {
           }}
         >
           <Typography sx={{ fontWeight: 700, fontSize: 14 }}>Change Order Status</Typography>
-          <Box sx={{ display: "flex", gap: 1, alignItems: "center", flexWrap: "wrap" }}>
-            <FormControl sx={{ minWidth: 180 }}>
-              <Select
-                value={newStatus || order.orderStatus}
-                onChange={(e) => handleStatusChange(e.target.value as OrderStatus)}
-                size="small"
-                sx={{
-                  textTransform: "capitalize",
-                  fontSize: 13,
-                  fontWeight: 500,
-                }}
-              >
-                <MenuItem value={order.orderStatus} disabled sx={{ textTransform: "capitalize", color: "text.secondary", fontSize: 12, fontStyle: "italic" }}>
-                  Current: {order.orderStatus}
-                </MenuItem>
-                {statusOptions
-                  .filter((status) => status !== order.orderStatus.toLowerCase())
-                  .map((status) => (
-                    <MenuItem key={status} value={status} sx={{ textTransform: "capitalize" }}>
-                      {status}
-                    </MenuItem>
-                  ))}
-              </Select>
-            </FormControl>
-            {showSave && (
-              <Button
-                variant="contained"
-                size="small"
-                onClick={handleSaveStatus}
-                disabled={updateStatus.isPending}
-                sx={{
-                  textTransform: "none",
-                  fontWeight: 700,
-                  borderRadius: 2,
-                  bgcolor: "#16a34a",
-                  "&:hover": {
-                    bgcolor: "#15803d",
-                  },
-                  "&:disabled": {
-                    opacity: 0.7,
-                  },
-                }}
-              >
-                {updateStatus.isPending ? (
-                  <CircularProgress size={16} sx={{ color: "white" }} />
-                ) : (
-                  "Save"
-                )}
-              </Button>
-            )}
-          </Box>
+          <Button
+            variant="contained"
+            onClick={handleSendToPacking}
+            disabled={updateStatus.isPending || order.orderStatus.toLowerCase() === "processing"}
+            sx={{
+              textTransform: "none",
+              fontWeight: 700,
+              borderRadius: 2,
+              bgcolor: "#3b82f6",
+              "&:hover": {
+                bgcolor: "#1d4ed8",
+              },
+              "&:disabled": {
+                opacity: 0.7,
+              },
+            }}
+          >
+            {updateStatus.isPending ? (
+              <CircularProgress size={16} sx={{ color: "white", mr: 1 }} />
+            ) : null}
+            {updateStatus.isPending ? "Sending..." : "Send to packing"}
+          </Button>
         </Box>
 
         <Box>

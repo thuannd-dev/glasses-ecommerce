@@ -13,6 +13,8 @@ public sealed class TicketDetailDto
     public Guid OrderId { get; set; }
     public Guid? OrderItemId { get; set; }
     public OrderItemOutputDto? OrderItem { get; set; }
+    public Guid? ReplacementProductVariantId { get; set; }
+    public OrderItemOutputDto? ReplacementOrderItem { get; set; }
     public Guid CustomerId { get; set; }
     public string? CustomerName { get; set; }
     public string? CustomerPhone { get; set; }

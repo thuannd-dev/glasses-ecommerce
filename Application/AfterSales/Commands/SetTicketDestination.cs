@@ -49,11 +49,12 @@ public sealed class SetTicketDestination
                     ? "Rejected at operations"
                     : request.Dto.Notes;
             }
-            else if (request.Dto.Destination == "Repair")
+            else if (request.Dto.Destination == "Replace")
             {
-                // Set resolution to WarrantyRepair if not already set
-                if (ticket.ResolutionType != TicketResolutionType.WarrantyRepair)
-                    ticket.ResolutionType = TicketResolutionType.WarrantyRepair;
+                // Set status to Replacing and flag to indicate ticket is awaiting replacement
+                ticket.TicketStatus = AfterSalesTicketStatus.Replacing;
+                ticket.IsAwaitingReplacement = true;
+                ticket.ResolutionType = TicketResolutionType.WarrantyReplace;
 
                 if (!string.IsNullOrWhiteSpace(request.Dto.Notes))
                     ticket.StaffNotes = request.Dto.Notes;
@@ -61,7 +62,7 @@ public sealed class SetTicketDestination
             else
             {
                 return Result<TicketDetailDto>.Failure(
-                    "Invalid destination. Must be 'Repair' or 'Reject'.", 400);
+                    "Invalid destination. Must be 'Replace' or 'Reject'.", 400);
             }
 
             bool isSuccess = await context.SaveChangesAsync(ct) > 0;

@@ -2,7 +2,7 @@ import type { AddressDto } from "./address";
 
 // Type matching Domain/.../AfterSalesTicket.cs
 export type AfterSalesTicketType = 0 | 1 | 2 | 3;
-export type AfterSalesTicketStatus = 1 | 2 | 3 | 4 | 5 | 6;
+export type AfterSalesTicketStatus = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 export type TicketResolutionType = 1 | 2 | 3 | 4;
 
 export const AfterSalesTicketTypeValues = {
@@ -15,10 +15,11 @@ export const AfterSalesTicketTypeValues = {
 export const AfterSalesTicketStatusValues = {
   Pending: 1 as const,
   InProgress: 2 as const,
-  Resolved: 3 as const,
-  Rejected: 4 as const,
-  Closed: 5 as const,
-  Cancelled: 6 as const,
+  Replacing: 3 as const,
+  Resolved: 4 as const,
+  Rejected: 5 as const,
+  Closed: 6 as const,
+  Cancelled: 7 as const,
 } as const;
 
 export const TicketResolutionTypeValues = {
@@ -63,6 +64,7 @@ export interface TicketListDto {
   resolvedAt: string | null;
   receivedAt: string | null;
   resolutionType: TicketResolutionType | null;
+  isReplacementCompleted: boolean;
 }
 
 export interface StaffAfterSalesResponse {
@@ -75,11 +77,21 @@ export interface StaffAfterSalesResponse {
   hasNextPage: boolean;
 }
 
+export interface TicketAttachmentDto {
+  id: string;
+  fileName: string;
+  fileUrl: string;
+  fileExtension: string | null;
+  createdAt: string;
+}
+
 export interface TicketDetailDto {
   id: string;
   orderId: string;
   orderItemId: string | null;
   orderItem: OrderItemDto | null;
+  replacementOrderItemId: string | null;
+  replacementOrderItem: OrderItemDto | null;
   customerId: string;
   customerName: string | null;
   customerPhone: string | null;
@@ -96,6 +108,7 @@ export interface TicketDetailDto {
   resolvedAt: string | null;
   receivedAt: string | null;
   resolutionType: TicketResolutionType | null;
+  attachments: TicketAttachmentDto[];
 }
 
 export interface PrescriptionDetailDto {

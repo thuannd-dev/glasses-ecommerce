@@ -36,9 +36,20 @@ agent.interceptors.response.use(
               modelStateErrors.push(data.errors[key]);
             }
           }
-          throw modelStateErrors.flat();
+          const flattedErrors = modelStateErrors.flat();
+          // Create an Error object with the validation messages
+          const errorMessage = Array.isArray(flattedErrors)
+            ? flattedErrors.join("; ")
+            : String(flattedErrors);
+          throw new Error(errorMessage);
+        } else if (typeof data === "string") {
+          throw new Error(data);
+        } else if (data?.error) {
+          throw new Error(data.error);
+        } else if (data?.message) {
+          throw new Error(data.message);
         } else {
-          toast.error(data);
+          throw new Error("Validation failed. Please check your input.");
         }
         break;
       case 401: {

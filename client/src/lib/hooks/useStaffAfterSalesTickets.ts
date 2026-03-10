@@ -11,6 +11,10 @@ import {
   AfterSalesTicketTypeValues,
   TicketResolutionTypeValues,
 } from "../types/afterSales";
+import {
+  normalizeStaffAfterSalesResponse,
+  normalizeTicketDetailDto,
+} from "../utils/enumConverters";
 
 // -------- Re-export types --------
 export type { TicketDetailDto };
@@ -29,6 +33,7 @@ export interface UpdateTicketStatusPayload {
   ticketId: string;
   actionType: "approve" | "reject";
   reason?: string;
+  refundAmount?: number; // Override refund amount for RefundOnly tickets
   ticket?: TicketDetailDto; // Pass ticket data to determine resolution type
 }
 
@@ -44,14 +49,14 @@ async function fetchStaffAfterSalesTickets(
       orderId: params?.orderId,
     },
   });
-  return res.data;
+  return normalizeStaffAfterSalesResponse(res.data);
 }
 
 async function fetchStaffAfterSalesTicketDetail(
   id: string
 ): Promise<TicketDetailDto> {
   const res = await agent.get<TicketDetailDto>(`/staff/after-sales/${id}`);
-  return res.data;
+  return normalizeTicketDetailDto(res.data);
 }
 
 async function updateTicketStatus(
@@ -64,7 +69,7 @@ async function updateTicketStatus(
         reason: payload.reason ?? "No reason provided",
       }
     );
-    return res.data;
+    return normalizeTicketDetailDto(res.data);
   } else {
     // For approve: determine resolution type based on ticket type
     if (!payload.ticket) {
@@ -77,10 +82,14 @@ async function updateTicketStatus(
     // Determine resolution type and refund amount based on ticket type
     if (payload.ticket.ticketType === AfterSalesTicketTypeValues.Refund) {
       resolutionType = TicketResolutionTypeValues.RefundOnly;
-      // For Refund: use the ticket's refundAmount if set, otherwise use order item total
-      refundAmount =
-        payload.ticket.refundAmount ||
-        (payload.ticket.orderItem?.totalPrice ?? 0);
+      // Use staff-provided refund amount if available, otherwise use the ticket's refundAmount or order item total
+      if (payload.refundAmount !== undefined && payload.refundAmount > 0) {
+        refundAmount = payload.refundAmount;
+      } else {
+        refundAmount =
+          payload.ticket.refundAmount ||
+          (payload.ticket.orderItem?.totalPrice ?? 0);
+      }
     } else if (
       payload.ticket.ticketType === AfterSalesTicketTypeValues.Return
     ) {
@@ -103,7 +112,7 @@ async function updateTicketStatus(
         staffNotes: payload.reason ?? null,
       }
     );
-    return res.data;
+    return normalizeTicketDetailDto(res.data);
   }
 }
 
@@ -160,14 +169,14 @@ async function fetchOperationsTickets(
       resolutionType: params?.resolutionType,
     },
   });
-  return res.data;
+  return normalizeStaffAfterSalesResponse(res.data);
 }
 
 async function fetchOperationsTicketDetail(
   id: string
 ): Promise<TicketDetailDto> {
   const res = await agent.get<TicketDetailDto>(`/operations/after-sales/${id}`);
-  return res.data;
+  return normalizeTicketDetailDto(res.data);
 }
 
 // -------- Operations Hooks --------

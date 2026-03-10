@@ -52,7 +52,7 @@ public sealed class OperationsAfterSalesController : BaseApiController
     }
 
     /// <summary>
-    /// Set the destination of a received warranty ticket (Repair, Replace, or Reject).
+    /// Set the destination of a received warranty ticket (Replace or Reject).
     /// Only callable after the ticket has been marked as received.
     /// </summary>
     [HttpPut("{id}/set-destination")]
@@ -60,6 +60,31 @@ public sealed class OperationsAfterSalesController : BaseApiController
     {
         return HandleResult(await Mediator.Send(
             new SetTicketDestination.Command { TicketId = id, Dto = dto }, ct));
+    }
+
+    /// <summary>
+    /// Get all available products for replacement selection.
+    /// Called when ticket is in Replacing status to populate dropdown.
+    /// </summary>
+    [HttpGet("{id}/replacement-items")]
+    public async Task<IActionResult> GetReplacementItems(Guid id, CancellationToken ct)
+    {
+        var items = await Mediator.Send(
+            new GetAllProductsForReplacement.Query { }, ct);
+        
+        return Ok(items);
+    }
+
+    /// <summary>
+    /// Select a replacement item for a warranty replacement ticket.
+    /// Only callable when ticket is in Replacing status.
+    /// Changes ticket status from Replacing to Resolved.
+    /// </summary>
+    [HttpPut("{id}/select-replacement")]
+    public async Task<IActionResult> SelectReplacementItem(Guid id, SelectReplacementItemDto dto, CancellationToken ct)
+    {
+        return HandleResult(await Mediator.Send(
+            new SelectReplacementItem.Command { TicketId = id, ReplacementOrderItemId = dto.ReplacementOrderItemId }, ct));
     }
 
     /// <summary>

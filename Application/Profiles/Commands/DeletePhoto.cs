@@ -18,45 +18,52 @@ public class DeletePhoto
     {
         public async Task<Result<Unit>> Handle(Command request, CancellationToken cancellationToken)
         {
-            var user = await userAccessor.GetUserWithPhotosAsync();
+            try
+            {
+                var user = await userAccessor.GetUserWithPhotosAsync();
 
-            var photo = user.Photos.FirstOrDefault(x => x.Id == request.PhotoId);
+                var photo = user.Photos.FirstOrDefault(x => x.Id == request.PhotoId);
 
-            if (photo == null) return Result<Unit>.Failure("Cannot find photo", 400);
+                if (photo == null) return Result<Unit>.Failure("Cannot find photo", 400);
 
-            //don't allow user to delete main photo
-            // if (photo.Url == user.ImageUrl) return Result<Unit>.Failure("Cannot delete main photo", 400);
+                //don't allow user to delete main photo
+                // if (photo.Url == user.ImageUrl) return Result<Unit>.Failure("Cannot delete main photo", 400);
 
-            //if don't delete successfully from cloudinary it will throw exception
-            //so don't need to check the result here
-            // await photoService.DeletePhoto(photo.PublicId);
+                //if don't delete successfully from cloudinary it will throw exception
+                //so don't need to check the result here
+                // await photoService.DeletePhoto(photo.PublicId);
 
-            // user.Photos.Remove(photo);
+                // user.Photos.Remove(photo);
 
-            // var result = await context.SaveChangesAsync(cancellationToken) > 0;
+                // var result = await context.SaveChangesAsync(cancellationToken) > 0;
 
-            // return result
-            //     ? Result<Unit>.Success(Unit.Value)
-            //     : Result<Unit>.Failure("Problem deleting photo", 400);
+                // return result
+                //     ? Result<Unit>.Success(Unit.Value)
+                //     : Result<Unit>.Failure("Problem deleting photo", 400);
 
 
-            //Above solution is correct but may cause inconsistency between database and cloudinary
-            //DB is source of truth
-            //If DB fail → Cloudinary have extra photo
-            //If Cloudinary fail → DB have photo that not exist in Cloudinary
-            // Avoid broken URL
-            user.Photos.Remove(photo);
+                //Above solution is correct but may cause inconsistency between database and cloudinary
+                //DB is source of truth
+                //If DB fail → Cloudinary have extra photo
+                //If Cloudinary fail → DB have photo that not exist in Cloudinary
+                // Avoid broken URL
+                user.Photos.Remove(photo);
 
-            var result = await context.SaveChangesAsync(cancellationToken) > 0;
+                var result = await context.SaveChangesAsync(cancellationToken) > 0;
 
-            if (!result)
-                return Result<Unit>.Failure("Problem deleting photo", 400);
+                if (!result)
+                    return Result<Unit>.Failure("Problem deleting photo", 400);
 
-            //if don't delete successfully from cloudinary it will throw exception
-            //so don't need to check the result here
-            await photoService.DeletePhoto(photo.PublicId);
+                //if don't delete successfully from cloudinary it will throw exception
+                //so don't need to check the result here
+                await photoService.DeletePhoto(photo.PublicId);
 
-            return Result<Unit>.Success(Unit.Value);
+                return Result<Unit>.Success(Unit.Value);
+            }
+            catch (Exception ex)
+            {
+                return Result<Unit>.Failure($"Photo deletion failed: {ex.Message}", 500);
+            }
         }
     }
 }

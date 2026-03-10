@@ -19,18 +19,25 @@ public sealed class UploadImage
     {
         public async Task<Result<ImageUploadDto>> Handle(Command request, CancellationToken ct)
         {
-            PhotoUploadResult? uploadResult = await photoService.UploadPhoto(request.File);
-
-            if (uploadResult == null)
-                return Result<ImageUploadDto>.Failure("Failed to upload image to the cloud service.", 500);
-
-            ImageUploadDto dto = new()
+            try
             {
-                Url = uploadResult.Url,
-                PublicId = uploadResult.PublicId
-            };
+                PhotoUploadResult? uploadResult = await photoService.UploadPhoto(request.File);
 
-            return Result<ImageUploadDto>.Success(dto);
+                if (uploadResult == null)
+                    return Result<ImageUploadDto>.Failure("Failed to upload image to the cloud service.", 500);
+
+                ImageUploadDto dto = new()
+                {
+                    Url = uploadResult.Url,
+                    PublicId = uploadResult.PublicId
+                };
+
+                return Result<ImageUploadDto>.Success(dto);
+            }
+            catch (Exception ex)
+            {
+                return Result<ImageUploadDto>.Failure($"Image upload failed: {ex.Message}", 500);
+            }
         }
     }
 }

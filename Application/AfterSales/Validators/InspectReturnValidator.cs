@@ -16,8 +16,8 @@ public sealed class InspectReturnValidator : AbstractValidator<InspectReturn.Com
         When(x => x.Dto != null, () =>
         {
             RuleFor(x => x.Dto.Notes)
-                .NotEmpty().WithMessage("Inspection notes are required.")
-                .MaximumLength(1000).WithMessage("Notes must not exceed 1000 characters.");
+                .MaximumLength(1000).WithMessage("Notes must not exceed 1000 characters.")
+                .When(x => !string.IsNullOrWhiteSpace(x.Dto.Notes));
         });
     }
 }

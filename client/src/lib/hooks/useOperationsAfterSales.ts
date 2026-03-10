@@ -1,6 +1,6 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import agent from "../api/agent";
-import type { TicketDetailDto } from "./useStaffAfterSalesTickets";
+import type { TicketDetailDto, OrderItemDto } from "./useStaffAfterSalesTickets";
 
 interface ReceiveTicketPayload {
   ticketId: string;
@@ -8,13 +8,22 @@ interface ReceiveTicketPayload {
 
 interface SetTicketDestinationPayload {
   ticketId: string;
-  destination: "Repair" | "Reject";
+  destination: "Replace" | "Reject";
   notes?: string;
 }
 
 interface SetTicketDestinationDto {
   destination: string;
   notes?: string;
+}
+
+interface SelectReplacementItemPayload {
+  ticketId: string;
+  replacementOrderItemId: string;
+}
+
+interface SelectReplacementItemDto {
+  replacementOrderItemId: string;
 }
 
 interface InspectReturnPayload {
@@ -127,6 +136,51 @@ export function useInspectReturnRefund() {
       // Invalidate ticket list query
       queryClient.invalidateQueries({
         queryKey: ["operations", "after-sales", "list"],
+      });
+    },
+  });
+}
+
+export function useGetReplacementItems(ticketId: string) {
+  return useQuery({
+    queryKey: ["opsTicketReplacementItems", ticketId],
+    queryFn: async () => {
+      const response = await agent.get<OrderItemDto[]>(
+        `/operations/after-sales/${ticketId}/replacement-items`
+      );
+      return response.data;
+    },
+    enabled: !!ticketId,
+  });
+}
+
+export function useSelectReplacementItem() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: SelectReplacementItemPayload) => {
+      const dto: SelectReplacementItemDto = {
+        replacementOrderItemId: payload.replacementOrderItemId,
+      };
+
+      const response = await agent.put<TicketDetailDto>(
+        `/operations/after-sales/${payload.ticketId}/select-replacement`,
+        dto
+      );
+      return response;
+    },
+    onSuccess: (_data, variables) => {
+      // Invalidate ticket detail query
+      queryClient.invalidateQueries({
+        queryKey: ["opsTicketDetail", variables.ticketId],
+      });
+      // Invalidate ticket list query
+      queryClient.invalidateQueries({
+        queryKey: ["opsTickets"],
+      });
+      // Invalidate replacement items query
+      queryClient.invalidateQueries({
+        queryKey: ["opsTicketReplacementItems", variables.ticketId],
       });
     },
   });

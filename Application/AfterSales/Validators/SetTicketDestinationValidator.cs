@@ -18,8 +18,8 @@ public sealed class SetTicketDestinationValidator : AbstractValidator<SetTicketD
         {
             RuleFor(x => x.Dto.Destination)
                 .NotEmpty().WithMessage("Destination is required.")
-                .Must(x => x == "Repair" || x == "Replace" || x == "Reject")
-                .WithMessage("Destination must be 'Repair', 'Replace', or 'Reject'.");
+                .Must(x => x == "Replace" || x == "Reject")
+                .WithMessage("Destination must be 'Replace' or 'Reject'.");
 
             RuleFor(x => x.Dto.Notes)
                 .MaximumLength(1000).WithMessage("Notes cannot exceed 1000 characters.");

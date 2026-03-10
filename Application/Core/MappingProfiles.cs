@@ -306,8 +306,20 @@ public sealed class MappingProfiles : Profile
         CreateMap<AfterSalesTicket, TicketListDto>()
             .ForMember(d => d.OrderItem, o => o.MapFrom(s => s.OrderItem));
 
+        CreateMap<ProductVariant, OrderItemOutputDto>()
+            .ForMember(d => d.Id, o => o.MapFrom(s => s.Id))
+            .ForMember(d => d.ProductVariantId, o => o.MapFrom(s => s.Id))
+            .ForMember(d => d.Sku, o => o.MapFrom(s => s.SKU))
+            .ForMember(d => d.VariantName, o => o.MapFrom(s => s.VariantName))
+            .ForMember(d => d.ProductName, o => o.MapFrom(s => s.Product.ProductName))
+            .ForMember(d => d.Quantity, o => o.MapFrom(s => 1))
+            .ForMember(d => d.UnitPrice, o => o.MapFrom(s => s.Price))
+            .ForMember(d => d.TotalPrice, o => o.MapFrom(s => s.Price))
+            .ForMember(d => d.ProductImageUrl, o => o.MapFrom(s => s.Product.Images.FirstOrDefault()!.ImageUrl));
+
         CreateMap<AfterSalesTicket, TicketDetailDto>()
             .ForMember(d => d.OrderItem, o => o.MapFrom(s => s.OrderItem))
+            .ForMember(d => d.ReplacementOrderItem, o => o.MapFrom(s => s.ReplacementProductVariant))
             .ForMember(d => d.CustomerName, o => o.MapFrom(s =>
                 GetCustomerName(s.Order)))
             .ForMember(d => d.CustomerPhone, o => o.MapFrom(s =>

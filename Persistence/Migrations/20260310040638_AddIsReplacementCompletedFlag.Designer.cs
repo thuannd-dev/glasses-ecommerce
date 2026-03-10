@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Persistence;
 
@@ -11,9 +12,11 @@ using Persistence;
 namespace Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260310040638_AddIsReplacementCompletedFlag")]
+    partial class AddIsReplacementCompletedFlag
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -204,7 +207,7 @@ namespace Persistence.Migrations
                     b.Property<decimal?>("RefundAmount")
                         .HasColumnType("decimal(10,2)");
 
-                    b.Property<Guid?>("ReplacementProductVariantId")
+                    b.Property<Guid?>("ReplacementOrderItemId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("RequestedAction")
@@ -243,8 +246,8 @@ namespace Persistence.Migrations
                     b.HasIndex("OrderItemId")
                         .HasDatabaseName("IX_AfterSalesTicket_OrderItemId");
 
-                    b.HasIndex("ReplacementProductVariantId")
-                        .HasDatabaseName("IX_AfterSalesTicket_ReplacementProductVariantId");
+                    b.HasIndex("ReplacementOrderItemId")
+                        .HasDatabaseName("IX_AfterSalesTicket_ReplacementOrderItemId");
 
                     b.HasIndex("ResolvedAt")
                         .HasDatabaseName("IX_AfterSalesTicket_ResolvedAt");
@@ -1937,9 +1940,9 @@ namespace Persistence.Migrations
                         .HasForeignKey("OrderItemId")
                         .OnDelete(DeleteBehavior.NoAction);
 
-                    b.HasOne("Domain.ProductVariant", "ReplacementProductVariant")
+                    b.HasOne("Domain.OrderItem", "ReplacementOrderItem")
                         .WithMany()
-                        .HasForeignKey("ReplacementProductVariantId")
+                        .HasForeignKey("ReplacementOrderItemId")
                         .OnDelete(DeleteBehavior.NoAction);
 
                     b.Navigation("AssignedStaff");
@@ -1950,7 +1953,7 @@ namespace Persistence.Migrations
 
                     b.Navigation("OrderItem");
 
-                    b.Navigation("ReplacementProductVariant");
+                    b.Navigation("ReplacementOrderItem");
                 });
 
             modelBuilder.Entity("Domain.Cart", b =>

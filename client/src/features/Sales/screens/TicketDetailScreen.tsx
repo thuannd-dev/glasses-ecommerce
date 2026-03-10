@@ -25,6 +25,7 @@ import {
 const STATUS_LABELS: Record<AfterSalesTicketStatus, string> = {
   [AfterSalesTicketStatusValues.Pending]: "Pending",
   [AfterSalesTicketStatusValues.InProgress]: "In Progress",
+  [AfterSalesTicketStatusValues.Replacing]: "Replacing",
   [AfterSalesTicketStatusValues.Resolved]: "Resolved",
   [AfterSalesTicketStatusValues.Rejected]: "Rejected",
   [AfterSalesTicketStatusValues.Closed]: "Closed",
@@ -34,6 +35,7 @@ const STATUS_LABELS: Record<AfterSalesTicketStatus, string> = {
 const STATUS_COLORS: Record<AfterSalesTicketStatus, string> = {
   [AfterSalesTicketStatusValues.Pending]: "#fbbf24",
   [AfterSalesTicketStatusValues.InProgress]: "#3b82f6",
+  [AfterSalesTicketStatusValues.Replacing]: "#a855f7",
   [AfterSalesTicketStatusValues.Resolved]: "#10b981",
   [AfterSalesTicketStatusValues.Rejected]: "#ef4444",
   [AfterSalesTicketStatusValues.Closed]: "#6b7280",
@@ -63,6 +65,7 @@ export function TicketDetailScreen() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [actionType, setActionType] = useState<"confirm" | "reject">("confirm");
   const [notes, setNotes] = useState("");
+  const [refundAmount, setRefundAmount] = useState<string>("");
   const [error, setError] = useState("");
 
   const { data: ticket, isLoading } = useStaffAfterSalesTicketDetail(
@@ -73,6 +76,7 @@ export function TicketDetailScreen() {
   const handleOpenDialog = (type: "confirm" | "reject") => {
     setActionType(type);
     setNotes("");
+    setRefundAmount("");
     setError("");
     setDialogOpen(true);
   };
@@ -89,6 +93,9 @@ export function TicketDetailScreen() {
         ticketId,
         actionType: actionType === "confirm" ? "approve" : "reject",
         reason: notes || undefined,
+        refundAmount: actionType === "confirm" && ticket.ticketType === AfterSalesTicketTypeValues.Refund && refundAmount
+          ? Number.parseFloat(refundAmount)
+          : undefined,
         ticket, // Pass ticket data for resolution type determination
       },
       {
@@ -476,6 +483,117 @@ export function TicketDetailScreen() {
           </Box>
         )}
 
+        {ticket.replacementOrderItem && ticket.ticketStatus === AfterSalesTicketStatusValues.Resolved && (
+          <Box
+            sx={{
+              pt: 2,
+              borderTop: "1px solid rgba(0,0,0,0.08)",
+            }}
+          >
+            <Typography sx={{ fontSize: 12, color: "text.secondary", mb: 1 }}>
+              Replacement Item
+            </Typography>
+            <Box
+              sx={{
+                bgcolor: "rgba(16, 185, 129, 0.05)",
+                borderRadius: 2,
+                p: 2,
+                border: "1px solid rgba(16, 185, 129, 0.2)",
+              }}
+            >
+              <Box sx={{ display: "flex", gap: 2, mb: 2, alignItems: "flex-start" }}>
+                <Box
+                  sx={{
+                    width: 80,
+                    height: 80,
+                    borderRadius: 1.5,
+                    bgcolor: "rgba(0,0,0,0.05)",
+                    overflow: "hidden",
+                    flexShrink: 0,
+                  }}
+                >
+                  {ticket.replacementOrderItem.productImageUrl ? (
+                    <Box
+                      component="img"
+                      src={ticket.replacementOrderItem.productImageUrl}
+                      alt=""
+                      sx={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                  ) : (
+                    <Box
+                      sx={{
+                        width: "100%",
+                        height: "100%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "text.secondary",
+                        fontSize: 12,
+                      }}
+                    >
+                      —
+                    </Box>
+                  )}
+                </Box>
+                <Box sx={{ flex: 1 }}>
+                  <Typography sx={{ fontWeight: 700, fontSize: 14, mb: 0.5, color: "#1f2937" }}>
+                    {ticket.replacementOrderItem.productName || "Unknown Product"}
+                  </Typography>
+                  {ticket.replacementOrderItem.variantName && (
+                    <Typography sx={{ fontSize: 12, color: "text.secondary", mb: 0.5 }}>
+                      {ticket.replacementOrderItem.variantName}
+                    </Typography>
+                  )}
+                  <Box sx={{ display: "flex", gap: 2, fontSize: 12 }}>
+                    <Box>
+                      <Typography sx={{ fontSize: 11, color: "text.secondary" }}>
+                        Qty
+                      </Typography>
+                      <Typography sx={{ fontWeight: 600, color: "rgba(0,0,0,0.7)" }}>
+                        {ticket.replacementOrderItem.quantity}
+                      </Typography>
+                    </Box>
+                    <Box>
+                      <Typography sx={{ fontSize: 11, color: "text.secondary" }}>
+                        Unit Price
+                      </Typography>
+                      <Typography sx={{ fontWeight: 600, color: "#059669" }}>
+                        ${ticket.replacementOrderItem.unitPrice.toFixed(2)}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Box>
+              </Box>
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: 1.5,
+                  borderTop: "1px solid rgba(0,0,0,0.08)",
+                  pt: 1.5,
+                }}
+              >
+                <Box>
+                  <Typography sx={{ fontSize: 12, color: "text.secondary", mb: 0.5 }}>
+                    SKU
+                  </Typography>
+                  <Typography sx={{ fontWeight: 700, fontSize: 13, color: "#1f2937", wordBreak: "break-word" }}>
+                    {ticket.replacementOrderItem.sku || "N/A"}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography sx={{ fontSize: 12, color: "text.secondary", mb: 0.5 }}>
+                    Total Price
+                  </Typography>
+                  <Typography sx={{ fontWeight: 600, color: "rgba(0,0,0,0.7)" }}>
+                    ${ticket.replacementOrderItem.totalPrice.toFixed(2)}
+                  </Typography>
+                </Box>
+              </Box>
+            </Box>
+          </Box>
+        )}
+
         {!ticket.orderItem && (
           <Box
             sx={{
@@ -618,6 +736,79 @@ export function TicketDetailScreen() {
           </Box>
         )}
 
+        {/* Attachments Section */}
+        <Box
+          sx={{
+            pt: 2,
+            borderTop: "1px solid rgba(0,0,0,0.08)",
+          }}
+        >
+          <Typography sx={{ fontSize: 12, color: "text.secondary", mb: 1.5 }}>
+            Attachments
+          </Typography>
+          {ticket.attachments && ticket.attachments.length > 0 ? (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+              {ticket.attachments.map((attachment) => (
+                <Box
+                  key={attachment.id}
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1.5,
+                    p: 1.5,
+                    bgcolor: "rgba(59, 130, 246, 0.05)",
+                    borderRadius: 1.5,
+                    border: "1px solid rgba(59, 130, 246, 0.2)",
+                  }}
+                >
+                  <Box
+                    sx={{
+                      fontSize: 20,
+                      flexShrink: 0,
+                    }}
+                  >
+                    {attachment.fileExtension?.toLowerCase() === 'pdf' ? '📄' : '🖼️'}
+                  </Box>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography
+                      sx={{
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: "rgb(59, 130, 246)",
+                        wordBreak: "break-word",
+                        textDecoration: "none",
+                      }}
+                      component="a"
+                      href={attachment.fileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {attachment.fileName}
+                    </Typography>
+                    <Typography sx={{ fontSize: 11, color: "text.secondary", mt: 0.25 }}>
+                      Uploaded · {new Date(attachment.createdAt).toLocaleString()}
+                    </Typography>
+                  </Box>
+                </Box>
+              ))}
+            </Box>
+          ) : (
+            <Box
+              sx={{
+                p: 2,
+                bgcolor: "rgba(0,0,0,0.02)",
+                borderRadius: 1.5,
+                border: "1px solid rgba(0,0,0,0.06)",
+                textAlign: "center",
+              }}
+            >
+              <Typography sx={{ fontSize: 13, color: "text.secondary" }}>
+                No attachment included
+              </Typography>
+            </Box>
+          )}
+        </Box>
+
         <Box
           sx={{
             pt: 2,
@@ -660,6 +851,25 @@ export function TicketDetailScreen() {
         <DialogContent>
           <Box sx={{ pt: 2, display: "flex", flexDirection: "column", gap: 2 }}>
             {error && <Alert severity="error">{error}</Alert>}
+            
+            {actionType === "confirm" && ticket.ticketType === AfterSalesTicketTypeValues.Refund && (
+              <TextField
+                label="Refund Amount"
+                type="number"
+                fullWidth
+                value={refundAmount}
+                onChange={(e) => setRefundAmount(e.target.value)}
+                placeholder="Enter refund amount"
+                slotProps={{
+                  htmlInput: {
+                    min: 0,
+                    step: 0.01,
+                  },
+                }}
+                helperText="Enter the refund amount to be processed for this ticket"
+              />
+            )}
+            
             <TextField
               label="Notes (optional)"
               multiline

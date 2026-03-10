@@ -63,7 +63,6 @@ export function SubmitTicketDialog({
   const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
   const [reason, setReason] = useState("");
   const [requestedAction, setRequestedAction] = useState("");
-  const [refundAmount, setRefundAmount] = useState<number | string>("");
   const [attachments, setAttachments] = useState<
     Array<{
       file: File;
@@ -157,7 +156,7 @@ export function SubmitTicketDialog({
         ticketType: ticketType as AfterSalesTicketType,
         reason: reason.trim(),
         requestedAction: requestedAction.trim() || null,
-        refundAmount: refundAmount ? Number.parseFloat(String(refundAmount)) : null,
+        refundAmount: null,
         attachments: attachments.map((att) => ({
           fileName: att.fileName,
           fileUrl: att.fileUrl,
@@ -182,7 +181,6 @@ export function SubmitTicketDialog({
     setSelectedItemIds([]);
     setReason("");
     setRequestedAction("");
-    setRefundAmount("");
     setAttachments([]);
     setFormError("");
 
@@ -333,26 +331,6 @@ export function SubmitTicketDialog({
             placeholder="E.g., 'Please replace with a new frame' or 'Repair the left lens'"
             helperText="Let us know your preferred resolution"
           />
-
-          {/* Refund Amount (Optional, only for Refund type) */}
-          {ticketType === AfterSalesTicketTypeValues.Refund && (
-            <TextField
-              label="Refund Amount (optional)"
-              type="number"
-              fullWidth
-              value={refundAmount}
-              onChange={(e) => setRefundAmount(e.target.value)}
-              placeholder="0"
-              slotProps={{
-                htmlInput: {
-                  min: 0,
-                  max: order.totalAmount,
-                  step: 0.01,
-                },
-              }}
-              helperText={`Maximum: ${order.totalAmount.toFixed(2)}`}
-            />
-          )}
 
           {/* File Attachments */}
           <FormControl fullWidth>

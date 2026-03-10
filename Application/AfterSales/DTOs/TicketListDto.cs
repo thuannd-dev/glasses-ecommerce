@@ -20,4 +20,5 @@ public sealed class TicketListDto
     public DateTime? ResolvedAt { get; set; }
     public DateTime? ReceivedAt { get; set; }
     public TicketResolutionType? ResolutionType { get; set; }
+    public bool IsReplacementCompleted { get; set; }
 }

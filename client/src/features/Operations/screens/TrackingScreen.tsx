@@ -369,6 +369,50 @@ function ShippedOrderRow({
             })}
 
             <Divider sx={{ my: 1.5 }} />
+
+            {/* Customer Information Section */}
+            {(detail.customerName || detail.customerPhone || detail.shippingAddress) && (
+              <>
+                <Typography sx={{ fontWeight: 700, color: "text.primary" }}>Delivery Information</Typography>
+                <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 1.5, mb: 1.5 }}>
+                  {detail.customerName && (
+                    <Box>
+                      <Typography sx={{ fontSize: 12, color: "text.secondary", mb: 0.5 }}>
+                        Customer Name
+                      </Typography>
+                      <Typography sx={{ fontWeight: 700 }}>
+                        {detail.customerName}
+                      </Typography>
+                    </Box>
+                  )}
+                  {detail.customerPhone && (
+                    <Box>
+                      <Typography sx={{ fontSize: 12, color: "text.secondary", mb: 0.5 }}>
+                        Phone
+                      </Typography>
+                      <Typography sx={{ fontWeight: 700 }}>
+                        {detail.customerPhone}
+                      </Typography>
+                    </Box>
+                  )}
+                  {detail.shippingAddress && (
+                    <Box sx={{ gridColumn: { xs: "1fr", md: "1 / -1" } }}>
+                      <Typography sx={{ fontSize: 12, color: "text.secondary", mb: 0.5 }}>
+                        Delivery Address
+                      </Typography>
+                      <Typography sx={{ fontWeight: 700, lineHeight: 1.5 }}>
+                        {detail.shippingAddress.venue && `${detail.shippingAddress.venue}, `}
+                        {detail.shippingAddress.ward && `${detail.shippingAddress.ward}, `}
+                        {detail.shippingAddress.district && `${detail.shippingAddress.district}, `}
+                        {detail.shippingAddress.city}
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+                <Divider sx={{ my: 1.5 }} />
+              </>
+            )}
+
             <Typography sx={{ fontWeight: 700, color: "text.primary" }}>Pricing Breakdown</Typography>
             <Box sx={{ display: "flex", justifyContent: "space-between", gap: 2 }}>
               <Typography>Subtotal</Typography>

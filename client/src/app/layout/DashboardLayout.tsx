@@ -30,8 +30,6 @@ import ExpandMore from "@mui/icons-material/ExpandMore";
 import AssignmentReturnIcon from "@mui/icons-material/AssignmentReturn";
 import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
 import { useAccount } from "../../lib/hooks/useAccount";
-import { useOperationsTickets } from "../../lib/hooks/useStaffAfterSalesTickets";
-import { AfterSalesTicketStatusValues, TicketResolutionTypeValues } from "../../lib/types/afterSales";
 
 const SIDEBAR_WIDTH = 260;
 
@@ -77,50 +75,6 @@ export default function DashboardLayout() {
   const { currentUser, logoutUser } = useAccount();
   const roles = Array.isArray(currentUser?.roles) ? currentUser.roles : [];
   const location = useLocation();
-
-  // Fetch operations warranty tickets for counter display
-  const { data: opsTicketsData } = useOperationsTickets({
-    pageNumber: 1,
-    pageSize: 100,
-  });
-
-  // Fetch operations return-refund tickets for counter display
-  const { data: opsReturnRefundData } = useOperationsTickets({
-    pageNumber: 1,
-    pageSize: 100,
-    resolutionType: TicketResolutionTypeValues.ReturnAndRefund,
-  });
-
-  const safeTickets = Array.isArray(opsTicketsData?.items) ? opsTicketsData.items : [];
-  const safeReturnRefundTickets = Array.isArray(opsReturnRefundData?.items) ? opsReturnRefundData.items : [];
-  
-  // Calculate warranty ticket counts
-  const warrantyPendingCount = safeTickets.filter((ticket) => 
-    ticket.ticketStatus === AfterSalesTicketStatusValues.InProgress && !ticket.receivedAt
-  ).length;
-
-  const warrantyRepairCount = safeTickets.filter((ticket) =>
-    ticket.ticketStatus === AfterSalesTicketStatusValues.InProgress &&
-    ticket.receivedAt &&
-    ticket.resolutionType === TicketResolutionTypeValues.WarrantyRepair
-  ).length;
-
-  const warrantyRejectedCount = safeTickets.filter((ticket) =>
-    ticket.ticketStatus === AfterSalesTicketStatusValues.Rejected
-  ).length;
-
-  // Calculate return-refund ticket counts
-  const returnRefundPendingCount = safeReturnRefundTickets.filter((ticket) =>
-    ticket.ticketStatus === AfterSalesTicketStatusValues.Pending
-  ).length;
-
-  const returnRefundApprovedCount = safeReturnRefundTickets.filter((ticket) =>
-    ticket.ticketStatus === AfterSalesTicketStatusValues.InProgress
-  ).length;
-
-  const returnRefundRejectedCount = safeReturnRefundTickets.filter((ticket) =>
-    ticket.ticketStatus === AfterSalesTicketStatusValues.Rejected
-  ).length;
 
   const visibleLinks = DASHBOARD_LINKS.filter((link) => roles.includes(link.role));
 
@@ -772,9 +726,6 @@ export default function DashboardLayout() {
                                     primary="Pending"
                                     primaryTypographyProps={{ fontWeight: 500 }}
                                   />
-                                  <Typography sx={{ fontSize: 12, fontWeight: 700, color: "text.secondary" }}>
-                                    {returnRefundPendingCount}
-                                  </Typography>
                                 </ListItemButton>
 
                                 <ListItemButton
@@ -789,9 +740,6 @@ export default function DashboardLayout() {
                                     primary="Approved"
                                     primaryTypographyProps={{ fontWeight: 500 }}
                                   />
-                                  <Typography sx={{ fontSize: 12, fontWeight: 700, color: "text.secondary" }}>
-                                    {returnRefundApprovedCount}
-                                  </Typography>
                                 </ListItemButton>
 
                                 <ListItemButton
@@ -806,9 +754,6 @@ export default function DashboardLayout() {
                                     primary="Rejected"
                                     primaryTypographyProps={{ fontWeight: 500 }}
                                   />
-                                  <Typography sx={{ fontSize: 12, fontWeight: 700, color: "text.secondary" }}>
-                                    {returnRefundRejectedCount}
-                                  </Typography>
                                 </ListItemButton>
                               </>
                             );
@@ -879,26 +824,20 @@ export default function DashboardLayout() {
                                     primary="Pending"
                                     primaryTypographyProps={{ fontWeight: 500 }}
                                   />
-                                  <Typography sx={{ fontSize: 12, fontWeight: 700, color: "text.secondary" }}>
-                                    {warrantyPendingCount}
-                                  </Typography>
                                 </ListItemButton>
 
                                 <ListItemButton
                                   component={NavLink}
-                                  to="/operations/warranty?status=Repair"
+                                  to="/operations/warranty?status=Replacing"
                                   sx={{
                                     ...baseStyles,
-                                    ...(isWarrantyRoute && currentStatus === "Repair" ? activeStyles : {}),
+                                    ...(isWarrantyRoute && currentStatus === "Replacing" ? activeStyles : {}),
                                   }}
                                 >
                                   <ListItemText
-                                    primary="Repair"
+                                    primary="Replacing"
                                     primaryTypographyProps={{ fontWeight: 500 }}
                                   />
-                                  <Typography sx={{ fontSize: 12, fontWeight: 700, color: "text.secondary" }}>
-                                    {warrantyRepairCount}
-                                  </Typography>
                                 </ListItemButton>
 
                                 <ListItemButton
@@ -913,9 +852,6 @@ export default function DashboardLayout() {
                                     primary="Rejected"
                                     primaryTypographyProps={{ fontWeight: 500 }}
                                   />
-                                  <Typography sx={{ fontSize: 12, fontWeight: 700, color: "text.secondary" }}>
-                                    {warrantyRejectedCount}
-                                  </Typography>
                                 </ListItemButton>
                               </>
                             );

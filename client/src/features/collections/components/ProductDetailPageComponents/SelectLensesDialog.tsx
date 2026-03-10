@@ -39,10 +39,10 @@ function buildSphOptions(): string[] {
     }
     return out;
 }
-// CYL: -6.00 to +6.00 step 0.25 (giống hình 2)
+// CYL: -6.00 to 0.00 step 0.25 (minus cylinders only, per backend validation)
 function buildCylOptions(): string[] {
     const out: string[] = [];
-    for (let i = -24; i <= 24; i++) {
+    for (let i = -24; i <= 0; i++) {
         out.push((i * 0.25).toFixed(2));
     }
     return out;

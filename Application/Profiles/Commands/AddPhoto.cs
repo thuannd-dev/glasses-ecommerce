@@ -20,30 +20,37 @@ public class AddPhoto
     {
         public async Task<Result<Photo>> Handle(Command request, CancellationToken cancellationToken)
         {
-            var uploadResult = await photoService.UploadPhoto(request.File);
-
-            if(uploadResult == null) return Result<Photo>.Failure("Failed to upload photo", 400);
-
-            var user = await userAccessor.GetUserAsync();
-
-            var photo = new Photo
+            try
             {
-                Url = uploadResult.Url,
-                PublicId = uploadResult.PublicId,
-                UserId = user.Id
-            };
+                var uploadResult = await photoService.UploadPhoto(request.File);
 
-            //assign url to ImageUrl if user has no photo 
-            //when imageUrl have a value, not changing it
-            user.ImageUrl ??= photo.Url;
+                if(uploadResult == null) return Result<Photo>.Failure("Failed to upload photo", 400);
 
-            context.Photos.Add(photo);
+                var user = await userAccessor.GetUserAsync();
 
-            var result = await context.SaveChangesAsync(cancellationToken) > 0;
+                var photo = new Photo
+                {
+                    Url = uploadResult.Url,
+                    PublicId = uploadResult.PublicId,
+                    UserId = user.Id
+                };
 
-            return result
-                ? Result<Photo>.Success(photo)
-                : Result<Photo>.Failure("Problem saving photo to DB", 400);
+                //assign url to ImageUrl if user has no photo 
+                //when imageUrl have a value, not changing it
+                user.ImageUrl ??= photo.Url;
+
+                context.Photos.Add(photo);
+
+                var result = await context.SaveChangesAsync(cancellationToken) > 0;
+
+                return result
+                    ? Result<Photo>.Success(photo)
+                    : Result<Photo>.Failure("Problem saving photo to DB", 400);
+            }
+            catch (Exception ex)
+            {
+                return Result<Photo>.Failure($"Photo upload failed: {ex.Message}", 400);
+            }
         }
     }
 

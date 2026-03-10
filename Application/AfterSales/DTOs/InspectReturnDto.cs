@@ -5,5 +5,5 @@ namespace Application.AfterSales.DTOs;
 public sealed class InspectReturnDto
 {
     public required bool IsAccepted { get; set; }
-    public required string Notes { get; set; }
+    public string? Notes { get; set; }
 }

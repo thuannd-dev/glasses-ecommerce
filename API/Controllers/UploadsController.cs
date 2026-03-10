@@ -23,6 +23,20 @@ public sealed class UploadsController : BaseApiController
             return BadRequest("No file uploaded.");
         }
 
+        // Validate file size (max 5MB)
+        const long maxFileSize = 5 * 1024 * 1024; // 5MB
+        if (file.Length > maxFileSize)
+        {
+            return BadRequest("File size exceeds maximum allowed (5MB).");
+        }
+
+        // Validate file type
+        var allowedMimeTypes = new[] { "image/jpeg", "image/png", "image/gif", "image/webp", "application/pdf" };
+        if (!allowedMimeTypes.Contains(file.ContentType?.ToLower()))
+        {
+            return BadRequest("Invalid file type. Allowed types: JPEG, PNG, GIF, WebP, PDF.");
+        }
+
         return HandleResult(await Mediator.Send(new UploadImage.Command { File = file }));
     }
 }

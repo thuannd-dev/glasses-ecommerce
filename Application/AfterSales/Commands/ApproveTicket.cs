@@ -87,7 +87,7 @@ public sealed class ApproveTicket
                             "No completed payment found for this order. Cannot process refund.", 400);
 
                     decimal existingRefunds = await context.Refunds
-                        .Where(r => r.PaymentId == payment.Id && r.RefundStatus != RefundStatus.Rejected)
+                        .Where(r => r.PaymentId == payment.Id && r.RefundStatus == RefundStatus.Completed)
                         .SumAsync(r => r.Amount, ct);
 
                     if (existingRefunds + request.Dto.RefundAmount.Value > payment.Amount)
