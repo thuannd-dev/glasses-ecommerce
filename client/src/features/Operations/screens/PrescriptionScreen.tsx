@@ -36,7 +36,7 @@ export function PrescriptionScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [dateFilter, setDateFilter] = useState<Date | null>(null);
 
-  const prescriptionOrders = orders.filter((o) => o.orderType === "prescription");
+  const prescriptionOrders = orders.filter((o) => o.orderType === "Prescription");
   const filteredOrders = useMemo(
     () => filterAndSortOrders(prescriptionOrders, searchQuery, dateFilter),
     [prescriptionOrders, searchQuery, dateFilter]
@@ -103,7 +103,7 @@ export function PrescriptionScreen() {
                 onToggleExpand={() => setExpandedOrderId(expandedOrderId === order.id ? null : order.id)}
                 onUpdateStatus={(status) => updateStatus.mutate({ orderId: order.id, status })}
                 onCreateShipment={() => openCreateShipment(order.id)}
-                canCreateShipment={order.status === "ready_to_ship" && !order.shipmentId}
+                canCreateShipment={order.status === "Shipped" && !order.shipmentId}
               />
             ))}
           </Box>
