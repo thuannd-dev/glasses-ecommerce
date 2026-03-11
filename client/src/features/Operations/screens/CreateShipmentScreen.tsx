@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Box, LinearProgress, Paper, Typography } from "@mui/material";
-import { useOperationsOrders, useUpdateOrderStatus } from "../../../lib/hooks/useOperationsOrders";
+import { useOperationsOrders } from "../../../lib/hooks/useOperationsOrders";
 import type { StaffOrderDto } from "../../../lib/types/staffOrders";
 import type { OrderStatus } from "../../../lib/types/operations";
 import { OperationsPageHeader } from "../components/OperationsPageHeader";
@@ -22,8 +22,6 @@ export function CreateShipmentScreen() {
     ? (data!.items as unknown as StaffOrderDto[])
     : [];
   const totalPages = data?.totalPages ?? 1;
-
-  const updateStatus = useUpdateOrderStatus();
 
   return (
     <>

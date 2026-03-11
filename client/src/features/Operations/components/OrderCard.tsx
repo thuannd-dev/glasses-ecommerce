@@ -2,7 +2,7 @@ import { Box, Button, Chip, Collapse, Paper, Typography } from "@mui/material";
 import ExpandMore from "@mui/icons-material/ExpandMore";
 import ExpandLess from "@mui/icons-material/ExpandLess";
 
-import { ORDER_STATUS_LABEL, ORDER_TYPE_LABEL, formatDate } from "../constants";
+import { ORDER_STATUS_LABEL, ORDER_TYPE_LABEL } from "../constants";
 import type { OrderDto, OrderStatus, OrderType } from "../../../lib/types";
 import { useOperationsOrderDetail } from "../../../lib/hooks/useOperationsOrders";
 import type { StaffOrderDetailDto } from "../../../lib/types/staffOrders";

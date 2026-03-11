@@ -48,18 +48,6 @@ const SALES_SUB_LINKS: { path: string; label: string; icon: React.ReactNode }[] 
   { path: "/sales/orders", label: "Orders", icon: <Inventory2Outlined /> },
 ];
 
-const OPERATIONS_SUB_LINKS: { path: string; label: string; icon: React.ReactNode }[] = [
-  { path: "/operations/pack", label: "Confirmed orders", icon: <Inventory2Outlined /> },
-  { path: "/operations/create-shipment", label: "Packing orders", icon: <AddBoxOutlined /> },
-  { path: "/operations/tracking", label: "Shipped", icon: <TrackChangesOutlined /> },
-  { path: "/operations/standard", label: "Standard", icon: <Inventory2Outlined /> },
-  { path: "/operations/pre-order", label: "Pre-order", icon: <ScheduleOutlined /> },
-  { path: "/operations/prescription", label: "Prescription", icon: <VisibilityOutlined /> },
-  { path: "/operations/inbound", label: "Inbound", icon: <MoveToInboxOutlinedIcon /> },
-  { path: "/operations/outbound", label: "Outbound", icon: <OutboxOutlined /> },
-  { path: "/operations/inventory-transactions", label: "History", icon: <HistoryOutlined /> },
-];
-
 const MANAGER_SUB_LINKS: { path: string; label: string; icon: React.ReactNode }[] = [
   { path: "/manager", label: "Dashboard", icon: <DashboardOutlined /> },
   { path: "/manager/products", label: "Products", icon: <StorefrontOutlined /> },
