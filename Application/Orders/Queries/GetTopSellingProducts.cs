@@ -24,6 +24,9 @@ public sealed class GetTopSellingProducts
             if (request.TopN < 1 || request.TopN > 50)
                 return Result<TopProductsReportDto>.Failure("TopN must be between 1 and 50.", 400);
 
+            if (request.FromDate.HasValue && request.ToDate.HasValue && request.FromDate.Value > request.ToDate.Value)
+                return Result<TopProductsReportDto>.Failure("FromDate cannot be later than ToDate.", 400);
+
             IQueryable<Order> ordersQuery = context.Orders
                 .AsNoTracking()
                 .Where(o => o.OrderStatus == OrderStatus.Completed);

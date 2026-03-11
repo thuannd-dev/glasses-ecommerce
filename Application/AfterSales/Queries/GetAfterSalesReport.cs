@@ -20,6 +20,9 @@ public sealed class GetAfterSalesReport
     {
         public async Task<Result<AfterSalesReportDto>> Handle(Query request, CancellationToken ct)
         {
+            if (request.FromDate.HasValue && request.ToDate.HasValue && request.FromDate.Value > request.ToDate.Value)
+                return Result<AfterSalesReportDto>.Failure("FromDate cannot be later than ToDate.", 400);
+
             IQueryable<AfterSalesTicket> query = context.AfterSalesTickets.AsNoTracking();
 
             if (request.FromDate.HasValue)
