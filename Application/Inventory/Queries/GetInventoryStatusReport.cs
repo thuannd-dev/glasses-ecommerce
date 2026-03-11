@@ -40,7 +40,7 @@ public sealed class GetInventoryStatusReport
                 return Result<InventoryStatusReportDto>.Success(new InventoryStatusReportDto());
             }
 
-            var lowStockItems = await context.Stocks
+            List<LowStockItemDto> lowStockItems = await context.Stocks
                 .AsNoTracking()
                 .Where(s => s.QuantityAvailable < request.LowStockThreshold)
                 .OrderBy(s => s.QuantityAvailable)

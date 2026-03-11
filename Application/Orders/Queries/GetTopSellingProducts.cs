@@ -78,8 +78,8 @@ public sealed class GetTopSellingProducts
 
             TopProductsReportDto result = new()
             {
-                FromDate = request.FromDate.GetValueOrDefault(DateTime.MinValue),
-                ToDate = request.ToDate.GetValueOrDefault(DateTime.MaxValue),
+                FromDate = request.FromDate,
+                ToDate = request.ToDate,
                 TopN = request.TopN,
                 Items = items
             };
