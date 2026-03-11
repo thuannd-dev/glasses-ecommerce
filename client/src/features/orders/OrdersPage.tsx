@@ -3,6 +3,7 @@ import { Box, Typography, Paper, Button, Skeleton, Chip } from "@mui/material";
 import { NavLink } from "react-router-dom";
 import { useMyOrders } from "../../lib/hooks/useOrders";
 import { OrderCard } from "./OrderCard";
+import { AppPagination } from "../../app/shared/components/AppPagination";
 
 const PALETTE = {
   textMain: "#171717",
@@ -18,7 +19,8 @@ const FILTERS = ["All", "Pending", "Shipped", "Cancelled"] as const;
 type FilterValue = (typeof FILTERS)[number];
 
 export default function OrdersPage() {
-  const { data: page, isLoading, isError, error } = useMyOrders();
+  const [pageNumber, setPageNumber] = useState(1);
+  const { data: page, isLoading, isError, error } = useMyOrders(pageNumber);
   const [activeFilter, setActiveFilter] = useState<FilterValue>("All");
 
   if (isLoading) {
@@ -49,6 +51,10 @@ export default function OrdersPage() {
   }
 
   const list = page?.items ?? [];
+  const totalCount = page?.totalCount ?? list.length;
+  const totalPages = page?.totalPages ?? 1;
+  const currentPage = page?.pageNumber ?? pageNumber;
+  const pageSize = page?.pageSize ?? (list.length || 10);
 
   const filteredList = list.filter((order) => {
     if (activeFilter === "All") return true;
@@ -100,7 +106,7 @@ export default function OrdersPage() {
             mt: 0.5,
           }}
         >
-          {list.length} order{list.length !== 1 ? "s" : ""}
+          {totalCount} order{totalCount !== 1 ? "s" : ""}
         </Typography>
         <Box
           sx={{
@@ -182,11 +188,26 @@ export default function OrdersPage() {
           </Button>
         </Paper>
       ) : (
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-          {filteredList.map((order) => (
-            <OrderCard key={order.id} orderSummary={order} />
-          ))}
-        </Box>
+        <>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 3, mb: 3 }}>
+            {filteredList.map((order) => (
+              <OrderCard key={order.id} orderSummary={order} />
+            ))}
+          </Box>
+
+          {/* Pagination controls — same style as Collections */}
+          {totalPages > 1 && (
+            <AppPagination
+              page={currentPage}
+              totalPages={totalPages}
+              onChange={setPageNumber}
+              totalItems={totalCount}
+              pageSize={pageSize}
+              unitLabel="orders"
+              align="space-between"
+            />
+          )}
+        </>
       )}
     </Box>
   );

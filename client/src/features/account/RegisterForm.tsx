@@ -182,6 +182,7 @@ export default function RegisterForm() {
               <TextInput
                 label="Password"
                 type="password"
+                enablePasswordToggle
                 control={control}
                 name="password"
                 hideError

@@ -21,7 +21,13 @@ export function useOrdersScreen() {
   const { data, isLoading } = useStaffOrders({ pageNumber, pageSize, status: statusFilter });
   const safeOrders: StaffOrderDto[] = Array.isArray(data?.items) ? (data!.items as StaffOrderDto[]) : [];
   const filteredOrders = safeOrders.filter((o) => o.orderStatus === statusFilter);
-  const meta = data ? { totalPages: data.totalPages } : null;
+  const meta = data
+    ? {
+        totalPages: data.totalPages,
+        totalCount: data.totalCount,
+        pageSize: data.pageSize,
+      }
+    : null;
 
   const statusTabs = [
     { label: "Pending", value: "Pending" },

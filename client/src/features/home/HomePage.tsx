@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Box, Button, Paper, Typography } from "@mui/material";
+import { Box, Paper, Typography } from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
 /**
  * ✅ OPTIONAL nếu bạn muốn dùng ảnh local dạng import (khuyên dùng khi build)
@@ -162,21 +162,25 @@ export default function HomePage() {
         }}
       >
         {/* Login button – top right */}
-        <Button
+        <Box
           component={RouterLink}
           to="/login"
-          variant="outlined"
           sx={{
             position: "absolute",
             top: 24,
             right: { xs: 24, md: 48 },
             zIndex: 4,
             color: "white",
-            borderColor: "rgba(255,255,255,.5)",
             fontWeight: 700,
             borderRadius: "999px",
             px: 2.5,
             py: 1,
+            border: "1px solid rgba(255,255,255,.5)",
+            textDecoration: "none",
+            fontSize: 14,
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
             "&:hover": {
               borderColor: "white",
               bgcolor: "rgba(255,255,255,.1)",
@@ -184,7 +188,7 @@ export default function HomePage() {
           }}
         >
           Login
-        </Button>
+        </Box>
 
         {/* Overlay glow */}
         <Box
@@ -265,39 +269,52 @@ export default function HomePage() {
             </Typography>
 
             <Box sx={{ display: "flex", gap: 1.5, mt: 3, flexWrap: "wrap" }}>
-              <Button
+              <Box
                 component={RouterLink}
                 to={active.ctaTo}
-                variant="contained"
-                size="large"
                 sx={{
                   px: 3,
                   py: 1.4,
                   borderRadius: 3,
                   fontWeight: 800,
                   textTransform: "none",
+                  textDecoration: "none",
+                  bgcolor: "#111827",
+                  color: "white",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  "&:hover": {
+                    bgcolor: "#020617",
+                  },
                 }}
               >
                 {active.ctaText}
-              </Button>
+              </Box>
 
-              <Button
+              <Box
                 component={RouterLink}
                 to="/collections/glasses"
-                variant="outlined"
-                size="large"
                 sx={{
                   px: 3,
                   py: 1.4,
                   borderRadius: 3,
                   fontWeight: 800,
                   textTransform: "none",
-                  borderColor: "rgba(255,255,255,.35)",
+                  textDecoration: "none",
+                  border: "1px solid rgba(255,255,255,.35)",
                   color: "white",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  "&:hover": {
+                    borderColor: "white",
+                    bgcolor: "rgba(0,0,0,.2)",
+                  },
                 }}
               >
                 See All Items
-              </Button>
+              </Box>
             </Box>
 
             {/* Mini stats */}

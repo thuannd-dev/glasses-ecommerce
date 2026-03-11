@@ -10,7 +10,6 @@ import {
   InputAdornment,
   LinearProgress,
   MenuItem,
-  Pagination,
   Paper,
   Stack,
   Table,
@@ -34,6 +33,7 @@ import {
 } from "../../../lib/hooks/useOperationsInventory";
 import { useDebouncedValue } from "../../../lib/hooks/useDebouncedValue";
 import { useLookups } from "../../../lib/hooks/useLookups";
+import { AppPagination } from "../../../app/shared/components/AppPagination";
 
 function getTypeChipStyle(type: string) {
   if (type === "Inbound") return { bg: "#EEF5EE", color: "#466A4A", border: "#D4E5D5" };
@@ -533,18 +533,15 @@ export function InventoryTransactionsScreen() {
             </Box>
 
             {totalPages > 1 && (
-              <Box sx={{ display: "flex", justifyContent: "flex-end", px: { xs: 2, md: 3 }, py: 2 }}>
-                <Pagination
-                  count={totalPages}
+              <Box sx={{ px: { xs: 2, md: 3 }, pb: 2 }}>
+                <AppPagination
                   page={pageNumber}
-                  onChange={(_, p) => setPageNumber(p)}
-                  size="small"
-                  sx={{
-                    "& .Mui-selected": {
-                      bgcolor: "rgba(182,140,90,0.2)",
-                      color: "#171717",
-                    },
-                  }}
+                  totalPages={totalPages}
+                  onChange={setPageNumber}
+                  totalItems={totalCount}
+                  pageSize={10}
+                  unitLabel="records"
+                  align="flex-end"
                 />
               </Box>
             )}

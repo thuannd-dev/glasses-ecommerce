@@ -19,6 +19,23 @@ export interface CreateOrderPayload {
   selectedCartItemIds: string[];
   /** Optional promo code (validated via POST /api/promotions/validate) */
   promoCode?: string | null;
+  /** Required when orderType is Prescription. Matches API PrescriptionInputDto (PascalCase). */
+  prescription?: PrescriptionInputDto | null;
+}
+
+/** Prescription request shape for POST /api/me/orders (PascalCase for API) */
+export interface PrescriptionInputDto {
+  Details: PrescriptionDetailInputDto[];
+}
+
+/** One eye detail for prescription (PascalCase for API). Eye: 1 = Left, 2 = Right. */
+export interface PrescriptionDetailInputDto {
+  Eye: 1 | 2;
+  SPH?: number | null;
+  CYL?: number | null;
+  AXIS?: number | null;
+  PD?: number | null;
+  ADD?: number | null;
 }
 
 /** Line item in order (from API response) */

@@ -337,51 +337,26 @@ export default function ProductDetailPage() {
                             )}
                     </Box>
 
-                    {/* Status + Stock Status + Quantity + sku */}
+                    {/* Stock status (based on quantity) + Quantity + SKU */}
                     <Box sx={{ mt: 1.5, display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
                         <Chip
-                            label={product.status.toLowerCase() === "active" ? "In stock" : product.status}
-                            size="small"
-                            sx={{
-                                borderRadius: 999,
-                                fontWeight: 600,
-                                bgcolor:
-                                    product.status.toLowerCase() === "active"
-                                        ? "rgba(22,163,74,0.08)"
-                                        : "rgba(148,163,184,0.12)",
-                                color:
-                                    product.status.toLowerCase() === "active"
-                                        ? "#166534"
-                                        : "#475569",
-                                border:
-                                    product.status.toLowerCase() === "active"
-                                        ? "1px solid rgba(22,163,74,0.35)"
-                                        : "1px solid rgba(148,163,184,0.35)",
-                            }}
-                        />
-                        {/* Stock Status Indicator */}
-                        <Chip
-                            label={(currentVariant?.quantityAvailable ?? 0) > 0 ? "Ready Stock" : "Out of Stock"}
+                            label={(currentVariant?.quantityAvailable ?? 0) > 0 ? "In stock" : "Out of stock"}
                             size="small"
                             sx={{
                                 borderRadius: 999,
                                 fontWeight: 700,
-                                bgcolor: (currentVariant?.quantityAvailable ?? 0) > 0 
-                                    ? "rgba(59,130,246,0.12)"
-                                    : "rgba(239,68,68,0.12)",
-                                color: (currentVariant?.quantityAvailable ?? 0) > 0 
-                                    ? "rgba(37,99,235,0.95)"
-                                    : "rgba(220,38,38,0.95)",
+                                bgcolor: (currentVariant?.quantityAvailable ?? 0) > 0
+                                    ? "rgba(22,163,74,0.08)"
+                                    : "rgba(248,113,113,0.08)",
+                                color: (currentVariant?.quantityAvailable ?? 0) > 0
+                                    ? "#166534"
+                                    : "#b91c1c",
+                                border: (currentVariant?.quantityAvailable ?? 0) > 0
+                                    ? "1px solid rgba(22,163,74,0.35)"
+                                    : "1px solid rgba(248,113,113,0.55)",
                             }}
                         />
 
-                        {/* Quantity */}
-                        <Typography
-                            fontSize={13}
-                            sx={{ color: "rgba(17,24,39,0.65)", fontWeight: 600 }}
-                        >
-                            {currentVariant?.quantityAvailable ?? 0} available
-                        </Typography>
                         {product.sku && (
                             <Typography
                                 fontSize={12}
@@ -408,18 +383,16 @@ export default function ProductDetailPage() {
                                 }}
                             >
                                 {product.variants.map((v) => {
-                                    const isActive = currentVariant?.id === v.id;
-                                    const colorName = (v.color ?? v.variantName ?? "").toLowerCase();
-                                    const bgColor =
-                                        colorName === "black" || colorName.includes("black")
-                                            ? "#111827"
-                                            : colorName.includes("tortoise")
-                                                ? "#7c2d12"
-                                                : colorName.includes("gold")
-                                                    ? "#facc15"
-                                                    : colorName.includes("silver")
-                                                        ? "#e5e7eb"
-                                                        : "rgba(148,163,184,0.6)";
+                                const isActive = currentVariant?.id === v.id;
+
+                                // Lấy đúng tên màu để tô: ưu tiên field `color`, fallback `variantName`.
+                                const rawLabel = (v.color ?? v.variantName ?? "").trim();
+                                // Nếu có nhiều từ (VD: "Glossy Black") thì lấy từ cuối cùng làm CSS color ("Black").
+                                const lastWord =
+                                    rawLabel.indexOf(" ") >= 0
+                                        ? rawLabel.split(/\s+/).slice(-1)[0]
+                                        : rawLabel;
+                                const bgColor = lastWord || "rgba(148,163,184,0.6)";
                                     return (
                                         <Box
                                             key={v.id}
@@ -530,7 +503,7 @@ export default function ProductDetailPage() {
                         {/* Show Pre-Order only if out of stock */}
                         {(currentVariant?.quantityAvailable ?? 0) === 0 && (
                             <Button
-                                variant="outlined"
+                                variant="contained"
                                 onClick={() => {
                                     if (isEyeglasses) {
                                         // For eyeglasses: navigate to select lenses with pre-order flag
@@ -561,7 +534,7 @@ export default function ProductDetailPage() {
                                     },
                                 }}
                             >
-                                {isEyeglasses ? "Select lenses for Pre-Order" : "Pre-Order"}
+                                Pre-Order
                             </Button>
                         )}
 
@@ -630,13 +603,13 @@ export default function ProductDetailPage() {
                         </AccordionSummary>
                         <AccordionDetails>
                             <Box sx={{ display: "grid", rowGap: 0.5, fontSize: 13.5 }}>
-                                {currentVariant?.color && (
+                                {(currentVariant?.variantName || currentVariant?.color) && (
                                     <Box sx={{ display: "flex", justifyContent: "space-between" }}>
                                         <Typography color="rgba(15,23,42,0.6)">
                                             Color
                                         </Typography>
                                         <Typography fontWeight={600}>
-                                            {currentVariant.color}
+                                            {currentVariant.variantName ?? currentVariant.color}
                                         </Typography>
                                     </Box>
                                 )}

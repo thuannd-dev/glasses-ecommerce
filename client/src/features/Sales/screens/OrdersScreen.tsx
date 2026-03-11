@@ -7,7 +7,6 @@ import {
   Divider,
   IconButton,
   LinearProgress,
-  Pagination,
   Paper,
   Stack,
   Typography,
@@ -20,6 +19,7 @@ import { useStaffOrder, useUpdateStaffOrderStatus } from "../../../lib/hooks/use
 import type { StaffOrderDto, StaffOrderDetailDto } from "../../../lib/types/staffOrders";
 import { OrderDetailExpanded } from "../../../app/shared/components/OrderDetailExpanded";
 import { useOrdersScreen } from "../hooks/useOrdersScreen";
+import { AppPagination } from "../../../app/shared/components/AppPagination";
 
 function getStatusColors(status: string) {
   switch (status) {
@@ -369,15 +369,15 @@ export function OrdersScreen() {
           </Box>
 
           {meta && meta.totalPages > 1 && (
-            <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2, pt: 1 }}>
-              <Pagination
-                count={meta.totalPages}
-                page={pageNumber}
-                onChange={(_, page) => setPageNumber(page)}
-                color="primary"
-                size="small"
-              />
-            </Box>
+            <AppPagination
+              page={pageNumber}
+              totalPages={meta.totalPages}
+              onChange={setPageNumber}
+              totalItems={meta.totalCount}
+              pageSize={meta.pageSize}
+              unitLabel="orders"
+              align="flex-end"
+            />
           )}
         </Box>
       )}

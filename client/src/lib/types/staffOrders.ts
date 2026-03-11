@@ -79,6 +79,26 @@ export interface StaffOrderShippingAddressDto {
   isDefault?: boolean;
 }
 
+/** Prescription detail per eye from GET order detail (camelCase from API) */
+export interface StaffOrderPrescriptionDetailDto {
+  id?: string;
+  eye: string;
+  sph: number | null;
+  cyl: number | null;
+  axis: number | null;
+  pd: number | null;
+  add: number | null;
+}
+
+/** Prescription block from GET order detail */
+export interface StaffOrderPrescriptionDto {
+  id?: string;
+  isVerified?: boolean;
+  verifiedAt?: string | null;
+  verificationNotes?: string | null;
+  details: StaffOrderPrescriptionDetailDto[];
+}
+
 export interface StaffOrderDetailDto {
   id: string;
   orderSource: string;
@@ -101,7 +121,7 @@ export interface StaffOrderDetailDto {
   updatedAt: string | null;
   items: StaffOrderItemDto[];
   payment: StaffOrderPaymentDto | null;
-  prescription: unknown;
+  prescription: StaffOrderPrescriptionDto | null;
   shipment: unknown;
   statusHistories: StaffOrderStatusHistoryDto[];
 }

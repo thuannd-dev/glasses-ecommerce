@@ -9,6 +9,7 @@ import {
 import { NavLink } from "react-router-dom";
 import FacebookIcon from "@mui/icons-material/Facebook";
 import InstagramIcon from "@mui/icons-material/Instagram";
+import { COLORS } from "../theme/colors";
 
 /**
  * Footer fashion: sạch, nhiều khoảng trắng, chữ nhỏ, tối giản.
@@ -49,18 +50,18 @@ const COLS = [
     },
 ];
 
-const ACCENT = "#B68C5A";
+const ACCENT = COLORS.accentGold;
 
 const linkSx = {
-    color: "#6B6B6B",
+    color: COLORS.textSecondary,
     textDecoration: "none",
     fontSize: "0.86rem",
     lineHeight: 2,
     transition: "color 160ms ease, border-color 160ms ease",
     borderBottom: "1px solid transparent",
     "&:hover": {
-        color: "#171717",
-        borderBottomColor: "rgba(0,0,0,0.14)",
+        color: COLORS.textPrimary,
+        borderBottomColor: COLORS.borderSoft,
     },
 };
 
@@ -71,8 +72,8 @@ export default function Footer() {
         <Box
             component="footer"
             sx={{
-                bgcolor: "#FAFAF8",
-                borderTop: "1px solid rgba(0,0,0,0.08)",
+                bgcolor: COLORS.bgSubtle,
+                borderTop: `1px solid ${COLORS.borderSoft}`,
                 pt: { xs: 6, md: 8 },
                 pb: { xs: 5, md: 7 },
                 position: "relative",
@@ -91,7 +92,7 @@ export default function Footer() {
                                         fontWeight: 800,
                                         letterSpacing: "0.24em",
                                         textTransform: "uppercase",
-                                        color: "#171717",
+                                        color: COLORS.textPrimary,
                                     }}
                                 >
                                     EYEWEAR
@@ -100,7 +101,7 @@ export default function Footer() {
                                     sx={{
                                         mt: 1,
                                         fontSize: 13,
-                                        color: "#6B6B6B",
+                                        color: COLORS.textSecondary,
                                         maxWidth: 260,
                                     }}
                                 >
@@ -120,13 +121,13 @@ export default function Footer() {
                                         width: 38,
                                         height: 38,
                                         borderRadius: "999px",
-                                        border: "1px solid rgba(0,0,0,0.08)",
-                                        color: "#171717",
+                                        border: `1px solid ${COLORS.borderSoft}`,
+                                        color: COLORS.textPrimary,
                                         transition: "all 160ms ease",
-                                        bgcolor: "#FFFFFF",
+                                        bgcolor: COLORS.bgSurface,
                                         "&:hover": {
                                             borderColor: ACCENT,
-                                            bgcolor: "#FFFFFF",
+                                            bgcolor: COLORS.bgSurface,
                                             color: ACCENT,
                                         },
                                     }}
@@ -143,10 +144,10 @@ export default function Footer() {
                                         width: 38,
                                         height: 38,
                                         borderRadius: "999px",
-                                        border: "1px solid rgba(0,0,0,0.08)",
-                                        color: "#171717",
+                                        border: `1px solid ${COLORS.borderSoft}`,
+                                        color: COLORS.textPrimary,
                                         transition: "all 160ms ease",
-                                        bgcolor: "#FFFFFF",
+                                        bgcolor: COLORS.bgSurface,
                                         "&:hover": {
                                             borderColor: ACCENT,
                                             bgcolor: "#FFFFFF",
@@ -252,7 +253,7 @@ export default function Footer() {
                         }}
                     >
                         {/* Left: copyright */}
-                        <Typography sx={{ color: "#8A8A8A", fontSize: "0.82rem" }}>
+                                <Typography sx={{ color: COLORS.textMuted, fontSize: "0.82rem" }}>
                             COPYRIGHT (C) YOURBRAND co., ltd. ALL RIGHTS RESERVED.
                         </Typography>
 
@@ -279,7 +280,7 @@ export default function Footer() {
                             spacing={1}
                             sx={{ flexWrap: "wrap", alignItems: "center" }}
                         >
-                            <Typography sx={{ color: "#8A8A8A", fontSize: "0.82rem" }}>
+                            <Typography sx={{ color: COLORS.textMuted, fontSize: "0.82rem" }}>
                                 Vietnam
                             </Typography>
                             <Typography sx={{ color: "#D1D5DB", fontSize: "0.82rem" }}>

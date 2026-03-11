@@ -141,7 +141,7 @@ export default function CollectionPage() {
         }}
       >
         {/* Left: filters sidebar (desktop) */}
-        <Box sx={{ display: { xs: "none", md: "block" } }}>
+        <Box sx={{ display: { xs: "none", md: "block" }, alignSelf: "flex-start" }}>
           <FiltersSidebar
             filters={filters}
             setFilters={setFilters}
