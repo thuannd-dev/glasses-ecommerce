@@ -24,6 +24,9 @@ export function useCreateOrder() {
       if (payload.promoCode != null && payload.promoCode.trim() !== "") {
         body.promoCode = payload.promoCode.trim();
       }
+      if (payload.prescription != null && payload.prescription.Details?.length) {
+        body.Prescription = payload.prescription;
+      }
       const res = await agent.post<MeOrderDto>("/me/orders", body);
       return res.data;
     },
@@ -33,12 +36,16 @@ export function useCreateOrder() {
   });
 }
 
-/** GET /api/me/orders — list my orders */
-export function useMyOrders() {
+/** GET /api/me/orders — list my orders (paginated) */
+export function useMyOrders(pageNumber: number = 1) {
   return useQuery<MyOrdersPageDto>({
-    queryKey: QUERY_KEY_MY_ORDERS,
+    queryKey: [...QUERY_KEY_MY_ORDERS, pageNumber],
     queryFn: async () => {
-      const res = await agent.get<MyOrdersPageDto>("/me/orders");
+      const res = await agent.get<MyOrdersPageDto>("/me/orders", {
+        params: {
+          pageNumber,
+        },
+      });
       return res.data;
     },
   });

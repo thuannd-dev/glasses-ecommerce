@@ -47,7 +47,7 @@ export function OverviewScreen() {
     (s) => s.status === "in_transit" || s.status === "picked"
   ).length;
   const preOrderCount = safeOrders.filter((o) => o.orderType === "pre-order").length;
-  const prescriptionCount = safeOrders.filter((o) => o.orderType === "prescription").length;
+  const prescriptionCount = safeOrders.filter((o) => o.prescriptionStatus != null).length;
 
   return (
     <>

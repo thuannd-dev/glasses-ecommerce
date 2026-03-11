@@ -13,7 +13,6 @@ import {
   Divider,
   InputAdornment,
   LinearProgress,
-  Pagination,
   Paper,
   Stack,
   Table,
@@ -30,6 +29,7 @@ import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
 
 import { OperationsPageHeader } from "../components/OperationsPageHeader";
 import { useOutboundInventoryScreen } from "../hooks/useOutboundInventoryScreen";
+import { AppPagination } from "../../../app/shared/components/AppPagination";
 
 function getStockChipStyles(stock: number) {
   if (stock >= 200) {
@@ -351,18 +351,15 @@ export function OutboundInventoryScreen() {
             </Box>
 
             {totalPages > 1 && (
-              <Box sx={{ display: "flex", justifyContent: "flex-end", px: { xs: 2, md: 3 }, py: 2 }}>
-                <Pagination
-                  count={totalPages}
+              <Box sx={{ px: { xs: 2, md: 3 }, pb: 2 }}>
+                <AppPagination
                   page={pageNumber}
-                  onChange={(_, p) => setPageNumber(p)}
-                  size="small"
-                  sx={{
-                    "& .Mui-selected": {
-                      bgcolor: "rgba(182,140,90,0.2)",
-                      color: "#171717",
-                    },
-                  }}
+                  totalPages={totalPages}
+                  onChange={setPageNumber}
+                  totalItems={totalCount}
+                  pageSize={10}
+                  unitLabel="products"
+                  align="flex-end"
                 />
               </Box>
             )}

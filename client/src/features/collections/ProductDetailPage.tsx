@@ -352,18 +352,16 @@ export default function ProductDetailPage() {
                                 }}
                             >
                                 {product.variants.map((v) => {
-                                    const isActive = currentVariant?.id === v.id;
-                                    const colorName = (v.color ?? v.variantName ?? "").toLowerCase();
-                                    const bgColor =
-                                        colorName === "black" || colorName.includes("black")
-                                            ? "#111827"
-                                            : colorName.includes("tortoise")
-                                                ? "#7c2d12"
-                                                : colorName.includes("gold")
-                                                    ? "#facc15"
-                                                    : colorName.includes("silver")
-                                                        ? "#e5e7eb"
-                                                        : "rgba(148,163,184,0.6)";
+                                const isActive = currentVariant?.id === v.id;
+
+                                // Lấy đúng tên màu để tô: ưu tiên field `color`, fallback `variantName`.
+                                const rawLabel = (v.color ?? v.variantName ?? "").trim();
+                                // Nếu có nhiều từ (VD: "Glossy Black") thì lấy từ cuối cùng làm CSS color ("Black").
+                                const lastWord =
+                                    rawLabel.indexOf(" ") >= 0
+                                        ? rawLabel.split(/\s+/).slice(-1)[0]
+                                        : rawLabel;
+                                const bgColor = lastWord || "rgba(148,163,184,0.6)";
                                     return (
                                         <Box
                                             key={v.id}
@@ -538,13 +536,13 @@ export default function ProductDetailPage() {
                         </AccordionSummary>
                         <AccordionDetails>
                             <Box sx={{ display: "grid", rowGap: 0.5, fontSize: 13.5 }}>
-                                {currentVariant?.color && (
+                                {(currentVariant?.variantName || currentVariant?.color) && (
                                     <Box sx={{ display: "flex", justifyContent: "space-between" }}>
                                         <Typography color="rgba(15,23,42,0.6)">
                                             Color
                                         </Typography>
                                         <Typography fontWeight={600}>
-                                            {currentVariant.color}
+                                            {currentVariant.variantName ?? currentVariant.color}
                                         </Typography>
                                     </Box>
                                 )}

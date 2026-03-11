@@ -1,7 +1,10 @@
 import React from "react";
-import { Box, Divider, Tooltip, Typography } from "@mui/material";
+import { Box, Divider, Tooltip, Typography, Table, TableBody, TableCell, TableHead, TableRow } from "@mui/material";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
-import type { StaffOrderDetailDto, StaffOrderShippingAddressDto } from "../../../lib/types/staffOrders";
+import type {
+  StaffOrderDetailDto,
+  StaffOrderShippingAddressDto,
+} from "../../../lib/types/staffOrders";
 
 const TOKENS = {
   bgTint: "#FAFAF8",
@@ -51,6 +54,11 @@ function formatAddressLine(addr: StaffOrderShippingAddressDto): string {
   ].filter(Boolean);
   const line = parts.join(", ");
   return addr.postalCode ? `${line} · ${addr.postalCode}` : line;
+}
+
+function formatPrescriptionVal(n: number | null | undefined): string {
+  if (n == null) return "—";
+  return Number.isInteger(n) ? String(n) : n.toFixed(2);
 }
 
 export function OrderDetailExpanded({ detail }: { detail: StaffOrderDetailDto }) {
@@ -356,6 +364,57 @@ export function OrderDetailExpanded({ detail }: { detail: StaffOrderDetailDto })
           </Box>
         </Box>
       </Box>
+
+      {/* 2.5) Prescription — for sales to view lens details */}
+      {detail.prescription?.details?.length ? (
+        <Box>
+          <Typography sx={{ fontSize: 14, fontWeight: 700, color: TOKENS.muted, textTransform: "uppercase", letterSpacing: 1, mb: 1.25 }}>
+            Prescription
+          </Typography>
+          <Box
+            sx={{
+              bgcolor: TOKENS.surface,
+              borderRadius: "12px",
+              border: `1px solid ${TOKENS.divider}`,
+              overflow: "hidden",
+              p: 2,
+            }}
+          >
+            {detail.prescription.isVerified != null && (
+              <Typography sx={{ fontSize: 12, color: TOKENS.textSecondary, mb: 1.25 }}>
+                Verified: {detail.prescription.isVerified ? "Yes" : "No"}
+                {detail.prescription.verificationNotes && (
+                  <> · {detail.prescription.verificationNotes}</>
+                )}
+              </Typography>
+            )}
+            <Table size="small" sx={{ "& td, & th": { py: 0.75, px: 1.5, fontSize: 13 } }}>
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 700, color: TOKENS.muted }}>Eye</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: TOKENS.muted }}>SPH</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: TOKENS.muted }}>CYL</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: TOKENS.muted }}>Axis</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: TOKENS.muted }}>PD</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: TOKENS.muted }}>ADD</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {detail.prescription.details.map((row, idx) => (
+                  <TableRow key={row.id ?? row.eye ?? idx}>
+                    <TableCell sx={{ fontWeight: 600, color: TOKENS.textPrimary }}>{row.eye}</TableCell>
+                    <TableCell>{formatPrescriptionVal(row.sph)}</TableCell>
+                    <TableCell>{formatPrescriptionVal(row.cyl)}</TableCell>
+                    <TableCell>{formatPrescriptionVal(row.axis)}</TableCell>
+                    <TableCell>{formatPrescriptionVal(row.pd)}</TableCell>
+                    <TableCell>{formatPrescriptionVal(row.add)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Box>
+        </Box>
+      ) : null}
 
       {/* 3) Items section — e-commerce look with thumbnails */}
       <Box>

@@ -5,7 +5,6 @@ import {
   Paper,
   Typography,
   Chip,
-  Pagination,
   Collapse,
   Divider,
   IconButton,
@@ -25,6 +24,7 @@ import type { OrderStatus } from "../../../lib/types/operations";
 import { OperationsPageHeader } from "../components/OperationsPageHeader";
 import { OrdersTabs } from "../components/OrdersTabs";
 import { OrderDetailExpanded } from "../../../app/shared/components/OrderDetailExpanded";
+import { AppPagination } from "../../../app/shared/components/AppPagination";
 
 export function CreateShipmentScreen() {
   const [pageNumber, setPageNumber] = useState(1);
@@ -223,15 +223,15 @@ export function CreateShipmentScreen() {
               </Box>
 
               {totalPages > 1 && (
-                <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2, pt: 1 }}>
-                  <Pagination
-                    count={totalPages}
-                    page={pageNumber}
-                    onChange={(_, page) => setPageNumber(page)}
-                    color="primary"
-                    size="small"
-                  />
-                </Box>
+                <AppPagination
+                  page={pageNumber}
+                  totalPages={totalPages}
+                  onChange={setPageNumber}
+                  totalItems={data?.totalCount}
+                  pageSize={pageSize}
+                  unitLabel="orders"
+                  align="flex-end"
+                />
               )}
             </>
           )}

@@ -32,11 +32,32 @@ function filterAndSortOrders(
 }
 
 export function PrescriptionScreen() {
-  const { orders, ordersLoading, updateStatus, openCreateShipment, expandedOrderId, setExpandedOrderId } = useOperations();
+  const {
+    orders,
+    ordersLoading,
+    updateStatus,
+    openCreateShipment,
+    expandedOrderId,
+    setExpandedOrderId,
+  } = useOperations();
   const [searchQuery, setSearchQuery] = useState("");
   const [dateFilter, setDateFilter] = useState<Date | null>(null);
 
-  const prescriptionOrders = orders.filter((o) => o.orderType === "prescription");
+  // Only show orders that have prescription attached and are actively being handled in this tab.
+  // Pending orders (chưa confirm) vẫn nằm ở Overview; từ lúc Confirm trở đi mới nhảy sang đây.
+  const ACTIVE_PRESCRIPTION_STATUSES: OrderDto["status"][] = [
+    "confirmed",
+    "processing",
+    "lens_ordered",
+    "lens_fitting",
+    "ready_to_ship",
+  ];
+  const prescriptionOrders = orders.filter((o) => {
+    const hasPrescription =
+      o.prescriptionStatus != null ||
+      (Array.isArray(o.items) && o.items.some((it) => it.prescriptionId));
+    return hasPrescription && ACTIVE_PRESCRIPTION_STATUSES.includes(o.status);
+  });
   const filteredOrders = useMemo(
     () => filterAndSortOrders(prescriptionOrders, searchQuery, dateFilter),
     [prescriptionOrders, searchQuery, dateFilter]

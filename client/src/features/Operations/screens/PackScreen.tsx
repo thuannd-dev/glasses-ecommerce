@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Box, LinearProgress, Pagination, Paper, Typography } from "@mui/material";
+import { Box, LinearProgress, Paper, Typography } from "@mui/material";
 import { useOperationsOrders, useUpdateOrderStatus } from "../../../lib/hooks/useOperationsOrders";
+import { AppPagination } from "../../../app/shared/components/AppPagination";
 import type { StaffOrderDto } from "../../../lib/types/staffOrders";
 import type { OrderStatus } from "../../../lib/types/operations";
 import { OperationsPageHeader } from "../components/OperationsPageHeader";
@@ -95,22 +96,15 @@ export function PackScreen() {
               </Box>
 
               {totalPages > 1 && (
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "flex-end",
-                    mt: 2,
-                    pt: 1,
-                  }}
-                >
-                  <Pagination
-                    count={totalPages}
-                    page={pageNumber}
-                    onChange={(_, page) => setPageNumber(page)}
-                    color="primary"
-                    size="small"
-                  />
-                </Box>
+                <AppPagination
+                  page={pageNumber}
+                  totalPages={totalPages}
+                  onChange={setPageNumber}
+                  totalItems={data?.totalCount}
+                  pageSize={pageSize}
+                  unitLabel="orders"
+                  align="flex-end"
+                />
               )}
             </>
           )}
