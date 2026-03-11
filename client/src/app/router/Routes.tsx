@@ -51,6 +51,7 @@ import {
 } from "../../features/Manager/screens";
 import { ManagerProductCreateWizardScreen } from "../../features/Manager/screens";
 import AdminDashboard from "../../features/Admin/AdminDashboard";
+import AdminLayout from "../../features/Admin/AdminLayout";
 import RoleManagement from "../../features/Admin/RoleManagement";
 import AdminPolicies from "../../features/Admin/AdminPolicies";
 import ChatbotWidget from "../../features/chatbot/ChatbotWidget";
@@ -150,7 +151,7 @@ export const router = createBrowserRouter([
         children: [
           {
             path: "admin",
-            element: <Outlet />,
+            element: <AdminLayout />,
             children: [
               { index: true, element: <AdminDashboard /> },
               { path: "roles", element: <RoleManagement /> },
