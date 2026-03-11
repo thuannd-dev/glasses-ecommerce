@@ -21,6 +21,11 @@ public sealed class CheckFeatureEnabled
     {
         public async Task<Result<bool>> Handle(Query request, CancellationToken ct)
         {
+            if (string.IsNullOrWhiteSpace(request.FeatureName))
+            {
+                return Result<bool>.Failure("FeatureName is required.", 400);
+            }
+
             string normFeatureName = request.FeatureName.Trim();
             string? normScope = string.IsNullOrWhiteSpace(request.Scope) ? null : request.Scope.Trim();
             string? normScopeValue = string.IsNullOrWhiteSpace(request.ScopeValue) ? null : request.ScopeValue.Trim();
@@ -52,8 +57,8 @@ public sealed class CheckFeatureEnabled
             DateTime utcNow = DateTime.UtcNow;
 
             // Filter candidates that are ACTUALLY effective right now
-            var effectiveCandidates = candidates.Where(ft => 
-                ft.IsEnabled 
+            var effectiveCandidates = candidates.Where(ft =>
+                ft.IsEnabled
                 && (ft.EffectiveFrom == null || ft.EffectiveFrom <= utcNow)
                 && (ft.EffectiveTo == null || ft.EffectiveTo > utcNow)
             ).ToList();
