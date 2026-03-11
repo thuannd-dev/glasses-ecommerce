@@ -34,16 +34,16 @@ public sealed class GetTopSellingProducts
             if (request.ToDate.HasValue)
                 ordersQuery = ordersQuery.Where(o => o.CreatedAt <= request.ToDate.Value);
 
-            List<TopProductItemDto> items = await context.OrderItems
+            var itemsRaw = await context.OrderItems
                 .AsNoTracking()
                 .Where(oi => ordersQuery.Select(o => o.Id).Contains(oi.OrderId))
                 .GroupBy(oi => oi.ProductVariantId)
-                .Select(g => new TopProductItemDto
+                .Select(g => new 
                 {
                     ProductId = g.First().ProductVariant.ProductId,
                     ProductName = g.First().ProductVariant.Product.ProductName,
                     Brand = g.First().ProductVariant.Product.Brand,
-                    ProductType = g.First().ProductVariant.Product.Type.ToString(),
+                    ProductType = g.First().ProductVariant.Product.Type,
                     VariantId = g.Key,
                     VariantName = g.First().ProductVariant.VariantName,
                     Sku = g.First().ProductVariant.SKU,
@@ -54,6 +54,20 @@ public sealed class GetTopSellingProducts
                 .OrderByDescending(x => x.TotalQuantitySold)
                 .Take(request.TopN)
                 .ToListAsync(ct);
+
+            List<TopProductItemDto> items = itemsRaw.Select(x => new TopProductItemDto
+            {
+                ProductId = x.ProductId,
+                ProductName = x.ProductName,
+                Brand = x.Brand,
+                ProductType = x.ProductType.ToString(),
+                VariantId = x.VariantId,
+                VariantName = x.VariantName,
+                Sku = x.Sku,
+                TotalQuantitySold = x.TotalQuantitySold,
+                TotalRevenue = x.TotalRevenue,
+                OrderCount = x.OrderCount
+            }).ToList();
 
             // Assign Rank
             items = items.Select((item, index) => 

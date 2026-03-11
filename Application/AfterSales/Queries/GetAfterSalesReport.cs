@@ -40,24 +40,41 @@ public sealed class GetAfterSalesReport
                 ? 0 
                 : (double)resolved / resolutionDenominator;
 
-            List<AfterSalesByTypeDto> byType = await query
+            var byTypeRaw = await query
                 .GroupBy(t => t.TicketType)
-                .Select(g => new AfterSalesByTypeDto
+                .Select(g => new 
                 {
-                    TicketType = g.Key.ToString(),
+                    TicketType = g.Key,
                     Count = g.Count(),
                     TotalRefundAmount = g.Sum(t => t.RefundAmount ?? 0)
                 })
                 .ToListAsync(ct);
 
-            List<AfterSalesByStatusDto> byStatus = await query
-                .GroupBy(t => t.TicketStatus)
-                .Select(g => new AfterSalesByStatusDto
+            List<AfterSalesByTypeDto> byType = byTypeRaw
+                .Select(x => new AfterSalesByTypeDto
                 {
-                    Status = g.Key.ToString(),
+                    TicketType = x.TicketType.ToString(),
+                    Count = x.Count,
+                    TotalRefundAmount = x.TotalRefundAmount
+                })
+                .ToList();
+
+            var byStatusRaw = await query
+                .GroupBy(t => t.TicketStatus)
+                .Select(g => new 
+                {
+                    Status = g.Key,
                     Count = g.Count()
                 })
                 .ToListAsync(ct);
+
+            List<AfterSalesByStatusDto> byStatus = byStatusRaw
+                .Select(x => new AfterSalesByStatusDto
+                {
+                    Status = x.Status.ToString(),
+                    Count = x.Count
+                })
+                .ToList();
 
             AfterSalesReportDto result = new()
             {
