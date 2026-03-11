@@ -28,22 +28,19 @@ public sealed class GetAfterSalesReport
             if (request.ToDate.HasValue)
                 query = query.Where(t => t.CreatedAt <= request.ToDate.Value);
 
-            // Fetch all matching tickets to aggregate in memory
-            // For a dashboard, ticket volume is usually manageable, allowing in-memory aggregation.
-            List<AfterSalesTicket> tickets = await query.ToListAsync(ct);
-
-            int totalTickets = tickets.Count;
-            int openTickets = tickets.Count(t => t.TicketStatus == AfterSalesTicketStatus.Pending || 
-                                                 t.TicketStatus == AfterSalesTicketStatus.InProgress);
+            int totalTickets = await query.CountAsync(ct);
+            int openTickets = await query.CountAsync(t => 
+                t.TicketStatus == AfterSalesTicketStatus.Pending || 
+                t.TicketStatus == AfterSalesTicketStatus.InProgress, ct);
             
-            int resolved = tickets.Count(t => t.TicketStatus == AfterSalesTicketStatus.Resolved);
-            int rejected = tickets.Count(t => t.TicketStatus == AfterSalesTicketStatus.Rejected);
+            int resolved = await query.CountAsync(t => t.TicketStatus == AfterSalesTicketStatus.Resolved, ct);
+            int rejected = await query.CountAsync(t => t.TicketStatus == AfterSalesTicketStatus.Rejected, ct);
             int resolutionDenominator = resolved + rejected;
             double resolutionRate = resolutionDenominator == 0 
                 ? 0 
                 : (double)resolved / resolutionDenominator;
 
-            List<AfterSalesByTypeDto> byType = tickets
+            List<AfterSalesByTypeDto> byType = await query
                 .GroupBy(t => t.TicketType)
                 .Select(g => new AfterSalesByTypeDto
                 {
@@ -51,16 +48,16 @@ public sealed class GetAfterSalesReport
                     Count = g.Count(),
                     TotalRefundAmount = g.Sum(t => t.RefundAmount ?? 0)
                 })
-                .ToList();
+                .ToListAsync(ct);
 
-            List<AfterSalesByStatusDto> byStatus = tickets
+            List<AfterSalesByStatusDto> byStatus = await query
                 .GroupBy(t => t.TicketStatus)
                 .Select(g => new AfterSalesByStatusDto
                 {
                     Status = g.Key.ToString(),
                     Count = g.Count()
                 })
-                .ToList();
+                .ToListAsync(ct);
 
             AfterSalesReportDto result = new()
             {
