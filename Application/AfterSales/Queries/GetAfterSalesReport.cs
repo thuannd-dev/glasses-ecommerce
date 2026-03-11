@@ -35,10 +35,12 @@ public sealed class GetAfterSalesReport
             
             int resolved = await query.CountAsync(t => t.TicketStatus == AfterSalesTicketStatus.Resolved, ct);
             int rejected = await query.CountAsync(t => t.TicketStatus == AfterSalesTicketStatus.Rejected, ct);
-            int resolutionDenominator = resolved + rejected;
+            int closed = await query.CountAsync(t => t.TicketStatus == AfterSalesTicketStatus.Closed, ct);
+            
+            int resolutionDenominator = resolved + rejected + closed;
             double resolutionRate = resolutionDenominator == 0 
                 ? 0 
-                : (double)resolved / resolutionDenominator;
+                : (double)(resolved + closed) / resolutionDenominator;
 
             var byTypeRaw = await query
                 .GroupBy(t => t.TicketType)
