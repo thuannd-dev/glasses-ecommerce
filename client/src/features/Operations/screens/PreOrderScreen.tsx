@@ -99,7 +99,7 @@ export function PreOrderScreen() {
         ) : (
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
             {filteredOrders.map((order) => {
-              const actualStatus = (order as any).orderStatus || order.status;
+              const actualStatus = (order as OrderDto & { orderStatus?: string }).orderStatus || order.status;
               const getStatusColor = (status: string) => {
                 const lower = status?.toLowerCase();
                 switch (lower) {
