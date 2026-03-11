@@ -41,11 +41,8 @@ public sealed class GetRevenueReport
                     OrderCount = g.Count(),
                     CompletedCount = g.Count(o => o.OrderStatus == OrderStatus.Completed),
                     CancelledCount = g.Count(o => o.OrderStatus == OrderStatus.Cancelled),
-                    Revenue = g.Where(o => o.OrderStatus == OrderStatus.Completed)
-                        .Sum(o => o.TotalAmount + o.ShippingFee),
-                    Discount = g.Where(o => o.OrderStatus == OrderStatus.Completed)
-                        .SelectMany(o => o.PromoUsageLogs)
-                        .Sum(p => p.DiscountApplied),
+                    Revenue = g.Sum(o => o.OrderStatus == OrderStatus.Completed ? o.TotalAmount + o.ShippingFee : 0),
+                    Discount = g.Sum(o => o.OrderStatus == OrderStatus.Completed ? o.PromoUsageLogs.Sum(p => p.DiscountApplied) : 0),
                 })
                 .ToListAsync(ct);
 
