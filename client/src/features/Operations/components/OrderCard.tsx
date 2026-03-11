@@ -119,6 +119,11 @@ export function OrderCard({
             <Typography fontSize={12} color="text.secondary" sx={{ mt: 0.5 }}>
               Prescription: {order.prescriptionStatus}
             </Typography>
+<<<<<<< Updated upstream
+=======
+          ) : (
+            <OrderDetailExpanded detail={detail} onUpdateStatus={(status) => onUpdateStatus(status as OrderStatus)} />
+>>>>>>> Stashed changes
           )}
           <Box sx={{ mt: 2, display: "flex", gap: 1, flexWrap: "wrap" }}>
             {((order as any).orderType?.toLowerCase() || order.orderType?.toLowerCase()) !== "pre-order" && (

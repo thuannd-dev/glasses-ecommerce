@@ -39,6 +39,7 @@ public sealed class SubmitTicket
                 return Result<TicketDetailDto>.Failure(
                     "Order not found or is not eligible for after-sales request.", 404);
 
+<<<<<<< Updated upstream
             // 2. Validate OrderItemIds belong to the order
             List<Guid> itemIdsToProcess = request.Dto.OrderItemIds ?? [];
             if (itemIdsToProcess.Count == 0)
@@ -50,8 +51,30 @@ public sealed class SubmitTicket
             if (invalidIds.Count > 0)
                 return Result<TicketDetailDto>.Failure(
                     "One or more specified order items do not belong to this order.", 400);
+=======
+            // 2. Determine OrderItemIds to create tickets for
+            List<Guid?> orderItemIdsToProcess = [];
+            
+            if (request.Dto.OrderItemIds == null || request.Dto.OrderItemIds.Count == 0)
+            {
+                // No specific items selected — create one ticket for the whole order
+                orderItemIdsToProcess.Add(null);
+            }
+            else
+            {
+                // Validate all selected items belong to the order
+                HashSet<Guid> validItemIds = order.OrderItems.Select(i => i.Id).ToHashSet();
+                foreach (Guid itemId in request.Dto.OrderItemIds)
+                {
+                    if (!validItemIds.Contains(itemId))
+                        return Result<TicketDetailDto>.Failure(
+                            $"Item '{itemId}' does not belong to this order.", 400);
+                }
+                orderItemIdsToProcess = request.Dto.OrderItemIds.Cast<Guid?>().ToList();
+            }
+>>>>>>> Stashed changes
 
-            // 3. Load active policy — map TicketType to PolicyType explicitly to avoid enum divergence issues
+            // 3. Load active policy — map TicketType to PolicyType explicitly
             PolicyType policyType = request.Dto.TicketType switch
             {
                 AfterSalesTicketType.Return => PolicyType.Return,
@@ -121,6 +144,7 @@ public sealed class SubmitTicket
                 return Result<TicketDetailDto>.Failure(policyViolation, 400);
             }
 
+<<<<<<< Updated upstream
             // 6. Determine which items to create tickets for
             // Items are always required now, so create one ticket per selected item
             List<Guid> itemsToTicket = itemIdsToProcess;
@@ -130,10 +154,20 @@ public sealed class SubmitTicket
             foreach (Guid itemId in itemsToTicket)
             {
                 // Duplicate open ticket check (same order + same item + same type, not closed/rejected/resolved/cancelled)
+=======
+            // 6. Create tickets for each selected item
+            List<TicketAttachmentInputDto> attachments = request.Dto.Attachments ?? [];
+            AfterSalesTicket? lastCreatedTicket = null;
+
+            foreach (Guid? orderItemId in orderItemIdsToProcess)
+            {
+                // Check duplicate open ticket
+>>>>>>> Stashed changes
                 bool duplicateExists = await context.AfterSalesTickets
                     .AsNoTracking()
                     .AnyAsync(t =>
                         t.OrderId == request.Dto.OrderId &&
+<<<<<<< Updated upstream
                         t.OrderItemId == itemId &&
                         t.TicketType == request.Dto.TicketType &&
                         t.TicketStatus != AfterSalesTicketStatus.Rejected &&
@@ -144,12 +178,27 @@ public sealed class SubmitTicket
                 if (duplicateExists)
                     return Result<TicketDetailDto>.Failure(
                         $"An open ticket of this type already exists for this order item.", 409);
+=======
+                        (orderItemId == null ? t.OrderItemId == null : t.OrderItemId == orderItemId) &&
+                        t.TicketType == request.Dto.TicketType &&
+                        t.TicketStatus != AfterSalesTicketStatus.Rejected &&
+                        t.TicketStatus != AfterSalesTicketStatus.Resolved &&
+                        t.TicketStatus != AfterSalesTicketStatus.Closed, ct);
+
+                if (duplicateExists)
+                    return Result<TicketDetailDto>.Failure(
+                        "An open ticket of this type already exists for this order item.", 409);
+>>>>>>> Stashed changes
 
                 // Build ticket entity
                 AfterSalesTicket ticket = new()
                 {
                     OrderId = request.Dto.OrderId,
+<<<<<<< Updated upstream
                     OrderItemId = itemId,
+=======
+                    OrderItemId = orderItemId,
+>>>>>>> Stashed changes
                     CustomerId = userId,
                     TicketType = request.Dto.TicketType,
                     Reason = request.Dto.Reason,
@@ -162,8 +211,12 @@ public sealed class SubmitTicket
                     TicketStatus = AfterSalesTicketStatus.Pending
                 };
 
+<<<<<<< Updated upstream
                 // Attach evidence files (same attachments for each ticket)
                 List<TicketAttachmentInputDto> attachments = request.Dto.Attachments ?? [];
+=======
+                // Attach evidence files
+>>>>>>> Stashed changes
                 foreach (TicketAttachmentInputDto attachment in attachments)
                 {
                     ticket.Attachments.Add(new TicketAttachment
@@ -178,7 +231,11 @@ public sealed class SubmitTicket
                 }
 
                 context.AfterSalesTickets.Add(ticket);
+<<<<<<< Updated upstream
                 firstTicket ??= ticket; // Keep track of first ticket for response
+=======
+                lastCreatedTicket = ticket;
+>>>>>>> Stashed changes
             }
 
             bool isSuccess = await context.SaveChangesAsync(ct) > 0;
@@ -186,14 +243,21 @@ public sealed class SubmitTicket
             if (!isSuccess || firstTicket == null)
                 return Result<TicketDetailDto>.Failure("Failed to submit after-sales ticket.", 500);
 
-            // 9. Return full detail via projection
+            // 7. Return full detail of last created ticket via projection
+            if (lastCreatedTicket == null)
+                return Result<TicketDetailDto>.Failure("Failed to create ticket.", 500);
+
             TicketDetailDto? dto = await context.AfterSalesTickets
                 .AsNoTracking()
+<<<<<<< Updated upstream
                 .Include(t => t.OrderItem)
                 .ThenInclude(oi => oi!.ProductVariant)
                 .ThenInclude(pv => pv!.Product)
                 .Include(t => t.Attachments.Where(a => a.DeletedAt == null))
                 .Where(t => t.Id == firstTicket.Id)
+=======
+                .Where(t => t.Id == lastCreatedTicket.Id)
+>>>>>>> Stashed changes
                 .ProjectTo<TicketDetailDto>(mapper.ConfigurationProvider)
                 .FirstOrDefaultAsync(ct);
 

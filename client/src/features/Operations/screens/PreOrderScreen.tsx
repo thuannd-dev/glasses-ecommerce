@@ -7,6 +7,7 @@ import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { isSameDay } from "date-fns";
 
+<<<<<<< Updated upstream
 import { useOperations } from "../context/OperationsContext";
 import { SummaryCard } from "../components";
 import type { OrderDto } from "../../../lib/types";
@@ -32,12 +33,22 @@ function filterAndSortOrders(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 }
+=======
+import { AppPagination } from "../../../app/shared/components/AppPagination";
+import { useOperationsOrders, useUpdateOrderStatus } from "../../../lib/hooks/useOperationsOrders";
+import { useOperations } from "../context/OperationsContext";
+import type { StaffOrderDto } from "../../../lib/types/staffOrders";
+import type { OrderStatus, OrderType } from "../../../lib/types/operations";
+import { OperationsPageHeader } from "../components/OperationsPageHeader";
+import { OrderListCard, StatusFilterTabs } from "../components";
+>>>>>>> Stashed changes
 
 export function PreOrderScreen() {
   const { orders, ordersLoading, expandedOrderId, setExpandedOrderId } = useOperations();
   const [searchQuery, setSearchQuery] = useState("");
   const [dateFilter, setDateFilter] = useState<Date | null>(null);
 
+<<<<<<< Updated upstream
   const preOrderOrders = orders.filter((o) => o.orderType === "PreOrder");
   const filteredOrders = useMemo(
     () => filterAndSortOrders(preOrderOrders, searchQuery, dateFilter),
@@ -56,6 +67,138 @@ export function PreOrderScreen() {
         <Typography sx={{ mt: 0.5, color: "text.secondary", fontSize: 14 }}>
           Handle pre-orders: expected stock, receive at warehouse, pack.
         </Typography>
+=======
+  const { data, isLoading } = useOperationsOrders({
+    pageNumber,
+    pageSize,
+    orderType: "PreOrder" as OrderType,
+    status: statusFilter === "All" ? undefined : (statusFilter as OrderStatus | string),
+  });
+
+  const safeOrders: StaffOrderDto[] = Array.isArray(data?.items)
+    ? (data!.items as unknown as StaffOrderDto[])
+    : [];
+  const totalPages = data?.totalPages ?? 1;
+  const totalCount = data?.totalCount ?? safeOrders.length;
+
+  const updateStatus = useUpdateOrderStatus();
+  const { openCreateShipment } = useOperations();
+
+  return (
+    <>
+      <OperationsPageHeader
+        title="Pre-order"
+        subtitle="Handle pre-orders: expected stock, receive at warehouse, pack."
+        count={totalCount}
+        countLabel="orders"
+      />
+
+      <Box
+        sx={{
+          px: { xs: 0, md: 0 },
+          height: "calc(100vh - 56px)",
+          boxSizing: "border-box",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+        }}
+      >
+        <Paper
+          elevation={0}
+          sx={{
+            p: 3,
+            borderRadius: 3,
+            border: "1px solid rgba(0,0,0,0.08)",
+            flex: 1,
+            minHeight: 0,
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+          }}
+        >
+          {isLoading ? (
+            <LinearProgress sx={{ borderRadius: 1 }} />
+          ) : (
+            <>
+              <StatusFilterTabs value={statusFilter} onChange={setStatusFilter} hideAll />
+              {safeOrders.length === 0 ? (
+                <Typography color="text.secondary">No pre-orders yet.</Typography>
+              ) : (
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 2,
+                  mt: 1,
+                  flex: 1,
+                  minHeight: 0,
+                  overflowY: "auto",
+                  pr: { md: 1 },
+                  scrollbarWidth: "none",
+                  "&::-webkit-scrollbar": {
+                    display: "none",
+                  },
+                }}
+              >
+                {safeOrders
+                  .filter((o) => {
+                    const s = String(o.orderStatus).toLowerCase();
+                    if (statusFilter === "All") return true;
+                    if (statusFilter === "Confirmed") return s === "confirmed";
+                    if (statusFilter === "Processing") return s === "processing";
+                    if (statusFilter === "Shipped") return s === "shipped";
+                    if (statusFilter === "Delivered") return s === "delivered";
+                    return true;
+                  })
+                  .map((o) => (
+                    <OrderListCard
+                      key={o.id}
+                      mode="confirmed"
+                      summary={o}
+                      primaryActionLabel={
+                        String(o.orderStatus).toLowerCase() === "confirmed"
+                          ? "Processing"
+                          : String(o.orderStatus).toLowerCase() === "processing"
+                          ? "Mark shipped"
+                          : undefined
+                      }
+                      onPrimaryActionClick={(orderId) => {
+                        const s = String(o.orderStatus).toLowerCase();
+                        if (s === "confirmed") {
+                          updateStatus.mutate({
+                            orderId,
+                            status: "Processing" as OrderStatus,
+                          });
+                        } else if (s === "processing") {
+                          openCreateShipment(orderId);
+                        }
+                      }}
+                      onUpdateStatus={(status) => {
+                        updateStatus.mutate({
+                          orderId: o.id,
+                          status: status as OrderStatus,
+                        });
+                      }}
+                    />
+                  ))}
+              </Box>
+              )}
+
+              {totalPages > 1 && (
+                <AppPagination
+                  page={pageNumber}
+                  totalPages={totalPages}
+                  onChange={setPageNumber}
+                  totalItems={data?.totalCount}
+                  pageSize={pageSize}
+                  unitLabel="orders"
+                  align="flex-end"
+                />
+              )}
+            </>
+          )}
+        </Paper>
+>>>>>>> Stashed changes
       </Box>
 
       <Grid container spacing={2} sx={{ mb: 3 }}>

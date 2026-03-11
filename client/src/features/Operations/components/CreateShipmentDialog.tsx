@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   Box,
   Button,
@@ -24,6 +25,14 @@ type CreateShipmentDialogProps = {
   setTrackingNumber: (v: string) => void;
   trackingUrl: string;
   setTrackingUrl: (v: string) => void;
+<<<<<<< Updated upstream
+=======
+  estimatedDeliveryDate: string;
+  setEstimatedDeliveryDate: (v: string) => void;
+  shippingNotes: string;
+  setShippingNotes: (v: string) => void;
+  carriers: string[];
+>>>>>>> Stashed changes
   onSubmit: () => void;
   isPending: boolean;
 };
@@ -38,12 +47,36 @@ export function CreateShipmentDialog({
   setTrackingNumber,
   trackingUrl,
   setTrackingUrl,
+<<<<<<< Updated upstream
   onSubmit,
   isPending,
 }: CreateShipmentDialogProps) {
   // Check if this is a full OrderDto with order details
   const isFullOrder = order && 'orderNumber' in order && 'items' in order;
   
+=======
+  estimatedDeliveryDate,
+  setEstimatedDeliveryDate,
+  shippingNotes,
+  setShippingNotes,
+  carriers,
+  onSubmit,
+  isPending,
+}: CreateShipmentDialogProps) {
+  // Mapping of carriers to their tracking URLs
+  const carrierUrls: Record<string, string> = {
+    GHN: "https://ghn.vn",
+    GHTK: "https://ghtk.vn",
+  };
+
+  // Auto-fill tracking URL when carrier is selected
+  useEffect(() => {
+    if (carrier && carrierUrls[carrier]) {
+      setTrackingUrl(carrierUrls[carrier]);
+    }
+  }, [carrier, setTrackingUrl, carrierUrls]);
+
+>>>>>>> Stashed changes
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>Create shipment</DialogTitle>
@@ -135,17 +168,69 @@ export function CreateShipmentDialog({
         </Typography>
         <TextField
           fullWidth
-          label="Carrier"
+          label="Shipping carrier"
           value={carrier}
           onChange={(e) => setCarrier(e.target.value)}
+          select
+          SelectProps={{
+            native: true,
+          }}
           sx={{ mt: 1 }}
-        />
+          disabled={carriers.length === 0}
+        >
+          {carriers.length === 0 ? (
+            <option value="">Loading carriers...</option>
+          ) : (
+            carriers.map((carrierName) => (
+              <option key={carrierName} value={carrierName}>
+                {carrierName}
+              </option>
+            ))
+          )}
+        </TextField>
         <TextField
           fullWidth
-          label="Tracking number"
+          label="Tracking code"
           value={trackingNumber}
           onChange={(e) => setTrackingNumber(e.target.value)}
           placeholder="e.g. VN123456789"
+          required
+          error={trackingNumber === "" && false}
+          sx={{ mt: 2 }}
+        />
+        {trackingNumber === "" && (
+          <Typography color="error" sx={{ fontSize: 12, mt: 0.5 }}>
+            Tracking code is required
+          </Typography>
+        )}
+        <TextField
+          fullWidth
+          label="Tracking URL"
+          value={trackingUrl}
+          onChange={(e) => setTrackingUrl(e.target.value)}
+          placeholder="e.g. https://ghn.vn"
+          sx={{ mt: 2 }}
+          helperText="Auto-filled based on carrier. You can edit if needed."
+        />
+        <TextField
+          fullWidth
+          label="Estimated delivery date"
+          type="date"
+          value={estimatedDeliveryDate}
+          onChange={(e) => setEstimatedDeliveryDate(e.target.value)}
+          InputLabelProps={{
+            shrink: true,
+          }}
+          sx={{ mt: 2 }}
+        />
+        <TextField
+          fullWidth
+          label="Shipping notes"
+          value={shippingNotes}
+          onChange={(e) => setShippingNotes(e.target.value)}
+          multiline
+          rows={3}
+          placeholder="Add any additional shipping notes..."
           sx={{ mt: 2 }}
         />
         <TextField
@@ -161,7 +246,7 @@ export function CreateShipmentDialog({
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
         <Button variant="contained" onClick={onSubmit} disabled={!trackingNumber.trim() || isPending}>
-          {isPending ? "Creating…" : "Create shipment"}
+          {isPending ? "Saving…" : "Save shipment"}
         </Button>
       </DialogActions>
     </Dialog>

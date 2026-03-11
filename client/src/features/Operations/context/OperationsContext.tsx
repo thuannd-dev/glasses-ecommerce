@@ -6,6 +6,7 @@ import {
   useCreateShipment,
   useUpdateTracking,
 } from "../../../lib/hooks/useOperationsOrders";
+import { useLookups } from "../../../lib/hooks/useLookups";
 import { CreateShipmentDialog } from "../components";
 import type { ShipmentDto, OrderDto } from "../../../lib/types";
 
@@ -32,37 +33,77 @@ export function useOperations() {
 
 export function OperationsProvider({ children }: { children: React.ReactNode }) {
   const [createShipOrderId, setCreateShipOrderId] = useState<string | null>(null);
-  const [createShipCarrier, setCreateShipCarrier] = useState("GHN");
+  const [createShipCarrier, setCreateShipCarrier] = useState("");
   const [createShipTracking, setCreateShipTracking] = useState("");
   const [createShipTrackingUrl, setCreateShipTrackingUrl] = useState("");
+<<<<<<< Updated upstream
+=======
+  const [createShipEstimatedDeliveryDate, setCreateShipEstimatedDeliveryDate] = useState("");
+  const [createShipShippingNotes, setCreateShipShippingNotes] = useState("");
+>>>>>>> Stashed changes
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
 
   const { data: ordersData, isLoading: ordersLoading } = useOperationsOrders();
   const { data: shipmentsData, isLoading: shipmentsLoading } = useOperationsShipments();
+  const { data: lookupsData } = useLookups();
   const updateStatus = useUpdateOrderStatus();
   const createShipment = useCreateShipment();
   const updateTracking = useUpdateTracking();
 
-  const openCreateShipment = useCallback((orderId: string) => setCreateShipOrderId(orderId), []);
+  const carriers = lookupsData?.shippingCarrier || [];
+  
+  // Set default carrier to first available carrier when carriers are loaded
+  const handleOpenCreateShipment = useCallback((orderId: string) => {
+    setCreateShipOrderId(orderId);
+    if (carriers.length > 0 && !createShipCarrier) {
+      setCreateShipCarrier(carriers[0]);
+    }
+  }, [carriers, createShipCarrier]);
+
+  const openCreateShipment = handleOpenCreateShipment;
 
   const handleCreateShipment = useCallback(() => {
     if (!createShipOrderId || !createShipTracking.trim()) return;
+<<<<<<< Updated upstream
     createShipment.mutate(
       { 
         orderId: createShipOrderId, 
         carrier: createShipCarrier, 
         trackingNumber: createShipTracking.trim(),
         trackingUrl: createShipTrackingUrl.trim() || undefined,
+=======
+    
+    // Update order status to "Shipped" with shipment details
+    updateStatus.mutate(
+      {
+        orderId: createShipOrderId,
+        status: "Shipped" as const,
+        shipmentCarrierName: createShipCarrier,
+        shipmentTrackingCode: createShipTracking.trim(),
+        shipmentTrackingUrl: createShipTrackingUrl || null,
+        shipmentEstimatedDeliveryAt: createShipEstimatedDeliveryDate || null,
+        shipmentNotes: createShipShippingNotes || null,
+>>>>>>> Stashed changes
       },
       {
         onSuccess: () => {
           setCreateShipOrderId(null);
           setCreateShipTracking("");
           setCreateShipTrackingUrl("");
+<<<<<<< Updated upstream
         },
       }
     );
   }, [createShipOrderId, createShipCarrier, createShipTracking, createShipTrackingUrl, createShipment]);
+=======
+          setCreateShipEstimatedDeliveryDate("");
+          setCreateShipShippingNotes("");
+          setCreateShipCarrier("");
+        },
+      }
+    );
+  }, [createShipOrderId, createShipCarrier, createShipTracking, createShipTrackingUrl, createShipEstimatedDeliveryDate, createShipShippingNotes, updateStatus]);
+>>>>>>> Stashed changes
 
   const safeOrders: OrderDto[] = Array.isArray(ordersData)
     ? ordersData
@@ -98,7 +139,14 @@ export function OperationsProvider({ children }: { children: React.ReactNode }) 
       {children}
       <CreateShipmentDialog
         open={!!createShipOrderId}
-        onClose={() => setCreateShipOrderId(null)}
+        onClose={() => {
+          setCreateShipOrderId(null);
+          setCreateShipTracking("");
+          setCreateShipTrackingUrl("");
+          setCreateShipEstimatedDeliveryDate("");
+          setCreateShipShippingNotes("");
+          setCreateShipCarrier("");
+        }}
         order={selectedOrder}
         carrier={createShipCarrier}
         setCarrier={setCreateShipCarrier}
@@ -106,8 +154,16 @@ export function OperationsProvider({ children }: { children: React.ReactNode }) 
         setTrackingNumber={setCreateShipTracking}
         trackingUrl={createShipTrackingUrl}
         setTrackingUrl={setCreateShipTrackingUrl}
+<<<<<<< Updated upstream
+=======
+        estimatedDeliveryDate={createShipEstimatedDeliveryDate}
+        setEstimatedDeliveryDate={setCreateShipEstimatedDeliveryDate}
+        shippingNotes={createShipShippingNotes}
+        setShippingNotes={setCreateShipShippingNotes}
+        carriers={carriers}
+>>>>>>> Stashed changes
         onSubmit={handleCreateShipment}
-        isPending={createShipment.isPending}
+        isPending={updateStatus.isPending}
       />
     </OperationsContext.Provider>
   );

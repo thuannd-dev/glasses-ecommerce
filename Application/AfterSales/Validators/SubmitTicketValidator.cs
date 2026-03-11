@@ -33,8 +33,13 @@ public sealed class SubmitTicketValidator : AbstractValidator<SubmitTicket.Comma
                 .GreaterThan(0).When(x => x.Dto.RefundAmount.HasValue)
                 .WithMessage("Refund amount must be greater than zero.");
 
+            RuleFor(x => x.Dto.OrderItemIds)
+                .Must(ids => ids == null || ids.Count == 0 || ids.Count <= 10)
+                .WithMessage("You can select at most 10 items per ticket.");
+
             RuleFor(x => x.Dto.Attachments)
-                .NotNull().WithMessage("Attachments must be an array (use [] for no attachments).");
+                .NotNull().WithMessage("Attachments must be an array (use [] for no attachments).")
+                .Must(atts => atts.Count <= 5).WithMessage("Maximum 5 attachments allowed.");
 
             When(x => x.Dto.Attachments != null, () =>
             {

@@ -27,11 +27,15 @@ import { OrderItemRow, type OrderItemRowProps } from "./OrderItemRow";
 import { useOrderDetailPage } from "./hooks/useOrderDetailPage";
 import { formatMoney } from "./utils";
 import { CANCEL_ORDER_REASONS, type CancelReasonValue } from "./cancelReasons";
+<<<<<<< Updated upstream
 import {
   AfterSalesTicketStatusValues,
   AfterSalesTicketTypeValues,
   type TicketListDto,
 } from "../../lib/types/afterSales";
+=======
+import { SubmitAfterSalesTicketDialog } from "./SubmitAfterSalesTicketDialog";
+>>>>>>> Stashed changes
 
 const CANCELABLE_STATUSES = new Set(["Pending", "pending"]);
 
@@ -125,6 +129,7 @@ export default function OrderDetailPage() {
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState<CancelReasonValue>("changed_mind");
   const [cancelOtherText, setCancelOtherText] = useState("");
+<<<<<<< Updated upstream
   const [ticketDialogOpen, setTicketDialogOpen] = useState(false);
   const [ticketToCancelId, setTicketToCancelId] = useState<string | null>(null);
   const [cancelTicketDialogOpen, setCancelTicketDialogOpen] = useState(false);
@@ -133,6 +138,12 @@ export default function OrderDetailPage() {
   const canSubmitAfterSales = order && ["Delivered", "Completed"].some(
     (status) => status.toLowerCase() === orderStatus.toLowerCase()
   );
+=======
+  const [afterSalesDialogOpen, setAfterSalesDialogOpen] = useState(false);
+
+  const canCancel = order && CANCELABLE_STATUSES.includes(orderStatus);
+  const canSubmitAfterSales = order && orderStatus === "Delivered";
+>>>>>>> Stashed changes
   const isOtherReason = cancelReason === "other";
 
   const handleOpenCancelDialog = () => setCancelDialogOpen(true);
@@ -542,11 +553,341 @@ export default function OrderDetailPage() {
                             Delete
                           </Button>
                         </Box>
+<<<<<<< Updated upstream
                       )}
                     </Paper>
                   );
                 })}
               </Box>
+=======
+                      );
+                    })}
+                  </Box>
+                </>
+              )}
+
+              {order.customerNote != null && order.customerNote !== "" && (
+                <>
+                  <Divider sx={{ my: 2, borderColor: PALETTE.divider }} />
+                  <Typography
+                    fontSize={14}
+                    fontWeight={600}
+                    sx={{ mb: 0.5, color: PALETTE.textSecondary }}
+                  >
+                    Your note
+                  </Typography>
+                  <Typography fontSize={14} sx={{ color: PALETTE.textMain, lineHeight: 1.6 }}>
+                    {order.customerNote}
+                  </Typography>
+                </>
+              )}
+            </Box>
+          </Paper>
+
+          {canCancel && (
+          <Paper
+            elevation={0}
+            sx={{
+              border: "1px solid rgba(248,113,113,0.35)",
+              borderRadius: 2.5,
+              overflow: "hidden",
+              mt: 3,
+              bgcolor: "#FFF8F4",
+              boxShadow: "0 8px 22px rgba(248,113,113,0.08)",
+            }}
+          >
+              <Box
+                sx={{
+                  px: 3,
+                  py: 2,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 1,
+                }}
+              >
+                <Typography
+                  fontWeight={700}
+                  fontSize={15}
+                  sx={{ color: PALETTE.textMain }}
+                >
+                  Need to cancel this order?
+                </Typography>
+                <Typography fontSize={13} sx={{ color: PALETTE.textSecondary }}>
+                  You can cancel while the order is still pending. Once it moves
+                  into processing or shipped, cancellation may not be available.
+                </Typography>
+                <Button
+                  variant="outlined"
+                  color="error"
+                  size="large"
+                  sx={{
+                    mt: 0.5,
+                    textTransform: "none",
+                    fontWeight: 700,
+                    borderWidth: 2,
+                    borderColor: "rgba(248,113,113,0.7)",
+                    color: "#b91c1c",
+                    "&:hover": {
+                      borderWidth: 2,
+                      borderColor: "rgba(248,113,113,0.9)",
+                      backgroundColor: "rgba(248,113,113,0.06)",
+                    },
+                  }}
+                  onClick={() => setCancelDialogOpen(true)}
+                  disabled={cancelOrder.isPending}
+                >
+                  {cancelOrder.isPending ? "Cancelling..." : "Cancel order"}
+                </Button>
+              </Box>
+            </Paper>
+          )}
+
+          {canSubmitAfterSales && (
+            <Paper
+              elevation={0}
+              sx={{
+                border: `1px solid ${PALETTE.cardBorder}`,
+                borderRadius: 2.5,
+                overflow: "hidden",
+                mt: 3,
+                bgcolor: "#F9F7F4",
+                boxShadow: "0 8px 22px rgba(0,0,0,0.04)",
+              }}
+            >
+              <Box
+                sx={{
+                  px: 3,
+                  py: 2,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 1,
+                }}
+              >
+                <Typography
+                  fontWeight={700}
+                  fontSize={15}
+                  sx={{ color: PALETTE.textMain }}
+                >
+                  Product issue or warranty claim?
+                </Typography>
+                <Typography fontSize={13} sx={{ color: PALETTE.textSecondary }}>
+                  Submit a return, refund, or warranty ticket. Our team will
+                  review and assist you.
+                </Typography>
+                <Button
+                  variant="contained"
+                  size="large"
+                  sx={{
+                    mt: 0.5,
+                    textTransform: "none",
+                    fontWeight: 700,
+                    backgroundColor: PALETTE.accent,
+                    color: "white",
+                    "&:hover": {
+                      backgroundColor: PALETTE.accentHover,
+                    },
+                  }}
+                  onClick={() => setAfterSalesDialogOpen(true)}
+                >
+                  Submit Ticket
+                </Button>
+              </Box>
+            </Paper>
+          )}
+        </Grid>
+
+        {/* RIGHT: sticky summary card */}
+        <Grid item xs={12} md={4}>
+          <Box
+            sx={{
+              position: { md: "sticky" },
+              top: { md: 88 },
+            }}
+          >
+          <Paper
+            elevation={0}
+            sx={{
+              border: `1px solid ${PALETTE.cardBorder}`,
+              borderRadius: 2.5,
+              mb: 2,
+              overflow: "hidden",
+              bgcolor: PALETTE.cardBg,
+              boxShadow: "0 8px 24px rgba(0,0,0,0.04)",
+            }}
+          >
+              <Box
+                sx={{
+                  px: 3,
+                  py: 2,
+                  bgcolor: "rgba(17,24,39,0.03)",
+                }}
+              >
+                <Typography
+                  fontWeight={800}
+                  fontSize={16}
+                  sx={{ color: PALETTE.textMain, letterSpacing: 0.3 }}
+                >
+                  Order summary
+                </Typography>
+              </Box>
+              <Box sx={{ px: 3, py: 2 }}>
+                <Box
+                  sx={{ display: "flex", justifyContent: "space-between", mb: 0.75 }}
+                >
+                  <Typography fontSize={14} sx={{ color: PALETTE.textSecondary }}>
+                    Subtotal
+                  </Typography>
+                  <Typography fontSize={14} sx={{ color: PALETTE.textMain }}>
+                    {formatMoney(order.totalAmount)}
+                  </Typography>
+                </Box>
+                <Box
+                  sx={{ display: "flex", justifyContent: "space-between", mb: 0.75 }}
+                >
+                  <Typography fontSize={14} sx={{ color: PALETTE.textSecondary }}>
+                    Shipping
+                  </Typography>
+                  <Typography fontSize={14} sx={{ color: PALETTE.textMain }}>
+                    {formatMoney(order.shippingFee)}
+                  </Typography>
+                </Box>
+                {order.discountApplied != null && order.discountApplied !== 0 && (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      mb: 0.75,
+                    }}
+                  >
+                    <Typography
+                      fontSize={14}
+                      sx={{ color: PALETTE.textSecondary }}
+                    >
+                      Discount
+                    </Typography>
+                    <Typography fontSize={14} sx={{ color: PALETTE.textMain }}>
+                      - {formatMoney(order.discountApplied)}
+                    </Typography>
+                  </Box>
+                )}
+                <Divider sx={{ my: 1.5, borderColor: PALETTE.divider }} />
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <Typography
+                    fontWeight={700}
+                    fontSize={16}
+                    sx={{ color: PALETTE.textMain }}
+                  >
+                    Total
+                  </Typography>
+                  <Typography
+                    fontWeight={800}
+                    fontSize={18}
+                    sx={{
+                      color: PALETTE.textMain,
+                      borderBottom: `2px solid ${PALETTE.accent}`,
+                      pb: 0.25,
+                    }}
+                  >
+                    {formatMoney(order.finalAmount)}
+                  </Typography>
+                </Box>
+              </Box>
+            </Paper>
+
+            {order.payment && (
+              <Paper
+                elevation={0}
+                sx={{
+                  border: `1px solid ${PALETTE.cardBorder}`,
+                  borderRadius: 2.5,
+                  overflow: "hidden",
+                  bgcolor: PALETTE.cardBg,
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.03)",
+                }}
+              >
+                <Box sx={{ px: 3, py: 2 }}>
+                  <Typography
+                    fontSize={14}
+                    fontWeight={600}
+                    sx={{ mb: 1, color: PALETTE.textSecondary }}
+                  >
+                    Payment
+                  </Typography>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 0.5,
+                    }}
+                  >
+                    <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                      <Typography
+                        fontSize={13}
+                        sx={{ color: PALETTE.textMuted, mr: 1 }}
+                      >
+                        Method
+                      </Typography>
+                      <Typography
+                        fontSize={14}
+                        sx={{ color: PALETTE.textMain, fontWeight: 500 }}
+                      >
+                        {order.payment.paymentMethod}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                      <Typography
+                        fontSize={13}
+                        sx={{ color: PALETTE.textMuted, mr: 1 }}
+                      >
+                        Status
+                      </Typography>
+                      <Box
+                        sx={{
+                          px: 1,
+                          py: 0.25,
+                          borderRadius: 999,
+                          border: "1px solid #E5E5E5",
+                          fontSize: 12,
+                          fontWeight: 500,
+                          bgcolor:
+                            order.payment.paymentStatus?.toLowerCase() === "pending"
+                              ? "#FFF7ED"
+                              : "#F4F4F5",
+                          color:
+                            order.payment.paymentStatus?.toLowerCase() === "pending"
+                              ? "#92400E"
+                              : PALETTE.textSecondary,
+                        }}
+                      >
+                        {order.payment.paymentStatus}
+                      </Box>
+                    </Box>
+                    {order.payment.paymentAt != null && (
+                      <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                        <Typography
+                          fontSize={13}
+                          sx={{ color: PALETTE.textMuted, mr: 1 }}
+                        >
+                          Paid at
+                        </Typography>
+                        <Typography
+                          fontSize={13}
+                          sx={{ color: PALETTE.textMain }}
+                        >
+                          {new Date(order.payment.paymentAt).toLocaleString()}
+                        </Typography>
+                      </Box>
+                    )}
+                  </Box>
+                </Box>
+              </Paper>
+>>>>>>> Stashed changes
             )}
           </Box>
         </Paper>
@@ -600,6 +941,7 @@ export default function OrderDetailPage() {
         </DialogActions>
       </Dialog>
 
+<<<<<<< Updated upstream
       {order && (
         <SubmitTicketDialog
           open={ticketDialogOpen}
@@ -630,6 +972,18 @@ export default function OrderDetailPage() {
           </Button>
         </DialogActions>
       </Dialog>
+=======
+      {/* After-Sales Ticket Dialog */}
+      <SubmitAfterSalesTicketDialog
+        open={afterSalesDialogOpen}
+        onClose={() => setAfterSalesDialogOpen(false)}
+        order={order}
+        onSuccess={() => {
+          // Optionally refresh order data or navigate
+        }}
+      />
+      </Box>
+>>>>>>> Stashed changes
     </Box>
   );
 }

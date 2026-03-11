@@ -81,6 +81,16 @@ export interface StaffOrderStatusHistoryDto {
   changedByUserEmail?: string | null;
 }
 
+export interface ShipmentInfoDto {
+  carrierName: string;
+  trackingCode?: string | null;
+  trackingUrl?: string | null;
+  shippedAt?: string | null;
+  estimatedDeliveryAt?: string | null;
+  actualDeliveryAt?: string | null;
+  shippingNotes?: string | null;
+}
+
 export interface StaffOrderDetailDto {
   id: string;
   orderSource: string;
@@ -103,7 +113,11 @@ export interface StaffOrderDetailDto {
   updatedAt: string | null;
   items: StaffOrderItemDto[];
   payment: StaffOrderPaymentDto | null;
+<<<<<<< Updated upstream
   prescription: OrderPrescriptionDto | null;
+=======
+  prescription: StaffOrderPrescriptionDto | null;
+>>>>>>> Stashed changes
   shipment?: ShipmentInfoDto | null;
   statusHistories: StaffOrderStatusHistoryDto[];
 }
