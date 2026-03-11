@@ -45,18 +45,18 @@ export function PrescriptionScreen() {
 
   // Only show orders that have prescription attached and are actively being handled in this tab.
   // Pending orders (chưa confirm) vẫn nằm ở Overview; từ lúc Confirm trở đi mới nhảy sang đây.
-  const ACTIVE_PRESCRIPTION_STATUSES: OrderDto["status"][] = [
+  const ACTIVE_PRESCRIPTION_STATUSES = [
     "confirmed",
     "processing",
     "lens_ordered",
     "lens_fitting",
     "ready_to_ship",
-  ];
+  ] as const;
   const prescriptionOrders = orders.filter((o) => {
     const hasPrescription =
       o.prescriptionStatus != null ||
       (Array.isArray(o.items) && o.items.some((it) => it.prescriptionId));
-    return hasPrescription && ACTIVE_PRESCRIPTION_STATUSES.includes(o.status);
+    return hasPrescription && ACTIVE_PRESCRIPTION_STATUSES.includes(o.status as any);
   });
   const filteredOrders = useMemo(
     () => filterAndSortOrders(prescriptionOrders, searchQuery, dateFilter),

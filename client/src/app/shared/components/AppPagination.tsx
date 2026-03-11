@@ -1,4 +1,3 @@
-import React from "react";
 import { Box, Pagination, Typography } from "@mui/material";
 
 export interface AppPaginationProps {
