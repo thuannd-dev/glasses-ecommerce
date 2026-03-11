@@ -48,11 +48,19 @@ public sealed class GetTopSellingProducts
                     VariantName = g.First().ProductVariant.VariantName,
                     Sku = g.First().ProductVariant.SKU,
                     TotalQuantitySold = g.Sum(oi => oi.Quantity),
-                    TotalRevenue = g.Sum(oi => oi.UnitPrice * oi.Quantity)
+                    TotalRevenue = g.Sum(oi => oi.UnitPrice * oi.Quantity),
+                    OrderCount = g.Select(oi => oi.OrderId).Distinct().Count()
                 })
                 .OrderByDescending(x => x.TotalQuantitySold)
                 .Take(request.TopN)
                 .ToListAsync(ct);
+
+            // Assign Rank
+            items = items.Select((item, index) => 
+            { 
+                item.Rank = index + 1; 
+                return item; 
+            }).ToList();
 
             TopProductsReportDto result = new()
             {
