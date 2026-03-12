@@ -66,6 +66,8 @@ public sealed class CreatePolicy
                     CustomizedLensRefundable = dto.CustomizedLensRefundable,
                     EvidenceRequired = dto.EvidenceRequired,
                     MinOrderAmount = dto.MinOrderAmount,
+                    RefundOnlyMaxAmount = dto.RefundOnlyMaxAmount,
+                    RefundWindowDays = dto.RefundWindowDays,
                     IsActive = dto.IsActive,
                     EffectiveFrom = dto.EffectiveFrom,
                     EffectiveTo = dto.EffectiveTo,
