@@ -632,6 +632,7 @@ export default function CartPage() {
                                             key={item.id}
                                             item={item}
                                             selected={selectedIds.has(item.id)}
+                                            prescription={itemPrescriptions[item.id]}
                                             onToggle={() => handleToggleItem(item.id)}
                                             onIncrease={() =>
                                                 handleIncrease(item.id, item.quantity)
@@ -639,6 +640,7 @@ export default function CartPage() {
                                             onDecrease={() =>
                                                 handleDecrease(item.id, item.quantity)
                                             }
+                                            onRemove={() => removeItem(item.id)}
                                             formatMoney={formatMoney}
                                         />
                                     ))}
