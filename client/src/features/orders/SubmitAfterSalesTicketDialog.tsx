@@ -56,7 +56,7 @@ const PALETTE = {
   divider: "#F1F1F1",
 };
 
-const STEPS = ["Ticket Type", "Select Items", "Reason", "Upload Evidence"];
+const STEPS = ["Ticket Type", "Select Items", "Reason", "Upload Evidence", "Review"];
 
 export function SubmitAfterSalesTicketDialog({
   open,
@@ -65,7 +65,7 @@ export function SubmitAfterSalesTicketDialog({
   onSuccess,
 }: SubmitAfterSalesTicketDialogProps) {
   const [activeStep, setActiveStep] = useState(0);
-  const [ticketType, setTicketType] = useState<"Return" | "Warranty" | null>(
+  const [ticketType, setTicketType] = useState<"Return" | "Refund" | "Warranty" | null>(
     null
   );
   const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
@@ -81,7 +81,7 @@ export function SubmitAfterSalesTicketDialog({
         throw new Error("Missing required fields");
       }
 
-      const ticketTypeEnum = ticketType === "Return" ? 1 : 2;
+      const ticketTypeEnum = ticketType === "Return" ? 1 : ticketType === "Refund" ? 3 : 2;
 
       const payload = {
         orderId: order.id,
@@ -127,7 +127,9 @@ export function SubmitAfterSalesTicketDialog({
       const res = await agent.post<{ url: string; publicId: string }>(
         "/uploads/image",
         form,
-        { headers: { "Content-Type": "multipart/form-data" } }
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        }
       );
       return res.data;
     },
@@ -144,6 +146,11 @@ export function SubmitAfterSalesTicketDialog({
     if (activeStep === 0) {
       if (!ticketType) {
         toast.error("Please select a ticket type");
+        return;
+      }
+    } else if (activeStep === 1) {
+      if (selectedItemIds.length === 0) {
+        toast.error("Please select at least one item");
         return;
       }
     } else if (activeStep === 2) {
@@ -271,6 +278,7 @@ export function SubmitAfterSalesTicketDialog({
 
   const canProceed = () => {
     if (activeStep === 0) return ticketType !== null;
+    if (activeStep === 1) return selectedItemIds.length > 0;
     if (activeStep === 2) return reason.trim().length > 0;
     return true;
   };
@@ -279,7 +287,7 @@ export function SubmitAfterSalesTicketDialog({
     <Dialog
       open={open}
       onClose={handleClose}
-      maxWidth="sm"
+      maxWidth="md"
       fullWidth
     >
       <DialogTitle
@@ -290,7 +298,7 @@ export function SubmitAfterSalesTicketDialog({
           borderBottom: `1px solid ${PALETTE.divider}`,
         }}
       >
-        Submit Return/Refund or Warranty Ticket
+        Submit After-Sales Ticket
       </DialogTitle>
 
       <DialogContent sx={{ pt: 3 }}>
@@ -318,7 +326,7 @@ export function SubmitAfterSalesTicketDialog({
               <RadioGroup
                 value={ticketType || ""}
                 onChange={(e) =>
-                  setTicketType(e.target.value as "Return" | "Warranty")
+                  setTicketType(e.target.value as "Return" | "Refund" | "Warranty")
                 }
               >
                 <Card sx={{ mb: 1, border: `1px solid ${PALETTE.cardBorder}` }}>
@@ -333,13 +341,39 @@ export function SubmitAfterSalesTicketDialog({
                             fontSize={14}
                             sx={{ color: PALETTE.textMain }}
                           >
-                            Return/Refund
+                            Return
                           </Typography>
                           <Typography
                             fontSize={13}
                             sx={{ color: PALETTE.textMuted }}
                           >
-                            Return items for a refund or exchange
+                            Return items to us
+                          </Typography>
+                        </Box>
+                      }
+                    />
+                  </CardContent>
+                </Card>
+
+                <Card sx={{ mb: 1, border: `1px solid ${PALETTE.cardBorder}` }}>
+                  <CardContent sx={{ pb: 1, "&:last-child": { pb: 2 } }}>
+                    <FormControlLabel
+                      value="Refund"
+                      control={<Radio />}
+                      label={
+                        <Box>
+                          <Typography
+                            fontWeight={600}
+                            fontSize={14}
+                            sx={{ color: PALETTE.textMain }}
+                          >
+                            Refund
+                          </Typography>
+                          <Typography
+                            fontSize={13}
+                            sx={{ color: PALETTE.textMuted }}
+                          >
+                            Request a refund for your purchase
                           </Typography>
                         </Box>
                       }
@@ -383,7 +417,7 @@ export function SubmitAfterSalesTicketDialog({
               fontSize={14}
               sx={{ color: PALETTE.textSecondary, mb: 1 }}
             >
-              Select which items to include (leave unchecked for whole order):
+              Select which items to include:
             </Typography>
 
             <FormControl fullWidth>
@@ -438,28 +472,60 @@ export function SubmitAfterSalesTicketDialog({
                       checked={selectedItemIds.includes(item.id)}
                       onChange={() => handleSelectItem(item.id)}
                     />
-                    <Box sx={{ flex: 1 }}>
-                      <Typography
-                        fontSize={14}
-                        fontWeight={600}
-                        sx={{ color: PALETTE.textMain }}
+                    {(item.productImageUrl || item.imageUrl) && (
+                      <Box
+                        sx={{
+                          width: 60,
+                          height: 60,
+                          flexShrink: 0,
+                          borderRadius: 1,
+                          overflow: "hidden",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          backgroundColor: PALETTE.divider,
+                        }}
                       >
-                        {item.productName}
-                      </Typography>
-                      {item.variantName && (
+                        <Box
+                          component="img"
+                          src={item.productImageUrl || item.imageUrl}
+                          alt={item.productName}
+                          sx={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                          }}
+                        />
+                      </Box>
+                    )}
+                    <Box sx={{ flex: 1, display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 2 }}>
+                      <Box>
                         <Typography
-                          fontSize={13}
-                          sx={{ color: PALETTE.textMuted }}
+                          fontSize={14}
+                          fontWeight={600}
+                          sx={{ color: PALETTE.textMain }}
                         >
-                          {item.variantName}
+                          {item.productName}
                         </Typography>
-                      )}
-                      <Typography
-                        fontSize={12}
-                        sx={{ color: PALETTE.textMuted }}
-                      >
-                        Qty: {item.quantity}
-                      </Typography>
+                        {item.variantName && (
+                          <Typography
+                            fontSize={13}
+                            sx={{ color: PALETTE.textMuted }}
+                          >
+                            {item.variantName}
+                          </Typography>
+                        )}
+                      </Box>
+                      <Box sx={{ textAlign: "right", minWidth: "fit-content" }}>
+                        <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5, fontSize: 12, color: PALETTE.textMuted, alignItems: "flex-end" }}>
+                          <Typography fontSize={12} sx={{ color: PALETTE.textMuted }}>
+                            Qty: {item.quantity}
+                          </Typography>
+                          <Typography fontSize={12} sx={{ color: PALETTE.textMuted }}>
+                            ${item.unitPrice?.toFixed(2) || "0.00"}
+                          </Typography>
+                        </Box>
+                      </Box>
                     </Box>
                   </ListItem>
                 ))}
@@ -660,6 +726,164 @@ export function SubmitAfterSalesTicketDialog({
             )}
           </Box>
         )}
+
+        {activeStep === 4 && (
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+            <Typography
+              fontSize={14}
+              sx={{ color: PALETTE.textSecondary, fontWeight: 600, mb: 1 }}
+            >
+              Please review your submission before confirming:
+            </Typography>
+
+            <Paper sx={{ border: `1px solid ${PALETTE.cardBorder}`, p: 2.5 }}>
+              <Typography
+                fontSize={12}
+                sx={{ color: PALETTE.textMuted, fontWeight: 600, mb: 1 }}
+              >
+                TICKET TYPE
+              </Typography>
+              <Typography
+                fontSize={14}
+                sx={{ color: PALETTE.textMain, fontWeight: 600 }}
+              >
+                {ticketType}
+              </Typography>
+            </Paper>
+
+            <Paper sx={{ border: `1px solid ${PALETTE.cardBorder}`, p: 2.5 }}>
+              <Typography
+                fontSize={12}
+                sx={{ color: PALETTE.textMuted, fontWeight: 600, mb: 2 }}
+              >
+                SELECTED ITEMS ({selectedItemIds.length})
+              </Typography>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+                {selectedItemIds.map((id) => {
+                  const item = order?.items?.find((i: any) => i.id === id);
+                  return (
+                    <Box
+                      key={id}
+                      sx={{
+                        display: "flex",
+                        gap: 1.5,
+                        pb: 1.5,
+                        borderBottom: `1px solid ${PALETTE.divider}`,
+                        "&:last-child": { borderBottom: "none", pb: 0 },
+                      }}
+                    >
+                      {(item?.productImageUrl || item?.imageUrl) && (
+                        <Box
+                          sx={{
+                            width: 50,
+                            height: 50,
+                            flexShrink: 0,
+                            borderRadius: 1,
+                            overflow: "hidden",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            backgroundColor: PALETTE.divider,
+                          }}
+                        >
+                          <Box
+                            component="img"
+                            src={item?.productImageUrl || item?.imageUrl}
+                            alt={item?.productName}
+                            sx={{
+                              width: "100%",
+                              height: "100%",
+                              objectFit: "cover",
+                            }}
+                          />
+                        </Box>
+                      )}
+                      <Box sx={{ flex: 1, display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 2 }}>
+                        <Box>
+                          <Typography
+                            fontSize={13}
+                            sx={{ color: PALETTE.textMain, fontWeight: 600 }}
+                          >
+                            {item?.productName}
+                          </Typography>
+                          {item?.variantName && (
+                            <Typography
+                              fontSize={12}
+                              sx={{ color: PALETTE.textMuted }}
+                            >
+                              {item?.variantName}
+                            </Typography>
+                          )}
+                        </Box>
+                        <Box sx={{ textAlign: "right", minWidth: "fit-content" }}>
+                          <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5, fontSize: 12, alignItems: "flex-end" }}>
+                            <Typography fontSize={12} sx={{ color: PALETTE.textMuted }}>
+                              Qty: {item?.quantity}
+                            </Typography>
+                            <Typography fontSize={12} sx={{ color: PALETTE.textMuted }}>
+                              ${item?.unitPrice?.toFixed(2) || "0.00"}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </Box>
+                    </Box>
+                  );
+                })}
+              </Box>
+            </Paper>
+
+            <Paper sx={{ border: `1px solid ${PALETTE.cardBorder}`, p: 2.5 }}>
+              <Typography
+                fontSize={12}
+                sx={{ color: PALETTE.textMuted, fontWeight: 600, mb: 1 }}
+              >
+                REASON
+              </Typography>
+              <Typography
+                fontSize={13}
+                sx={{ color: PALETTE.textMain, whiteSpace: "pre-wrap" }}
+              >
+                {reason}
+              </Typography>
+            </Paper>
+
+            {uploadedFiles.length > 0 && (
+              <Paper sx={{ border: `1px solid ${PALETTE.cardBorder}`, p: 2.5 }}>
+                <Typography
+                  fontSize={12}
+                  sx={{ color: PALETTE.textMuted, fontWeight: 600, mb: 2 }}
+                >
+                  UPLOADED EVIDENCE ({uploadedFiles.length}/5)
+                </Typography>
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                  {uploadedFiles.map((file, idx) => (
+                    <Box
+                      key={file.id}
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                        pb: 1,
+                        borderBottom:
+                          idx < uploadedFiles.length - 1
+                            ? `1px solid ${PALETTE.divider}`
+                            : "none",
+                        "&:last-child": { pb: 0 },
+                      }}
+                    >
+                      <Typography
+                        fontSize={13}
+                        sx={{ color: PALETTE.textMain, flex: 1, overflow: "hidden", textOverflow: "ellipsis" }}
+                      >
+                        ✓ {file.fileName}
+                      </Typography>
+                    </Box>
+                  ))}
+                </Box>
+              </Paper>
+            )}
+          </Box>
+        )}
       </DialogContent>
 
       <DialogActions
@@ -710,7 +934,6 @@ export function SubmitAfterSalesTicketDialog({
             variant="contained"
             onClick={handleSubmit}
             disabled={
-              !reason.trim() ||
               submitTicketMutation.isPending ||
               uploading
             }
