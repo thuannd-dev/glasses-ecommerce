@@ -30,6 +30,7 @@ export interface OrderListCardProps {
   /** Optional primary action chip on the right (e.g. Processing / Mark shipped) */
   primaryActionLabel?: string;
   onPrimaryActionClick?: (orderId: string) => void;
+  onUpdateStatus?: (status: string) => void;
 }
 
 export function OrderListCard({
@@ -40,6 +41,7 @@ export function OrderListCard({
   onToggleSelected,
   primaryActionLabel,
   onPrimaryActionClick,
+  onUpdateStatus,
 }: OrderListCardProps) {
   const [expanded, setExpanded] = useState(false);
   const { data, isLoading } = useOperationsOrderDetail(expanded ? summary.id : undefined);
@@ -139,30 +141,6 @@ export function OrderListCard({
             }}
           />
 
-          {/* Optional primary action as secondary chip (e.g. Processing / Mark shipped) */}
-          {(mode === "confirmed" || mode === "packing") && primaryActionLabel && onPrimaryActionClick && (
-            <Chip
-              label={primaryActionLabel}
-              size="small"
-              clickable
-              onClick={(e) => {
-                e.stopPropagation();
-                onPrimaryActionClick(summary.id);
-              }}
-              sx={{
-                fontWeight: 600,
-                fontSize: 12,
-                textTransform: "capitalize",
-                borderRadius: 999,
-                height: 26,
-                px: 1.25,
-                border: "1px solid rgba(249,115,22,0.5)",
-                bgcolor: "rgba(249,115,22,0.08)",
-                color: "#c2410c",
-              }}
-            />
-          )}
-
           <IconButton
             size="small"
             onClick={() => setExpanded((e) => !e)}
@@ -253,7 +231,12 @@ export function OrderListCard({
           {isLoading || !detail ? (
             <Typography sx={{ fontSize: 13, color: "#6B6B6B" }}>Loading detail...</Typography>
           ) : (
-            <OrderDetailExpanded detail={detail} />
+            <OrderDetailExpanded 
+              detail={detail} 
+              onUpdateStatus={onUpdateStatus} 
+              primaryActionLabel={primaryActionLabel}
+              onPrimaryActionClick={onPrimaryActionClick}
+            />
           )}
         </Box>
       </Collapse>

@@ -35,6 +35,15 @@ public sealed class CustomerAfterSalesController : BaseApiController
     }
 
     /// <summary>
+    /// Get all after-sales tickets for a specific order, including product details.
+    /// </summary>
+    [HttpGet("orders/{orderId}")]
+    public async Task<IActionResult> GetTicketsByOrder(Guid orderId, CancellationToken ct)
+    {
+        return HandleResult(await Mediator.Send(new GetTicketsByOrder.Query { OrderId = orderId }, ct));
+    }
+
+    /// <summary>
     /// Get full detail of a specific ticket belonging to the current customer.
     /// </summary>
     [HttpGet("{id}")]

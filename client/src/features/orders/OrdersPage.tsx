@@ -15,7 +15,7 @@ const PALETTE = {
   divider: "#F1F1F1",
 };
 
-const FILTERS = ["All", "Pending", "Shipped", "Cancelled"] as const;
+const FILTERS = ["All", "Pending", "Processing", "In-transit", "Completed", "Cancelled"] as const;
 type FilterValue = (typeof FILTERS)[number];
 
 export default function OrdersPage() {
@@ -64,11 +64,22 @@ export default function OrdersPage() {
       return status.includes("pending");
     }
 
-    if (activeFilter === "Shipped") {
+    // Processing: stays while order is confirmed by staff, changes to "In-transit" when shipped
+    if (activeFilter === "Processing") {
+      return status.includes("confirmed") || status.includes("processing");
+    }
+
+    // In-transit: when order status is Shipped
+    if (activeFilter === "In-transit") {
       return status.includes("shipped");
     }
 
-    // Cancelled: gom các trạng thái cancel/refund
+    // Completed: when order is Completed or Delivered
+    if (activeFilter === "Completed") {
+      return status.includes("completed") || status.includes("delivered");
+    }
+
+    // Cancelled: when order is rejected or cancelled
     if (activeFilter === "Cancelled") {
       return status.includes("cancel") || status.includes("refund");
     }
