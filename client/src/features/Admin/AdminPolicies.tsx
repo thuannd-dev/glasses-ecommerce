@@ -65,6 +65,8 @@ const INITIAL_FORM_STATE: CreatePolicyPayload = {
   customizedLensRefundable: false,
   evidenceRequired: true,
   minOrderAmount: null,
+  refundOnlyMaxAmount: null,
+  refundWindowDays: null,
   isActive: true,
   effectiveFrom: new Date().toISOString().split("T")[0],
   effectiveTo: null,
@@ -149,6 +151,8 @@ export default function AdminPolicies() {
       customizedLensRefundable: policy.customizedLensRefundable,
       evidenceRequired: policy.evidenceRequired,
       minOrderAmount: policy.minOrderAmount,
+      refundOnlyMaxAmount: policy.refundOnlyMaxAmount,
+      refundWindowDays: policy.refundWindowDays,
       isActive: policy.isActive,
       effectiveFrom: policy.effectiveFrom.split("T")[0],
       effectiveTo: policy.effectiveTo ? policy.effectiveTo.split("T")[0] : null,
@@ -181,6 +185,10 @@ export default function AdminPolicies() {
         if (newType !== PolicyTypeEnum.Warranty) {
           updated.warrantyMonths = null;
         }
+        if (newType !== PolicyTypeEnum.Refund) {
+          updated.refundOnlyMaxAmount = null;
+          updated.refundWindowDays = null;
+        }
       }
 
       return updated;
@@ -210,6 +218,18 @@ export default function AdminPolicies() {
       return;
     }
 
+    // Validate Refund-specific fields
+    if (formData.policyType === PolicyTypeEnum.Refund) {
+      if (formData.refundOnlyMaxAmount !== null && formData.refundOnlyMaxAmount < 0) {
+        toast.error("Refund Only Max Amount must be non-negative");
+        return;
+      }
+      if (formData.refundWindowDays !== null && (formData.refundWindowDays < 0 || formData.refundWindowDays > 365)) {
+        toast.error("Refund Window Days must be between 0 and 365");
+        return;
+      }
+    }
+
     // Clear fields that don't apply to this policy type
     let submitData = { ...formData };
     if (formData.policyType !== PolicyTypeEnum.Return) {
@@ -217,6 +237,10 @@ export default function AdminPolicies() {
     }
     if (formData.policyType !== PolicyTypeEnum.Warranty) {
       submitData.warrantyMonths = null;
+    }
+    if (formData.policyType !== PolicyTypeEnum.Refund) {
+      submitData.refundOnlyMaxAmount = null;
+      submitData.refundWindowDays = null;
     }
 
     if (editingPolicy) {
@@ -691,6 +715,45 @@ export default function AdminPolicies() {
                     }
                   />
                 </Grid>
+
+                {/* Refund Only Max Amount & Refund Window Days - Only for Refund policies */}
+                {formData.policyType === PolicyTypeEnum.Refund && (
+                  <>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        fullWidth
+                        size="medium"
+                        type="number"
+                        inputProps={{ step: "0.01", style: { fontSize: 15 } }}
+                        label="Refund Only Max Amount"
+                        value={formData.refundOnlyMaxAmount ?? ""}
+                        onChange={(e) =>
+                          handleFormChange(
+                            "refundOnlyMaxAmount",
+                            e.target.value ? parseFloat(e.target.value) : null
+                          )
+                        }
+                      />
+                    </Grid>
+
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        fullWidth
+                        size="medium"
+                        type="number"
+                        label="Refund Window Days"
+                        value={formData.refundWindowDays ?? ""}
+                        onChange={(e) =>
+                          handleFormChange(
+                            "refundWindowDays",
+                            e.target.value ? parseInt(e.target.value) : null
+                          )
+                        }
+                        inputProps={{ style: { fontSize: 15 } }}
+                      />
+                    </Grid>
+                  </>
+                )}
               </Grid>
             </Box>
 
