@@ -10,7 +10,9 @@ import { OrderListCard, StatusFilterTabs } from "../components";
 export function StandardScreen() {
   const [pageNumber, setPageNumber] = useState(1);
   const pageSize = 5;
-  const [statusFilter, setStatusFilter] = useState<"All" | "Confirmed" | "Processing" | "Shipped" | "Delivered">("All");
+  const [statusFilter, setStatusFilter] = useState<"All" | "Confirmed" | "Processing" | "Shipped" | "Delivered">(
+    "Confirmed",
+  );
 
   const { data, isLoading } = useOperationsOrders({
     pageNumber,

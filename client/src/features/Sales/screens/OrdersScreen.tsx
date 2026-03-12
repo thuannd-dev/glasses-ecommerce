@@ -348,7 +348,7 @@ export function OrdersScreen() {
           </Paper>
         </Box>
       ) : (
-        <Box sx={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
+          <Box sx={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
           <Box
             sx={{
               display: "flex",
@@ -368,10 +368,10 @@ export function OrdersScreen() {
             ))}
           </Box>
 
-          {meta && meta.totalPages > 1 && (
+          {meta && (
             <AppPagination
               page={pageNumber}
-              totalPages={meta.totalPages}
+              totalPages={meta.totalPages || 1}
               onChange={setPageNumber}
               totalItems={meta.totalCount}
               pageSize={meta.pageSize}

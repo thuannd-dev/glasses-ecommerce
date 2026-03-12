@@ -99,16 +99,6 @@ function CartItemRow({
                 >
                     {item.productName}
                 </Typography>
-                {prescription && (
-                    <Typography
-                        component="span"
-                        fontSize={12}
-                        fontWeight={700}
-                        sx={{ color: "#B68C5A", display: "inline-flex", alignItems: "center", gap: 0.5, mt: 0.5 }}
-                    >
-                        Prescription
-                    </Typography>
-                )}
                 <Typography
                     sx={{
                         mt: 0.25,
