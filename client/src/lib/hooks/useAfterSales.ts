@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import agent from "../api/agent";
 import type {
   TicketDetailDto,
-  TicketListDto,
   MyTicketsPageDto,
 } from "../types/afterSales";
 
