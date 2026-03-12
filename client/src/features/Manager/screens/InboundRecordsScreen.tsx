@@ -185,10 +185,13 @@ export default function InboundRecordsScreen() {
     <Box sx={{ px: { xs: 2, md: 4, lg: 6 }, py: 4 }}>
       <Stack direction={{ xs: "column", md: "row" }} justifyContent="space-between" spacing={1.5}>
         <Box>
-          <Typography sx={{ fontSize: 22, fontWeight: 900 }} color="text.primary">
+          <Typography sx={{ fontSize: 11, letterSpacing: 4, textTransform: "uppercase", color: "#8A8A8A", mb: 1 }}>
+            Inventory
+          </Typography>
+          <Typography sx={{ fontSize: { xs: 24, md: 30 }, fontWeight: 800, color: "#171717" }}>
             Inbound Records
           </Typography>
-          <Typography sx={{ mt: 0.5, color: "text.secondary" }} fontSize={13}>
+          <Typography sx={{ mt: 0.5, color: "#6B6B6B" }} fontSize={13}>
             Review, approve, or reject inbound stock records from the live API.
           </Typography>
         </Box>

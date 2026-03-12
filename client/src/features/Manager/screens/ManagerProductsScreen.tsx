@@ -228,13 +228,16 @@ export default function ManagerProductsScreen() {
   };
 
   return (
-    <Box sx={{ px: { xs: 2, md: 6, lg: 10 }, py: 4 }}>
+    <Box sx={{ px: { xs: 2, md: 4, lg: 6 }, py: 4 }}>
       <Stack direction={{ xs: "column", md: "row" }} justifyContent="space-between" spacing={1.5}>
         <Box>
-          <Typography sx={{ fontSize: 22, fontWeight: 900 }} color="text.primary">
+          <Typography sx={{ fontSize: 11, letterSpacing: 4, textTransform: "uppercase", color: "#8A8A8A", mb: 1 }}>
+            Products Management
+          </Typography>
+          <Typography sx={{ fontSize: { xs: 24, md: 30 }, fontWeight: 800, color: "#171717" }}>
             Products
           </Typography>
-          <Typography sx={{ mt: 0.5, color: "text.secondary" }} fontSize={13}>
+          <Typography sx={{ mt: 0.5, color: "#6B6B6B" }} fontSize={13}>
             Filter, search, sort, and paginate products from the live API.
           </Typography>
         </Box>
@@ -513,7 +516,7 @@ export default function ManagerProductsScreen() {
                       <Chip
                         size="small"
                         label={String(p.type)}
-                        sx={{ bgcolor: "rgba(25,118,210,0.10)", color: "#1565c0", fontWeight: 700 }}
+                        sx={{ bgcolor: "rgba(182,140,90,0.12)", color: "#B68C5A", fontWeight: 700 }}
                       />
                     </TableCell>
                     <TableCell align="right" sx={{ fontWeight: 800 }}>
