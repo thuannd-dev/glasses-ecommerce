@@ -1304,6 +1304,7 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
             // Properties
             entity.Property(pc => pc.PolicyName).IsRequired().HasMaxLength(200);
             entity.Property(pc => pc.MinOrderAmount).HasColumnType("decimal(10,2)");
+            entity.Property(pc => pc.RefundOnlyMaxAmount).HasColumnType("decimal(10,2)");
 
             // Indexes
             entity.HasIndex(e => e.PolicyType)
@@ -1348,6 +1349,15 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
                     (PolicyType != 2 AND WarrantyMonths IS NULL)
                     OR
                     (PolicyType = 2 AND WarrantyMonths IS NOT NULL AND WarrantyMonths >= 0)
+                    "
+                );
+
+                t.HasCheckConstraint(
+                    "CK_PolicyConfiguration_RefundOnly_Requires_RefundPolicy",
+                    @"
+                    (PolicyType != 3 AND RefundOnlyMaxAmount IS NULL AND RefundWindowDays IS NULL)
+                    OR
+                    (PolicyType = 3)
                     "
                 );
             });

@@ -39,6 +39,9 @@ public class AfterSalesTicket
 
     public AfterSalesTicketType TicketType { get; set; } = AfterSalesTicketType.Unknown; // RETURN, WARRANTY, REFUND
 
+    // Set when a Return ticket is auto-upgraded to Refund (ReturnAndRefund fast-track). Null otherwise.
+    public AfterSalesTicketType? OriginalTicketType { get; set; }
+
     public AfterSalesTicketStatus TicketStatus { get; set; } = AfterSalesTicketStatus.Pending; // PENDING, IN_PROGRESS, RESOLVED, REJECTED, CLOSED
 
     public required string Reason { get; set; } = null!;

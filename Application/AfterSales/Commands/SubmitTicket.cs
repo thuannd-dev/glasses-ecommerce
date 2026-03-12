@@ -112,13 +112,14 @@ public sealed class SubmitTicket
                         "Customized prescription lenses are non-refundable under the current policy.";
             }
 
-            // 6. Duplicate open ticket check (same order + same item + same type, not closed/rejected/resolved)
+            // 6. Duplicate open ticket check (same order + same item + original or effective type, not closed/rejected/resolved)
+            //    Also matches OriginalTicketType so that a Return auto-converted to Refund still blocks a new Return submission.
             bool duplicateExists = await context.AfterSalesTickets
                 .AsNoTracking()
                 .AnyAsync(t =>
                     t.OrderId == request.Dto.OrderId &&
                     (request.Dto.OrderItemId == null ? t.OrderItemId == null : t.OrderItemId == request.Dto.OrderItemId) &&
-                    t.TicketType == request.Dto.TicketType &&
+                    (t.TicketType == request.Dto.TicketType || t.OriginalTicketType == request.Dto.TicketType) &&
                     t.TicketStatus != AfterSalesTicketStatus.Rejected &&
                     t.TicketStatus != AfterSalesTicketStatus.Resolved &&
                     t.TicketStatus != AfterSalesTicketStatus.Closed, ct);
@@ -127,10 +128,75 @@ public sealed class SubmitTicket
                 return Result<TicketDetailDto>.Failure(
                     "An open ticket of this type already exists for this order item.", 409);
 
-            // 7. Halt and Return 400 if Policy Violation occurs
+            // 7. Halt and return 400 if policy violation occurs
             if (policyViolation != null)
-            {
                 return Result<TicketDetailDto>.Failure(policyViolation, 400);
+
+            // 7.5. Auto-upgrade Return → Refund (RefundOnly fast-track) if all conditions are met:
+            //   A. No existing Refund ticket on this order (any status)
+            //   B. Delivered within Refund policy's RefundWindowDays
+            //   C. Item value ≤ Refund policy's RefundOnlyMaxAmount
+            //   D. Prescription lenses are refundable per Refund policy
+            AfterSalesTicketType effectiveType = request.Dto.TicketType;
+            AfterSalesTicketType? originalTicketType = null;
+            PolicyConfiguration? appliedRefundPolicy = null;
+
+            if (request.Dto.TicketType == AfterSalesTicketType.Return)
+            {
+                PolicyConfiguration? refundPolicy = await context.PolicyConfigurations
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(p =>
+                        p.PolicyType == PolicyType.Refund &&
+                        p.IsActive &&
+                        !p.IsDeleted &&
+                        p.EffectiveFrom <= DateTime.UtcNow &&
+                        (p.EffectiveTo == null || p.EffectiveTo >= DateTime.UtcNow), ct);
+
+                if (refundPolicy != null && refundPolicy.RefundAllowed)
+                {
+                    // Check A: no existing Refund ticket on this order (any status)
+                    bool hasExistingRefundTicket = await context.AfterSalesTickets
+                        .AsNoTracking()
+                        .AnyAsync(t =>
+                            t.OrderId == request.Dto.OrderId &&
+                            t.TicketType == AfterSalesTicketType.Refund, ct);
+
+                    if (!hasExistingRefundTicket)
+                    {
+                        // Check B: delivered within RefundWindowDays
+                        bool withinRefundWindow = !refundPolicy.RefundWindowDays.HasValue ||
+                            (deliveredAt.HasValue &&
+                             (DateTime.UtcNow - deliveredAt.Value).TotalDays <= refundPolicy.RefundWindowDays.Value);
+
+                        if (withinRefundWindow)
+                        {
+                            // Compute item value for the ticket's scope
+                            decimal itemValue = request.Dto.OrderItemId.HasValue
+                                ? order.OrderItems
+                                    .Where(i => i.Id == request.Dto.OrderItemId.Value)
+                                    .Sum(i => i.UnitPrice * i.Quantity)
+                                : order.OrderItems.Sum(i => i.UnitPrice * i.Quantity);
+
+                            // Check C: item value within auto-upgrade threshold
+                            bool withinMaxAmount = !refundPolicy.RefundOnlyMaxAmount.HasValue ||
+                                itemValue <= refundPolicy.RefundOnlyMaxAmount.Value;
+
+                            if (withinMaxAmount)
+                            {
+                                // Check D: prescription lenses must be refundable per Refund policy
+                                bool prescriptionOk = refundPolicy.CustomizedLensRefundable ||
+                                    order.OrderType != OrderType.Prescription;
+
+                                if (prescriptionOk)
+                                {
+                                    effectiveType = AfterSalesTicketType.Refund;
+                                    originalTicketType = AfterSalesTicketType.Return;
+                                    appliedRefundPolicy = refundPolicy;
+                                }
+                            }
+                        }
+                    }
+                }
             }
 
             // 8. Build ticket entity
@@ -139,13 +205,14 @@ public sealed class SubmitTicket
                 OrderId = request.Dto.OrderId,
                 OrderItemId = request.Dto.OrderItemId,
                 CustomerId = userId,
-                TicketType = request.Dto.TicketType,
+                TicketType = effectiveType,
+                OriginalTicketType = originalTicketType,
                 Reason = request.Dto.Reason,
                 RequestedAction = string.IsNullOrWhiteSpace(request.Dto.RequestedAction)
                     ? null
                     : request.Dto.RequestedAction,
                 RefundAmount = request.Dto.RefundAmount,
-                IsRequiredEvidence = policy.EvidenceRequired,
+                IsRequiredEvidence = (appliedRefundPolicy ?? policy).EvidenceRequired,
                 PolicyViolation = null,
                 TicketStatus = AfterSalesTicketStatus.Pending
             };
