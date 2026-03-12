@@ -278,7 +278,7 @@ export function OrderListCard({
                         onMarkShippedClick(summary.id);
                       }}
                     >
-                      Mark shipped
+                      Add Tracking Detail
                     </Button>
                   )}
                 </Box>
