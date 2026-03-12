@@ -12,6 +12,8 @@ public sealed class TicketDetailDto
     public Guid? OrderItemId { get; set; }
     public Guid CustomerId { get; set; }
     public AfterSalesTicketType TicketType { get; set; }
+    // Non-null when ticket was auto-upgraded from its original type (e.g. Return → Refund)
+    public AfterSalesTicketType? OriginalTicketType { get; set; }
     public AfterSalesTicketStatus TicketStatus { get; set; }
     public TicketResolutionType? ResolutionType { get; set; }
     public string Reason { get; set; } = null!;
