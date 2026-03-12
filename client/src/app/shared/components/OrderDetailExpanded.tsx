@@ -405,6 +405,257 @@ export function OrderDetailExpanded({ detail }: { detail: StaffOrderDetailDto })
         </Box>
       </Box>
 
+      {/* Action Button — Add Tracking Details */}
+      {primaryActionLabel && onPrimaryActionClick && (
+        <Button
+          size="small"
+          onClick={() => onPrimaryActionClick(detail.id)}
+          sx={{
+            width: "100%",
+            fontSize: 13,
+            fontWeight: 600,
+            color: TOKENS.accent,
+            border: `1px solid ${TOKENS.accent}`,
+            borderRadius: 1,
+            py: 0.75,
+            textTransform: "none",
+            backgroundColor: "transparent",
+            "&:hover": {
+              backgroundColor: TOKENS.accent,
+              color: TOKENS.surface,
+            },
+          }}
+        >
+          Add Tracking Details
+        </Button>
+      )}
+
+      {/* 3.5) Tracking information — shipment tracking */}
+      {detail.shipment && detail.shipment.trackingCode && (
+        <Box>
+          <Typography sx={{ fontSize: 14, fontWeight: 700, color: TOKENS.muted, textTransform: "uppercase", letterSpacing: 1, mb: 1.25 }}>
+            Tracking
+          </Typography>
+          <Box
+            sx={{
+              bgcolor: TOKENS.surface,
+              borderRadius: "12px",
+              border: `1px solid ${TOKENS.divider}`,
+              p: 2,
+            }}
+          >
+            <Box sx={{ width: "100%" }}>
+              {/* Carrier with Make Delivered Button */}
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: `${LABEL_WIDTH}px 1fr`,
+                  gap: 1.25,
+                  mb: `${ROW_GAP_PX}px`,
+                  alignItems: "center",
+                  lineHeight: 1.5,
+                }}
+              >
+                <Typography sx={{ fontSize: LABEL_FONT_SIZE, color: "#8A8A8A", flexShrink: 0 }}>
+                  Carrier
+                </Typography>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1, justifyContent: "space-between" }}>
+                  <Typography
+                    component="span"
+                    sx={{
+                      fontSize: VALUE_FONT_SIZE,
+                      color: "#171717",
+                      fontWeight: 400,
+                    }}
+                  >
+                    {detail.shipment.carrierName || "—"}
+                  </Typography>
+                  {detail.orderStatus?.toLowerCase() === "shipped" && onUpdateStatus && (
+                    <Button
+                      size="small"
+                      onClick={() => onUpdateStatus("Delivered")}
+                      sx={{
+                        fontSize: 12,
+                        fontWeight: 600,
+                        color: TOKENS.accent,
+                        border: `1px solid ${TOKENS.accent}`,
+                        borderRadius: 1,
+                        px: 1.5,
+                        py: 0.5,
+                        textTransform: "none",
+                        backgroundColor: "transparent",
+                        "&:hover": {
+                          backgroundColor: TOKENS.accent,
+                          color: TOKENS.surface,
+                        },
+                      }}
+                    >
+                      Make order Delivered
+                    </Button>
+                  )}
+                </Box>
+              </Box>
+
+              {/* Tracking Code with Copy Button */}
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: `${LABEL_WIDTH}px 1fr`,
+                  gap: 1.25,
+                  mb: `${ROW_GAP_PX}px`,
+                  alignItems: "center",
+                  lineHeight: 1.5,
+                }}
+              >
+                <Typography sx={{ fontSize: LABEL_FONT_SIZE, color: "#8A8A8A", flexShrink: 0 }}>
+                  Tracking Code
+                </Typography>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <Typography
+                    component="span"
+                    sx={{
+                      fontSize: VALUE_FONT_SIZE,
+                      color: "#171717",
+                      fontWeight: 600,
+                      fontFamily: "monospace",
+                    }}
+                  >
+                    {detail.shipment.trackingCode}
+                  </Typography>
+                  <Tooltip title="Copy tracking code" arrow>
+                    <Box
+                      component="button"
+                      type="button"
+                      onClick={() => navigator.clipboard.writeText(detail.shipment?.trackingCode || "")}
+                      sx={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        p: 0.5,
+                        borderRadius: 1,
+                        border: "none",
+                        bgcolor: "transparent",
+                        cursor: "pointer",
+                        color: TOKENS.muted,
+                        "&:hover": { bgcolor: "rgba(0,0,0,0.04)", color: TOKENS.textPrimary },
+                      }}
+                    >
+                      <ContentCopyIcon sx={{ fontSize: 16 }} />
+                    </Box>
+                  </Tooltip>
+                </Box>
+              </Box>
+
+              {/* Tracking URL with Link Button */}
+              {detail.shipment.trackingUrl && (
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: `${LABEL_WIDTH}px 1fr`,
+                    gap: 1.25,
+                    mb: `${ROW_GAP_PX}px`,
+                    alignItems: "center",
+                    lineHeight: 1.5,
+                  }}
+                >
+                  <Typography sx={{ fontSize: LABEL_FONT_SIZE, color: "#8A8A8A", flexShrink: 0 }} />
+                  <Box
+                    component="a"
+                    href={detail.shipment.trackingUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    sx={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 0.75,
+                      fontSize: 13,
+                      fontWeight: 500,
+                      color: TOKENS.accent,
+                      textDecoration: "none",
+                      px: 2,
+                      py: 0.75,
+                      borderRadius: 1,
+                      border: `1px solid ${TOKENS.accent}`,
+                      bgcolor: "rgba(182,140,90,0.05)",
+                      cursor: "pointer",
+                      transition: "all 0.2s",
+                      "&:hover": {
+                        bgcolor: TOKENS.accent,
+                        color: TOKENS.surface,
+                      },
+                    }}
+                  >
+                    Move to Tracking Page
+                    <Box
+                      component="span"
+                      sx={{
+                        display: "inline-flex",
+                        fontSize: 12,
+                      }}
+                    >
+                      →
+                    </Box>
+                  </Box>
+                </Box>
+              )}
+
+              {/* Shipped At */}
+              {detail.shipment.shippedAt &&
+                labelValueRow(
+                  "Shipped At",
+                  new Date(detail.shipment.shippedAt).toLocaleString(),
+                  false
+                )}
+
+              {/* Estimated Delivery */}
+              {detail.shipment.estimatedDeliveryAt &&
+                labelValueRow(
+                  "Est. Delivery",
+                  new Date(detail.shipment.estimatedDeliveryAt).toLocaleString(),
+                  false
+                )}
+
+              {/* Actual Delivery */}
+              {detail.shipment.actualDeliveryAt &&
+                labelValueRow(
+                  "Delivered At",
+                  new Date(detail.shipment.actualDeliveryAt).toLocaleString(),
+                  false
+                )}
+
+              {/* Shipping Notes */}
+              {detail.shipment.shippingNotes && (
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: `${LABEL_WIDTH}px 1fr`,
+                    gap: 1.25,
+                    mt: `${ROW_GAP_PX}px`,
+                    alignItems: "flex-start",
+                    lineHeight: 1.5,
+                  }}
+                >
+                  <Typography sx={{ fontSize: LABEL_FONT_SIZE, color: "#8A8A8A", flexShrink: 0 }}>
+                    Notes
+                  </Typography>
+                  <Typography
+                    component="span"
+                    sx={{
+                      fontSize: VALUE_FONT_SIZE,
+                      color: "#171717",
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {detail.shipment.shippingNotes}
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+          </Box>
+        </Box>
+      )}
+
       {/* 4) Status history — vertical timeline */}
       {detail.statusHistories && detail.statusHistories.length > 1 && (
         <Box>

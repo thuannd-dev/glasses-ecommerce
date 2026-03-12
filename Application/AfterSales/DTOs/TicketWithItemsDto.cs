@@ -1,16 +1,16 @@
+using Application.Orders.DTOs;
 using Domain;
-using System.Collections.Generic;
 
 namespace Application.AfterSales.DTOs;
+
 /// <summary>
-/// Dto output chi tiết ticket bao gồm attachments
+/// Dto output for ticket detail including associated order items (used when viewing tickets for a specific order)
 /// </summary>
-public sealed class TicketDetailDto
+public sealed class TicketWithItemsDto
 {
     public Guid Id { get; set; }
     public Guid OrderId { get; set; }
     public Guid? OrderItemId { get; set; }
-    public Guid CustomerId { get; set; }
     public AfterSalesTicketType TicketType { get; set; }
     // Non-null when ticket was auto-upgraded from its original type (e.g. Return → Refund)
     public AfterSalesTicketType? OriginalTicketType { get; set; }
@@ -27,4 +27,5 @@ public sealed class TicketDetailDto
     public DateTime? ReceivedAt { get; set; }
     public DateTime? ResolvedAt { get; set; }
     public List<TicketAttachmentDto> Attachments { get; set; } = [];
+    public List<OrderItemOutputDto> Items { get; set; } = [];
 }

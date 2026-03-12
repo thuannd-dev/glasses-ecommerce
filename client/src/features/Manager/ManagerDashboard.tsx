@@ -20,35 +20,34 @@ export default function ManagerDashboard() {
     <Box
       sx={{
         minHeight: "100vh",
-        px: { xs: 2, md: 6, lg: 10 },
-        py: 6,
-        bgcolor: "#fafafa",
-        color: "rgba(0,0,0,0.87)",
+        px: { xs: 2, md: 4, lg: 6 },
+        py: 4,
+        bgcolor: "#FAFAF8",
+        color: "#171717",
       }}
     >
       {/* Header */}
       <Box sx={{ mb: 5 }}>
         <Typography
           sx={{
-            fontSize: 12,
-            letterSpacing: 6,
+            fontSize: 11,
+            letterSpacing: 4,
             textTransform: "uppercase",
-            color: "text.secondary",
+            color: "#8A8A8A",
           }}
         >
           Management Overview
         </Typography>
 
         <Typography
-          sx={{ mt: 1, fontSize: 30, fontWeight: 900 }}
-          color="text.primary"
+          sx={{ mt: 1, fontSize: { xs: 24, md: 30 }, fontWeight: 800, color: "#171717" }}
         >
           Good to see you
           {currentUser?.displayName ? `, ${currentUser.displayName}` : ""}.
         </Typography>
 
         <Typography
-          sx={{ mt: 1, color: "text.secondary", maxWidth: 520, fontSize: 14 }}
+          sx={{ mt: 0.5, color: "#6B6B6B", maxWidth: 520, fontSize: 14 }}
         >
           High-level KPIs for sales, operations and customer experience in one
           place.
@@ -215,8 +214,8 @@ export default function ManagerDashboard() {
                   }
                   size="small"
                   sx={{
-                    bgcolor: "rgba(25,118,210,0.12)",
-                    color: "primary.main",
+                    bgcolor: "rgba(182,140,90,0.12)",
+                    color: "#B68C5A",
                     fontWeight: 600,
                   }}
                 />
