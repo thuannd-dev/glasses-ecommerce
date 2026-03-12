@@ -552,21 +552,21 @@ export default function OrderDetailPage() {
                   </Typography>
                   <Grid container spacing={1.5} sx={{ mb: 1.5 }}>
                     {/* Carrier */}
-                    {(order.shipment as any)?.carrierName && (
+                    {order.shipment?.carrierName && (
                       <Grid item xs={12} sm={6}>
                         <Box>
                           <Typography fontSize={11} sx={{ color: PALETTE.textMuted, mb: 0.25 }}>
                             Carrier
                           </Typography>
                           <Typography fontSize={13} sx={{ color: PALETTE.textMain, fontWeight: 500 }}>
-                            {(order.shipment as any).carrierName}
+                            {order.shipment.carrierName}
                           </Typography>
                         </Box>
                       </Grid>
                     )}
 
                     {/* Tracking Code */}
-                    {(order.shipment as any)?.trackingCode && (
+                    {order.shipment?.trackingCode && (
                       <Grid item xs={12} sm={6}>
                         <Box>
                           <Typography fontSize={11} sx={{ color: PALETTE.textMuted, mb: 0.25 }}>
@@ -581,13 +581,13 @@ export default function OrderDetailPage() {
                                 fontFamily: "monospace",
                               }}
                             >
-                              {(order.shipment as any).trackingCode}
+                              {order.shipment.trackingCode}
                             </Typography>
                             <IconButton
                               size="small"
                               onClick={() =>
                                 navigator.clipboard.writeText(
-                                  (order.shipment as any).trackingCode || ""
+                                  order.shipment?.trackingCode || ""
                                 )
                               }
                               sx={{
@@ -604,21 +604,21 @@ export default function OrderDetailPage() {
                     )}
 
                     {/* Shipped At */}
-                    {(order.shipment as any)?.shippedAt && (
+                    {order.shipment?.shippedAt && (
                       <Grid item xs={12} sm={6}>
                         <Box>
                           <Typography fontSize={11} sx={{ color: PALETTE.textMuted, mb: 0.25 }}>
                             Shipped At
                           </Typography>
                           <Typography fontSize={13} sx={{ color: PALETTE.textMain }}>
-                            {new Date((order.shipment as any).shippedAt).toLocaleString()}
+                            {new Date(order.shipment.shippedAt).toLocaleString()}
                           </Typography>
                         </Box>
                       </Grid>
                     )}
 
                     {/* Estimated Delivery */}
-                    {(order.shipment as any)?.estimatedDeliveryAt && (
+                    {order.shipment?.estimatedDeliveryAt && (
                       <Grid item xs={12} sm={6}>
                         <Box>
                           <Typography fontSize={11} sx={{ color: PALETTE.textMuted, mb: 0.25 }}>
@@ -626,7 +626,7 @@ export default function OrderDetailPage() {
                           </Typography>
                           <Typography fontSize={13} sx={{ color: PALETTE.textMain }}>
                             {new Date(
-                              (order.shipment as any).estimatedDeliveryAt
+                              order.shipment.estimatedDeliveryAt
                             ).toLocaleString()}
                           </Typography>
                         </Box>
@@ -634,7 +634,7 @@ export default function OrderDetailPage() {
                     )}
 
                     {/* Shipping Notes */}
-                    {(order.shipment as any)?.shippingNotes && (
+                    {order.shipment?.shippingNotes && (
                       <Grid item xs={12} sm={6}>
                         <Box>
                           <Typography fontSize={11} sx={{ color: PALETTE.textMuted, mb: 0.25 }}>
@@ -648,7 +648,7 @@ export default function OrderDetailPage() {
                               wordBreak: "break-word",
                             }}
                           >
-                            {(order.shipment as any).shippingNotes}
+                            {order.shipment.shippingNotes}
                           </Typography>
                         </Box>
                       </Grid>
@@ -656,9 +656,9 @@ export default function OrderDetailPage() {
                   </Grid>
 
                   {/* Move to Tracking Page - Full width button */}
-                  {(order.shipment as any)?.trackingUrl && (
+                  {order.shipment?.trackingUrl && (
                     <Button
-                      href={(order.shipment as any).trackingUrl}
+                      href={order.shipment.trackingUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       fullWidth
