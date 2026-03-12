@@ -12,7 +12,7 @@ import { getCartItemPrescriptions } from "../../cart/prescriptionCache";
 import type { PrescriptionData } from "../../../lib/types/prescription";
 import type { ActivePromotionDto } from "../../../lib/types/promotion";
 import type { CheckoutShippingForm, CheckoutSnackbarState, PaymentMethodUI } from "../types";
-import { toApiPaymentMethod, isValidVietnamPhone } from "../utils";
+import { toApiPaymentMethod, isValidVietnamPhone, toPrescriptionInputDto } from "../utils";
 
 const initialAddress: CheckoutShippingForm = {
   recipientName: "",
@@ -195,6 +195,23 @@ export function useCheckoutPage() {
       });
 
       const hasPrescriptionItems = Object.keys(itemPrescriptions).length > 0;
+      const firstPrescription = hasPrescriptionItems
+        ? Object.values(itemPrescriptions)[0]
+        : null;
+      const prescriptionPayload =
+        firstPrescription != null && firstPrescription.details?.length
+          ? toPrescriptionInputDto(firstPrescription)
+          : undefined;
+
+      if (hasPrescriptionItems && !prescriptionPayload) {
+        setSnackbar({
+          open: true,
+          message: "Prescription details are required for prescription items. Please go back and re-enter prescription for your lens selection.",
+          severity: "error",
+        });
+        setSubmitting(false);
+        return;
+      }
 
       const createdOrder = await createOrder.mutateAsync({
         addressId: createdAddress.id,
@@ -203,6 +220,7 @@ export function useCheckoutPage() {
         orderType: hasPrescriptionItems ? "Prescription" : "ReadyStock",
         selectedCartItemIds: items.map((item) => item.id),
         promoCode: appliedPromo?.promoCode ?? undefined,
+        prescription: prescriptionPayload ?? undefined,
       });
 
       queryClient.invalidateQueries({ queryKey: ["cart"] });

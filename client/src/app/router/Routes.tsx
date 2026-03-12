@@ -36,6 +36,8 @@ import {
   TrackingScreen,
   PreOrderScreen,
   PrescriptionScreen,
+  StandardScreen,
+  OrderTypeAllScreen,
   InboundInventoryScreen,
   OutboundInventoryScreen,
   InventoryTransactionsScreen,
@@ -51,6 +53,7 @@ import {
 } from "../../features/Manager/screens";
 import { ManagerProductCreateWizardScreen } from "../../features/Manager/screens";
 import AdminDashboard from "../../features/Admin/AdminDashboard";
+import AdminLayout from "../../features/Admin/AdminLayout";
 import RoleManagement from "../../features/Admin/RoleManagement";
 import AdminPolicies from "../../features/Admin/AdminPolicies";
 import ChatbotWidget from "../../features/chatbot/ChatbotWidget";
@@ -117,6 +120,8 @@ export const router = createBrowserRouter([
               { path: "pack", element: <PackScreen /> },
               { path: "create-shipment", element: <CreateShipmentScreen /> },
               { path: "tracking", element: <TrackingScreen /> },
+              { path: "order-types", element: <OrderTypeAllScreen /> },
+              { path: "standard", element: <StandardScreen /> },
               { path: "pre-order", element: <PreOrderScreen /> },
               { path: "prescription", element: <PrescriptionScreen /> },
               { path: "inbound", element: <InboundInventoryScreen /> },
@@ -150,7 +155,7 @@ export const router = createBrowserRouter([
         children: [
           {
             path: "admin",
-            element: <Outlet />,
+            element: <AdminLayout />,
             children: [
               { index: true, element: <AdminDashboard /> },
               { path: "roles", element: <RoleManagement /> },

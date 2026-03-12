@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Box, LinearProgress, Paper, Typography } from "@mui/material";
-
 import { AppPagination } from "../../../app/shared/components/AppPagination";
 import { useOperationsOrders, useUpdateOrderStatus } from "../../../lib/hooks/useOperationsOrders";
 import type { StaffOrderDto } from "../../../lib/types/staffOrders";
@@ -8,7 +7,7 @@ import type { OrderStatus, OrderType } from "../../../lib/types/operations";
 import { OperationsPageHeader } from "../components/OperationsPageHeader";
 import { OrderListCard, StatusFilterTabs } from "../components";
 
-export function PreOrderScreen() {
+export function StandardScreen() {
   const [pageNumber, setPageNumber] = useState(1);
   const pageSize = 5;
   const [statusFilter, setStatusFilter] = useState<"All" | "Confirmed" | "Processing" | "Shipped" | "Delivered">("All");
@@ -16,7 +15,7 @@ export function PreOrderScreen() {
   const { data, isLoading } = useOperationsOrders({
     pageNumber,
     pageSize,
-    orderType: "PreOrder" as OrderType,
+    orderType: "ReadyStock" as OrderType,
     status: statusFilter === "All" ? undefined : (statusFilter as OrderStatus | string),
   });
 
@@ -31,8 +30,8 @@ export function PreOrderScreen() {
   return (
     <>
       <OperationsPageHeader
-        title="Pre-order"
-        subtitle="Handle pre-orders: expected stock, receive at warehouse, pack."
+        title="Standard"
+        subtitle="Standard orders (ReadyStock) with full details."
         count={totalCount}
         countLabel="orders"
       />
@@ -65,10 +64,11 @@ export function PreOrderScreen() {
           ) : (
             <>
               <StatusFilterTabs value={statusFilter} onChange={setStatusFilter} hideAll />
+
               {safeOrders.length === 0 ? (
-                <Typography color="text.secondary">No pre-orders yet.</Typography>
+                <Typography color="text.secondary">No standard orders yet.</Typography>
               ) : (
-              <Box
+                <Box
                 sx={{
                   display: "flex",
                   flexDirection: "column",
@@ -83,51 +83,51 @@ export function PreOrderScreen() {
                     display: "none",
                   },
                 }}
-              >
-                {safeOrders
-                  .filter((o) => {
-                    const s = String(o.orderStatus).toLowerCase();
-                    if (statusFilter === "All") return true;
-                    if (statusFilter === "Confirmed") return s === "confirmed";
-                    if (statusFilter === "Processing") return s === "processing";
-                    if (statusFilter === "Shipped") return s === "shipped";
-                    if (statusFilter === "Delivered") return s === "delivered";
-                    return true;
-                  })
-                  .map((o) => (
-                    <OrderListCard
-                      key={o.id}
-                      mode="confirmed"
-                      summary={o}
-                      primaryActionLabel={
-                        String(o.orderStatus).toLowerCase() === "confirmed"
-                          ? "Processing"
-                          : String(o.orderStatus).toLowerCase() === "processing"
-                          ? "Mark shipped"
-                          : undefined
-                      }
-                      onPrimaryActionClick={(orderId) => {
-                        const s = String(o.orderStatus).toLowerCase();
-                        if (s === "confirmed") {
-                          updateStatus.mutate({
-                            orderId,
-                            status: "Processing" as OrderStatus,
-                          });
-                        } else if (s === "processing") {
-                          updateStatus.mutate({
-                            orderId,
-                            status: "Shipped" as OrderStatus,
-                            shipmentCarrierName: "GHN",
-                            shipmentTrackingCode: null,
-                            shipmentTrackingUrl: null,
-                            shipmentEstimatedDeliveryAt: null,
-                            shipmentNotes: null,
-                          });
+                >
+                  {safeOrders
+                    .filter((o) => {
+                      const s = String(o.orderStatus).toLowerCase();
+                      if (statusFilter === "All") return true;
+                      if (statusFilter === "Confirmed") return s === "confirmed";
+                      if (statusFilter === "Processing") return s === "processing";
+                      if (statusFilter === "Shipped") return s === "shipped";
+                      if (statusFilter === "Delivered") return s === "delivered";
+                      return true;
+                    })
+                    .map((o) => (
+                      <OrderListCard
+                        key={o.id}
+                        mode="confirmed"
+                        summary={o}
+                        primaryActionLabel={
+                          String(o.orderStatus).toLowerCase() === "confirmed"
+                            ? "Processing"
+                            : String(o.orderStatus).toLowerCase() === "processing"
+                            ? "Mark shipped"
+                            : undefined
                         }
-                      }}
-                    />
-                  ))}
-              </Box>
+                        onPrimaryActionClick={(orderId) => {
+                          const s = String(o.orderStatus).toLowerCase();
+                          if (s === "confirmed") {
+                            updateStatus.mutate({
+                              orderId,
+                              status: "Processing" as OrderStatus,
+                            });
+                          } else if (s === "processing") {
+                            updateStatus.mutate({
+                              orderId,
+                              status: "Shipped" as OrderStatus,
+                              shipmentCarrierName: "GHN",
+                              shipmentTrackingCode: null,
+                              shipmentTrackingUrl: null,
+                              shipmentEstimatedDeliveryAt: null,
+                              shipmentNotes: null,
+                            });
+                          }
+                        }}
+                      />
+                    ))}
+                </Box>
               )}
 
               {totalPages > 1 && (
@@ -148,3 +148,4 @@ export function PreOrderScreen() {
     </>
   );
 }
+

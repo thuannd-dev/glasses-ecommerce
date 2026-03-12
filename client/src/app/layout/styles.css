@@ -10,9 +10,17 @@ html, body {
   overflow-x: hidden;
   overflow-y: auto; /* vẫn cho scroll */
   scrollbar-width: none;              /* Firefox */
+  background-color: #FAF8F4;
 }
 
 html::-webkit-scrollbar,
 body::-webkit-scrollbar {
   display: none;                      /* Chrome, Edge, Safari */
+}
+
+/* Hide Edge/IE default password reveal + clear icons.
+   We use our own custom eye icon component instead. */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none;
 }

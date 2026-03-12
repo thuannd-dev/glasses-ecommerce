@@ -27,7 +27,7 @@ export interface OrderListCardProps {
   showCheckbox?: boolean;
   selected?: boolean;
   onToggleSelected?: (orderId: string) => void;
-  /** For Confirmed tab: "Processing" chip action */
+  /** Optional primary action chip on the right (e.g. Processing / Mark shipped) */
   primaryActionLabel?: string;
   onPrimaryActionClick?: (orderId: string) => void;
 }
@@ -139,8 +139,8 @@ export function OrderListCard({
             }}
           />
 
-          {/* Optional primary action as secondary chip (e.g. Processing) */}
-          {mode === "confirmed" && primaryActionLabel && onPrimaryActionClick && (
+          {/* Optional primary action as secondary chip (e.g. Processing / Mark shipped) */}
+          {(mode === "confirmed" || mode === "packing") && primaryActionLabel && onPrimaryActionClick && (
             <Chip
               label={primaryActionLabel}
               size="small"

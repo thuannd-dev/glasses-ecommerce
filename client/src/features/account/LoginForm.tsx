@@ -208,6 +208,7 @@ export default function LoginForm() {
               <TextInput
                 label="Password"
                 type="password"
+                enablePasswordToggle
                 control={control}
                 name="password"
                 hideError

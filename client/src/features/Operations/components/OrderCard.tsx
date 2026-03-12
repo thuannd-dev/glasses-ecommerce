@@ -2,8 +2,11 @@ import { Box, Button, Chip, Collapse, Paper, Typography } from "@mui/material";
 import ExpandMore from "@mui/icons-material/ExpandMore";
 import ExpandLess from "@mui/icons-material/ExpandLess";
 
-import { ORDER_STATUS_LABEL, ORDER_TYPE_LABEL, formatDate } from "../constants";
+import { ORDER_STATUS_LABEL, ORDER_TYPE_LABEL } from "../constants";
 import type { OrderDto, OrderStatus, OrderType } from "../../../lib/types";
+import { useOperationsOrderDetail } from "../../../lib/hooks/useOperationsOrders";
+import type { StaffOrderDetailDto } from "../../../lib/types/staffOrders";
+import { OrderDetailExpanded } from "../../../app/shared/components/OrderDetailExpanded";
 
 export function OrderCard({
   order,
@@ -25,6 +28,11 @@ export function OrderCard({
   const statusLabel = ORDER_STATUS_LABEL[actualStatus as OrderStatus];
   const actualOrderType = ((order as any).orderType || order.orderType) as OrderType;
   const typeLabel = ORDER_TYPE_LABEL[actualOrderType];
+
+  const { data: detailData, isLoading: detailLoading } = useOperationsOrderDetail(
+    expanded ? order.id : undefined
+  );
+  const detail = detailData as StaffOrderDetailDto | undefined;
 
   const getStatusColors = (status: string) => {
     switch (status?.toLowerCase()) {
@@ -109,24 +117,12 @@ export function OrderCard({
       </Box>
       <Collapse in={expanded}>
         <Box sx={{ mt: 2, pt: 2, borderTop: "1px solid rgba(0,0,0,0.06)" }}>
-          <Typography fontSize={12} color="text.secondary">
-            {order.customerName} · {order.customerEmail}
-          </Typography>
-          <Typography fontSize={12} color="text.secondary" sx={{ mt: 0.5 }}>
-            {order.shippingAddress}
-          </Typography>
-          <Typography fontSize={12} color="text.secondary" sx={{ mt: 0.5 }}>
-            {formatDate(order.createdAt)} · {order.items?.length || 0} items · {order.totalAmount.toLocaleString("en-US", { style: "currency", currency: "USD" })}
-          </Typography>
-          {(order.orderType === "PreOrder" || (order as any).orderType === "pre-order") && order.expectedStockDate && (
-            <Typography fontSize={12} color="text.secondary" sx={{ mt: 0.5 }}>
-              Expected stock: {order.expectedStockDate}
+          {detailLoading || !detail ? (
+            <Typography fontSize={12} color="text.secondary">
+              Loading detail...
             </Typography>
-          )}
-          {(order.orderType === "Prescription" || (order as any).orderType === "prescription") && order.prescriptionStatus && (
-            <Typography fontSize={12} color="text.secondary" sx={{ mt: 0.5 }}>
-              Prescription: {order.prescriptionStatus}
-            </Typography>
+          ) : (
+            <OrderDetailExpanded detail={detail} />
           )}
           <Box sx={{ mt: 2, display: "flex", gap: 1, flexWrap: "wrap" }}>
             {((order as any).orderType?.toLowerCase() || order.orderType?.toLowerCase()) !== "pre-order" && (
