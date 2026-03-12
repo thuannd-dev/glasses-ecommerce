@@ -3,6 +3,7 @@ import { Box, LinearProgress, Paper, Typography } from "@mui/material";
 
 import { AppPagination } from "../../../app/shared/components/AppPagination";
 import { useOperationsOrders, useUpdateOrderStatus } from "../../../lib/hooks/useOperationsOrders";
+import { useOperations } from "../context/OperationsContext";
 import type { StaffOrderDto } from "../../../lib/types/staffOrders";
 import type { OrderStatus, OrderType } from "../../../lib/types/operations";
 import { OperationsPageHeader } from "../components/OperationsPageHeader";
@@ -29,6 +30,7 @@ export function PreOrderScreen() {
   const totalCount = data?.totalCount ?? safeOrders.length;
 
   const updateStatus = useUpdateOrderStatus();
+  const { openCreateShipment } = useOperations();
 
   return (
     <>
@@ -116,16 +118,14 @@ export function PreOrderScreen() {
                             status: "Processing" as OrderStatus,
                           });
                         } else if (s === "processing") {
-                          updateStatus.mutate({
-                            orderId,
-                            status: "Shipped" as OrderStatus,
-                            shipmentCarrierName: "GHN",
-                            shipmentTrackingCode: null,
-                            shipmentTrackingUrl: null,
-                            shipmentEstimatedDeliveryAt: null,
-                            shipmentNotes: null,
-                          });
+                          openCreateShipment(orderId);
                         }
+                      }}
+                      onUpdateStatus={(status) => {
+                        updateStatus.mutate({
+                          orderId: o.id,
+                          status: status as OrderStatus,
+                        });
                       }}
                     />
                   ))}

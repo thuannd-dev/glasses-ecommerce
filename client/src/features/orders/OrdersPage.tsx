@@ -14,7 +14,6 @@ const PALETTE = {
   border: "#ECECEC",
   divider: "#F1F1F1",
 };
-
 export default function OrdersPage() {
   const [pageNumber, setPageNumber] = useState(1);
 
@@ -81,7 +80,6 @@ export default function OrdersPage() {
       </Box>
     );
   }
-
   return (
     <Box
       sx={{

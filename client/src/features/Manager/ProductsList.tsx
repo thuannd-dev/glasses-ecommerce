@@ -38,7 +38,7 @@ export default function ProductsList() {
   const [maxPrice, setMaxPrice] = useState("");
   const [sortBy, setSortBy] = useState(0); // 0=CreatedAt, 1=Price, 2=Name
   const [sortOrder, setSortOrder] = useState(1); // 0=Asc, 1=Desc
-  const [viewMode, setViewMode] = useState<"table" | "gallery">("gallery");
+  const [viewMode, setViewMode] = useState<"table" | "gallery">("table");
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
 
   const { products, totalPages, totalCount, isLoading, deleteProduct, isDeleting } = useManagerProducts({
@@ -146,31 +146,31 @@ export default function ProductsList() {
     <Box
       sx={{
         minHeight: "100vh",
-        px: { xs: 2, md: 6, lg: 10 },
-        py: 6,
-        bgcolor: "#fafafa",
-        color: "rgba(0,0,0,0.87)",
+        px: { xs: 2, md: 4, lg: 6 },
+        py: 4,
+        bgcolor: "#FAFAF8",
+        color: "#171717",
       }}
     >
       {/* Header */}
       <Box sx={{ mb: 5 }}>
         <Typography
           sx={{
-            fontSize: 12,
-            letterSpacing: 6,
+            fontSize: 11,
+            letterSpacing: 4,
             textTransform: "uppercase",
-            color: "text.secondary",
+            color: "#8A8A8A",
             fontWeight: 700,
           }}
         >
           Products Management
         </Typography>
 
-        <Typography sx={{ mt: 1, fontSize: 30, fontWeight: 900 }} color="text.primary">
+        <Typography sx={{ mt: 1, fontSize: { xs: 24, md: 30 }, fontWeight: 800, color: "#171717" }}>
           All Products ({totalCount})
         </Typography>
 
-        <Typography sx={{ mt: 1, color: "text.secondary", maxWidth: 520, fontSize: 14 }}>
+        <Typography sx={{ mt: 0.5, color: "#6B6B6B", maxWidth: 520, fontSize: 14 }}>
           Manage your product catalog, view inventory levels, and update product information.
         </Typography>
       </Box>
@@ -352,11 +352,11 @@ export default function ProductsList() {
               }}
               size="small"
             >
-              <ToggleButton value="gallery" sx={{ fontWeight: 600 }}>
-                <GridViewIcon sx={{ mr: 1 }} /> Gallery
-              </ToggleButton>
               <ToggleButton value="table" sx={{ fontWeight: 600 }}>
                 <ViewListIcon sx={{ mr: 1 }} /> List
+              </ToggleButton>
+              <ToggleButton value="gallery" sx={{ fontWeight: 600 }}>
+                <GridViewIcon sx={{ mr: 1 }} /> Gallery
               </ToggleButton>
             </ToggleButtonGroup>
           </Box>
@@ -369,8 +369,8 @@ export default function ProductsList() {
               textTransform: "none",
               fontWeight: 600,
               borderRadius: 1,
-              bgcolor: "#1976d2",
-              "&:hover": { bgcolor: "#1565c0" },
+              bgcolor: "#B68C5A",
+              "&:hover": { bgcolor: "#9A7548" },
             }}
           >
             Add Product

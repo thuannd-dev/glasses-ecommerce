@@ -23,8 +23,7 @@ import {
   TablePagination,
   IconButton,
   Tooltip,
-  Card,
-  CardContent,
+  Paper,
   Divider,
   Grid,
   alpha,
@@ -42,7 +41,6 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
 import SearchIcon from "@mui/icons-material/Search";
-import FilterListIcon from "@mui/icons-material/FilterList";
 
 // User-facing policy types with color schemes
 const POLICY_TYPES = [
@@ -290,131 +288,125 @@ export default function AdminPolicies() {
   };
 
   return (
-    <Box sx={{ px: { xs: 2, md: 4, lg: 6 }, py: 6 }}>
+    <>
       {/* Header Section */}
-      <Box sx={{ mb: 6 }}>
+      <Box sx={{ mb: 5 }}>
         <Typography
           sx={{
             fontSize: 12,
             letterSpacing: 6,
             textTransform: "uppercase",
-            fontWeight: 700,
-            color: "primary.main",
-            mb: 2,
+            color: "text.secondary",
           }}
         >
-          Policy Management
+          Admin Console
         </Typography>
-        <Typography sx={{ fontSize: 42, fontWeight: 900, mb: 3, color: "text.primary" }}>
-          Manage Business Policies
+        <Typography sx={{ mt: 1, fontSize: 30, fontWeight: 900, color: "text.primary" }}>
+          Policies
         </Typography>
-        <Typography sx={{ color: "text.secondary", fontSize: 16, maxWidth: 700, lineHeight: 1.7 }}>
-          Create, edit, and manage return, warranty, and refund policies with detailed configuration options.
+        <Typography sx={{ mt: 1, color: "text.secondary", maxWidth: 700, fontSize: 14 }}>
+          Create, edit, and manage return, warranty, and refund policies with detailed configuration.
         </Typography>
       </Box>
 
-      {/* Filters Card */}
-      <Card sx={{ mb: 2.5, boxShadow: 1, border: "1px solid", borderColor: "divider" }}>
-        <CardContent sx={{ p: 1.5 }}>
-          <Box sx={{ display: "flex", alignItems: "center", mb: 1.5 }}>
-            <FilterListIcon sx={{ mr: 1, color: "primary.main", fontSize: 20 }} />
-            <Typography sx={{ fontWeight: 700, fontSize: 14 }}>Filters</Typography>
-          </Box>
-          <Grid container spacing={1.5}>
-            {/* Search */}
-            <Grid item xs={12} sm={6} md={3}>
-              <TextField
-                fullWidth
-                size="small"
-                placeholder="Search policies..."
-                InputProps={{
-                  startAdornment: <SearchIcon sx={{ mr: 1, color: "text.secondary", fontSize: 20 }} />,
-                }}
-                value={filters.search || ""}
-                onChange={(e) =>
-                  setFilters((prev) => ({ ...prev, search: e.target.value || null, pageNumber: 1 }))
-                }
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    backgroundColor: "background.paper",
-                  },
-                }}
-              />
-            </Grid>
+      {/* Filters Section */}
+      <Box sx={{ mb: 4, display: "flex", gap: 2, alignItems: "flex-end", flexWrap: "wrap" }}>
+        {/* Search */}
+        <Box sx={{ flex: 1, minWidth: 200 }}>
+          <TextField
+            fullWidth
+            size="small"
+            placeholder="Search policies..."
+            InputProps={{
+              startAdornment: <SearchIcon sx={{ mr: 1, color: "text.secondary", fontSize: 20 }} />,
+            }}
+            value={filters.search || ""}
+            onChange={(e) =>
+              setFilters((prev) => ({ ...prev, search: e.target.value || null, pageNumber: 1 }))
+            }
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                backgroundColor: "#ffffff",
+              },
+            }}
+          />
+        </Box>
 
-            {/* Policy Type Filter */}
-            <Grid item xs={12} sm={6} md={3}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Policy Type</InputLabel>
-                <Select
-                  label="Policy Type"
-                  value={filters.policyType ?? ""}
-                  onChange={(e) =>
-                    setFilters((prev) => ({
-                      ...prev,
-                      policyType: e.target.value ? (e.target.value as PolicyTypeEnum) : null,
-                      pageNumber: 1,
-                    }))
-                  }
-                >
-                  <MenuItem value="">All Types</MenuItem>
-                  {POLICY_TYPES.map((type) => (
-                    <MenuItem key={type.value} value={type.value}>
-                      <Box sx={{ display: "flex", alignItems: "center" }}>
-                        <span style={{ marginRight: 8 }}>{type.icon}</span>
-                        {type.label}
-                      </Box>
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
+        {/* Policy Type Filter */}
+        <Box sx={{ minWidth: 160 }}>
+          <FormControl fullWidth size="small">
+            <InputLabel>Policy Type</InputLabel>
+            <Select
+              label="Policy Type"
+              value={filters.policyType ?? ""}
+              onChange={(e) =>
+                setFilters((prev) => ({
+                  ...prev,
+                  policyType: e.target.value ? (e.target.value as PolicyTypeEnum) : null,
+                  pageNumber: 1,
+                }))
+              }
+            >
+              <MenuItem value="">All Types</MenuItem>
+              {POLICY_TYPES.map((type) => (
+                <MenuItem key={type.value} value={type.value}>
+                  <Box sx={{ display: "flex", alignItems: "center" }}>
+                    <span style={{ marginRight: 8 }}>{type.icon}</span>
+                    {type.label}
+                  </Box>
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Box>
 
-            {/* Status Filter */}
-            <Grid item xs={12} sm={6} md={3}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Status</InputLabel>
-                <Select
-                  label="Status"
-                  value={filters.isActive ?? ""}
-                  onChange={(e) =>
-                    setFilters((prev) => ({
-                      ...prev,
-                      isActive: e.target.value === "" ? null : e.target.value === "true",
-                      pageNumber: 1,
-                    }))
-                  }
-                >
-                  <MenuItem value="">All</MenuItem>
-                  <MenuItem value="true">Active</MenuItem>
-                  <MenuItem value="false">Inactive</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
+        {/* Status Filter */}
+        <Box sx={{ minWidth: 140 }}>
+          <FormControl fullWidth size="small">
+            <InputLabel>Status</InputLabel>
+            <Select
+              label="Status"
+              value={filters.isActive ?? ""}
+              onChange={(e) =>
+                setFilters((prev) => ({
+                  ...prev,
+                  isActive: e.target.value === "" ? null : e.target.value === "true",
+                  pageNumber: 1,
+                }))
+              }
+            >
+              <MenuItem value="">All</MenuItem>
+              <MenuItem value="true">Active</MenuItem>
+              <MenuItem value="false">Inactive</MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
 
-            {/* Create Button */}
-            <Grid item xs={12} sm={6} md={3}>
-              <Button
-                fullWidth
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={handleOpenCreateDialog}
-                sx={{
-                  textTransform: "none",
-                  fontWeight: 600,
-                  py: 0.8,
-                  fontSize: 13,
-                }}
-              >
-                + Create Policy
-              </Button>
-            </Grid>
-          </Grid>
-        </CardContent>
-      </Card>
+        {/* Create Button */}
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={handleOpenCreateDialog}
+          sx={{
+            textTransform: "none",
+            fontWeight: 600,
+            py: 1,
+            fontSize: 13,
+          }}
+        >
+          + Create Policy
+        </Button>
+      </Box>
 
-      {/* Policies Table */}
-      <Card sx={{ boxShadow: 1, border: "1px solid", borderColor: "divider" }}>
+      {/* Policies Table - Cleaner Paper style */}
+      <Paper
+        elevation={0}
+        sx={{
+          border: "1px solid rgba(0,0,0,0.08)",
+          borderRadius: 2,
+          overflow: "hidden",
+        }}
+      >
         {isPoliciesLoading ? (
           <Box sx={{ p: 5, textAlign: "center" }}>
             <Typography sx={{ color: "text.secondary", fontSize: 16 }}>Loading policies...</Typography>
@@ -554,7 +546,7 @@ export default function AdminPolicies() {
             />
           </>
         )}
-      </Card>
+      </Paper>
 
       {/* Policy Form Dialog */}
       <Dialog 
@@ -906,6 +898,6 @@ export default function AdminPolicies() {
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </>
   );
 }

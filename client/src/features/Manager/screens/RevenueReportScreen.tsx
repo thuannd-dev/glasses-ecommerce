@@ -96,21 +96,21 @@ export default function RevenueReportScreen() {
       <Box sx={{ mb: 4 }}>
         <Typography
           sx={{
-            fontSize: 12,
-            letterSpacing: 6,
+            fontSize: 11,
+            letterSpacing: 4,
             textTransform: "uppercase",
-            color: "text.secondary",
+            color: "#8A8A8A",
             mb: 1,
           }}
         >
           Financial Reports
         </Typography>
         <Typography
-          sx={{ fontSize: 28, fontWeight: 900, color: "text.primary", mb: 1 }}
+          sx={{ fontSize: { xs: 24, md: 30 }, fontWeight: 800, color: "#171717", mb: 1 }}
         >
           Revenue Dashboard
         </Typography>
-        <Typography sx={{ color: "text.secondary", maxWidth: 600 }}>
+        <Typography sx={{ color: "#6B6B6B", maxWidth: 600 }}>
           Comprehensive revenue overview with breakdown by sales channel.
           Filter by source and date range.
         </Typography>

@@ -37,6 +37,7 @@ public sealed class UpdateOrderStatus
 
                 Order? order = await context.Orders
                     .Include(o => o.ShipmentInfo)
+                    .Include(o => o.Payments)
                     .FirstOrDefaultAsync(o => o.Id == request.OrderId, ct);
 
                 if (order == null)
@@ -189,6 +190,19 @@ public sealed class UpdateOrderStatus
 
                 order.OrderStatus = newStatus;
                 order.UpdatedAt = DateTime.UtcNow;
+
+                // When order is delivered, set payment status to Completed
+                if (newStatus == OrderStatus.Delivered && order.Payments.Count > 0)
+                {
+                    foreach (Payment payment in order.Payments)
+                    {
+                        if (payment.PaymentStatus != PaymentStatus.Refunded)
+                        {
+                            payment.PaymentStatus = PaymentStatus.Completed;
+                            payment.PaymentAt = DateTime.UtcNow;
+                        }
+                    }
+                }
 
                 context.OrderStatusHistories.Add(new OrderStatusHistory
                 {

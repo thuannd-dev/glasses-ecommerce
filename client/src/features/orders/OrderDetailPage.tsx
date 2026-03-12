@@ -15,13 +15,17 @@ import {
   Radio,
   TextField,
   Grid,
+  IconButton,
 } from "@mui/material";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import { NavLink } from "react-router-dom";
 import { useCancelOrder } from "../../lib/hooks/useOrders";
 import { OrderItemRow, type OrderItemRowProps } from "./OrderItemRow";
 import { useOrderDetailPage } from "./hooks/useOrderDetailPage";
 import { formatMoney } from "./utils";
 import { CANCEL_ORDER_REASONS, type CancelReasonValue } from "./cancelReasons";
+import { SubmitAfterSalesTicketDialog } from "./SubmitAfterSalesTicketDialog";
+import { OrderTicketsSection } from "./OrderTicketsSection";
 
 const CANCELABLE_STATUSES = ["Pending", "pending"];
 
@@ -54,8 +58,78 @@ const PALETTE = {
   },
 };
 
+function getCustomerFacingStatusLabel(status: string | undefined): string {
+  if (!status) return "Unknown";
+  const lower = status.toLowerCase();
+
+  // Pending → Pending
+  if (lower.includes("pending")) return "Pending";
+
+  // Confirmed or Processing → Processing
+  if (lower.includes("confirmed") || lower.includes("processing")) return "Processing";
+
+  // Shipped → In-transit
+  if (lower.includes("shipped")) return "In-transit";
+
+  // Delivered or Completed → Completed
+  if (lower.includes("delivered") || lower.includes("completed")) return "Completed";
+
+  // Cancelled or Refunded → Cancelled
+  if (lower.includes("cancel") || lower.includes("refund")) return "Cancelled";
+
+  return status; // Fallback to original status if no match
+}
+
 function getStatusChipStyle(status: string | undefined) {
   if (!status) return {};
+  const lower = status.toLowerCase();
+
+  // Muted red palette for cancel/refund statuses
+  if (lower.includes("cancel") || lower.includes("refund")) {
+    return {
+      bgcolor: "#FDECEC",
+      borderColor: "#F5C2C0",
+      color: "#B3261E",
+    };
+  }
+
+  // Pending: gray
+  if (lower.includes("pending")) {
+    return {
+      bgcolor: PALETTE.status.Shipped.bg,
+      borderColor: PALETTE.status.Shipped.border,
+      color: PALETTE.status.Shipped.text,
+    };
+  }
+
+  // Processing: orange/warning
+  if (lower.includes("confirmed") || lower.includes("processing")) {
+    return {
+      bgcolor: "rgba(249,115,22,0.12)",
+      borderColor: "rgba(249,115,22,0.3)",
+      color: "#c2410c",
+    };
+  }
+
+  // In-transit (Shipped): beige
+  if (lower.includes("shipped")) {
+    return {
+      bgcolor: PALETTE.status.Shipped.bg,
+      borderColor: PALETTE.status.Shipped.border,
+      color: PALETTE.status.Shipped.text,
+    };
+  }
+
+  // Completed (Delivered): green
+  if (lower.includes("delivered") || lower.includes("completed")) {
+    return {
+      bgcolor: "rgba(34,197,94,0.12)",
+      borderColor: "rgba(34,197,94,0.3)",
+      color: "#15803d",
+    };
+  }
+
+  // Fallback for other statuses
   const key = status as keyof typeof PALETTE.status;
   const config = PALETTE.status[key];
   if (!config) {
@@ -89,11 +163,12 @@ export default function OrderDetailPage() {
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState<CancelReasonValue>("changed_mind");
   const [cancelOtherText, setCancelOtherText] = useState("");
+  const [afterSalesDialogOpen, setAfterSalesDialogOpen] = useState(false);
 
   const canCancel = order && CANCELABLE_STATUSES.includes(orderStatus);
+  const canSubmitAfterSales = order && orderStatus === "Delivered";
   const isOtherReason = cancelReason === "other";
 
-  const handleOpenCancelDialog = () => setCancelDialogOpen(true);
   const handleCloseCancelDialog = () => {
     setCancelDialogOpen(false);
     setCancelReason("changed_mind");
@@ -249,7 +324,7 @@ export default function OrderDetailPage() {
         >
           <Chip
             size="small"
-            label={orderStatus}
+            label={getCustomerFacingStatusLabel(orderStatus)}
             sx={{
               textTransform: "capitalize",
               fontWeight: 600,
@@ -418,7 +493,7 @@ export default function OrderDetailPage() {
                     Status timeline
                   </Typography>
                   <Box sx={{ display: "flex", flexDirection: "column", gap: 1.75 }}>
-                    {order.statusHistories.slice(1).map((h, i, arr) => {
+                    {order.statusHistories.slice(0).map((h, i, arr) => {
                       const isLast = i === arr.length - 1;
                       return (
                         <Box
@@ -447,7 +522,7 @@ export default function OrderDetailPage() {
                                 fontWeight: isLast ? 600 : 500,
                               }}
                             >
-                              {h.fromStatus ?? "—"} → <b>{h.toStatus}</b>
+                              <b>{h.toStatus}</b>
                               {h.notes ? ` · ${h.notes}` : ""}
                             </Typography>
                             <Typography
@@ -461,6 +536,156 @@ export default function OrderDetailPage() {
                       );
                     })}
                   </Box>
+                </>
+              )}
+
+              {/* Tracking your order section — when shipped */}
+              {orderStatus?.toLowerCase() === "shipped" && order?.shipment && (
+                <>
+                  <Divider sx={{ my: 2, borderColor: PALETTE.divider }} />
+                  <Typography
+                    fontSize={14}
+                    fontWeight={600}
+                    sx={{ mb: 1.5, color: PALETTE.textSecondary }}
+                  >
+                    Tracking your order
+                  </Typography>
+                  <Grid container spacing={1.5} sx={{ mb: 1.5 }}>
+                    {/* Carrier */}
+                    {order.shipment?.carrierName && (
+                      <Grid item xs={12} sm={6}>
+                        <Box>
+                          <Typography fontSize={11} sx={{ color: PALETTE.textMuted, mb: 0.25 }}>
+                            Carrier
+                          </Typography>
+                          <Typography fontSize={13} sx={{ color: PALETTE.textMain, fontWeight: 500 }}>
+                            {order.shipment.carrierName}
+                          </Typography>
+                        </Box>
+                      </Grid>
+                    )}
+
+                    {/* Tracking Code */}
+                    {order.shipment?.trackingCode && (
+                      <Grid item xs={12} sm={6}>
+                        <Box>
+                          <Typography fontSize={11} sx={{ color: PALETTE.textMuted, mb: 0.25 }}>
+                            Tracking Code
+                          </Typography>
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                            <Typography
+                              fontSize={13}
+                              sx={{
+                                color: PALETTE.textMain,
+                                fontWeight: 600,
+                                fontFamily: "monospace",
+                              }}
+                            >
+                              {order.shipment.trackingCode}
+                            </Typography>
+                            <IconButton
+                              size="small"
+                              onClick={() =>
+                                navigator.clipboard.writeText(
+                                  order.shipment?.trackingCode || ""
+                                )
+                              }
+                              sx={{
+                                color: PALETTE.accent,
+                                p: 0.25,
+                                "&:hover": { bgcolor: "rgba(182,140,90,0.08)" },
+                              }}
+                            >
+                              <ContentCopyIcon sx={{ fontSize: 14 }} />
+                            </IconButton>
+                          </Box>
+                        </Box>
+                      </Grid>
+                    )}
+
+                    {/* Shipped At */}
+                    {order.shipment?.shippedAt && (
+                      <Grid item xs={12} sm={6}>
+                        <Box>
+                          <Typography fontSize={11} sx={{ color: PALETTE.textMuted, mb: 0.25 }}>
+                            Shipped At
+                          </Typography>
+                          <Typography fontSize={13} sx={{ color: PALETTE.textMain }}>
+                            {new Date(order.shipment.shippedAt).toLocaleString()}
+                          </Typography>
+                        </Box>
+                      </Grid>
+                    )}
+
+                    {/* Estimated Delivery */}
+                    {order.shipment?.estimatedDeliveryAt && (
+                      <Grid item xs={12} sm={6}>
+                        <Box>
+                          <Typography fontSize={11} sx={{ color: PALETTE.textMuted, mb: 0.25 }}>
+                            Est. Delivery
+                          </Typography>
+                          <Typography fontSize={13} sx={{ color: PALETTE.textMain }}>
+                            {new Date(
+                              order.shipment.estimatedDeliveryAt
+                            ).toLocaleString()}
+                          </Typography>
+                        </Box>
+                      </Grid>
+                    )}
+
+                    {/* Shipping Notes */}
+                    {order.shipment?.shippingNotes && (
+                      <Grid item xs={12} sm={6}>
+                        <Box>
+                          <Typography fontSize={11} sx={{ color: PALETTE.textMuted, mb: 0.25 }}>
+                            Notes
+                          </Typography>
+                          <Typography
+                            fontSize={13}
+                            sx={{
+                              color: PALETTE.textMain,
+                              whiteSpace: "pre-wrap",
+                              wordBreak: "break-word",
+                            }}
+                          >
+                            {order.shipment.shippingNotes}
+                          </Typography>
+                        </Box>
+                      </Grid>
+                    )}
+                  </Grid>
+
+                  {/* Move to Tracking Page - Full width button */}
+                  {order.shipment?.trackingUrl && (
+                    <Button
+                      href={order.shipment.trackingUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      fullWidth
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 0.75,
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: PALETTE.accent,
+                        textDecoration: "none",
+                        py: 1,
+                        borderRadius: 1,
+                        border: `1px solid ${PALETTE.accent}`,
+                        bgcolor: "rgba(182,140,90,0.05)",
+                        cursor: "pointer",
+                        transition: "all 0.2s",
+                        "&:hover": {
+                          bgcolor: PALETTE.accent,
+                          color: PALETTE.cardBg,
+                        },
+                      }}
+                    >
+                      Move to Tracking Page →
+                    </Button>
+                  )}
                 </>
               )}
 
@@ -531,13 +756,70 @@ export default function OrderDetailPage() {
                       backgroundColor: "rgba(248,113,113,0.06)",
                     },
                   }}
-                  onClick={handleOpenCancelDialog}
+                  onClick={() => setCancelDialogOpen(true)}
                   disabled={cancelOrder.isPending}
                 >
                   {cancelOrder.isPending ? "Cancelling..." : "Cancel order"}
                 </Button>
               </Box>
             </Paper>
+          )}
+
+          {canSubmitAfterSales && (
+            <Paper
+              elevation={0}
+              sx={{
+                border: `1px solid ${PALETTE.cardBorder}`,
+                borderRadius: 2.5,
+                overflow: "hidden",
+                mt: 3,
+                bgcolor: "#F9F7F4",
+                boxShadow: "0 8px 22px rgba(0,0,0,0.04)",
+              }}
+            >
+              <Box
+                sx={{
+                  px: 3,
+                  py: 2,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 1,
+                }}
+              >
+                <Typography
+                  fontWeight={700}
+                  fontSize={15}
+                  sx={{ color: PALETTE.textMain }}
+                >
+                  Product issue or warranty claim?
+                </Typography>
+                <Typography fontSize={13} sx={{ color: PALETTE.textSecondary }}>
+                  Submit a return, refund, or warranty ticket. Our team will
+                  review and assist you.
+                </Typography>
+                <Button
+                  variant="contained"
+                  size="large"
+                  sx={{
+                    mt: 0.5,
+                    textTransform: "none",
+                    fontWeight: 700,
+                    backgroundColor: PALETTE.accent,
+                    color: "white",
+                    "&:hover": {
+                      backgroundColor: PALETTE.accentHover,
+                    },
+                  }}
+                  onClick={() => setAfterSalesDialogOpen(true)}
+                >
+                  Submit Ticket
+                </Button>
+              </Box>
+            </Paper>
+          )}
+
+          {canSubmitAfterSales && orderId && (
+            <OrderTicketsSection orderId={orderId} />
           )}
         </Grid>
 
@@ -785,6 +1067,16 @@ export default function OrderDetailPage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* After-Sales Ticket Dialog */}
+      <SubmitAfterSalesTicketDialog
+        open={afterSalesDialogOpen}
+        onClose={() => setAfterSalesDialogOpen(false)}
+        order={order}
+        onSuccess={() => {
+          // Optionally refresh order data or navigate
+        }}
+      />
       </Box>
     </Box>
   );

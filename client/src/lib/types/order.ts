@@ -2,6 +2,8 @@
  * Types for Customer Orders API: POST/GET /api/me/orders, GET /api/me/orders/:id
  */
 
+import type { ShipmentInfoDto, StaffOrderPrescriptionDto } from "./staffOrders";
+
 /** Order type: use values from GET /api/lookups (orderType array) */
 export type OrderTypeLookup = "ReadyStock" | "PreOrder" | "Prescription";
 
@@ -163,8 +165,8 @@ export interface CustomerOrderDetailDto {
   shippingAddress?: string | OrderShippingAddressShape;
   trackingNumber?: string;
   carrier?: string;
-  prescription?: unknown;
-  shipment?: unknown;
+  prescription?: StaffOrderPrescriptionDto | null;
+  shipment?: ShipmentInfoDto | null;
   payment: CustomerOrderPaymentDto | null;
   statusHistories: CustomerOrderStatusHistoryDto[];
   items: CustomerOrderItemDto[];

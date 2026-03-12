@@ -86,12 +86,7 @@ export default function RoleManagement() {
   }
 
   return (
-    <Box
-      sx={{
-        px: { xs: 2, md: 4, lg: 6 },
-        py: 6,
-      }}
-    >
+    <>
       {/* Header */}
       <Box sx={{ mb: 5 }}>
         <Typography
@@ -102,7 +97,7 @@ export default function RoleManagement() {
             color: "text.secondary",
           }}
         >
-          Admin Control
+          Admin Console
         </Typography>
         <Typography
           sx={{ mt: 1, fontSize: 30, fontWeight: 900 }}
@@ -110,8 +105,8 @@ export default function RoleManagement() {
         >
           Role Management
         </Typography>
-        <Typography sx={{ mt: 1, color: "text.secondary", maxWidth: 520 }}>
-          Assign roles to users and manage access levels.
+        <Typography sx={{ mt: 1, color: "text.secondary", maxWidth: 520, fontSize: 14 }}>
+          Assign roles to users and manage access levels across the platform.
         </Typography>
       </Box>
 
@@ -226,6 +221,6 @@ export default function RoleManagement() {
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </>
   );
 }
