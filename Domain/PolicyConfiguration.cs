@@ -29,6 +29,12 @@ public class PolicyConfiguration
 
     public decimal? MinOrderAmount { get; set; }
 
+    // Used by Refund policy: max item value eligible for auto-upgrade from Return → RefundOnly
+    public decimal? RefundOnlyMaxAmount { get; set; }
+
+    // Used by Refund policy: window (days from delivery) within which auto-upgrade is allowed
+    public int? RefundWindowDays { get; set; }
+
     public bool IsActive { get; set; } = true;
 
     public DateTime EffectiveFrom { get; set; }

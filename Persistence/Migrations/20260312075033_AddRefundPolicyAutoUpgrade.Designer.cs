@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Persistence;
 
@@ -11,9 +12,11 @@ using Persistence;
 namespace Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260312075033_AddRefundPolicyAutoUpgrade")]
+    partial class AddRefundPolicyAutoUpgrade
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -962,7 +965,7 @@ namespace Persistence.Migrations
 
                             t.HasCheckConstraint("CK_PolicyConfiguration_PolicyType", "[PolicyType] IN (1, 2, 3)");
 
-                            t.HasCheckConstraint("CK_PolicyConfiguration_RefundOnly_Requires_RefundPolicy", "\r\n                    (PolicyType != 3 AND RefundOnlyMaxAmount IS NULL AND RefundWindowDays IS NULL)\r\n                    OR\r\n                    (PolicyType = 3 AND \r\n                        (RefundWindowDays IS NULL OR RefundWindowDays >= 0) AND\r\n                        (RefundOnlyMaxAmount IS NULL OR RefundOnlyMaxAmount >= 0)\r\n                    )\r\n                    ");
+                            t.HasCheckConstraint("CK_PolicyConfiguration_RefundOnly_Requires_RefundPolicy", "\r\n                    (PolicyType != 3 AND RefundOnlyMaxAmount IS NULL AND RefundWindowDays IS NULL)\r\n                    OR\r\n                    (PolicyType = 3)\r\n                    ");
 
                             t.HasCheckConstraint("CK_PolicyConfiguration_ReturnWindowDays_Requires_ReturnPolicy", "\r\n                    (PolicyType != 1 AND ReturnWindowDays IS NULL)\r\n                    OR\r\n                    (PolicyType = 1 AND ReturnWindowDays IS NOT NULL AND ReturnWindowDays >= 0)\r\n                    ");
 

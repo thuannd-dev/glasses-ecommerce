@@ -5,8 +5,8 @@ export default function ManagerLayout() {
   return (
     <Box
       sx={{
-        bgcolor: "#fafafa",
-        color: "rgba(0,0,0,0.87)",
+        bgcolor: "#FAFAF8",
+        color: "#171717",
         minHeight: "100%",
       }}
     >
