@@ -1,16 +1,5 @@
 import { useState } from "react";
-import {
-  Box,
-  Button,
-  Chip,
-  Collapse,
-  Divider,
-  IconButton,
-  LinearProgress,
-  Paper,
-  Stack,
-  Typography,
-} from "@mui/material";
+import { Box, Button, Chip, Collapse, Divider, IconButton, LinearProgress, Paper, Typography } from "@mui/material";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
@@ -108,58 +97,6 @@ function SalesOrderRow({ summary }: { summary: StaffOrderDto }) {
           </Box>
         </Box>
         <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, flexWrap: "wrap" }}>
-          {isPending && (
-            <Stack direction="row" spacing={1}>
-              <Button
-                variant="outlined"
-                size="small"
-                disabled={updateStatus.isPending}
-                sx={{
-                  textTransform: "none",
-                  fontWeight: 600,
-                  fontSize: 12,
-                  height: 32,
-                  borderRadius: 999,
-                  borderColor: "#D4E5D5",
-                  bgcolor: "#EEF5EE",
-                  color: "#466A4A",
-                  "&:hover": { bgcolor: "#E3EFE4", borderColor: "#C8DDCA" },
-                }}
-                onClick={() =>
-                  updateStatus.mutate({
-                    id: summary.id,
-                    newStatus: 1,
-                  })
-                }
-              >
-                Confirm
-              </Button>
-              <Button
-                variant="outlined"
-                size="small"
-                disabled={updateStatus.isPending}
-                sx={{
-                  textTransform: "none",
-                  fontWeight: 600,
-                  fontSize: 12,
-                  height: 32,
-                  borderRadius: 999,
-                  borderColor: "#E8CFCF",
-                  bgcolor: "#F6EAEA",
-                  color: "#8E3B3B",
-                  "&:hover": { borderColor: "#DDBFBF", bgcolor: "#F1E2E2" },
-                }}
-                onClick={() =>
-                  updateStatus.mutate({
-                    id: summary.id,
-                    newStatus: 6,
-                  })
-                }
-              >
-                Reject
-              </Button>
-            </Stack>
-          )}
           <Chip
             label={summary.orderStatus}
             size="small"
@@ -202,6 +139,32 @@ function SalesOrderRow({ summary }: { summary: StaffOrderDto }) {
         <Typography component="span" sx={{ fontSize: 13, color: "#6B6B6B" }}>
           {new Date(summary.createdAt).toLocaleString()}
         </Typography>
+        {/* Source / Type pills giống Operations */}
+        <Typography component="span" sx={{ color: "rgba(0,0,0,0.3)", mx: 0.25 }}>•</Typography>
+        <Chip
+          label={summary.orderSource}
+          size="small"
+          sx={{
+            height: 22,
+            borderRadius: 999,
+            fontSize: 11,
+            fontWeight: 600,
+            bgcolor: "#ECFEFF",
+            color: "#0369A1",
+          }}
+        />
+        <Chip
+          label={summary.orderType}
+          size="small"
+          sx={{
+            height: 22,
+            borderRadius: 999,
+            fontSize: 11,
+            fontWeight: 600,
+            bgcolor: "#F5F3FF",
+            color: "#4C1D95",
+          }}
+        />
       </Box>
 
       {/* Row 3: Total amount */}
@@ -225,7 +188,76 @@ function SalesOrderRow({ summary }: { summary: StaffOrderDto }) {
         {isLoading || !detail ? (
           <Typography sx={{ fontSize: 13, color: "#6B6B6B" }}>Loading detail...</Typography>
         ) : (
-          <OrderDetailExpanded detail={detail} />
+          <>
+            <OrderDetailExpanded detail={detail} />
+            {isPending && (
+              <Box
+                sx={{
+                  mt: 1.5,
+                  display: "flex",
+                  flexDirection: "row",
+                  gap: 1,
+                }}
+              >
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  size="small"
+                  disabled={updateStatus.isPending}
+                  sx={{
+                    textTransform: "none",
+                    fontWeight: 600,
+                    fontSize: 13,
+                    height: 40,
+                    borderRadius: 1,
+                    borderColor: "#D4E5D5",
+                    bgcolor: "#EEF5EE",
+                    color: "#466A4A",
+                    "&:hover": {
+                      bgcolor: "#E3EFE4",
+                      borderColor: "#C8DDCA",
+                    },
+                  }}
+                  onClick={() =>
+                    updateStatus.mutate({
+                      id: summary.id,
+                      newStatus: 1,
+                    })
+                  }
+                >
+                  Confirm
+                </Button>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  size="small"
+                  disabled={updateStatus.isPending}
+                  sx={{
+                    textTransform: "none",
+                    fontWeight: 600,
+                    fontSize: 13,
+                    height: 40,
+                    borderRadius: 1,
+                    borderColor: "#E8CFCF",
+                    bgcolor: "#F6EAEA",
+                    color: "#8E3B3B",
+                    "&:hover": {
+                      borderColor: "#DDBFBF",
+                      bgcolor: "#F1E2E2",
+                    },
+                  }}
+                  onClick={() =>
+                    updateStatus.mutate({
+                      id: summary.id,
+                      newStatus: 6,
+                    })
+                  }
+                >
+                  Reject
+                </Button>
+              </Box>
+            )}
+          </>
         )}
       </Collapse>
     </Paper>
@@ -348,7 +380,7 @@ export function OrdersScreen() {
           </Paper>
         </Box>
       ) : (
-        <Box sx={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
+          <Box sx={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
           <Box
             sx={{
               display: "flex",
@@ -368,10 +400,10 @@ export function OrdersScreen() {
             ))}
           </Box>
 
-          {meta && meta.totalPages > 1 && (
+          {meta && (
             <AppPagination
               page={pageNumber}
-              totalPages={meta.totalPages}
+              totalPages={meta.totalPages || 1}
               onChange={setPageNumber}
               totalItems={meta.totalCount}
               pageSize={meta.pageSize}

@@ -10,7 +10,6 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  Divider,
   InputAdornment,
   LinearProgress,
   Paper,
@@ -451,7 +450,8 @@ export function OutboundInventoryScreen() {
                     Loading order information...
                   </Box>
                 ) : selectedOrderDetail ? (
-                  <Stack spacing={1}>
+                  <Stack spacing={1.5}>
+                    {/* Header */}
                     <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 1 }}>
                       <Typography sx={{ fontWeight: 700, color: "#171717", fontSize: 14 }}>
                         Order preview
@@ -470,22 +470,119 @@ export function OutboundInventoryScreen() {
                         }}
                       />
                     </Box>
-                    <Typography sx={{ color: "#6B6B6B", fontSize: 13 }}>
-                      ID: {selectedOrderDetail.id}
-                    </Typography>
-                    <Typography sx={{ color: "#6B6B6B", fontSize: 13 }}>
-                      Customer: {selectedOrderDetail.walkInCustomerName || "Walk-in / N/A"}
-                    </Typography>
-                    <Typography sx={{ color: "#6B6B6B", fontSize: 13 }}>
-                      Created: {new Date(selectedOrderDetail.createdAt).toLocaleString()}
-                    </Typography>
-                    <Typography sx={{ color: "#171717", fontSize: 13, fontWeight: 700 }}>
-                      Total: {selectedOrderDetail.finalAmount.toLocaleString("en-US", { style: "currency", currency: "USD" })}
-                    </Typography>
-                    <Divider sx={{ borderColor: "rgba(0,0,0,0.06)" }} />
-                    <Typography sx={{ color: "#6B6B6B", fontSize: 12.5 }}>
-                      Items: {selectedOrderDetail.items.length}
-                    </Typography>
+
+                    {/* Top meta */}
+                    <Box sx={{ display: "flex", flexDirection: "column", gap: 0.25, fontSize: 13, color: "#6B6B6B" }}>
+                      <Typography sx={{ fontSize: 13, color: "#6B6B6B" }}>
+                        <strong>ID:</strong> {selectedOrderDetail.id}
+                      </Typography>
+                      <Typography sx={{ fontSize: 13, color: "#6B6B6B" }}>
+                        <strong>Type:</strong> {selectedOrderDetail.orderType} ·{" "}
+                        <strong>Source:</strong> {selectedOrderDetail.orderSource}
+                      </Typography>
+                      <Typography sx={{ fontSize: 13, color: "#6B6B6B" }}>
+                        <strong>Created:</strong>{" "}
+                        {new Date(selectedOrderDetail.createdAt).toLocaleString()}
+                      </Typography>
+                    </Box>
+
+                    {/* Customer & shipping */}
+                    <Box sx={{ mt: 0.5 }}>
+                      <Typography sx={{ fontSize: 12, fontWeight: 600, color: "#171717", mb: 0.25 }}>
+                        Customer
+                      </Typography>
+                      <Typography sx={{ fontSize: 13, color: "#6B6B6B" }}>
+                        {selectedOrderDetail.customerName ||
+                          selectedOrderDetail.walkInCustomerName ||
+                          "Walk‑in / N/A"}
+                        {selectedOrderDetail.customerPhone || selectedOrderDetail.walkInCustomerPhone
+                          ? ` · ${selectedOrderDetail.customerPhone ?? selectedOrderDetail.walkInCustomerPhone}`
+                          : ""}
+                      </Typography>
+                      {selectedOrderDetail.shippingAddress && (
+                        <Typography sx={{ fontSize: 12.5, color: "#8A8A8A", mt: 0.25 }}>
+                          {[
+                            selectedOrderDetail.shippingAddress.venue,
+                            selectedOrderDetail.shippingAddress.ward,
+                            selectedOrderDetail.shippingAddress.district,
+                            selectedOrderDetail.shippingAddress.city,
+                          ]
+                            .filter(Boolean)
+                            .join(", ")}
+                        </Typography>
+                      )}
+                    </Box>
+
+                    {/* Amounts & payment */}
+                    <Box sx={{ mt: 0.5 }}>
+                      <Typography sx={{ fontSize: 12, fontWeight: 600, color: "#171717", mb: 0.25 }}>
+                        Payment & totals
+                      </Typography>
+                      <Typography sx={{ fontSize: 13, color: "#6B6B6B" }}>
+                        <strong>Items:</strong> {selectedOrderDetail.items.length}
+                      </Typography>
+                      <Typography sx={{ fontSize: 13, color: "#6B6B6B" }}>
+                        <strong>Subtotal:</strong>{" "}
+                        {selectedOrderDetail.totalAmount.toLocaleString("en-US", {
+                          style: "currency",
+                          currency: "USD",
+                        })}
+                        {" · "}
+                        <strong>Shipping:</strong>{" "}
+                        {selectedOrderDetail.shippingFee.toLocaleString("en-US", {
+                          style: "currency",
+                          currency: "USD",
+                        })}
+                      </Typography>
+                      <Typography sx={{ fontSize: 13, color: "#6B6B6B" }}>
+                        <strong>Discount:</strong>{" "}
+                        {selectedOrderDetail.discountApplied
+                          ? `- ${selectedOrderDetail.discountApplied.toLocaleString("en-US", {
+                              style: "currency",
+                              currency: "USD",
+                            })}`
+                          : "None"}
+                      </Typography>
+                      <Typography sx={{ color: "#171717", fontSize: 13, fontWeight: 700 }}>
+                        Final total:{" "}
+                        {selectedOrderDetail.finalAmount.toLocaleString("en-US", {
+                          style: "currency",
+                          currency: "USD",
+                        })}
+                      </Typography>
+                      {selectedOrderDetail.payment && (
+                        <Typography sx={{ fontSize: 12.5, color: "#6B6B6B", mt: 0.25 }}>
+                          <strong>Payment:</strong> {selectedOrderDetail.payment.paymentMethod} ·{" "}
+                          {selectedOrderDetail.payment.paymentStatus}
+                        </Typography>
+                      )}
+                    </Box>
+
+                    {/* Items summary */}
+                    {selectedOrderDetail.items && selectedOrderDetail.items.length > 0 && (
+                      <Box sx={{ mt: 0.75 }}>
+                        <Typography
+                          sx={{ fontSize: 12, fontWeight: 600, color: "#171717", mb: 0.25 }}
+                        >
+                          Items in this order
+                        </Typography>
+                        <Box sx={{ display: "flex", flexDirection: "column", gap: 0.25 }}>
+                          {selectedOrderDetail.items.map((it) => (
+                            <Typography
+                              key={it.id}
+                              sx={{ fontSize: 12.5, color: "#4B4B4B" }}
+                            >
+                              {it.productName}
+                              {it.variantName ? ` · ${it.variantName}` : ""} — Qty {it.quantity} ·{" "}
+                              {it.totalPrice.toLocaleString("en-US", {
+                                style: "currency",
+                                currency: "USD",
+                              })}
+                            </Typography>
+                          ))}
+                        </Box>
+                      </Box>
+                    )}
                   </Stack>
                 ) : (
                   <Typography sx={{ color: "#8A8A8A", fontSize: 13 }}>

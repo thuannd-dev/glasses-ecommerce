@@ -84,12 +84,7 @@ export function PackScreen() {
                     key={o.id}
                     mode="confirmed"
                     summary={o}
-                    primaryActionLabel={
-                      String(o.orderStatus).toLowerCase() === "confirmed"
-                        ? "Processing"
-                        : undefined
-                    }
-                    onPrimaryActionClick={(orderId) =>
+                    onProcessingClick={(orderId) =>
                       updateStatus.mutate({
                         orderId,
                         status: "Processing" as OrderStatus,

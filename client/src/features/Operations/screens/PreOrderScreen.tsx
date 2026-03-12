@@ -3,7 +3,6 @@ import { Box, LinearProgress, Paper, Typography } from "@mui/material";
 
 import { AppPagination } from "../../../app/shared/components/AppPagination";
 import { useOperationsOrders, useUpdateOrderStatus } from "../../../lib/hooks/useOperationsOrders";
-import { useOperations } from "../context/OperationsContext";
 import type { StaffOrderDto } from "../../../lib/types/staffOrders";
 import type { OrderStatus, OrderType } from "../../../lib/types/operations";
 import { OperationsPageHeader } from "../components/OperationsPageHeader";
@@ -12,7 +11,9 @@ import { OrderListCard, StatusFilterTabs } from "../components";
 export function PreOrderScreen() {
   const [pageNumber, setPageNumber] = useState(1);
   const pageSize = 5;
-  const [statusFilter, setStatusFilter] = useState<"All" | "Confirmed" | "Processing" | "Shipped" | "Delivered">("All");
+  const [statusFilter, setStatusFilter] = useState<"All" | "Confirmed" | "Processing" | "Shipped" | "Delivered">(
+    "Confirmed",
+  );
 
   const { data, isLoading } = useOperationsOrders({
     pageNumber,
@@ -28,7 +29,6 @@ export function PreOrderScreen() {
   const totalCount = data?.totalCount ?? safeOrders.length;
 
   const updateStatus = useUpdateOrderStatus();
-  const { openCreateShipment } = useOperations();
 
   return (
     <>
@@ -96,37 +96,42 @@ export function PreOrderScreen() {
                     if (statusFilter === "Delivered") return s === "delivered";
                     return true;
                   })
-                  .map((o) => (
-                    <OrderListCard
-                      key={o.id}
-                      mode="confirmed"
-                      summary={o}
-                      primaryActionLabel={
-                        String(o.orderStatus).toLowerCase() === "confirmed"
-                          ? "Processing"
-                          : String(o.orderStatus).toLowerCase() === "processing"
-                          ? "Mark shipped"
-                          : undefined
-                      }
-                      onPrimaryActionClick={(orderId) => {
-                        const s = String(o.orderStatus).toLowerCase();
-                        if (s === "confirmed") {
-                          updateStatus.mutate({
-                            orderId,
-                            status: "Processing" as OrderStatus,
-                          });
-                        } else if (s === "processing") {
-                          openCreateShipment(orderId);
+                  .map((o) => {
+                    const s = String(o.orderStatus).toLowerCase();
+                    const canProcessing = s === "confirmed";
+                    const canMarkShipped = s === "processing";
+
+                    return (
+                      <OrderListCard
+                        key={o.id}
+                        mode="confirmed"
+                        summary={o}
+                        onProcessingClick={
+                          canProcessing
+                            ? (orderId) =>
+                                updateStatus.mutate({
+                                  orderId,
+                                  status: "Processing" as OrderStatus,
+                                })
+                            : undefined
                         }
-                      }}
-                      onUpdateStatus={(status) => {
-                        updateStatus.mutate({
-                          orderId: o.id,
-                          status: status as OrderStatus,
-                        });
-                      }}
-                    />
-                  ))}
+                        onMarkShippedClick={
+                          canMarkShipped
+                            ? (orderId) =>
+                                updateStatus.mutate({
+                                  orderId,
+                                  status: "Shipped" as OrderStatus,
+                                  shipmentCarrierName: "GHN",
+                                  shipmentTrackingCode: null,
+                                  shipmentTrackingUrl: null,
+                                  shipmentEstimatedDeliveryAt: null,
+                                  shipmentNotes: null,
+                                })
+                            : undefined
+                        }
+                      />
+                    );
+                  })}
               </Box>
               )}
 
