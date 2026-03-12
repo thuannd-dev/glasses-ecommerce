@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -25,12 +25,13 @@ import {
   Card,
   CardContent,
 } from "@mui/material";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-toastify";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import DeleteIcon from "@mui/icons-material/Delete";
 import type { CustomerOrderDetailDto } from "../../lib/types/order";
 import agent from "../../lib/api/agent";
+import { useTicketsByOrder } from "../../lib/hooks/useAfterSales";
 
 type SubmitAfterSalesTicketDialogProps = {
   readonly open: boolean;
@@ -72,6 +73,37 @@ export function SubmitAfterSalesTicketDialog({
   const [reason, setReason] = useState("");
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [itemsInExistingTickets, setItemsInExistingTickets] = useState<Set<string>>(new Set());
+  const queryClient = useQueryClient();
+
+  // Query existing tickets for this order
+  const { data: existingTickets } = useTicketsByOrder(
+    order?.id
+  );
+
+  // Build set of items already in non-closed tickets
+  useEffect(() => {
+    if (existingTickets && existingTickets.length > 0) {
+      const itemIds = new Set<string>();
+      existingTickets.forEach((ticket) => {
+        // Only mark items as unavailable if ticket is not closed/rejected/resolved
+        const isClosedStatus =
+          ticket.ticketStatus === "Resolved" ||
+          ticket.ticketStatus === "Rejected" ||
+          ticket.ticketStatus === "Closed";
+        
+        if (!isClosedStatus && ticket.items && ticket.items.length > 0) {
+          ticket.items.forEach((item) => {
+            itemIds.add(item.id);
+          });
+        }
+      });
+      setItemsInExistingTickets(itemIds);
+    } else {
+      setItemsInExistingTickets(new Set());
+    }
+  }, [existingTickets]);
 
   const itemsCount = order?.items?.length ?? 0;
 
@@ -81,7 +113,12 @@ export function SubmitAfterSalesTicketDialog({
         throw new Error("Missing required fields");
       }
 
-      const ticketTypeEnum = ticketType === "Return" ? 1 : ticketType === "Refund" ? 3 : 2;
+      const ticketTypeMap: Record<string, number> = {
+        "Return": 1,
+        "Refund": 3,
+        "Warranty": 2,
+      };
+      const ticketTypeEnum = ticketTypeMap[ticketType];
 
       const payload = {
         orderId: order.id,
@@ -107,16 +144,33 @@ export function SubmitAfterSalesTicketDialog({
       toast.success(
         "After-sales ticket submitted successfully. Our team will review it shortly."
       );
+      // Invalidate ticket queries to trigger refetch
+      queryClient.invalidateQueries({ queryKey: ["me", "after-sales"] });
+      if (order?.id) {
+        queryClient.invalidateQueries({ queryKey: ["me", "after-sales", "orders", order.id] });
+      }
+      setSubmitError(null);
       handleReset();
       onSuccess();
       onClose();
     },
     onError: (err: unknown) => {
+      let errorMessage = "Failed to submit your support request. Please try again.";
+
       if (err instanceof Error) {
-        toast.error(err.message || "Failed to submit ticket");
-      } else {
-        toast.error("Failed to submit after-sales ticket");
+        // Axios error with response data
+        const axiosErr = err as any;
+        if (axiosErr.response?.data?.message) {
+          errorMessage = axiosErr.response.data.message;
+        } else if (axiosErr.response?.data?.error) {
+          errorMessage = axiosErr.response.data.error;
+        } else if (axiosErr.message) {
+          errorMessage = axiosErr.message;
+        }
       }
+
+      setSubmitError(errorMessage);
+      toast.error(errorMessage);
     },
   });
 
@@ -172,9 +226,21 @@ export function SubmitAfterSalesTicketDialog({
     setSelectedItemIds([]);
     setReason("");
     setUploadedFiles([]);
+    setSubmitError(null);
   };
 
+  // Reset form when dialog closes
+  useEffect(() => {
+    if (!open) {
+      handleReset();
+    }
+  }, [open]);
+
   const handleSelectItem = (itemId: string) => {
+    // Don't allow selecting items that are already in tickets
+    if (itemsInExistingTickets.has(itemId)) {
+      return;
+    }
     setSelectedItemIds((prev) =>
       prev.includes(itemId)
         ? prev.filter((id) => id !== itemId)
@@ -183,12 +249,14 @@ export function SubmitAfterSalesTicketDialog({
   };
 
   const handleSelectAllItems = () => {
-    if (selectedItemIds.length === itemsCount) {
+    const availableItemIds = order?.items
+      ?.filter((item: any) => !itemsInExistingTickets.has(item.id))
+      .map((item: any) => item.id) ?? [];
+
+    if (selectedItemIds.length === availableItemIds.length) {
       setSelectedItemIds([]);
     } else {
-      setSelectedItemIds(
-        order?.items?.map((item: any) => item.id) ?? []
-      );
+      setSelectedItemIds(availableItemIds);
     }
   };
 
@@ -302,6 +370,20 @@ export function SubmitAfterSalesTicketDialog({
       </DialogTitle>
 
       <DialogContent sx={{ pt: 3 }}>
+        {submitError && (
+          <Alert
+            severity="error"
+            onClose={() => setSubmitError(null)}
+            sx={{ mb: 2 }}
+          >
+            <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+              Unable to Submit Ticket
+            </Typography>
+            <Typography variant="body2">
+              {submitError}
+            </Typography>
+          </Alert>
+        )}
         <Stepper
           activeStep={activeStep}
           sx={{ mb: 3 }}
@@ -420,16 +502,31 @@ export function SubmitAfterSalesTicketDialog({
               Select which items to include:
             </Typography>
 
+            {itemsInExistingTickets.size > 0 && (
+              <Alert severity="info" sx={{ mb: 1 }}>
+                <Typography fontSize={13} fontWeight={600} sx={{ mb: 0.5 }}>
+                  Some items are unavailable
+                </Typography>
+                <Typography fontSize={13}>
+                  Products already in other tickets cannot be selected. Please check your existing tickets or select different items.
+                </Typography>
+              </Alert>
+            )}
+
             <FormControl fullWidth>
               <FormControlLabel
                 control={
                   <Checkbox
-                    checked={selectedItemIds.length === itemsCount}
+                    checked={
+                      selectedItemIds.length === (itemsCount - itemsInExistingTickets.size) &&
+                      itemsCount - itemsInExistingTickets.size > 0
+                    }
                     indeterminate={
                       selectedItemIds.length > 0 &&
-                      selectedItemIds.length < itemsCount
+                      selectedItemIds.length < (itemsCount - itemsInExistingTickets.size)
                     }
                     onChange={handleSelectAllItems}
+                    disabled={itemsInExistingTickets.size === itemsCount}
                   />
                 }
                 label={
@@ -453,82 +550,97 @@ export function SubmitAfterSalesTicketDialog({
               }}
             >
               <List sx={{ p: 0 }}>
-                {order?.items?.map((item: any, idx: number) => (
-                  <ListItem
-                    key={item.id}
-                    sx={{
-                      py: 2,
-                      px: 2,
-                      borderBottom:
-                        idx < (order?.items?.length ?? 0) - 1
-                          ? `1px solid ${PALETTE.divider}`
-                          : "none",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 1.5,
-                    }}
-                  >
-                    <Checkbox
-                      checked={selectedItemIds.includes(item.id)}
-                      onChange={() => handleSelectItem(item.id)}
-                    />
-                    {(item.productImageUrl || item.imageUrl) && (
-                      <Box
-                        sx={{
-                          width: 60,
-                          height: 60,
-                          flexShrink: 0,
-                          borderRadius: 1,
-                          overflow: "hidden",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          backgroundColor: PALETTE.divider,
-                        }}
-                      >
+                {order?.items?.map((item: any, idx: number) => {
+                  const isUnavailable = itemsInExistingTickets.has(item.id);
+                  return (
+                    <ListItem
+                      key={item.id}
+                      sx={{
+                        py: 2,
+                        px: 2,
+                        borderBottom:
+                          idx < (order?.items?.length ?? 0) - 1
+                            ? `1px solid ${PALETTE.divider}`
+                            : "none",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1.5,
+                        opacity: isUnavailable ? 0.6 : 1,
+                        backgroundColor: isUnavailable ? "rgba(0,0,0,0.02)" : "transparent",
+                      }}
+                    >
+                      <Checkbox
+                        checked={selectedItemIds.includes(item.id)}
+                        onChange={() => handleSelectItem(item.id)}
+                        disabled={isUnavailable}
+                      />
+                      {(item.productImageUrl || item.imageUrl) && (
                         <Box
-                          component="img"
-                          src={item.productImageUrl || item.imageUrl}
-                          alt={item.productName}
                           sx={{
-                            width: "100%",
-                            height: "100%",
-                            objectFit: "cover",
+                            width: 60,
+                            height: 60,
+                            flexShrink: 0,
+                            borderRadius: 1,
+                            overflow: "hidden",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            backgroundColor: PALETTE.divider,
+                            opacity: isUnavailable ? 0.6 : 1,
                           }}
-                        />
-                      </Box>
-                    )}
-                    <Box sx={{ flex: 1, display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 2 }}>
-                      <Box>
-                        <Typography
-                          fontSize={14}
-                          fontWeight={600}
-                          sx={{ color: PALETTE.textMain }}
                         >
-                          {item.productName}
-                        </Typography>
-                        {item.variantName && (
+                          <Box
+                            component="img"
+                            src={item.productImageUrl || item.imageUrl}
+                            alt={item.productName}
+                            sx={{
+                              width: "100%",
+                              height: "100%",
+                              objectFit: "cover",
+                            }}
+                          />
+                        </Box>
+                      )}
+                      <Box sx={{ flex: 1, display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 2 }}>
+                        <Box>
                           <Typography
-                            fontSize={13}
-                            sx={{ color: PALETTE.textMuted }}
+                            fontSize={14}
+                            fontWeight={600}
+                            sx={{ color: PALETTE.textMain }}
                           >
-                            {item.variantName}
+                            {item.productName}
                           </Typography>
-                        )}
-                      </Box>
-                      <Box sx={{ textAlign: "right", minWidth: "fit-content" }}>
-                        <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5, fontSize: 12, color: PALETTE.textMuted, alignItems: "flex-end" }}>
-                          <Typography fontSize={12} sx={{ color: PALETTE.textMuted }}>
-                            Qty: {item.quantity}
-                          </Typography>
-                          <Typography fontSize={12} sx={{ color: PALETTE.textMuted }}>
-                            ${item.unitPrice?.toFixed(2) || "0.00"}
-                          </Typography>
+                          {item.variantName && (
+                            <Typography
+                              fontSize={13}
+                              sx={{ color: PALETTE.textMuted }}
+                            >
+                              {item.variantName}
+                            </Typography>
+                          )}
+                          {isUnavailable && (
+                            <Typography
+                              fontSize={12}
+                              sx={{ color: "#D97706", fontWeight: 600, mt: 0.5 }}
+                            >
+                              Already in ticket
+                            </Typography>
+                          )}
+                        </Box>
+                        <Box sx={{ textAlign: "right", minWidth: "fit-content" }}>
+                          <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5, fontSize: 12, color: PALETTE.textMuted, alignItems: "flex-end" }}>
+                            <Typography fontSize={12} sx={{ color: PALETTE.textMuted }}>
+                              Qty: {item.quantity}
+                            </Typography>
+                            <Typography fontSize={12} sx={{ color: PALETTE.textMuted }}>
+                              ${item.unitPrice?.toFixed(2) || "0.00"}
+                            </Typography>
+                          </Box>
                         </Box>
                       </Box>
-                    </Box>
-                  </ListItem>
-                ))}
+                    </ListItem>
+                  );
+                })}
               </List>
             </Paper>
 

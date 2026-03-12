@@ -22,7 +22,7 @@ public sealed class SubmitTicket
         IMapper mapper,
         IUserAccessor userAccessor) : IRequestHandler<Command, Result<TicketDetailDto>>
     {
-        public async Task<Result<TicketDetailDto>> Handle(Command request, CancellationToken ct)
+        public async Task<Result<TicketDetailDto>> Handle(Command request, CancellationToken cancellationToken)
         {
             Guid userId = userAccessor.GetUserId();
 
@@ -33,11 +33,11 @@ public sealed class SubmitTicket
                 .FirstOrDefaultAsync(o =>
                     o.Id == request.Dto.OrderId &&
                     o.UserId == userId &&
-                    (o.OrderStatus == OrderStatus.Delivered || o.OrderStatus == OrderStatus.Completed), ct);
+                    (o.OrderStatus == OrderStatus.Delivered || o.OrderStatus == OrderStatus.Completed), cancellationToken);
 
             if (order == null)
                 return Result<TicketDetailDto>.Failure(
-                    "Order not found or is not eligible for after-sales request.", 404);
+                    "Order not found or is not eligible for support requests. After-sales tickets can only be created for delivered orders.", 404);
 
             // 2. Determine OrderItemIds to create tickets for
             List<Guid?> orderItemIdsToProcess = [];
@@ -55,7 +55,7 @@ public sealed class SubmitTicket
                 {
                     if (!validItemIds.Contains(itemId))
                         return Result<TicketDetailDto>.Failure(
-                            $"Item '{itemId}' does not belong to this order.", 400);
+                            "One or more selected items do not belong to this order. Please refresh the page and try again.", 400);
                 }
                 orderItemIdsToProcess = request.Dto.OrderItemIds.Cast<Guid?>().ToList();
             }
@@ -79,11 +79,11 @@ public sealed class SubmitTicket
                     p.IsActive &&
                     !p.IsDeleted &&
                     p.EffectiveFrom <= DateTime.UtcNow &&
-                    (p.EffectiveTo == null || p.EffectiveTo >= DateTime.UtcNow), ct);
+                    (p.EffectiveTo == null || p.EffectiveTo >= DateTime.UtcNow), cancellationToken);
 
             if (policy == null)
                 return Result<TicketDetailDto>.Failure(
-                    "This after-sales service is currently unavailable. Please contact support.", 503);
+                    "This support service is temporarily unavailable. Please try again later or contact our support team.", 503);
 
             // 4. Resolve the delivered date from status history to enforce policy windows
             DateTime? deliveredAt = await context.OrderStatusHistories
@@ -91,7 +91,7 @@ public sealed class SubmitTicket
                 .Where(h => h.OrderId == order.Id && h.ToStatus == OrderStatus.Delivered)
                 .OrderByDescending(h => h.CreatedAt)
                 .Select(h => (DateTime?)h.CreatedAt)
-                .FirstOrDefaultAsync(ct);
+                .FirstOrDefaultAsync(cancellationToken);
 
             // 5. Policy pre-checks — auto-reject with PolicyViolation message
             string? policyViolation = null;
@@ -127,9 +127,9 @@ public sealed class SubmitTicket
             // 6. Duplicate open ticket check (same order + same item + original/effective Return OR any Refund, not closed/rejected/resolved)
             //    - Blocks if: (TicketType == Return || OriginalTicketType == Return || TicketType == Refund)
             //    - This ensures you can't have both an open Refund and an open Return for the same scope.
-            bool duplicateExists = await context.AfterSalesTickets
+            AfterSalesTicket? existingTicket = await context.AfterSalesTickets
                 .AsNoTracking()
-                .AnyAsync(t =>
+                .FirstOrDefaultAsync(t =>
                     t.OrderId == request.Dto.OrderId &&
                     (request.Dto.OrderItemIds == null || request.Dto.OrderItemIds.Count == 0 
                         ? t.OrderItemId == null 
@@ -142,15 +142,52 @@ public sealed class SubmitTicket
                     ) &&
                     t.TicketStatus != AfterSalesTicketStatus.Rejected &&
                     t.TicketStatus != AfterSalesTicketStatus.Resolved &&
-                    t.TicketStatus != AfterSalesTicketStatus.Closed, ct);
+                    t.TicketStatus != AfterSalesTicketStatus.Closed, cancellationToken);
 
-            if (duplicateExists)
+            if (existingTicket != null)
+            {
+                string existingType = existingTicket.OriginalTicketType?.ToString() ?? existingTicket.TicketType.ToString();
+                string ticketScope = request.Dto.OrderItemIds?.Count > 0 ? "this item" : "this order";
                 return Result<TicketDetailDto>.Failure(
-                    "An open ticket of this type already exists for this order item.", 409);
+                    $"You already have an open {existingType} request for {ticketScope}. Our team is reviewing it. Please check your support tickets section for details.", 409);
+            }
+
+            // 6.5. Check if any selected items are already in any existing non-closed tickets
+            // Prevents duplicate product submissions across different tickets
+            if (request.Dto.OrderItemIds != null && request.Dto.OrderItemIds.Count > 0)
+            {
+                List<Guid> itemsInExistingTickets = await context.AfterSalesTickets
+                    .AsNoTracking()
+                    .Where(t =>
+                        t.OrderId == request.Dto.OrderId &&
+                        t.OrderItemId.HasValue &&
+                        request.Dto.OrderItemIds.Contains(t.OrderItemId.Value) &&
+                        t.TicketStatus != AfterSalesTicketStatus.Rejected &&
+                        t.TicketStatus != AfterSalesTicketStatus.Resolved &&
+                        t.TicketStatus != AfterSalesTicketStatus.Closed)
+                    .Select(t => t.OrderItemId!.Value)
+                    .Distinct()
+                    .ToListAsync(cancellationToken);
+
+                if (itemsInExistingTickets.Count > 0)
+                {
+                    // Get product names for the items already in tickets
+                    List<string> productNames = await context.OrderItems
+                        .AsNoTracking()
+                        .Where(oi => itemsInExistingTickets.Contains(oi.Id))
+                        .Select(oi => oi.ProductVariant.Product.ProductName)
+                        .ToListAsync(cancellationToken);
+
+                    string productsText = string.Join(", ", productNames);
+                    return Result<TicketDetailDto>.Failure(
+                        $"One or more products you selected are already included in another ticket: {productsText}. You can only have one open ticket per product. Please select different items or check your existing tickets.", 409);
+                }
+            }
 
             // 7. Halt and return 400 if policy violation occurs
             if (policyViolation != null)
-                return Result<TicketDetailDto>.Failure(policyViolation, 400);
+                return Result<TicketDetailDto>.Failure(
+                    $"Cannot submit request: {policyViolation} Please contact support if you believe this is an error.", 400);
 
             // 7.5. Auto-upgrade Return → Refund (RefundOnly fast-track) if all conditions are met:
             //   A. No existing Refund ticket on this order (any status)
@@ -173,7 +210,7 @@ public sealed class SubmitTicket
                         (p.EffectiveTo == null || p.EffectiveTo >= DateTime.UtcNow))
                     .OrderByDescending(p => p.EffectiveFrom)
                     .ThenByDescending(p => p.UpdatedAt)
-                    .FirstOrDefaultAsync(ct);
+                    .FirstOrDefaultAsync(cancellationToken);
 
                 if (refundPolicy != null && refundPolicy.RefundAllowed)
                 {
@@ -182,7 +219,7 @@ public sealed class SubmitTicket
                         .AsNoTracking()
                         .AnyAsync(t =>
                             t.OrderId == request.Dto.OrderId &&
-                            t.TicketType == AfterSalesTicketType.Refund, ct);
+                            t.TicketType == AfterSalesTicketType.Refund, cancellationToken);
 
                     if (!hasExistingRefundTicket)
                     {
@@ -194,9 +231,9 @@ public sealed class SubmitTicket
                         if (withinRefundWindow)
                         {
                             // Compute item value for the ticket's scope
-                            decimal itemValue = request.Dto.OrderItemId.HasValue
+                            decimal itemValue = request.Dto.OrderItemIds?.Count > 0
                                 ? order.OrderItems
-                                    .Where(i => i.Id == request.Dto.OrderItemId.Value)
+                                    .Where(i => request.Dto.OrderItemIds.Contains(i.Id))
                                     .Sum(i => i.UnitPrice * i.Quantity)
                                 : order.OrderItems.Sum(i => i.UnitPrice * i.Quantity);
 
@@ -264,23 +301,26 @@ public sealed class SubmitTicket
                 lastCreatedTicket = ticket;
             }
 
-            bool isSuccess = await context.SaveChangesAsync(ct) > 0;
+            bool isSuccess = await context.SaveChangesAsync(cancellationToken) > 0;
 
             if (!isSuccess)
-                return Result<TicketDetailDto>.Failure("Failed to submit after-sales ticket.", 500);
+                return Result<TicketDetailDto>.Failure(
+                    "Failed to submit your support request. Please try again or contact support for assistance.", 500);
 
             // 7. Return full detail of last created ticket via projection
             if (lastCreatedTicket == null)
-                return Result<TicketDetailDto>.Failure("Failed to create ticket.", 500);
+                return Result<TicketDetailDto>.Failure(
+                    "Failed to process your request. Please try again.", 500);
 
             TicketDetailDto? dto = await context.AfterSalesTickets
                 .AsNoTracking()
                 .Where(t => t.Id == lastCreatedTicket.Id)
                 .ProjectTo<TicketDetailDto>(mapper.ConfigurationProvider)
-                .FirstOrDefaultAsync(ct);
+                .FirstOrDefaultAsync(cancellationToken);
 
             if (dto == null)
-                return Result<TicketDetailDto>.Failure("Failed to retrieve created ticket.", 500);
+                return Result<TicketDetailDto>.Failure(
+                    "Your request was submitted but we could not load the details. Please check your support tickets section.", 500);
 
             return Result<TicketDetailDto>.Success(dto);
         }

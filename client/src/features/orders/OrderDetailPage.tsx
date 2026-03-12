@@ -23,6 +23,7 @@ import { useOrderDetailPage } from "./hooks/useOrderDetailPage";
 import { formatMoney } from "./utils";
 import { CANCEL_ORDER_REASONS, type CancelReasonValue } from "./cancelReasons";
 import { SubmitAfterSalesTicketDialog } from "./SubmitAfterSalesTicketDialog";
+import { OrderTicketsSection } from "./OrderTicketsSection";
 
 const CANCELABLE_STATUSES = ["Pending", "pending"];
 
@@ -55,8 +56,78 @@ const PALETTE = {
   },
 };
 
+function getCustomerFacingStatusLabel(status: string | undefined): string {
+  if (!status) return "Unknown";
+  const lower = status.toLowerCase();
+
+  // Pending → Pending
+  if (lower.includes("pending")) return "Pending";
+
+  // Confirmed or Processing → Processing
+  if (lower.includes("confirmed") || lower.includes("processing")) return "Processing";
+
+  // Shipped → In-transit
+  if (lower.includes("shipped")) return "In-transit";
+
+  // Delivered or Completed → Completed
+  if (lower.includes("delivered") || lower.includes("completed")) return "Completed";
+
+  // Cancelled or Refunded → Cancelled
+  if (lower.includes("cancel") || lower.includes("refund")) return "Cancelled";
+
+  return status; // Fallback to original status if no match
+}
+
 function getStatusChipStyle(status: string | undefined) {
   if (!status) return {};
+  const lower = status.toLowerCase();
+
+  // Muted red palette for cancel/refund statuses
+  if (lower.includes("cancel") || lower.includes("refund")) {
+    return {
+      bgcolor: "#FDECEC",
+      borderColor: "#F5C2C0",
+      color: "#B3261E",
+    };
+  }
+
+  // Pending: gray
+  if (lower.includes("pending")) {
+    return {
+      bgcolor: PALETTE.status.Shipped.bg,
+      borderColor: PALETTE.status.Shipped.border,
+      color: PALETTE.status.Shipped.text,
+    };
+  }
+
+  // Processing: orange/warning
+  if (lower.includes("confirmed") || lower.includes("processing")) {
+    return {
+      bgcolor: "rgba(249,115,22,0.12)",
+      borderColor: "rgba(249,115,22,0.3)",
+      color: "#c2410c",
+    };
+  }
+
+  // In-transit (Shipped): beige
+  if (lower.includes("shipped")) {
+    return {
+      bgcolor: PALETTE.status.Shipped.bg,
+      borderColor: PALETTE.status.Shipped.border,
+      color: PALETTE.status.Shipped.text,
+    };
+  }
+
+  // Completed (Delivered): green
+  if (lower.includes("delivered") || lower.includes("completed")) {
+    return {
+      bgcolor: "rgba(34,197,94,0.12)",
+      borderColor: "rgba(34,197,94,0.3)",
+      color: "#15803d",
+    };
+  }
+
+  // Fallback for other statuses
   const key = status as keyof typeof PALETTE.status;
   const config = PALETTE.status[key];
   if (!config) {
@@ -251,7 +322,7 @@ export default function OrderDetailPage() {
         >
           <Chip
             size="small"
-            label={orderStatus}
+            label={getCustomerFacingStatusLabel(orderStatus)}
             sx={{
               textTransform: "capitalize",
               fontWeight: 600,
@@ -420,7 +491,7 @@ export default function OrderDetailPage() {
                     Status timeline
                   </Typography>
                   <Box sx={{ display: "flex", flexDirection: "column", gap: 1.75 }}>
-                    {order.statusHistories.slice(1).map((h, i, arr) => {
+                    {order.statusHistories.slice(0).map((h, i, arr) => {
                       const isLast = i === arr.length - 1;
                       return (
                         <Box
@@ -449,7 +520,7 @@ export default function OrderDetailPage() {
                                 fontWeight: isLast ? 600 : 500,
                               }}
                             >
-                              {h.fromStatus ?? "—"} → <b>{h.toStatus}</b>
+                              <b>{h.toStatus}</b>
                               {h.notes ? ` · ${h.notes}` : ""}
                             </Typography>
                             <Typography
@@ -593,6 +664,10 @@ export default function OrderDetailPage() {
                 </Button>
               </Box>
             </Paper>
+          )}
+
+          {canSubmitAfterSales && orderId && (
+            <OrderTicketsSection orderId={orderId} />
           )}
         </Grid>
 

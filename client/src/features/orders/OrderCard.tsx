@@ -21,11 +21,33 @@ const PALETTE = {
   },
 } as const;
 
+function getCustomerFacingStatusLabel(status: string | undefined): string {
+  if (!status) return "Unknown";
+  const lower = status.toLowerCase();
+
+  // Pending → Pending
+  if (lower.includes("pending")) return "Pending";
+
+  // Confirmed or Processing → Processing
+  if (lower.includes("confirmed") || lower.includes("processing")) return "Processing";
+
+  // Shipped → In-transit
+  if (lower.includes("shipped")) return "In-transit";
+
+  // Delivered or Completed → Completed
+  if (lower.includes("delivered") || lower.includes("completed")) return "Completed";
+
+  // Cancelled or Refunded → Cancelled
+  if (lower.includes("cancel") || lower.includes("refund")) return "Cancelled";
+
+  return status; // Fallback to original status if no match
+}
+
 function getStatusChipStyle(status: string | undefined) {
   if (!status) return {};
   const lower = status.toLowerCase();
 
-  // Muted red palette cho các trạng thái cancel/refund
+  // Muted red palette for cancel/refund statuses
   if (lower.includes("cancel") || lower.includes("refund")) {
     return {
       bgcolor: "#FDECEC",
@@ -34,7 +56,7 @@ function getStatusChipStyle(status: string | undefined) {
     };
   }
 
-  // Pending: xám premium rõ ràng
+  // Pending: gray premium
   if (lower.includes("pending")) {
     return {
       bgcolor: PALETTE.status.Pending.bg,
@@ -43,23 +65,38 @@ function getStatusChipStyle(status: string | undefined) {
     };
   }
 
-  // Chuẩn hoá mọi biến thể về 3 nhóm chính
-  let key: keyof typeof PALETTE.status | undefined;
-  if (lower.includes("shipped")) key = "Shipped";
-  else if (lower.includes("ready")) key = "ReadyStock";
-
-  const config = key !== undefined ? PALETTE.status[key] : undefined;
-  if (!config) {
+  // Processing: orange/warning color
+  if (lower.includes("confirmed") || lower.includes("processing")) {
     return {
-      bgcolor: "#F5F5F5",
-      borderColor: "#E4E4E4",
-      color: PALETTE.textSecondary,
+      bgcolor: "rgba(249,115,22,0.12)",
+      borderColor: "rgba(249,115,22,0.3)",
+      color: "#c2410c",
     };
   }
+
+  // In-transit (Shipped): premium beige
+  if (lower.includes("shipped")) {
+    return {
+      bgcolor: PALETTE.status.Shipped.bg,
+      borderColor: PALETTE.status.Shipped.border,
+      color: PALETTE.status.Shipped.text,
+    };
+  }
+
+  // Completed: green color
+  if (lower.includes("delivered") || lower.includes("completed")) {
+    return {
+      bgcolor: "rgba(34,197,94,0.12)",
+      borderColor: "rgba(34,197,94,0.3)",
+      color: "#15803d",
+    };
+  }
+
+  // Fallback
   return {
-    bgcolor: config.bg,
-    borderColor: config.border,
-    color: config.text,
+    bgcolor: "#F5F5F5",
+    borderColor: "#E4E4E4",
+    color: PALETTE.textSecondary,
   };
 }
 
@@ -137,8 +174,10 @@ export function OrderCard({ orderSummary }: OrderCardProps) {
               {orderSummary.orderType}
             </Box>
           )}
+        </Box>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap", justifyContent: "flex-end" }}>
           <Chip
-            label={orderSummary.orderStatus}
+            label={getCustomerFacingStatusLabel(orderSummary.orderStatus)}
             size="small"
             sx={{
               textTransform: "capitalize",
@@ -151,16 +190,16 @@ export function OrderCard({ orderSummary }: OrderCardProps) {
               ...getStatusChipStyle(orderSummary.orderStatus),
             }}
           />
+          <Typography fontSize={13} sx={{ color: PALETTE.textMuted, whiteSpace: "nowrap" }}>
+            {new Date(orderSummary.createdAt).toLocaleDateString("en-US", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </Typography>
         </Box>
-        <Typography fontSize={13} sx={{ color: PALETTE.textMuted }}>
-          {new Date(orderSummary.createdAt).toLocaleDateString("en-US", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-          })}
-        </Typography>
       </Box>
 
       <Box sx={{ px: 2.5, py: 2.5 }}>
