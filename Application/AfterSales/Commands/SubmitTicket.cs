@@ -124,7 +124,8 @@ public sealed class SubmitTicket
                     (
                         t.TicketType == request.Dto.TicketType ||
                         t.OriginalTicketType == request.Dto.TicketType ||
-                        (request.Dto.TicketType == AfterSalesTicketType.Return && t.TicketType == AfterSalesTicketType.Refund)
+                        (request.Dto.TicketType == AfterSalesTicketType.Return && t.TicketType == AfterSalesTicketType.Refund) ||
+                        (request.Dto.TicketType == AfterSalesTicketType.Refund && t.TicketType == AfterSalesTicketType.Return)
                     ) &&
                     t.TicketStatus != AfterSalesTicketStatus.Rejected &&
                     t.TicketStatus != AfterSalesTicketStatus.Resolved &&
