@@ -1,5 +1,4 @@
 import type { MeOrderItemDto } from "./order";
-
 export interface AfterSalesTicketDto {
   id: string;
   status?: string;

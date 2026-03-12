@@ -1,5 +1,15 @@
 import React from "react";
-import { Box, Divider, Typography, Table, TableBody, TableCell, TableHead, TableRow, Tooltip } from "@mui/material";
+import {
+  Box,
+  Divider,
+  Typography,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  Tooltip,
+} from "@mui/material";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import type {
   StaffOrderDetailDto,
