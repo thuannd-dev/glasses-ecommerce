@@ -85,7 +85,7 @@ export function CreateShipmentDialog({
             >
               <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap", mb: 1.5 }}>
                 <Typography fontWeight={800} fontSize={15}>
-                  {order.orderNumber}
+                  {order.id}
                 </Typography>
                 <Box
                   component="span"

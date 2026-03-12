@@ -15,7 +15,9 @@ import {
   Radio,
   TextField,
   Grid,
+  IconButton,
 } from "@mui/material";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import { NavLink } from "react-router-dom";
 import { useCancelOrder } from "../../lib/hooks/useOrders";
 import { OrderItemRow, type OrderItemRowProps } from "./OrderItemRow";
@@ -534,6 +536,156 @@ export default function OrderDetailPage() {
                       );
                     })}
                   </Box>
+                </>
+              )}
+
+              {/* Tracking your order section — when shipped */}
+              {orderStatus?.toLowerCase() === "shipped" && order?.shipment && (
+                <>
+                  <Divider sx={{ my: 2, borderColor: PALETTE.divider }} />
+                  <Typography
+                    fontSize={14}
+                    fontWeight={600}
+                    sx={{ mb: 1.5, color: PALETTE.textSecondary }}
+                  >
+                    Tracking your order
+                  </Typography>
+                  <Grid container spacing={1.5} sx={{ mb: 1.5 }}>
+                    {/* Carrier */}
+                    {(order.shipment as any)?.carrierName && (
+                      <Grid item xs={12} sm={6}>
+                        <Box>
+                          <Typography fontSize={11} sx={{ color: PALETTE.textMuted, mb: 0.25 }}>
+                            Carrier
+                          </Typography>
+                          <Typography fontSize={13} sx={{ color: PALETTE.textMain, fontWeight: 500 }}>
+                            {(order.shipment as any).carrierName}
+                          </Typography>
+                        </Box>
+                      </Grid>
+                    )}
+
+                    {/* Tracking Code */}
+                    {(order.shipment as any)?.trackingCode && (
+                      <Grid item xs={12} sm={6}>
+                        <Box>
+                          <Typography fontSize={11} sx={{ color: PALETTE.textMuted, mb: 0.25 }}>
+                            Tracking Code
+                          </Typography>
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                            <Typography
+                              fontSize={13}
+                              sx={{
+                                color: PALETTE.textMain,
+                                fontWeight: 600,
+                                fontFamily: "monospace",
+                              }}
+                            >
+                              {(order.shipment as any).trackingCode}
+                            </Typography>
+                            <IconButton
+                              size="small"
+                              onClick={() =>
+                                navigator.clipboard.writeText(
+                                  (order.shipment as any).trackingCode || ""
+                                )
+                              }
+                              sx={{
+                                color: PALETTE.accent,
+                                p: 0.25,
+                                "&:hover": { bgcolor: "rgba(182,140,90,0.08)" },
+                              }}
+                            >
+                              <ContentCopyIcon sx={{ fontSize: 14 }} />
+                            </IconButton>
+                          </Box>
+                        </Box>
+                      </Grid>
+                    )}
+
+                    {/* Shipped At */}
+                    {(order.shipment as any)?.shippedAt && (
+                      <Grid item xs={12} sm={6}>
+                        <Box>
+                          <Typography fontSize={11} sx={{ color: PALETTE.textMuted, mb: 0.25 }}>
+                            Shipped At
+                          </Typography>
+                          <Typography fontSize={13} sx={{ color: PALETTE.textMain }}>
+                            {new Date((order.shipment as any).shippedAt).toLocaleString()}
+                          </Typography>
+                        </Box>
+                      </Grid>
+                    )}
+
+                    {/* Estimated Delivery */}
+                    {(order.shipment as any)?.estimatedDeliveryAt && (
+                      <Grid item xs={12} sm={6}>
+                        <Box>
+                          <Typography fontSize={11} sx={{ color: PALETTE.textMuted, mb: 0.25 }}>
+                            Est. Delivery
+                          </Typography>
+                          <Typography fontSize={13} sx={{ color: PALETTE.textMain }}>
+                            {new Date(
+                              (order.shipment as any).estimatedDeliveryAt
+                            ).toLocaleString()}
+                          </Typography>
+                        </Box>
+                      </Grid>
+                    )}
+
+                    {/* Shipping Notes */}
+                    {(order.shipment as any)?.shippingNotes && (
+                      <Grid item xs={12} sm={6}>
+                        <Box>
+                          <Typography fontSize={11} sx={{ color: PALETTE.textMuted, mb: 0.25 }}>
+                            Notes
+                          </Typography>
+                          <Typography
+                            fontSize={13}
+                            sx={{
+                              color: PALETTE.textMain,
+                              whiteSpace: "pre-wrap",
+                              wordBreak: "break-word",
+                            }}
+                          >
+                            {(order.shipment as any).shippingNotes}
+                          </Typography>
+                        </Box>
+                      </Grid>
+                    )}
+                  </Grid>
+
+                  {/* Move to Tracking Page - Full width button */}
+                  {(order.shipment as any)?.trackingUrl && (
+                    <Button
+                      href={(order.shipment as any).trackingUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      fullWidth
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 0.75,
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: PALETTE.accent,
+                        textDecoration: "none",
+                        py: 1,
+                        borderRadius: 1,
+                        border: `1px solid ${PALETTE.accent}`,
+                        bgcolor: "rgba(182,140,90,0.05)",
+                        cursor: "pointer",
+                        transition: "all 0.2s",
+                        "&:hover": {
+                          bgcolor: PALETTE.accent,
+                          color: PALETTE.cardBg,
+                        },
+                      }}
+                    >
+                      Move to Tracking Page →
+                    </Button>
+                  )}
                 </>
               )}
 
