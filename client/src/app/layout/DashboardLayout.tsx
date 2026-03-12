@@ -417,16 +417,22 @@ export default function DashboardLayout() {
                           borderRadius: 2,
                           mb: 0.5,
                           color: "rgba(0,0,0,0.7)",
+                          borderLeft: "3px solid transparent",
+                          pl: 1.5,
                           ...(isActive
-                            ? { bgcolor: "rgba(25,118,210,0.12)", color: "primary.main" }
+                            ? {
+                                bgcolor: "rgba(182,140,90,0.12)",
+                                color: "#171717",
+                                borderLeftColor: "#B68C5A",
+                              }
                             : {}),
                           "&:hover": {
                             bgcolor: "rgba(0,0,0,0.04)",
-                            color: "rgba(0,0,0,0.9)",
+                            color: "#171717",
                           },
                         }}
                       >
-                        <ListItemIcon sx={{ minWidth: 40, color: "inherit" }}>{sub.icon}</ListItemIcon>
+                        <ListItemIcon sx={{ minWidth: 40, color: isActive ? "#B68C5A" : "inherit" }}>{sub.icon}</ListItemIcon>
                         <ListItemText primary={sub.label} primaryTypographyProps={{ fontWeight: 600 }} />
                       </ListItemButton>
                     );

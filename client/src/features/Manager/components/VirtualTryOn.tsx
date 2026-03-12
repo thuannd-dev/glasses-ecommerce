@@ -78,16 +78,49 @@ export default function VirtualTryOn({
     yaw: 0,
   });
 
-  // Preload glasses images
+  // Preload glasses images as blob URLs to avoid cross-origin canvas tainting
   const glassesImagesRef = useRef<HTMLImageElement[]>([]);
+  const blobUrlsRef = useRef<string[]>([]);
 
   useEffect(() => {
-    glassesImagesRef.current = variantImages.map((v) => {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.src = v.imageUrl;
-      return img;
-    });
+    let cancelled = false;
+    const blobUrls: string[] = [];
+
+    async function loadImages() {
+      const images: HTMLImageElement[] = [];
+      for (const v of variantImages) {
+        try {
+          const resp = await fetch(v.imageUrl);
+          const blob = await resp.blob();
+          const url = URL.createObjectURL(blob);
+          blobUrls.push(url);
+          const img = new Image();
+          img.src = url;
+          await new Promise<void>((resolve) => {
+            img.onload = () => resolve();
+            img.onerror = () => resolve();
+          });
+          images.push(img);
+        } catch {
+          // Fallback: load with crossOrigin attribute
+          const img = new Image();
+          img.crossOrigin = "anonymous";
+          img.src = v.imageUrl;
+          images.push(img);
+        }
+      }
+      if (!cancelled) {
+        glassesImagesRef.current = images;
+        blobUrlsRef.current = blobUrls;
+      }
+    }
+
+    loadImages();
+
+    return () => {
+      cancelled = true;
+      blobUrls.forEach((u) => URL.revokeObjectURL(u));
+    };
   }, [variantImages]);
 
   const initFaceMesh = useCallback(async () => {
@@ -191,8 +224,12 @@ export default function VirtualTryOn({
       if (videoRef.current) {
         const camera = new window.Camera(videoRef.current, {
           onFrame: async () => {
-            if (faceMeshRef.current && videoRef.current) {
-              await faceMeshRef.current.send({ image: videoRef.current });
+            try {
+              if (faceMeshRef.current && videoRef.current) {
+                await faceMeshRef.current.send({ image: videoRef.current });
+              }
+            } catch (_) {
+              // Silently ignore send errors (e.g. during unmount or camera stop)
             }
           },
           width: 640,
@@ -326,11 +363,33 @@ export default function VirtualTryOn({
     tempCtx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
     tempCtx.restore();
 
-    // Draw overlay
-    tempCtx.drawImage(overlay, 0, 0);
+    // Redraw glasses overlay directly (avoids tainted canvas from cross-origin images)
+    const s = smoothRef.current;
+    const glasses = glassesImagesRef.current[selectedIdxRef.current];
+    if (glasses && glasses.complete && s.width > 0) {
+      const brightness = 1;
+      tempCtx.filter = `brightness(${brightness})`;
+      tempCtx.save();
+      tempCtx.translate(s.x, s.y);
+      tempCtx.rotate(s.angle);
+      if (s.yaw > 0) {
+        tempCtx.scale(0.95, 1);
+      } else {
+        tempCtx.scale(1.05, 1);
+      }
+      const anchorX = s.width * 0.5;
+      const anchorY = s.width * 0.42 * 0.5;
+      tempCtx.drawImage(glasses, -anchorX, -anchorY, s.width, s.width * 0.42);
+      tempCtx.restore();
+      tempCtx.filter = "none";
+    }
 
-    const dataUrl = tempCanvas.toDataURL("image/png");
-    setCapturedImage(dataUrl);
+    try {
+      const dataUrl = tempCanvas.toDataURL("image/png");
+      setCapturedImage(dataUrl);
+    } catch (e) {
+      console.warn("Capture failed (tainted canvas):", e);
+    }
   };
 
   const handleDownload = () => {
