@@ -1,4 +1,5 @@
 using Application.Core;
+using Application.Interfaces;
 using Domain;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -13,17 +14,23 @@ public sealed class DeleteTicket
         public required Guid TicketId { get; set; }
     }
 
-    internal sealed class Handler(AppDbContext context) : IRequestHandler<Command, Result<Unit>>
+    internal sealed class Handler(
+        AppDbContext context,
+        IUserAccessor userAccessor) : IRequestHandler<Command, Result<Unit>>
     {
         public async Task<Result<Unit>> Handle(Command request, CancellationToken cancellationToken)
         {
-            // Load the ticket with its attachments
+            Guid? customerId = userAccessor.GetUserId();
+            if (customerId == null)
+                return Result<Unit>.Failure("User context not found.", 401);
+
+            // Load the ticket with its attachments, scoped to current customer
             AfterSalesTicket? ticket = await context.AfterSalesTickets
                 .Include(t => t.Attachments)
-                .FirstOrDefaultAsync(t => t.Id == request.TicketId, cancellationToken);
+                .FirstOrDefaultAsync(t => t.Id == request.TicketId && t.CustomerId == customerId, cancellationToken);
 
             if (ticket == null)
-                return Result<Unit>.Failure($"Ticket '{request.TicketId}' not found.", 404);
+                return Result<Unit>.Failure($"Ticket '{request.TicketId}' not found or not owned by current user.", 404);
 
             // Remove all attachments (cascade delete will handle this, but we're being explicit)
             foreach (TicketAttachment attachment in ticket.Attachments)

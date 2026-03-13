@@ -41,7 +41,7 @@ public sealed class SubmitTicket
 
             // 2. Determine OrderItemIds to create tickets for
             List<Guid?> orderItemIdsToProcess = [];
-
+            
             if (request.Dto.OrderItemIds == null || request.Dto.OrderItemIds.Count == 0)
             {
                 // No specific items selected — create one ticket for the whole order
@@ -136,8 +136,8 @@ public sealed class SubmitTicket
                 .AsNoTracking()
                 .FirstOrDefaultAsync(t =>
                     t.OrderId == request.Dto.OrderId &&
-                    (request.Dto.OrderItemIds == null || request.Dto.OrderItemIds.Count == 0
-                        ? t.OrderItemId == null
+                    (request.Dto.OrderItemIds == null || request.Dto.OrderItemIds.Count == 0 
+                        ? t.OrderItemId == null 
                         : request.Dto.OrderItemIds.Contains(t.OrderItemId ?? Guid.Empty)) &&
                     (
                         t.TicketType == request.Dto.TicketType ||
