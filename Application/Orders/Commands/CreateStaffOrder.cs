@@ -6,7 +6,6 @@ using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Domain;
 using MediatR;
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Persistence;
@@ -105,15 +104,9 @@ public sealed class CreateStaffOrder
                 if (variants.Count != variantIds.Distinct().Count())
                     return Result<Guid>.Failure("One or more product variants not found.", 404);
 
-                // Load stocks with UPDLOCK to prevent race condition on reservation
-                string paramList = string.Join(", ", variantIds.Select((_, i) => $"@p{i}"));
-                object[] sqlParams = variantIds
-                    .Select((id, i) => (object)new SqlParameter($"@p{i}", id)).ToArray();
-
-                await context.Stocks
-                    .FromSqlRaw($"SELECT * FROM Stocks WITH (UPDLOCK) WHERE ProductVariantId IN ({paramList})", sqlParams)
-                    .ToListAsync(ct);
-                // EF Core relationship fixup auto-links variant.Stock
+                // Load stocks with UPDLOCK to prevent race condition on reservation;
+                // EF Core relationship fixup auto-links each variant.Stock navigation property.
+                _ = await context.GetStocksWithLockAsync(variantIds, ct);
 
                 // Ensure all ordered product variants are active
                 foreach (OrderItemInputDto item in mergedItems)
