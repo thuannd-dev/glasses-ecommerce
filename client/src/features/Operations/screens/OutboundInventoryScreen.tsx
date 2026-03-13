@@ -10,53 +10,26 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  InputAdornment,
-  LinearProgress,
   Paper,
   Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
   TextField,
   Typography,
 } from "@mui/material";
-import SearchIcon from "@mui/icons-material/Search";
-import RemoveCircleOutlineIcon from "@mui/icons-material/RemoveCircleOutline";
+import MoveToInboxOutlinedIcon from "@mui/icons-material/MoveToInboxOutlined";
 import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
 
 import { OperationsPageHeader } from "../components/OperationsPageHeader";
 import { useOutboundInventoryScreen } from "../hooks/useOutboundInventoryScreen";
-import { AppPagination } from "../../../app/shared/components/AppPagination";
-
-function getStockChipStyles(stock: number) {
-  if (stock >= 200) {
-    return { bg: "#EEF5EE", color: "#466A4A" };
-  }
-  if (stock >= 50) {
-    return { bg: "#F3EBDD", color: "#7A5A33" };
-  }
-  return { bg: "#F6EAEA", color: "#8E3B3B" };
-}
 
 export function OutboundInventoryScreen() {
   const {
-    inventorySearch,
-    setInventorySearch,
-    pageNumber,
-    setPageNumber,
     dialogOpen,
     setDialogOpen,
     orderId,
     setOrderId,
     notes,
     setNotes,
-    inventoryItems,
-    totalPages,
     totalCount,
-    isInventoryLoading,
-    isInventoryFetching,
     outboundMutation,
     filteredOrders,
     selectedOrderOption,
@@ -92,6 +65,22 @@ export function OutboundInventoryScreen() {
         >
           <Button
             component={NavLink}
+            to="/operations/stock"
+            variant="text"
+            sx={{
+              borderRadius: 999,
+              px: 2.5,
+              py: 0.9,
+              fontWeight: 600,
+              textTransform: "none",
+              color: "#6B6B6B",
+              bgcolor: "transparent",
+            }}
+          >
+            Stock
+          </Button>
+          <Button
+            component={NavLink}
             to="/operations/inbound"
             variant="text"
             sx={{
@@ -103,6 +92,7 @@ export function OutboundInventoryScreen() {
               color: "#6B6B6B",
               bgcolor: "transparent",
             }}
+            startIcon={<MoveToInboxOutlinedIcon sx={{ fontSize: 18 }} />}
           >
             Inbound
           </Button>
@@ -178,190 +168,13 @@ export function OutboundInventoryScreen() {
                 py: 2,
               }}
             >
-              <TextField
-                size="small"
-                value={inventorySearch}
-                onChange={(e) => {
-                  setInventorySearch(e.target.value);
-                  setPageNumber(1);
-                }}
-                placeholder="Search products..."
-                sx={{
-                  width: { xs: "100%", sm: 360 },
-                  "& .MuiOutlinedInput-root": {
-                    height: 42,
-                    borderRadius: 999,
-                    bgcolor: "#FFFFFF",
-                    "& fieldset": { borderColor: "rgba(0,0,0,0.08)" },
-                    "&:hover fieldset": { borderColor: "rgba(0,0,0,0.12)" },
-                    "&.Mui-focused fieldset": { borderColor: "#B68C5A", borderWidth: 1 },
-                    "&.Mui-focused": {
-                      boxShadow: "0 0 0 4px rgba(182,140,90,0.16)",
-                    },
-                  },
-                }}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon sx={{ color: "#8A8A8A", fontSize: 20 }} />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-              <Button
-                variant="contained"
-                startIcon={<RemoveCircleOutlineIcon />}
-                onClick={() => setDialogOpen(true)}
-                sx={{
-                  height: 42,
-                  px: 2.25,
-                  borderRadius: 999,
-                  textTransform: "none",
-                  fontWeight: 700,
-                  boxShadow: "0 10px 20px rgba(0,0,0,0.12)",
-                  bgcolor: "#111827",
-                  "&:hover": {
-                    bgcolor: "#0b1220",
-                    transform: "translateY(-1px)",
-                    boxShadow: "0 12px 24px rgba(0,0,0,0.16)",
-                  },
-                }}
-              >
-                New outbound
-              </Button>
+              <Typography sx={{ fontSize: 16, fontWeight: 700, color: "#171717" }}>
+                Outbound overview
+              </Typography>
+              <Typography sx={{ fontSize: 13, color: "#6B6B6B" }}>
+                View outbound inventory records created when processing customer orders.
+              </Typography>
             </Box>
-
-            <Box sx={{ borderTop: "1px solid rgba(0,0,0,0.06)" }} />
-
-            {isInventoryLoading || isInventoryFetching ? (
-              <LinearProgress sx={{ borderRadius: 999, mx: { xs: 2, md: 3 }, my: 2 }} />
-            ) : null}
-
-            <Box sx={{ overflowX: "auto" }}>
-              <Table size="small">
-                <TableHead>
-                  <TableRow sx={{ bgcolor: "#FAFAF8" }}>
-                    <TableCell
-                      sx={{
-                        fontSize: 11,
-                        letterSpacing: 1.2,
-                        textTransform: "uppercase",
-                        fontWeight: 700,
-                        color: "#8A8A8A",
-                        borderBottom: "1px solid rgba(0,0,0,0.06)",
-                        py: 1.6,
-                      }}
-                    >
-                      Product
-                    </TableCell>
-                    <TableCell
-                      sx={{
-                        fontSize: 11,
-                        letterSpacing: 1.2,
-                        textTransform: "uppercase",
-                        fontWeight: 700,
-                        color: "#8A8A8A",
-                        borderBottom: "1px solid rgba(0,0,0,0.06)",
-                        py: 1.6,
-                      }}
-                    >
-                      Brand
-                    </TableCell>
-                    <TableCell
-                      sx={{
-                        fontSize: 11,
-                        letterSpacing: 1.2,
-                        textTransform: "uppercase",
-                        fontWeight: 700,
-                        color: "#8A8A8A",
-                        borderBottom: "1px solid rgba(0,0,0,0.06)",
-                        py: 1.6,
-                      }}
-                    >
-                      Stock
-                    </TableCell>
-                    <TableCell
-                      align="right"
-                      sx={{
-                        fontSize: 11,
-                        letterSpacing: 1.2,
-                        textTransform: "uppercase",
-                        fontWeight: 700,
-                        color: "#8A8A8A",
-                        borderBottom: "1px solid rgba(0,0,0,0.06)",
-                        py: 1.6,
-                      }}
-                    >
-                      Price range
-                    </TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {inventoryItems.map((item) => (
-                    <TableRow
-                      key={item.id}
-                      hover
-                      sx={{
-                        "& .MuiTableCell-root": {
-                          borderBottom: "1px solid rgba(0,0,0,0.06)",
-                          py: 1.7,
-                        },
-                        "&:hover": {
-                          bgcolor: "#FAFAFA",
-                        },
-                      }}
-                    >
-                      <TableCell sx={{ color: "#171717", fontWeight: 700, fontSize: 15 }}>
-                        {item.productName}
-                      </TableCell>
-                      <TableCell sx={{ color: "#6B6B6B", fontSize: 14 }}>{item.brand || "—"}</TableCell>
-                      <TableCell>
-                        <Chip
-                          size="small"
-                          label={item.totalQuantityAvailable}
-                          sx={{
-                            height: 24,
-                            fontWeight: 700,
-                            fontSize: 12,
-                            bgcolor: getStockChipStyles(item.totalQuantityAvailable).bg,
-                            color: getStockChipStyles(item.totalQuantityAvailable).color,
-                            borderRadius: 999,
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell
-                        align="right"
-                        sx={{ color: "#6B6B6B", fontVariantNumeric: "tabular-nums", fontSize: 14 }}
-                      >
-                        {item.minPrice.toLocaleString("en-US", { style: "currency", currency: "USD" })} -{" "}
-                        {item.maxPrice.toLocaleString("en-US", { style: "currency", currency: "USD" })}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {inventoryItems.length === 0 && !isInventoryLoading && (
-                    <TableRow>
-                      <TableCell colSpan={4} sx={{ textAlign: "center", py: 4, color: "#8A8A8A" }}>
-                        No products found.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </Box>
-
-            {totalPages > 1 && (
-              <Box sx={{ px: { xs: 2, md: 3 }, pb: 2 }}>
-                <AppPagination
-                  page={pageNumber}
-                  totalPages={totalPages}
-                  onChange={setPageNumber}
-                  totalItems={totalCount}
-                  pageSize={10}
-                  unitLabel="products"
-                  align="flex-end"
-                />
-              </Box>
-            )}
           </Stack>
         </Paper>
       </Box>

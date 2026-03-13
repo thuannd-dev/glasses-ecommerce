@@ -499,6 +499,7 @@ export default function DashboardLayout() {
                         Inventory
                       </Typography>
                       {[
+                        { path: "/operations/stock", label: "Stock", icon: <Inventory2Outlined /> },
                         { path: "/operations/inbound", label: "Inbound", icon: <MoveToInboxOutlinedIcon /> },
                         { path: "/operations/outbound", label: "Outbound", icon: <OutboxOutlined /> },
                         { path: "/operations/inventory-transactions", label: "History", icon: <HistoryOutlined /> },

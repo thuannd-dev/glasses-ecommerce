@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useState } from "react";
+import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import {
   useOperationsOrders,
   useOperationsShipments,
@@ -6,6 +6,7 @@ import {
   useUpdateTracking,
 } from "../../../lib/hooks/useOperationsOrders";
 import { useLookups } from "../../../lib/hooks/useLookups";
+import { useCreateInventoryOutbound } from "../../../lib/hooks/useOperationsInventory";
 import { CreateShipmentDialog } from "../components";
 import type { OrderDto, ShipmentDto } from "../../../lib/types";
 
@@ -23,6 +24,7 @@ type OperationsContextValue = {
 
 const OperationsContext = createContext<OperationsContextValue | null>(null);
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useOperations() {
   const ctx = useContext(OperationsContext);
   if (!ctx) throw new Error("useOperations must be used within OperationsProvider");
@@ -43,8 +45,9 @@ export function OperationsProvider({ children }: { children: React.ReactNode }) 
   const { data: lookupsData } = useLookups();
   const updateStatus = useUpdateOrderStatus();
   const updateTracking = useUpdateTracking();
+  const createOutbound = useCreateInventoryOutbound();
 
-  const carriers = lookupsData?.shippingCarrier || [];
+  const carriers = useMemo(() => lookupsData?.shippingCarrier || [], [lookupsData]);
   
   // Set default carrier to first available carrier when carriers are loaded
   const handleOpenCreateShipment = useCallback((orderId: string) => {
@@ -58,7 +61,7 @@ export function OperationsProvider({ children }: { children: React.ReactNode }) 
 
   const handleCreateShipment = useCallback(() => {
     if (!createShipOrderId || !createShipTracking.trim()) return;
-    
+
     // Update order status to "Shipped" with shipment details
     updateStatus.mutate(
       {
@@ -72,6 +75,11 @@ export function OperationsProvider({ children }: { children: React.ReactNode }) 
       },
       {
         onSuccess: () => {
+          // Also record outbound inventory for this order (fire-and-forget)
+          createOutbound.mutate({
+            orderId: createShipOrderId,
+          });
+
           setCreateShipOrderId(null);
           setCreateShipTracking("");
           setCreateShipTrackingUrl("");
@@ -79,20 +87,31 @@ export function OperationsProvider({ children }: { children: React.ReactNode }) 
           setCreateShipShippingNotes("");
           setCreateShipCarrier("");
         },
-      }
+      },
     );
-  }, [createShipOrderId, createShipCarrier, createShipTracking, createShipTrackingUrl, createShipEstimatedDeliveryDate, createShipShippingNotes, updateStatus]);
+  }, [
+    createShipOrderId,
+    createShipCarrier,
+    createShipTracking,
+    createShipTrackingUrl,
+    createShipEstimatedDeliveryDate,
+    createShipShippingNotes,
+    updateStatus,
+    createOutbound,
+  ]);
+
+  type PaginatedResult<T> = { items?: T[] };
 
   const safeOrders: OrderDto[] = Array.isArray(ordersData)
     ? ordersData
-    : Array.isArray((ordersData as any)?.items)
-    ? ((ordersData as any).items as any[]) // Backend returns StaffOrderDto-like structure with orderStatus, not status
+    : Array.isArray((ordersData as PaginatedResult<OrderDto> | undefined)?.items)
+    ? ((ordersData as PaginatedResult<OrderDto>).items ?? [])
     : [];
 
   const safeShipments: ShipmentDto[] = Array.isArray(shipmentsData)
     ? shipmentsData
-    : Array.isArray((shipmentsData as any)?.items)
-    ? ((shipmentsData as any).items as ShipmentDto[])
+    : Array.isArray((shipmentsData as PaginatedResult<ShipmentDto> | undefined)?.items)
+    ? (((shipmentsData as unknown) as PaginatedResult<ShipmentDto>).items ?? [])
     : [];
 
   const value: OperationsContextValue = {

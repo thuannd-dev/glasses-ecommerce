@@ -42,6 +42,7 @@ import {
   InboundInventoryScreen,
   OutboundInventoryScreen,
   InventoryTransactionsScreen,
+  StockInventoryScreen,
   OperationsAfterSalesTicketsScreen,
 } from "../../features/Operations/screens";
 import ManagerLayout from "../../features/Manager/ManagerLayout";
@@ -128,6 +129,7 @@ export const router = createBrowserRouter([
               { path: "pre-order", element: <PreOrderScreen /> },
               { path: "prescription", element: <PrescriptionScreen /> },
               { path: "tickets", element: <OperationsAfterSalesTicketsScreen /> },
+              { path: "stock", element: <StockInventoryScreen /> },
               { path: "inbound", element: <InboundInventoryScreen /> },
               { path: "outbound", element: <OutboundInventoryScreen /> },
               { path: "inventory-transactions", element: <InventoryTransactionsScreen /> },

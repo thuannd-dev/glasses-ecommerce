@@ -12,7 +12,6 @@ import {
   DialogContent,
   DialogTitle,
   IconButton,
-  InputAdornment,
   LinearProgress,
   MenuItem,
   Paper,
@@ -26,8 +25,6 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import SearchIcon from "@mui/icons-material/Search";
-import AddIcon from "@mui/icons-material/Add";
 import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownRounded";
@@ -37,7 +34,6 @@ import { OperationsPageHeader } from "../components/OperationsPageHeader";
 import { AppPagination } from "../../../app/shared/components/AppPagination";
 import {
   useCreateInventoryInbound,
-  useInventoryCatalog,
   useInventoryInboundRecords,
   useInventoryRecordDetail,
   type InventoryInboundRecordItem,
@@ -46,16 +42,6 @@ import { useProducts, useProductDetail } from "../../../lib/hooks/useProducts";
 import { useDebouncedValue } from "../../../lib/hooks/useDebouncedValue";
 import { useLookups } from "../../../lib/hooks/useLookups";
 import type { Product } from "../../../lib/types/collections";
-
-function getStockChipStyles(stock: number) {
-  if (stock >= 200) {
-    return { bg: "#EEF5EE", color: "#466A4A" };
-  }
-  if (stock >= 50) {
-    return { bg: "#F3EBDD", color: "#7A5A33" };
-  }
-  return { bg: "#F6EAEA", color: "#8E3B3B" };
-}
 
 function getInboundStatusStyles(status: string | null) {
   if (status === "PendingApproval") {
@@ -312,8 +298,6 @@ function InboundRecordRow({ record }: { record: InventoryInboundRecordItem }) {
 }
 
 export function InboundInventoryScreen() {
-  const [inventorySearch, setInventorySearch] = useState("");
-  const [pageNumber, setPageNumber] = useState(1);
   const [recordsPageNumber, setRecordsPageNumber] = useState(1);
   const [recordStatus, setRecordStatus] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -323,16 +307,9 @@ export function InboundInventoryScreen() {
   const [sourceType, setSourceType] = useState("Supplier");
   const [quantity, setQuantity] = useState("");
   const [notes, setNotes] = useState("");
-  const debouncedInventorySearch = useDebouncedValue(inventorySearch, 250);
   const debouncedSearch = useDebouncedValue(productSearch, 300);
 
   const inboundMutation = useCreateInventoryInbound();
-  const { data: inventoryData, isLoading: isInventoryLoading, isFetching: isInventoryFetching } =
-    useInventoryCatalog({
-      pageNumber,
-      pageSize: 12,
-      search: debouncedInventorySearch,
-    });
   const { products, isFetching: isProductsLoading } = useProducts({
     pageNumber: 1,
     pageSize: 50,
@@ -354,9 +331,6 @@ export function InboundInventoryScreen() {
 
   const variantOptions = selectedProductDetail?.variants ?? [];
   const selectedVariant = variantOptions.find((v) => v.id === selectedVariantId) ?? null;
-  const inventoryItems = inventoryData?.items ?? [];
-  const totalPages = inventoryData?.totalPages ?? 1;
-  const totalCount = inventoryData?.totalCount ?? 0;
   const sourceTypeOptions = (lookups?.sourceType ?? []).filter(Boolean);
   const inboundStatusOptions = (lookups?.inboundRecordStatus ?? []).filter(Boolean);
   const resolvedSourceTypeOptions = sourceTypeOptions.length > 0
@@ -415,8 +389,8 @@ export function InboundInventoryScreen() {
         title="Inbound inventory"
         subtitle="Monitor stock and record received goods."
         eyebrow="OPERATIONS CENTER"
-        count={totalCount}
-        countLabel="products"
+        count={inboundRecordsTotalCount}
+        countLabel="records"
       />
 
       <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
@@ -431,6 +405,22 @@ export function InboundInventoryScreen() {
             alignSelf: "flex-start",
           }}
         >
+          <Button
+            component={NavLink}
+            to="/operations/stock"
+            variant="text"
+            sx={{
+              borderRadius: 999,
+              px: 2.5,
+              py: 0.9,
+              fontWeight: 600,
+              textTransform: "none",
+              color: "#6B6B6B",
+              bgcolor: "transparent",
+            }}
+          >
+            Stock
+          </Button>
           <Button
             component={NavLink}
             to="/operations/inbound"
@@ -507,203 +497,46 @@ export function InboundInventoryScreen() {
             overflow: "hidden",
           }}
         >
-          <Stack spacing={0}>
-            <Box
+          <Box
+            sx={{
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 1.5,
+              px: { xs: 2, md: 3 },
+              py: 2,
+            }}
+          >
+            <Box sx={{ maxWidth: 520 }}>
+              <Typography sx={{ fontSize: 16, fontWeight: 700, color: "#171717" }}>
+                Create inbound record
+              </Typography>
+              <Typography sx={{ fontSize: 13, color: "#6B6B6B", mt: 0.5 }}>
+                Log new stock received from suppliers, returns, or adjustments.
+              </Typography>
+            </Box>
+            <Button
+              variant="contained"
+              onClick={() => setDialogOpen(true)}
               sx={{
-                display: "flex",
-                flexWrap: "wrap",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 1.5,
-                px: { xs: 2, md: 3 },
-                py: 2,
+                height: 42,
+                px: 2.25,
+                borderRadius: 999,
+                textTransform: "none",
+                fontWeight: 700,
+                boxShadow: "0 10px 20px rgba(0,0,0,0.12)",
+                bgcolor: "#111827",
+                "&:hover": {
+                  bgcolor: "#0b1220",
+                  transform: "translateY(-1px)",
+                  boxShadow: "0 12px 24px rgba(0,0,0,0.16)",
+                },
               }}
             >
-              <TextField
-                size="small"
-                value={inventorySearch}
-                onChange={(e) => {
-                  setInventorySearch(e.target.value);
-                  setPageNumber(1);
-                }}
-                placeholder="Search products..."
-                sx={{
-                  width: { xs: "100%", sm: 360 },
-                  "& .MuiOutlinedInput-root": {
-                    height: 42,
-                    borderRadius: 999,
-                    bgcolor: "#FFFFFF",
-                    "& fieldset": { borderColor: "rgba(0,0,0,0.08)" },
-                    "&:hover fieldset": { borderColor: "rgba(0,0,0,0.12)" },
-                    "&.Mui-focused fieldset": { borderColor: "#B68C5A", borderWidth: 1 },
-                    "&.Mui-focused": {
-                      boxShadow: "0 0 0 4px rgba(182,140,90,0.16)",
-                    },
-                  },
-                }}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon sx={{ color: "#8A8A8A", fontSize: 20 }} />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => setDialogOpen(true)}
-                sx={{
-                  height: 42,
-                  px: 2.25,
-                  borderRadius: 999,
-                  textTransform: "none",
-                  fontWeight: 700,
-                  boxShadow: "0 10px 20px rgba(0,0,0,0.12)",
-                  bgcolor: "#111827",
-                  "&:hover": {
-                    bgcolor: "#0b1220",
-                    transform: "translateY(-1px)",
-                    boxShadow: "0 12px 24px rgba(0,0,0,0.16)",
-                  },
-                }}
-              >
-                New inbound
-              </Button>
-            </Box>
-
-            <Box sx={{ borderTop: "1px solid rgba(0,0,0,0.06)" }} />
-
-            {isInventoryLoading || isInventoryFetching ? (
-              <LinearProgress sx={{ borderRadius: 999, mx: { xs: 2, md: 3 }, my: 2 }} />
-            ) : null}
-
-            <Box sx={{ overflowX: "auto" }}>
-              <Table size="small">
-                <TableHead>
-                  <TableRow sx={{ bgcolor: "#FAFAF8" }}>
-                    <TableCell
-                      sx={{
-                        fontSize: 11,
-                        letterSpacing: 1.2,
-                        textTransform: "uppercase",
-                        fontWeight: 700,
-                        color: "#8A8A8A",
-                        borderBottom: "1px solid rgba(0,0,0,0.06)",
-                        py: 1.6,
-                      }}
-                    >
-                      Product
-                    </TableCell>
-                    <TableCell
-                      sx={{
-                        fontSize: 11,
-                        letterSpacing: 1.2,
-                        textTransform: "uppercase",
-                        fontWeight: 700,
-                        color: "#8A8A8A",
-                        borderBottom: "1px solid rgba(0,0,0,0.06)",
-                        py: 1.6,
-                      }}
-                    >
-                      Brand
-                    </TableCell>
-                    <TableCell
-                      sx={{
-                        fontSize: 11,
-                        letterSpacing: 1.2,
-                        textTransform: "uppercase",
-                        fontWeight: 700,
-                        color: "#8A8A8A",
-                        borderBottom: "1px solid rgba(0,0,0,0.06)",
-                        py: 1.6,
-                      }}
-                    >
-                      Stock
-                    </TableCell>
-                    <TableCell
-                      align="right"
-                      sx={{
-                        fontSize: 11,
-                        letterSpacing: 1.2,
-                        textTransform: "uppercase",
-                        fontWeight: 700,
-                        color: "#8A8A8A",
-                        borderBottom: "1px solid rgba(0,0,0,0.06)",
-                        py: 1.6,
-                      }}
-                    >
-                      Price range
-                    </TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {inventoryItems.map((item) => (
-                    <TableRow
-                      key={item.id}
-                      hover
-                      sx={{
-                        "& .MuiTableCell-root": {
-                          borderBottom: "1px solid rgba(0,0,0,0.06)",
-                          py: 1.7,
-                        },
-                        "&:hover": {
-                          bgcolor: "#FAFAFA",
-                        },
-                      }}
-                    >
-                      <TableCell sx={{ color: "#171717", fontWeight: 700, fontSize: 15 }}>
-                        {item.productName}
-                      </TableCell>
-                      <TableCell sx={{ color: "#6B6B6B", fontSize: 14 }}>{item.brand || "—"}</TableCell>
-                      <TableCell>
-                        <Chip
-                          size="small"
-                          label={item.totalQuantityAvailable}
-                          sx={{
-                            height: 24,
-                            fontWeight: 700,
-                            fontSize: 12,
-                            bgcolor: getStockChipStyles(item.totalQuantityAvailable).bg,
-                            color: getStockChipStyles(item.totalQuantityAvailable).color,
-                            borderRadius: 999,
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell
-                        align="right"
-                        sx={{ color: "#6B6B6B", fontVariantNumeric: "tabular-nums", fontSize: 14 }}
-                      >
-                        {item.minPrice.toLocaleString("en-US", { style: "currency", currency: "USD" })} -{" "}
-                        {item.maxPrice.toLocaleString("en-US", { style: "currency", currency: "USD" })}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {inventoryItems.length === 0 && !isInventoryLoading && (
-                    <TableRow>
-                      <TableCell colSpan={4} sx={{ textAlign: "center", py: 4, color: "#8A8A8A" }}>
-                        No products found.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </Box>
-
-            {totalPages > 1 && (
-              <Box sx={{ px: { xs: 2, md: 3 }, pb: 2 }}>
-                <AppPagination
-                  page={pageNumber}
-                  totalPages={totalPages}
-                  onChange={setPageNumber}
-                  totalItems={totalCount}
-                  pageSize={12}
-                  unitLabel="products"
-                  align="flex-end"
-                />
-              </Box>
-            )}
-          </Stack>
+              New inbound
+            </Button>
+          </Box>
         </Paper>
 
         <Paper
@@ -830,19 +663,17 @@ export function InboundInventoryScreen() {
               </Table>
             </Box>
 
-            {inboundRecordsTotalPages > 1 && (
-              <Box sx={{ px: { xs: 2, md: 3 }, pb: 2 }}>
-                <AppPagination
-                  page={recordsPageNumber}
-                  totalPages={inboundRecordsTotalPages}
-                  onChange={setRecordsPageNumber}
-                  totalItems={inboundRecordsTotalCount}
-                  pageSize={10}
-                  unitLabel="records"
-                  align="flex-end"
-                />
-              </Box>
-            )}
+            <Box sx={{ px: { xs: 2, md: 3 }, pb: 2 }}>
+              <AppPagination
+                page={recordsPageNumber}
+                totalPages={inboundRecordsTotalPages}
+                onChange={setRecordsPageNumber}
+                totalItems={inboundRecordsTotalCount}
+                pageSize={10}
+                unitLabel="records"
+                align="flex-end"
+              />
+            </Box>
           </Stack>
         </Paper>
       </Box>
