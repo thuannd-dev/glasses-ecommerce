@@ -1,6 +1,7 @@
 import React from "react";
 import {
   Box,
+  Button,
   Divider,
   Typography,
   Table,
@@ -66,7 +67,15 @@ function formatPrescriptionVal(n: number | null | undefined): string {
   return Number.isInteger(n) ? String(n) : n.toFixed(2);
 }
 
-export function OrderDetailExpanded({ detail }: { detail: StaffOrderDetailDto }) {
+interface OrderDetailExpandedProps {
+  detail: StaffOrderDetailDto;
+  onProcessOrderClick?: (orderId: string) => void;
+  showProcessButton?: boolean;
+  onAddTrackingClick?: (orderId: string) => void;
+  showAddTrackingButton?: boolean;
+}
+
+export function OrderDetailExpanded({ detail, onProcessOrderClick, showProcessButton, onAddTrackingClick, showAddTrackingButton }: OrderDetailExpandedProps) {
   const paymentStatusPill = detail.payment ? getPaymentStatusPill(detail.payment.paymentStatus) : null;
 
   const copyAddress = () => {
@@ -416,6 +425,60 @@ export function OrderDetailExpanded({ detail }: { detail: StaffOrderDetailDto })
         </Box>
       </Box>
 
+      {/* 3) Process Order Button — between Items and Tracking */}
+      {showProcessButton && onProcessOrderClick && (
+        <Button
+          fullWidth
+          variant="outlined"
+          size="medium"
+          sx={{
+            height: 40,
+            fontWeight: 600,
+            fontSize: 13,
+            textTransform: "capitalize",
+            borderRadius: 1,
+            borderColor: "#B68C5A",
+            bgcolor: "rgba(182,140,90,0.05)",
+            color: "#B68C5A",
+            "&:hover": {
+              borderColor: "#B68C5A",
+              bgcolor: "#B68C5A",
+              color: "#FFFFFF",
+            },
+          }}
+          onClick={() => onProcessOrderClick(detail.id)}
+        >
+          Process the Order
+        </Button>
+      )}
+
+      {/* 3.1) Add Tracking Detail Button — between Items and Status History */}
+      {showAddTrackingButton && onAddTrackingClick && (
+        <Button
+          fullWidth
+          variant="outlined"
+          size="medium"
+          sx={{
+            height: 40,
+            fontWeight: 600,
+            fontSize: 13,
+            textTransform: "capitalize",
+            borderRadius: 1,
+            borderColor: "#B68C5A",
+            bgcolor: "rgba(182,140,90,0.05)",
+            color: "#B68C5A",
+            "&:hover": {
+              borderColor: "#B68C5A",
+              bgcolor: "#B68C5A",
+              color: "#FFFFFF",
+            },
+          }}
+          onClick={() => onAddTrackingClick(detail.id)}
+        >
+          Add Tracking Detail
+        </Button>
+      )}
+
       {/* 3.5) Tracking information — shipment tracking */}
       {detail.shipment && detail.shipment.trackingCode && (
         <Box>
@@ -620,7 +683,7 @@ export function OrderDetailExpanded({ detail }: { detail: StaffOrderDetailDto })
       )}
 
       {/* 4) Status history — vertical timeline */}
-      {detail.statusHistories && detail.statusHistories.length > 1 && (
+      {detail.statusHistories && detail.statusHistories.length > 0 && (
         <Box>
           <Typography sx={{ fontSize: 14, fontWeight: 700, color: TOKENS.muted, textTransform: "uppercase", letterSpacing: 1, mb: 1.25 }}>
             Status history
@@ -637,8 +700,8 @@ export function OrderDetailExpanded({ detail }: { detail: StaffOrderDetailDto })
                 bgcolor: TOKENS.divider,
               }}
             />
-            {detail.statusHistories.slice(1).map((h, idx, arr) => {
-              const isLatest = idx === 0;
+            {detail.statusHistories.map((h, idx, arr) => {
+              const isLatest = idx === arr.length - 1;
               return (
                 <Box
                   key={idx}
@@ -662,7 +725,7 @@ export function OrderDetailExpanded({ detail }: { detail: StaffOrderDetailDto })
                     }}
                   />
                   <Typography sx={{ fontWeight: 600, color: TOKENS.textPrimary, fontSize: 14 }}>
-                    {h.fromStatus} → {h.toStatus}
+                    {h.toStatus}
                   </Typography>
                   {h.notes && (
                     <Typography sx={{ fontSize: 13, color: TOKENS.textSecondary, mt: 0.5 }}>

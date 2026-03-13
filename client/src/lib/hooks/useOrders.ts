@@ -37,14 +37,18 @@ export function useCreateOrder() {
 }
 
 /** GET /api/me/orders — list my orders (paginated from backend) */
-export function useMyOrders(pageNumber: number = 1) {
+export function useMyOrders(pageNumber: number = 1, status?: string) {
   return useQuery<MyOrdersPageDto>({
-    queryKey: [...QUERY_KEY_MY_ORDERS, pageNumber],
+    queryKey: [...QUERY_KEY_MY_ORDERS, pageNumber, status],
     queryFn: async () => {
+      const params: Record<string, unknown> = {
+        pageNumber,
+      };
+      if (status && status.trim() !== "") {
+        params.status = status;
+      }
       const res = await agent.get<MyOrdersPageDto>("/me/orders", {
-        params: {
-          pageNumber,
-        },
+        params,
       });
       return res.data;
     },

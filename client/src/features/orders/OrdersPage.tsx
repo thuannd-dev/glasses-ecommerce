@@ -4,6 +4,8 @@ import { NavLink } from "react-router-dom";
 import { useMyOrders } from "../../lib/hooks/useOrders";
 import { OrderCard } from "./OrderCard";
 import { AppPagination } from "../../app/shared/components/AppPagination";
+import { OrderStatusFilter } from "./OrderStatusFilter";
+import { getStatusQueryString, type OrderStatusFilterKey } from "../../lib/constants/orderStatusFilters";
 
 const PALETTE = {
   textMain: "#171717",
@@ -16,8 +18,16 @@ const PALETTE = {
 };
 export default function OrdersPage() {
   const [pageNumber, setPageNumber] = useState(1);
+  const [statusFilter, setStatusFilter] = useState<OrderStatusFilterKey>("All");
 
-  const { data: page, isLoading, isError, error } = useMyOrders(pageNumber);
+  const statusQueryString = getStatusQueryString(statusFilter);
+  const { data: page, isLoading, isError, error } = useMyOrders(pageNumber, statusQueryString);
+
+  // Reset to page 1 when filter changes
+  const handleFilterChange = (filter: OrderStatusFilterKey) => {
+    setStatusFilter(filter);
+    setPageNumber(1);
+  };
 
   const list = page?.items ?? [];
   const effectiveTotalCount = page?.totalCount ?? list.length;
@@ -110,7 +120,7 @@ export default function OrdersPage() {
             mt: 0.5,
           }}
         >
-          {effectiveTotalCount} order{effectiveTotalCount !== 1 ? "s" : ""}
+          {effectiveTotalCount} order{effectiveTotalCount === 1 ? "" : "s"}
         </Typography>
         <Box
           sx={{
@@ -122,6 +132,11 @@ export default function OrdersPage() {
           }}
         />
       </Box>
+
+      {/* Status Filter */}
+      {list.length > 0 || statusFilter !== "All" ? (
+        <OrderStatusFilter activeFilter={statusFilter} onFilterChange={handleFilterChange} />
+      ) : null}
 
       {list.length === 0 ? (
         <Paper
