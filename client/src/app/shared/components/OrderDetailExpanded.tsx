@@ -1,5 +1,15 @@
 import React from "react";
-import { Box, Button, Divider, Tooltip, Typography, Table, TableBody, TableCell, TableHead, TableRow } from "@mui/material";
+import {
+  Box,
+  Divider,
+  Typography,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  Tooltip,
+} from "@mui/material";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import type {
   StaffOrderDetailDto,
@@ -32,11 +42,6 @@ const VALUE_FONT_SIZE = 14;
 const STATUS_PILL_HEIGHT = 22;
 const GRID_GAP = 10;
 
-function shortenId(id: string) {
-  if (!id || id.length <= 14) return id;
-  return `${id.slice(0, 8)}…${id.slice(-4)}`;
-}
-
 function getPaymentStatusPill(status: string) {
   const s = (status || "").toLowerCase();
   if (s === "pending") return { border: "#EAEAEA", bg: "#F6F6F6", color: "#4B4B4B" };
@@ -61,19 +66,7 @@ function formatPrescriptionVal(n: number | null | undefined): string {
   return Number.isInteger(n) ? String(n) : n.toFixed(2);
 }
 
-export function OrderDetailExpanded({ 
-  detail,
-  onUpdateStatus,
-  primaryActionLabel,
-  onPrimaryActionClick,
-}: { 
-  detail: StaffOrderDetailDto;
-  onUpdateStatus?: (status: string) => void;
-  primaryActionLabel?: string;
-  onPrimaryActionClick?: (orderId: string) => void;
-}) {
-  const itemsCount = detail.items.reduce((sum, i) => sum + (i.quantity ?? 0), 0);
-  const copyOrderId = () => navigator.clipboard.writeText(detail.id);
+export function OrderDetailExpanded({ detail }: { detail: StaffOrderDetailDto }) {
   const paymentStatusPill = detail.payment ? getPaymentStatusPill(detail.payment.paymentStatus) : null;
 
   const copyAddress = () => {
@@ -155,56 +148,7 @@ export function OrderDetailExpanded({
         gap: 1.5,
       }}
     >
-      {/* 1) Quick Summary Strip */}
-      <Box
-        sx={{
-          display: "flex",
-          flexWrap: "wrap",
-          justifyContent: "space-between",
-          alignItems: "center",
-          gap: 1,
-        }}
-      >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <Typography sx={{ fontSize: 11, color: TOKENS.muted, fontWeight: 600 }}>Order</Typography>
-          <Tooltip title={detail.id} arrow>
-            <Box
-              component="button"
-              type="button"
-              onClick={copyOrderId}
-              sx={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 0.4,
-                px: 1,
-                py: 0.35,
-                borderRadius: 999,
-                border: `1px solid ${TOKENS.border}`,
-                bgcolor: TOKENS.surface,
-                color: TOKENS.textPrimary,
-                fontFamily: "monospace",
-                fontSize: 11,
-                fontWeight: 600,
-                cursor: "pointer",
-                "&:hover": { bgcolor: "#F7F7F7" },
-              }}
-            >
-              {shortenId(detail.id)}
-              <ContentCopyIcon sx={{ fontSize: 12, color: TOKENS.muted }} />
-            </Box>
-          </Tooltip>
-        </Box>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
-          <Typography sx={{ fontSize: 11, color: TOKENS.textSecondary, fontWeight: 600 }}>
-            {itemsCount} item{itemsCount !== 1 ? "s" : ""}
-          </Typography>
-          <Typography sx={{ fontSize: 11, color: TOKENS.muted }}>
-            {new Date(detail.createdAt).toLocaleString()}
-          </Typography>
-        </Box>
-      </Box>
-
-      {/* 2) Four equal-size info blocks: 2x2 grid (Customer | Payment, Shipping | More details) */}
+      {/* Main info blocks: Customer | Payment | Shipping | More details */}
       <Box
         sx={{
           display: "grid",
@@ -340,37 +284,7 @@ export function OrderDetailExpanded({
                 </Box>
               </Box>
             </Box>
-            {(detail.salesStaffName || detail.userId) &&
-              (detail.salesStaffName
-                ? labelValueRow("Sales", detail.salesStaffName, false)
-                : detail.userId
-                  ? labelValueRow(
-                      "User",
-                      <Tooltip title={detail.userId} arrow>
-                        <Box
-                          component="span"
-                          sx={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: 0.5,
-                            fontFamily: "monospace",
-                            fontSize: 13,
-                            color: "#171717",
-                          }}
-                        >
-                          {shortenId(detail.userId)}
-                          <ContentCopyIcon
-                            sx={{ fontSize: 14, cursor: "pointer", color: TOKENS.muted }}
-                            onClick={(e: React.MouseEvent) => {
-                              e.stopPropagation();
-                              navigator.clipboard.writeText(detail.userId!);
-                            }}
-                          />
-                        </Box>
-                      </Tooltip>,
-                      false
-                    )
-                  : null)}
+            {detail.salesStaffName && labelValueRow("Sales", detail.salesStaffName, false)}
           </Box>
         </Box>
       </Box>
@@ -502,31 +416,6 @@ export function OrderDetailExpanded({
         </Box>
       </Box>
 
-      {/* Action Button — Add Tracking Details */}
-      {primaryActionLabel && onPrimaryActionClick && (
-        <Button
-          size="small"
-          onClick={() => onPrimaryActionClick(detail.id)}
-          sx={{
-            width: "100%",
-            fontSize: 13,
-            fontWeight: 600,
-            color: TOKENS.accent,
-            border: `1px solid ${TOKENS.accent}`,
-            borderRadius: 1,
-            py: 0.75,
-            textTransform: "none",
-            backgroundColor: "transparent",
-            "&:hover": {
-              backgroundColor: TOKENS.accent,
-              color: TOKENS.surface,
-            },
-          }}
-        >
-          Add Tracking Details
-        </Button>
-      )}
-
       {/* 3.5) Tracking information — shipment tracking */}
       {detail.shipment && detail.shipment.trackingCode && (
         <Box>
@@ -567,29 +456,6 @@ export function OrderDetailExpanded({
                   >
                     {detail.shipment.carrierName || "—"}
                   </Typography>
-                  {detail.orderStatus?.toLowerCase() === "shipped" && onUpdateStatus && (
-                    <Button
-                      size="small"
-                      onClick={() => onUpdateStatus("Delivered")}
-                      sx={{
-                        fontSize: 12,
-                        fontWeight: 600,
-                        color: TOKENS.accent,
-                        border: `1px solid ${TOKENS.accent}`,
-                        borderRadius: 1,
-                        px: 1.5,
-                        py: 0.5,
-                        textTransform: "none",
-                        backgroundColor: "transparent",
-                        "&:hover": {
-                          backgroundColor: TOKENS.accent,
-                          color: TOKENS.surface,
-                        },
-                      }}
-                    >
-                      Make order Delivered
-                    </Button>
-                  )}
                 </Box>
               </Box>
 

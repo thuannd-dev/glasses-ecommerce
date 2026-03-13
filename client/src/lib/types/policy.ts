@@ -41,6 +41,8 @@ export interface PolicyConfigurationDto {
   customizedLensRefundable: boolean;
   evidenceRequired: boolean;
   minOrderAmount: number | null;
+  refundOnlyMaxAmount: number | null;
+  refundWindowDays: number | null;
   isActive: boolean;
   effectiveFrom: string; // ISO datetime
   effectiveTo: string | null; // ISO datetime
@@ -59,6 +61,8 @@ export interface CreatePolicyPayload {
   customizedLensRefundable: boolean;
   evidenceRequired: boolean;
   minOrderAmount: number | null;
+  refundOnlyMaxAmount: number | null;
+  refundWindowDays: number | null;
   isActive: boolean;
   effectiveFrom: string; // ISO datetime
   effectiveTo: string | null; // ISO datetime
@@ -73,6 +77,8 @@ export interface UpdatePolicyPayload {
   customizedLensRefundable: boolean;
   evidenceRequired: boolean;
   minOrderAmount: number | null;
+  refundOnlyMaxAmount: number | null;
+  refundWindowDays: number | null;
   isActive: boolean;
   effectiveFrom: string; // ISO datetime
   effectiveTo: string | null; // ISO datetime

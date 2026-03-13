@@ -42,7 +42,7 @@ export function PrescriptionDisplay({ prescription, variant = "block" }: Props) 
     return (
       <Box sx={{ mt: 0.5 }}>
         <Typography fontSize={12} fontWeight={700} color="text.secondary" sx={{ mb: 0.25 }}>
-          Prescription
+          Prescription detail
         </Typography>
         {table}
       </Box>
@@ -60,7 +60,7 @@ export function PrescriptionDisplay({ prescription, variant = "block" }: Props) 
       }}
     >
       <Typography fontSize={12} fontWeight={700} color="text.secondary" sx={{ mb: 0.5 }}>
-        Prescription
+        Prescription detail
       </Typography>
       {table}
     </Box>

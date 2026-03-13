@@ -99,16 +99,6 @@ function CartItemRow({
                 >
                     {item.productName}
                 </Typography>
-                {prescription && (
-                    <Typography
-                        component="span"
-                        fontSize={12}
-                        fontWeight={700}
-                        sx={{ color: "#B68C5A", display: "inline-flex", alignItems: "center", gap: 0.5, mt: 0.5 }}
-                    >
-                        Prescription
-                    </Typography>
-                )}
                 <Typography
                     sx={{
                         mt: 0.25,
@@ -632,6 +622,7 @@ export default function CartPage() {
                                             key={item.id}
                                             item={item}
                                             selected={selectedIds.has(item.id)}
+                                            prescription={itemPrescriptions[item.id]}
                                             onToggle={() => handleToggleItem(item.id)}
                                             onIncrease={() =>
                                                 handleIncrease(item.id, item.quantity)
@@ -639,6 +630,7 @@ export default function CartPage() {
                                             onDecrease={() =>
                                                 handleDecrease(item.id, item.quantity)
                                             }
+                                            onRemove={() => removeItem(item.id)}
                                             formatMoney={formatMoney}
                                         />
                                     ))}
