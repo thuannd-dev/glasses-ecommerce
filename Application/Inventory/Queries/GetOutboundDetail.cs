@@ -1,0 +1,92 @@
+using Application.Core;
+using Application.Inventory.DTOs;
+using Domain;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
+using Persistence;
+
+namespace Application.Inventory.Queries;
+
+public sealed class GetOutboundDetail
+{
+    public sealed class Query : IRequest<Result<OutboundRecordDto>>
+    {
+        public required Guid OrderId { get; set; }
+    }
+
+    internal sealed class Handler(AppDbContext context)
+        : IRequestHandler<Query, Result<OutboundRecordDto>>
+    {
+        public async Task<Result<OutboundRecordDto>> Handle(Query request, CancellationToken ct)
+        {
+            // 1. Retrieve order details
+            var orderInfo = await context.Orders
+                .AsNoTracking()
+                .Include(o => o.Address)
+                .Where(o => o.Id == request.OrderId)
+                .Select(o => new
+                {
+                    o.Id,
+                    o.OrderStatus,
+                    o.WalkInCustomerName,
+                    o.Address
+                })
+                .FirstOrDefaultAsync(ct);
+
+            if (orderInfo == null)
+            {
+                return Result<OutboundRecordDto>.Failure("Order not found.", 404);
+            }
+
+            // 2. Lấy danh sách inventory transactions (outbound) của order này
+            // Sử dụng Select để EF Core chỉ truy vấn đúng các cột cần thiết (tránh SELECT * toàn bộ ProductVariant và User)
+            var txns = await context.InventoryTransactions
+                .AsNoTracking()
+                .Where(t => t.ReferenceId == request.OrderId &&
+                            t.TransactionType == TransactionType.Outbound)
+                .Select(t => new
+                {
+                    TransactionId    = t.Id,
+                    ProductVariantId = t.ProductVariantId,
+                    VariantName      = t.ProductVariant.VariantName,
+                    SKU              = t.ProductVariant.SKU,
+                    Quantity         = t.Quantity,
+                    Notes            = t.Notes,
+                    CreatedAt        = t.CreatedAt,
+                    CreatorName      = t.Creator != null ? t.Creator.DisplayName : null
+                })
+                .ToListAsync(ct);
+
+            if (txns.Count == 0)
+            {
+                return Result<OutboundRecordDto>.Failure("No outbound record found for this order.", 404);
+            }
+
+            // 3. Assemble DTO
+            var dto = new OutboundRecordDto
+            {
+                OrderId        = orderInfo.Id,
+                OrderNumber    = "ORD-" + orderInfo.Id.ToString().Substring(0, 8).ToUpper(),
+                OrderStatus    = orderInfo.OrderStatus.ToString(),
+                CustomerName   = orderInfo.Address != null
+                                    ? orderInfo.Address.RecipientName
+                                    : orderInfo.WalkInCustomerName,
+                TotalItems     = txns.Count,
+                TotalQuantity  = txns.Sum(t => t.Quantity),
+                RecordedAt     = txns.Min(t => t.CreatedAt),
+                RecordedByName = txns.Select(t => t.CreatorName).FirstOrDefault(name => name != null),
+                Items          = txns.Select(t => new OutboundRecordItemDto
+                {
+                    TransactionId    = t.TransactionId,
+                    ProductVariantId = t.ProductVariantId,
+                    VariantName      = t.VariantName,
+                    SKU              = t.SKU,
+                    Quantity         = t.Quantity,
+                    Notes            = t.Notes
+                }).ToList()
+            };
+
+            return Result<OutboundRecordDto>.Success(dto);
+        }
+    }
+}

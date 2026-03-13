@@ -86,4 +86,30 @@ public sealed class OperationsInventoryController : BaseApiController
         return HandleResult(await Mediator.Send(
             new GetInboundDetail.Query { Id = id }, ct));
     }
+
+    // Xem danh sách phiếu xuất kho (grouped by Order)
+    // Phân trang với pageNumber, pageSize, có thể filter theo orderId
+    [HttpGet("outbound")]
+    public async Task<IActionResult> GetOutboundRecords(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] Guid? orderId = null,
+        CancellationToken ct = default)
+    {
+        return HandleResult(await Mediator.Send(
+            new GetOutboundRecords.Query
+            {
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                OrderId = orderId
+            }, ct));
+    }
+
+    // Xem chi tiết một phiếu xuất kho của một đơn hàng
+    [HttpGet("outbound/{orderId}")]
+    public async Task<IActionResult> GetOutboundDetail(Guid orderId, CancellationToken ct)
+    {
+        return HandleResult(await Mediator.Send(
+            new GetOutboundDetail.Query { OrderId = orderId }, ct));
+    }
 }
