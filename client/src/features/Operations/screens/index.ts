@@ -9,3 +9,4 @@ export { OrderTypeAllScreen } from "./OrderTypeAllScreen";
 export { InboundInventoryScreen } from "./InboundInventoryScreen";
 export { OutboundInventoryScreen } from "./OutboundInventoryScreen";
 export { InventoryTransactionsScreen } from "./InventoryTransactionsScreen";
+export { OperationsAfterSalesTicketsScreen } from "./AfterSalesTicketsScreen";

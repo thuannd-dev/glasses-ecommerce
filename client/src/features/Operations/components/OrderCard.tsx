@@ -122,7 +122,7 @@ export function OrderCard({
               Loading detail...
             </Typography>
           ) : (
-            <OrderDetailExpanded detail={detail} onUpdateStatus={(status) => onUpdateStatus(status as OrderStatus)} />
+            <OrderDetailExpanded detail={detail} />
           )}
           <Box sx={{ mt: 2, display: "flex", gap: 1, flexWrap: "wrap" }}>
             {((order as any).orderType?.toLowerCase() || order.orderType?.toLowerCase()) !== "pre-order" && (

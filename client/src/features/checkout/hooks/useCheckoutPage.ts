@@ -104,6 +104,12 @@ export function useCheckoutPage() {
       return;
     }
 
+    // If this promo is already applied, clicking again will remove it
+    if (appliedPromo?.promoCode === promo.promoCode) {
+      setAppliedPromo(null);
+      return;
+    }
+
     let discount = 0;
     if (promo.promotionType === "FixedAmount") {
       discount = Math.min(totalAmount, promo.discountValue);

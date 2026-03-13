@@ -12,7 +12,14 @@ export function useActivePromotions() {
     queryKey: ["promotions", "active"],
     queryFn: async () => {
       const res = await agent.get<ActivePromotionDto[]>("/promotions/active");
-      return Array.isArray(res.data) ? res.data : [];
+      const list = Array.isArray(res.data) ? res.data : [];
+      const now = new Date();
+      // Hide promotions that are already expired based on validTo
+      return list.filter((p) => {
+        if (!p.validTo) return true;
+        const validToDate = new Date(p.validTo);
+        return validToDate.getTime() >= now.getTime();
+      });
     },
   });
 }
