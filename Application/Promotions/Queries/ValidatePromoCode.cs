@@ -59,11 +59,7 @@ public sealed class ValidatePromoCode
                 int customerUsed = await context.PromoUsageLogs
                     .CountAsync(l => l.PromotionId == promotion.Id && l.UsedBy == userId, ct);
                 if (customerUsed >= promotion.UsageLimitPerCustomer.Value)
-                    return Result<PromoValidationResultDto>.Success(new PromoValidationResultDto
-                    {
-                        IsValid = false,
-                        Error = "You have already used this promo code the maximum number of times.",
-                    });
+                    return Result<PromoValidationResultDto>.Failure("You have already used this promo code the maximum number of times.", 400);
             }
 
             // Calculate discount

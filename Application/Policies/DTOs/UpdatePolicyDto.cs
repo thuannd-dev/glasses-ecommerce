@@ -18,8 +18,12 @@ public sealed class UpdatePolicyDto
     public bool CustomizedLensRefundable { get; set; }
 
     public bool EvidenceRequired { get; set; }
-    
+
     public decimal? MinOrderAmount { get; set; }
+
+    public decimal? RefundOnlyMaxAmount { get; set; }
+
+    public int? RefundWindowDays { get; set; }
 
     public bool IsActive { get; set; }
 
