@@ -83,6 +83,33 @@ export interface MyTicketsPageDto {
   hasNextPage: boolean;
 }
 
+/** After-sales ticket DTO for list views */
+export interface AfterSalesTicketDto {
+  id: string;
+  orderId: string;
+  orderItemId?: string;
+  ticketType: AfterSalesTicketType;
+  status: AfterSalesTicketStatus;
+  subject?: string;
+  reason: string;
+  customerName?: string;
+  refundAmount?: number;
+  isRequiredEvidence: boolean;
+  createdAt: string;
+  resolvedAt?: string;
+}
+
+/** Paginated response for after-sales tickets list */
+export interface AfterSalesTicketsResponse {
+  items: AfterSalesTicketDto[];
+  totalCount: number;
+  pageNumber: number;
+  pageSize: number;
+  totalPages: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
+}
+
 /** Simplified customer order detail for after-sales context */
 export interface CustomerOrderDetailDto {
   id: string;

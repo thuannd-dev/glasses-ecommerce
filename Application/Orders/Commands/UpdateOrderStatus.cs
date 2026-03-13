@@ -22,7 +22,7 @@ public sealed class UpdateOrderStatus
     internal sealed class Handler(AppDbContext context, IUserAccessor userAccessor)
         : IRequestHandler<Command, Result<Unit>>
     {
-        public async Task<Result<Unit>> Handle(Command request, CancellationToken ct)
+            public async Task<Result<Unit>> Handle(Command request, CancellationToken ct)
         {
             Guid staffUserId = userAccessor.GetUserId();
 
