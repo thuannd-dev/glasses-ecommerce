@@ -44,8 +44,10 @@ export function OverviewScreen() {
   const inTransitCount = safeShipments.filter(
     (s) => s.status === "in_transit" || s.status === "picked"
   ).length;
-  const preOrderCount = safeOrders.filter((o) => o.orderType === "PreOrder").length;
-  const prescriptionCount = safeOrders.filter((o) => o.orderType === "Prescription").length;
+  const preOrderCount = safeOrders.filter(
+    (o) => String(o.orderType) === "pre-order"
+  ).length;
+  const prescriptionCount = safeOrders.filter((o) => o.prescriptionStatus != null).length;
 
   return (
     <>

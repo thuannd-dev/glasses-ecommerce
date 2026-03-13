@@ -28,15 +28,16 @@ import { useCart } from "../../lib/hooks/useCart";
 import { useCategories } from "../../lib/hooks/useProducts";
 import UserMenu from "./UserMenu";
 import CartDropdown from "../components/cart/CartDropdown";
+import { COLORS } from "../theme/colors";
 
 // ===== Styles =====
-const ACCENT = "#B68C5A";
+const ACCENT = COLORS.accentGold;
 
 const NAV_BTN_SX = {
   textTransform: "none",
   fontWeight: 600,
   fontSize: 13.5,
-  color: "#171717",
+  color: COLORS.textPrimary,
   px: 1.4,
   position: "relative",
   "&::after": {
@@ -72,9 +73,9 @@ const NAV_BTN_SX = {
 
 const APP_BAR_SX = {
   top: 0,
-  backgroundColor: "rgba(255,255,255,0.92)",
-  color: "#111827",
-  borderBottom: "1px solid rgba(0,0,0,0.08)",
+  backgroundColor: "rgba(250,248,244,0.92)",
+  color: COLORS.textPrimary,
+  borderBottom: `1px solid ${COLORS.borderSoft}`,
   zIndex: 3000,
   backdropFilter: "blur(8px)",
 } as const;
@@ -88,26 +89,26 @@ const SEARCH_BOX_SX = {
   px: 1.5,
   height: 40,
   borderRadius: 999,
-  border: "1px solid rgba(0,0,0,0.08)",
-  backgroundColor: "#FAFAF8",
+  border: `1px solid ${COLORS.borderSoft}`,
+  backgroundColor: COLORS.bgSubtle,
   transition: "border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease",
   "&:focus-within": {
     borderColor: ACCENT,
-    boxShadow: `0 0 0 1px ${alpha(ACCENT, 0.16)}`,
-    backgroundColor: "#FFFFFF",
+    boxShadow: `0 0 0 1px ${alpha(ACCENT, 0.18)}`,
+    backgroundColor: COLORS.bgSurface,
   },
 } as const;
 
 const ICON_BUTTON_SX = {
-  color: "rgba(23,23,23,0.8)",
+  color: COLORS.textSecondary,
   width: 40,
   height: 40,
   borderRadius: "999px",
   border: "1px solid transparent",
   transition: "background-color 160ms ease, border-color 160ms ease, transform 160ms ease, color 160ms ease",
   "&:hover": {
-    backgroundColor: "#FAFAFA",
-    borderColor: "rgba(0,0,0,0.08)",
+    backgroundColor: COLORS.bgSubtle,
+    borderColor: COLORS.borderSoft,
     transform: "translateY(-1px)",
   },
 } as const;
@@ -206,7 +207,7 @@ const NavBar = observer(function NavBar() {
                   fontWeight: 800,
                   letterSpacing: "0.18em",
                   fontSize: 18,
-                  color: "#171717",
+                  color: COLORS.textPrimary,
                 }}
               >
                 EYEWEAR
@@ -225,14 +226,14 @@ const NavBar = observer(function NavBar() {
                 onSubmit={handleSubmitSearch}
                 sx={SEARCH_BOX_SX}
               >
-                <Search sx={{ fontSize: 18, color: "#8A8A8A" }} />
+                <Search sx={{ fontSize: 18, color: COLORS.textMuted }} />
                 <InputBase
                   placeholder="Search by brand or product name..."
                   sx={{
                     flex: 1,
                     fontSize: 13.5,
                     "& input::placeholder": {
-                      color: "#8A8A8A",
+                      color: COLORS.textMuted,
                     },
                   }}
                   value={searchTerm}

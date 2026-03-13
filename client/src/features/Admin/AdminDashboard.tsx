@@ -5,24 +5,17 @@ export default function AdminDashboard() {
   const { currentUser } = useAccount();
 
   return (
-    <Box
-      sx={{
-        px: { xs: 2, md: 4, lg: 6 },
-        py: 6,
-        color: "rgba(0,0,0,0.87)",
-      }}
-    >
+    <>
       {/* Header */}
       <Box sx={{ mb: 5 }}>
         <Typography sx={{ fontSize: 12, letterSpacing: 6, textTransform: "uppercase", color: "text.secondary" }}>
-          Admin Control
+          Admin Console
         </Typography>
         <Typography sx={{ mt: 1, fontSize: 30, fontWeight: 900 }} color="text.primary">
-          System overview
-          {currentUser?.displayName ? `, ${currentUser.displayName}` : ""}.
+          Welcome{currentUser?.displayName ? `, ${currentUser.displayName}` : ""}.
         </Typography>
         <Typography sx={{ mt: 1, color: "text.secondary", maxWidth: 520, fontSize: 14 }}>
-          Manage users, roles and platform health for the eyewear store.
+          Manage users, roles, policies, and platform health for the eyewear store.
         </Typography>
       </Box>
 
@@ -187,7 +180,7 @@ export default function AdminDashboard() {
           </Paper>
         </Grid>
       </Grid>
-    </Box>
+    </>
   );
 }
 

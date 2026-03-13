@@ -307,8 +307,8 @@ public sealed class CreateStaffOrder
                     });
                 }
 
-                // 11. Create Prescription
-                if (dto.OrderType == OrderType.Prescription && dto.Prescription != null)
+                // 11. Create Prescription (lưu nếu có, bất kể OrderType — PreOrder cũng có thể kèm đơn thuốc)
+                if (dto.Prescription != null)
                 {
                     Prescription prescription = new Prescription
                     {

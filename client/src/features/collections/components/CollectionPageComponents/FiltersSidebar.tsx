@@ -13,6 +13,7 @@ import type React from "react";
 import { type Dispatch, type SetStateAction } from "react";
 import { useNavigate } from "react-router-dom";
 import type { FiltersState, GlassesType } from "../../../../lib/types";
+import { COLORS } from "../../../../app/theme/colors";
 
 /** Category trả về từ GET /api/categories – khớp với category trong response list sản phẩm */
 export type CategoryOption = {
@@ -27,7 +28,7 @@ const FALLBACK_TYPES: { label: string; value: GlassesType }[] = [
     { label: "Sunglasses", value: "sunglasses" },
 ];
 
-const ACCENT = "#B68C5A";
+const ACCENT = COLORS.accentGold;
 
 const PRICE_OPTIONS: { id: string; label: string; min: number | null; max: number | null }[] = [
     { id: "under50", label: "Under $50", min: null, max: 50 },
@@ -109,16 +110,15 @@ export function FiltersSidebar({
                 position: stickyTop !== undefined ? { md: "sticky" } : "static",
                 top: stickyTop !== undefined ? { md: stickyTop } : undefined,
                 borderRadius: 2.5,
-                border: "1px solid rgba(0,0,0,0.06)",
-                boxShadow: "0 10px 30px rgba(0,0,0,0.06)",
-                bgcolor: "#FFFFFF",
+                border: `1px solid ${COLORS.borderSoft}`,
+                boxShadow: "0 10px 30px rgba(0,0,0,0.05)",
+                bgcolor: COLORS.bgSurface,
                 px: 2.5,
                 pt: 2.5,
                 pb: 2.5,
                 display: "flex",
                 flexDirection: "column",
                 gap: 2,
-                height: "100%",
             }}
         >
             <Box sx={{ mb: 1 }}>

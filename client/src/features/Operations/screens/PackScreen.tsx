@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Box, LinearProgress, Pagination, Paper, Typography } from "@mui/material";
+import { Box, LinearProgress, Paper, Typography } from "@mui/material";
 import { useOperationsOrders, useUpdateOrderStatus } from "../../../lib/hooks/useOperationsOrders";
+import { AppPagination } from "../../../app/shared/components/AppPagination";
 import type { StaffOrderDto } from "../../../lib/types/staffOrders";
 import type { OrderStatus } from "../../../lib/types/operations";
 import { OperationsPageHeader } from "../components/OperationsPageHeader";
@@ -9,7 +10,7 @@ import { OrderListCard } from "../components/OrderListCard";
 
 export function PackScreen() {
   const [pageNumber, setPageNumber] = useState(1);
-  const pageSize = 10;
+  const pageSize = 5;
 
   const { data, isLoading } = useOperationsOrders({
     pageNumber,
@@ -83,11 +84,15 @@ export function PackScreen() {
                     key={o.id}
                     mode="confirmed"
                     summary={o}
-                    primaryActionLabel={o.orderStatus === "Confirmed" ? "Processing" : undefined}
+                    primaryActionLabel={
+                      String(o.orderStatus).toLowerCase() === "confirmed"
+                        ? "Processing"
+                        : undefined
+                    }
                     onPrimaryActionClick={(orderId) =>
                       updateStatus.mutate({
                         orderId,
-                        status: "processing" as OrderStatus,
+                        status: "Processing" as OrderStatus,
                       })
                     }
                   />
@@ -95,22 +100,15 @@ export function PackScreen() {
               </Box>
 
               {totalPages > 1 && (
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "flex-end",
-                    mt: 2,
-                    pt: 1,
-                  }}
-                >
-                  <Pagination
-                    count={totalPages}
-                    page={pageNumber}
-                    onChange={(_, page) => setPageNumber(page)}
-                    color="primary"
-                    size="small"
-                  />
-                </Box>
+                <AppPagination
+                  page={pageNumber}
+                  totalPages={totalPages}
+                  onChange={setPageNumber}
+                  totalItems={data?.totalCount}
+                  pageSize={pageSize}
+                  unitLabel="orders"
+                  align="flex-end"
+                />
               )}
             </>
           )}
