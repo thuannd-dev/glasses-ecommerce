@@ -12,9 +12,7 @@ import { OrderListCard, StatusFilterTabs } from "../components";
 export function PrescriptionScreen() {
   const [pageNumber, setPageNumber] = useState(1);
   const pageSize = 5;
-  const [statusFilter, setStatusFilter] = useState<"All" | "Confirmed" | "Processing" | "Shipped" | "Delivered">(
-    "Confirmed",
-  );
+  const [statusFilter, setStatusFilter] = useState<"All" | "Confirmed" | "Processing" | "Shipped" | "Delivered">("All");
 
   const { data, isLoading } = useOperationsOrders({
     pageNumber,
@@ -88,8 +86,8 @@ export function PrescriptionScreen() {
                   },
                 }}
               >
-              {safeOrders
-                .filter((o) => {
+                {safeOrders
+                  .filter((o) => {
                     const s = String(o.orderStatus).toLowerCase();
                     if (statusFilter === "All") return true;
                     if (statusFilter === "Confirmed") return s === "confirmed";
@@ -98,33 +96,37 @@ export function PrescriptionScreen() {
                     if (statusFilter === "Delivered") return s === "delivered";
                     return true;
                   })
-                  .map((o) => {
-                    const s = String(o.orderStatus).toLowerCase();
-                    const canProcessing = s === "confirmed";
-                    const canMarkShipped = s === "processing";
-
-                    return (
-                      <OrderListCard
-                        key={o.id}
-                        mode="confirmed"
-                        summary={o}
-                        onProcessingClick={
-                          canProcessing
-                            ? (orderId) =>
-                                updateStatus.mutate({
-                                  orderId,
-                                  status: "Processing" as OrderStatus,
-                                })
-                            : undefined
+                  .map((o) => (
+                    <OrderListCard
+                      key={o.id}
+                      mode="confirmed"
+                      summary={o}
+                      primaryActionLabel={
+                        String(o.orderStatus).toLowerCase() === "confirmed"
+                          ? "Processing"
+                          : String(o.orderStatus).toLowerCase() === "processing"
+                          ? "Mark shipped"
+                          : undefined
+                      }
+                      onPrimaryActionClick={(orderId) => {
+                        const s = String(o.orderStatus).toLowerCase();
+                        if (s === "confirmed") {
+                          updateStatus.mutate({
+                            orderId,
+                            status: "Processing" as OrderStatus,
+                          });
+                        } else if (s === "processing") {
+                          openCreateShipment(orderId);
                         }
-                        onMarkShippedClick={
-                          canMarkShipped
-                            ? (orderId) => openCreateShipment(orderId)
-                            : undefined
-                        }
-                      />
-                    );
-                  })}
+                      }}
+                      onUpdateStatus={(status) => {
+                        updateStatus.mutate({
+                          orderId: o.id,
+                          status: status as OrderStatus,
+                        });
+                      }}
+                    />
+                  ))}
               </Box>
               )}
 

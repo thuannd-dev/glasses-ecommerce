@@ -1,24 +1,8 @@
-import type { MeOrderItemDto } from "./order";
-export interface AfterSalesTicketDto {
-  id: string;
-  status?: string;
-  createdAt?: string;
-  orderId?: string;
-  subject?: string;
-  reason?: string;
-  customerName?: string;
-  [key: string]: any;
-}
+/**
+ * Types for After-Sales Tickets API: GET /api/me/after-sales, POST /api/me/after-sales/:id/cancel, etc.
+ */
 
-export interface AfterSalesTicketsResponse {
-  items: AfterSalesTicketDto[];
-  totalCount: number;
-  pageNumber: number;
-  pageSize: number;
-  totalPages: number;
-  hasPreviousPage?: boolean;
-  hasNextPage?: boolean;
-}
+import type { MeOrderItemDto } from "./order";
 
 /** Ticket type enum */
 export type AfterSalesTicketType = "Unknown" | "Return" | "Warranty" | "Refund";

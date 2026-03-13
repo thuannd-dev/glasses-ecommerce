@@ -57,12 +57,7 @@ public sealed class SubmitTicket
                         return Result<TicketDetailDto>.Failure(
                             "One or more selected items do not belong to this order. Please refresh the page and try again.", 400);
                 }
-                List<Guid> distinctItemIds = request.Dto.OrderItemIds.Distinct().ToList();
-                if (distinctItemIds.Count != request.Dto.OrderItemIds.Count)
-                    return Result<TicketDetailDto>.Failure(
-                        "Each selected item must be unique.", 400);
-
-                orderItemIdsToProcess = distinctItemIds.Cast<Guid?>().ToList();
+                orderItemIdsToProcess = request.Dto.OrderItemIds.Cast<Guid?>().ToList();
             }
 
             // 3. Load active policy — map TicketType to PolicyType explicitly
@@ -157,27 +152,10 @@ public sealed class SubmitTicket
                     $"You already have an open {existingType} request for {ticketScope}. Our team is reviewing it. Please check your support tickets section for details.", 409);
             }
 
-            // 6.5. Check if any selected items are already covered by existing non-closed tickets
-            // This includes:
-            //   (a) whole-order tickets (OrderItemId == null) — they implicitly cover every item
-            //   (b) item-specific tickets that overlap with the selected items
+            // 6.5. Check if any selected items are already in any existing non-closed tickets
+            // Prevents duplicate product submissions across different tickets
             if (request.Dto.OrderItemIds != null && request.Dto.OrderItemIds.Count > 0)
             {
-                // (a) Block if a whole-order ticket exists — it already covers all items
-                bool wholeOrderTicketExists = await context.AfterSalesTickets
-                    .AsNoTracking()
-                    .AnyAsync(t =>
-                        t.OrderId == request.Dto.OrderId &&
-                        t.OrderItemId == null &&
-                        t.TicketStatus != AfterSalesTicketStatus.Rejected &&
-                        t.TicketStatus != AfterSalesTicketStatus.Resolved &&
-                        t.TicketStatus != AfterSalesTicketStatus.Closed, cancellationToken);
-
-                if (wholeOrderTicketExists)
-                    return Result<TicketDetailDto>.Failure(
-                        "You already have an open request covering the entire order. You cannot submit item-specific requests while it is active. Please check your support tickets section for details.", 409);
-
-                // (b) Block if any of the selected items are already in an item-specific ticket
                 List<Guid> itemsInExistingTickets = await context.AfterSalesTickets
                     .AsNoTracking()
                     .Where(t =>

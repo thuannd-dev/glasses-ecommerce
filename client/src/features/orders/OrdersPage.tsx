@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Box, Typography, Paper, Button, Skeleton } from "@mui/material";
+import { useState } from "react";
+import { Box, Typography, Paper, Button, Skeleton, Chip } from "@mui/material";
 import { NavLink } from "react-router-dom";
 import { useMyOrders } from "../../lib/hooks/useOrders";
 import { OrderCard } from "./OrderCard";
@@ -14,45 +14,14 @@ const PALETTE = {
   border: "#ECECEC",
   divider: "#F1F1F1",
 };
+
+const FILTERS = ["All", "Pending", "Processing", "In-transit", "Completed", "Cancelled"] as const;
+type FilterValue = (typeof FILTERS)[number];
+
 export default function OrdersPage() {
   const [pageNumber, setPageNumber] = useState(1);
-
   const { data: page, isLoading, isError, error } = useMyOrders(pageNumber);
-
-  const list = page?.items ?? [];
-  const effectiveTotalCount = page?.totalCount ?? list.length;
-  const effectiveTotalPages = page?.totalPages ?? 1;
-  const currentPage = page?.pageNumber ?? pageNumber;
-  const pageSize = page?.pageSize ?? (list.length || 10);
-
-  const groupedByDate = useMemo(() => {
-    const map = new Map<
-      string,
-      {
-        key: string;
-        dateLabel: string;
-        orders: typeof list;
-      }
-    >();
-
-    list.forEach((order) => {
-      const d = new Date(order.createdAt);
-      const key = d.toISOString().slice(0, 10); // YYYY-MM-DD
-      const label = d.toLocaleDateString("en-US", {
-        month: "short",
-        day: "2-digit",
-        year: "numeric",
-      });
-
-      if (!map.has(key)) {
-        map.set(key, { key, dateLabel: label, orders: [] as typeof list });
-      }
-      map.get(key)!.orders.push(order);
-    });
-
-    // Giữ nguyên thứ tự theo backend (mới nhất trước)
-    return Array.from(map.values());
-  }, [list]);
+  const [activeFilter, setActiveFilter] = useState<FilterValue>("All");
 
   if (isLoading) {
     return (
@@ -80,6 +49,44 @@ export default function OrdersPage() {
       </Box>
     );
   }
+
+  const list = page?.items ?? [];
+  const totalCount = page?.totalCount ?? list.length;
+  const totalPages = page?.totalPages ?? 1;
+  const currentPage = page?.pageNumber ?? pageNumber;
+  const pageSize = page?.pageSize ?? (list.length || 10);
+
+  const filteredList = list.filter((order) => {
+    if (activeFilter === "All") return true;
+    const status = (order.orderStatus ?? "").toString().toLowerCase();
+
+    if (activeFilter === "Pending") {
+      return status.includes("pending");
+    }
+
+    // Processing: stays while order is confirmed by staff, changes to "In-transit" when shipped
+    if (activeFilter === "Processing") {
+      return status.includes("confirmed") || status.includes("processing");
+    }
+
+    // In-transit: when order status is Shipped
+    if (activeFilter === "In-transit") {
+      return status.includes("shipped");
+    }
+
+    // Completed: when order is Completed or Delivered
+    if (activeFilter === "Completed") {
+      return status.includes("completed") || status.includes("delivered");
+    }
+
+    // Cancelled: when order is rejected or cancelled
+    if (activeFilter === "Cancelled") {
+      return status.includes("cancel") || status.includes("refund");
+    }
+
+    return true;
+  });
+
   return (
     <Box
       sx={{
@@ -110,7 +117,7 @@ export default function OrdersPage() {
             mt: 0.5,
           }}
         >
-          {effectiveTotalCount} order{effectiveTotalCount !== 1 ? "s" : ""}
+          {totalCount} order{totalCount !== 1 ? "s" : ""}
         </Typography>
         <Box
           sx={{
@@ -123,7 +130,44 @@ export default function OrdersPage() {
         />
       </Box>
 
-      {list.length === 0 ? (
+      {/* Filter row (UI-only) */}
+      <Box
+        sx={{
+          display: "flex",
+          gap: 1,
+          mb: 3,
+          overflowX: "auto",
+        }}
+      >
+        {FILTERS.map((f) => {
+          const active = activeFilter === f;
+          return (
+            <Chip
+              key={f}
+              label={f}
+              onClick={() => setActiveFilter(f)}
+              clickable
+              sx={{
+                borderRadius: 999,
+                px: 1.5,
+                fontSize: 13,
+                fontWeight: 500,
+                bgcolor: active ? "#171717" : "#FFFFFF",
+                color: active ? "#FFFFFF" : PALETTE.textSecondary,
+                border: active ? "none" : `1px solid ${PALETTE.border}`,
+                boxShadow: active ? "0 4px 14px rgba(0,0,0,0.16)" : "none",
+                transition:
+                  "background-color 180ms ease, color 180ms ease, box-shadow 180ms ease",
+                "&:hover": {
+                  bgcolor: active ? "#111111" : "#FAFAFA",
+                },
+              }}
+            />
+          );
+        })}
+      </Box>
+
+      {filteredList.length === 0 ? (
         <Paper
           elevation={0}
           sx={{
@@ -157,33 +201,18 @@ export default function OrdersPage() {
       ) : (
         <>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 3, mb: 3 }}>
-            {groupedByDate.map((group) => (
-              <Box key={group.key} sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                <Typography
-                  sx={{
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: PALETTE.textMuted,
-                    textTransform: "uppercase",
-                    letterSpacing: 1.6,
-                  }}
-                >
-                  {group.dateLabel}
-                </Typography>
-                {group.orders.map((order) => (
-                  <OrderCard key={order.id} orderSummary={order} />
-                ))}
-              </Box>
+            {filteredList.map((order) => (
+              <OrderCard key={order.id} orderSummary={order} />
             ))}
           </Box>
 
           {/* Pagination controls — same style as Collections */}
-          {effectiveTotalPages > 1 && (
+          {totalPages > 1 && (
             <AppPagination
               page={currentPage}
-              totalPages={effectiveTotalPages}
+              totalPages={totalPages}
               onChange={setPageNumber}
-              totalItems={effectiveTotalCount}
+              totalItems={totalCount}
               pageSize={pageSize}
               unitLabel="orders"
               align="space-between"

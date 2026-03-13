@@ -36,7 +36,7 @@ export function useCreateOrder() {
   });
 }
 
-/** GET /api/me/orders — list my orders (paginated from backend) */
+/** GET /api/me/orders — list my orders (paginated) */
 export function useMyOrders(pageNumber: number = 1) {
   return useQuery<MyOrdersPageDto>({
     queryKey: [...QUERY_KEY_MY_ORDERS, pageNumber],

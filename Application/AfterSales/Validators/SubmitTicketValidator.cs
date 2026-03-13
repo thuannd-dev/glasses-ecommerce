@@ -34,7 +34,6 @@ public sealed class SubmitTicketValidator : AbstractValidator<SubmitTicket.Comma
                 .WithMessage("You can select at most 10 items per ticket.");
 
             RuleFor(x => x.Dto.Attachments)
-                .Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("Attachments must be an array (use [] for no attachments).")
                 .Must(atts => atts.Count <= 5).WithMessage("Maximum 5 attachments allowed.");
 

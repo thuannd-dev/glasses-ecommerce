@@ -21,10 +21,6 @@ public sealed class UpdatePolicyDto
     
     public decimal? MinOrderAmount { get; set; }
 
-    public decimal? RefundOnlyMaxAmount { get; set; }
-
-    public int? RefundWindowDays { get; set; }
-
     public bool IsActive { get; set; }
 
     public DateTime EffectiveFrom { get; set; }

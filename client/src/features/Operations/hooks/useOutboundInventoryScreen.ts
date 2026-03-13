@@ -31,7 +31,6 @@ export function useOutboundInventoryScreen() {
   const { data: ordersData, isLoading: isOrdersLoading } = useOperationsOrders({
     pageNumber: 1,
     pageSize: 80,
-    status: "Processing",
   });
   const { data: selectedOrderDetail, isLoading: isOrderDetailLoading } = useOperationsOrderDetail(
     orderId.trim() || undefined,
@@ -39,11 +38,9 @@ export function useOutboundInventoryScreen() {
 
   const inventoryItems = inventoryData?.items ?? [];
   const safeOrders = useMemo<StaffOrderDto[]>(() => {
-    const list = Array.isArray(ordersData?.items)
+    return Array.isArray(ordersData?.items)
       ? (ordersData!.items as unknown as StaffOrderDto[])
       : [];
-    // Chỉ cho phép chọn những đơn đang Processing để tạo outbound
-    return list.filter((o) => String(o.orderStatus).toLowerCase() === "processing");
   }, [ordersData]);
   const filteredOrders = useMemo(() => {
     const q = orderSearch.trim().toLowerCase();
