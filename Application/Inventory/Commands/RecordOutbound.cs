@@ -36,10 +36,17 @@ public sealed class RecordOutbound
                 await using IDbContextTransaction transaction =
                     await context.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
 
-                // 1. Validate order exists
+                // 1. Lock Orders row upfront with UPDLOCK+HOLDLOCK before acquiring Stocks locks.
+                //    Both RecordOutbound and UpdateOrderStatus must take the Orders lock first,
+                //    then Stocks — establishing a consistent lock ordering that prevents deadlock cycles.
+                //    Without this, RecordOutbound holds S-lock on Orders then waits for UPDLOCK on Stocks,
+                //    while UpdateOrderStatus holds UPDLOCK on Stocks and then upgrades S→X on Orders.
                 Order? order = await context.Orders
+                    .FromSqlRaw(
+                        "SELECT * FROM Orders WITH (UPDLOCK, HOLDLOCK) WHERE Id = @p0",
+                        request.Dto.OrderId)
                     .Include(o => o.OrderItems)
-                    .FirstOrDefaultAsync(o => o.Id == request.Dto.OrderId, ct);
+                    .FirstOrDefaultAsync(ct);
 
                 if (order == null)
                     return Result<Unit>.Failure("Order not found.", 404);

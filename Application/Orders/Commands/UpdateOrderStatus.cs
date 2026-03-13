@@ -31,14 +31,25 @@ public sealed class UpdateOrderStatus
                 // Clear stale change-tracker state so each retry attempt starts fresh.
                 context.ChangeTracker.Clear();
 
-                // Use RepeatableRead to prevent race condition on stock updates
+                // Serializable prevents phantom reads on the outbound-existence check:
+                // RepeatableRead would allow UpdateOrderStatus to read "no outbound" while
+                // RecordOutbound is mid-transaction inserting one, causing double stock deduction.
+                // Both handlers now hold the same range locks so their outbound checks are serialized.
                 await using IDbContextTransaction transaction =
-                    await context.Database.BeginTransactionAsync(IsolationLevel.RepeatableRead, ct);
+                    await context.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
 
+                // Acquire UPDLOCK+HOLDLOCK on the Orders row upfront — same lock ordering as RecordOutbound
+                // (Orders first, then Stocks). Prevents the S→X upgrade deadlock cycle:
+                // previously this handler took S-lock on Orders, then UPDLOCK on Stocks,
+                // then tried to upgrade S→X on Orders at SaveChanges — forming a cycle if
+                // RecordOutbound held S-lock on Orders waiting for UPDLOCK on Stocks.
                 Order? order = await context.Orders
+                    .FromSqlRaw(
+                        "SELECT * FROM Orders WITH (UPDLOCK, HOLDLOCK) WHERE Id = @p0",
+                        request.OrderId)
                     .Include(o => o.ShipmentInfo)
                     .Include(o => o.Payments)
-                    .FirstOrDefaultAsync(o => o.Id == request.OrderId, ct);
+                    .FirstOrDefaultAsync(ct);
 
                 if (order == null)
                     return Result<Unit>.Failure("Order not found.", 404);
