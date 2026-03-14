@@ -65,7 +65,7 @@ public sealed class Checkout
                 if (cart == null || cart.Items.Count == 0)
                     return Result<Guid>.Failure("Cart is empty.", 400);
 
-                var selectedItems = cart.Items
+                List<CartItem> selectedItems = cart.Items
                     .Where(i => dto.SelectedCartItemIds.Contains(i.Id))
                     .ToList();
 
@@ -313,7 +313,7 @@ public sealed class Checkout
                 // 11. Prescription (lưu nếu có, bất kể OrderType — PreOrder cũng có thể kèm đơn thuốc)
                 if (dto.Prescriptions != null && dto.Prescriptions.Count > 0)
                 {
-                    foreach (var prescriptionInfo in dto.Prescriptions)
+                    foreach (OrderItemPrescriptionDto prescriptionInfo in dto.Prescriptions)
                     {
                         Prescription prescription = new Prescription
                         {
@@ -337,7 +337,7 @@ public sealed class Checkout
                         }
 
                         // Map to OrderItem using CartItemId -> ProductVariantId
-                        var cartItem = selectedItems.FirstOrDefault(i => i.Id == prescriptionInfo.CartItemId);
+                        CartItem? cartItem = selectedItems.FirstOrDefault(i => i.Id == prescriptionInfo.CartItemId);
                         if (cartItem == null)
                         {
                             return Result<Guid>.Failure($"Cart item {prescriptionInfo.CartItemId} for prescription not found in selected items.", 400);
@@ -346,7 +346,7 @@ public sealed class Checkout
                         // Find the corresponding OrderItem we just created (matching variant ID)
                         // In case of multiple items of the same variant, we just attach to the first one available
                         // that hasn't been assigned a prescription yet.
-                        var orderItem = orderItems.FirstOrDefault(oi => oi.ProductVariantId == cartItem.ProductVariantId && oi.PrescriptionId == null);
+                        OrderItem? orderItem = orderItems.FirstOrDefault(oi => oi.ProductVariantId == cartItem.ProductVariantId && oi.PrescriptionId == null);
                         if (orderItem == null)
                         {
                             return Result<Guid>.Failure($"Could not link prescription to an available order item for variant {cartItem.ProductVariantId}. Multiple prescriptions for the same variant are not supported without splitting items.", 400);
@@ -367,7 +367,7 @@ public sealed class Checkout
                 });
 
                 // 13. Cart Split Logic for Partial Checkout
-                var unselectedItems = cart.Items.Except(selectedItems).ToList();
+                List<CartItem> unselectedItems = cart.Items.Except(selectedItems).ToList();
 
                 // Mark original (now holding only ordered items) as Converted FIRST
                 cart.Status = CartStatus.Converted;
@@ -388,7 +388,7 @@ public sealed class Checkout
                     context.Carts.Add(newActiveCart);
 
                     // Move unselected items to the new cart, preserving their existing IDs
-                    foreach (var item in unselectedItems)
+                    foreach (CartItem item in unselectedItems)
                     {
                         cart.Items.Remove(item);
                         item.CartId = newActiveCart.Id;

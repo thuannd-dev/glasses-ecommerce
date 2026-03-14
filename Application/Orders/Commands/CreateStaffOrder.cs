@@ -301,7 +301,7 @@ public sealed class CreateStaffOrder
                 }
 
                 // 11. Create Prescription (lưu nếu có, bất kể OrderType — PreOrder cũng có thể kèm đơn thuốc)
-                foreach (var itemWithPrescription in dto.Items.Where(i => i.Prescription != null))
+                foreach (OrderItemInputDto itemWithPrescription in dto.Items.Where(i => i.Prescription != null))
                 {
                     Prescription prescription = new Prescription
                     {
@@ -325,7 +325,7 @@ public sealed class CreateStaffOrder
                         });
                     }
 
-                    var orderItem = orderItems.FirstOrDefault(oi => oi.ProductVariantId == itemWithPrescription.ProductVariantId && oi.PrescriptionId == null);
+                    OrderItem? orderItem = orderItems.FirstOrDefault(oi => oi.ProductVariantId == itemWithPrescription.ProductVariantId && oi.PrescriptionId == null);
                     if (orderItem == null)
                     {
                         return Result<Guid>.Failure($"Could not link prescription to an available order item for variant {itemWithPrescription.ProductVariantId}. Multiple prescriptions for the same variant are not supported.", 400);
