@@ -797,7 +797,8 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
 
             entity.HasOne(oi => oi.Prescription)
                 .WithMany()
-                .HasForeignKey(oi => oi.PrescriptionId)
+                .HasForeignKey(oi => new { oi.PrescriptionId, oi.OrderId })
+                .HasPrincipalKey(p => new { p.Id, p.OrderId })
                 .OnDelete(DeleteBehavior.Restrict); // Changed from SetNull to Restrict to avoid cycle
 
             //Properties
@@ -904,6 +905,11 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
 
             entity.HasIndex(e => e.CreatedAt)
                 .HasDatabaseName("IX_Prescription_CreatedAt");
+
+            // Required for composite foreign key from OrderItem
+            entity.HasIndex(e => new { e.Id, e.OrderId })
+                .IsUnique()
+                .HasDatabaseName("UX_Prescription_Id_OrderId");
 
             //Constraints
             entity.ToTable(t =>
