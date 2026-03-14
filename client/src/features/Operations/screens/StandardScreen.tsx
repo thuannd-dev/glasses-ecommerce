@@ -102,6 +102,7 @@ export function StandardScreen() {
                       const s = String(o.orderStatus).toLowerCase();
                       const canProcessing = s === "confirmed";
                       const canMarkShipped = s === "processing";
+                      const canMarkDelivered = s === "shipped";
 
                       return (
                         <OrderListCard
@@ -120,6 +121,15 @@ export function StandardScreen() {
                           onMarkShippedClick={
                             canMarkShipped
                               ? (orderId) => openCreateShipment(orderId)
+                              : undefined
+                          }
+                          onMarkDeliveredClick={
+                            canMarkDelivered
+                              ? (orderId) =>
+                                  updateStatus.mutate({
+                                    orderId,
+                                    status: "Delivered" as OrderStatus,
+                                  })
                               : undefined
                           }
                         />

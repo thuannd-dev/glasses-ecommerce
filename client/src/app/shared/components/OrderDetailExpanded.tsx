@@ -73,9 +73,10 @@ interface OrderDetailExpandedProps {
   showProcessButton?: boolean;
   onAddTrackingClick?: (orderId: string) => void;
   showAddTrackingButton?: boolean;
+  onMarkDeliveredClick?: (orderId: string) => void;
 }
 
-export function OrderDetailExpanded({ detail, onProcessOrderClick, showProcessButton, onAddTrackingClick, showAddTrackingButton }: OrderDetailExpandedProps) {
+export function OrderDetailExpanded({ detail, onProcessOrderClick, showProcessButton, onAddTrackingClick, showAddTrackingButton, onMarkDeliveredClick }: OrderDetailExpandedProps) {
   const paymentStatusPill = detail.payment ? getPaymentStatusPill(detail.payment.paymentStatus) : null;
 
   const copyAddress = () => {
@@ -680,6 +681,32 @@ export function OrderDetailExpanded({ detail, onProcessOrderClick, showProcessBu
             </Box>
           </Box>
         </Box>
+      )}
+
+      {/* 3.9) Make Order Delivered Button — between Tracking and Status History */}
+      {onMarkDeliveredClick && detail.orderStatus && String(detail.orderStatus).toLowerCase().includes("shipped") && (
+        <Button
+          fullWidth
+          variant="outlined"
+          size="medium"
+          sx={{
+            height: 40,
+            fontWeight: 600,
+            fontSize: 13,
+            textTransform: "capitalize",
+            borderRadius: 1,
+            borderColor: "rgba(34,197,94,0.4)",
+            bgcolor: "rgba(34,197,94,0.06)",
+            color: "#15803d",
+            "&:hover": {
+              borderColor: "rgba(22,163,74,0.9)",
+              bgcolor: "rgba(187,247,208,0.7)",
+            },
+          }}
+          onClick={() => onMarkDeliveredClick(detail.id)}
+        >
+          Mark Order Delivered
+        </Button>
       )}
 
       {/* 4) Status history — vertical timeline */}
