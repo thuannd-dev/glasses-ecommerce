@@ -87,7 +87,7 @@ public sealed class GetOperationsOrders
                     Sku = oi.ProductVariant?.SKU ?? "N/A",
                     Quantity = oi.Quantity,
                     Price = oi.UnitPrice,
-                    PrescriptionId = null
+                    PrescriptionId = oi.PrescriptionId?.ToString()
                 }).ToList();
                 mappedOrders.Add(dto);
             }
