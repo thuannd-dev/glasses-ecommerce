@@ -152,6 +152,35 @@ export function CreateShipmentDialog({
         >
           {order ? (
             <>
+              {/* PreOrder warning banner */}
+              {order.orderType === "PreOrder" && (
+                <Box
+                  sx={{
+                    borderRadius: 1.5,
+                    border: "1px solid rgba(202, 138, 4, 0.3)",
+                    bgcolor: "rgba(253, 224, 71, 0.08)",
+                    p: 1.5,
+                    mb: 2,
+                    display: "flex",
+                    gap: 1,
+                    alignItems: "flex-start",
+                  }}
+                >
+                  <Typography
+                    sx={{
+                      fontSize: 12,
+                      fontWeight: 500,
+                      color: "#9A6E04",
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    ⚠️ This is a <strong>Pre-Order</strong> item. Make sure inbound stock has been
+                    approved before proceeding with shipment. Items must be fulfilled from inbound
+                    approval before they can be shipped.
+                  </Typography>
+                </Box>
+              )}
+
               {/* Order summary (compact card) */}
               <Box
                 sx={{

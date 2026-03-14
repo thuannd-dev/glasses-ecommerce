@@ -1,6 +1,8 @@
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import { toast } from "react-toastify";
 import {
   useOperationsOrders,
+  useOperationsOrderDetail,
   useOperationsShipments,
   useUpdateOrderStatus,
   useUpdateTracking,
@@ -41,6 +43,9 @@ export function OperationsProvider({ children }: { children: React.ReactNode }) 
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
 
   const { data: ordersData, isLoading: ordersLoading } = useOperationsOrders();
+  const { data: selectedOrderDetail } = useOperationsOrderDetail(
+    createShipOrderId || undefined
+  );
   const { data: shipmentsData, isLoading: shipmentsLoading } = useOperationsShipments();
   const { data: lookupsData } = useLookups();
   const updateStatus = useUpdateOrderStatus();
@@ -62,30 +67,58 @@ export function OperationsProvider({ children }: { children: React.ReactNode }) 
   const handleCreateShipment = useCallback(() => {
     if (!createShipOrderId || !createShipTracking.trim()) return;
 
-    // Update order status to "Shipped" with shipment details
-    updateStatus.mutate(
+    // IMPORTANT: Record outbound FIRST to validate PreOrder fulfillment.
+    // Only if outbound succeeds, then update order status to "Shipped".
+    // This prevents status change if validation fails.
+    createOutbound.mutate(
       {
         orderId: createShipOrderId,
-        status: "Shipped" as const,
-        shipmentCarrierName: createShipCarrier,
-        shipmentTrackingCode: createShipTracking.trim(),
-        shipmentTrackingUrl: createShipTrackingUrl || null,
-        shipmentEstimatedDeliveryAt: createShipEstimatedDeliveryDate || null,
-        shipmentNotes: createShipShippingNotes || null,
       },
       {
         onSuccess: () => {
-          // Also record outbound inventory for this order (fire-and-forget)
-          createOutbound.mutate({
-            orderId: createShipOrderId,
-          });
+          // Outbound validation passed. Now update order status to "Shipped" with shipment details.
+          updateStatus.mutate(
+            {
+              orderId: createShipOrderId,
+              status: "Shipped" as const,
+              shipmentCarrierName: createShipCarrier,
+              shipmentTrackingCode: createShipTracking.trim(),
+              shipmentTrackingUrl: createShipTrackingUrl || null,
+              shipmentEstimatedDeliveryAt: createShipEstimatedDeliveryDate || null,
+              shipmentNotes: createShipShippingNotes || null,
+            },
+            {
+              onSuccess: () => {
+                toast.success("Order shipped successfully with outbound record created");
 
-          setCreateShipOrderId(null);
-          setCreateShipTracking("");
-          setCreateShipTrackingUrl("");
-          setCreateShipEstimatedDeliveryDate("");
-          setCreateShipShippingNotes("");
-          setCreateShipCarrier("");
+                setCreateShipOrderId(null);
+                setCreateShipTracking("");
+                setCreateShipTrackingUrl("");
+                setCreateShipEstimatedDeliveryDate("");
+                setCreateShipShippingNotes("");
+                setCreateShipCarrier("");
+              },
+              onError: (error: unknown) => {
+                const apiError = error as { response?: { data?: { message?: string } } } | undefined;
+                const errorMessage = apiError?.response?.data?.message || "Failed to update order status";
+                toast.error(errorMessage);
+              },
+            },
+          );
+        },
+        onError: (error: unknown) => {
+          // Extract error message from API response
+          const apiError = error as { response?: { data?: { message?: string } } } | undefined;
+          const errorMessage = apiError?.response?.data?.message || "Failed to create outbound record";
+
+          // Check if it's a PreOrder fulfillment issue
+          if (errorMessage.includes("Pre-order item not yet fulfilled")) {
+            toast.error(
+              "Pre-order items are not yet fulfilled. Please wait for inbound stock approval."
+            );
+          } else {
+            toast.error(errorMessage);
+          }
         },
       },
     );
@@ -126,8 +159,32 @@ export function OperationsProvider({ children }: { children: React.ReactNode }) 
     setExpandedOrderId,
   };
 
-  const selectedOrder = createShipOrderId
-    ? safeOrders.find((o) => o.id === createShipOrderId) ?? null
+  const selectedOrder: OrderDto | null = createShipOrderId 
+    ? safeOrders.find((o) => o.id === createShipOrderId) ?? 
+      (selectedOrderDetail
+        ? (
+            {
+              id: selectedOrderDetail.id,
+              orderNumber: selectedOrderDetail.id,
+              orderType: "Regular" as any,
+              status: selectedOrderDetail.orderStatus as any,
+              createdAt: selectedOrderDetail.createdAt,
+              customerName: selectedOrderDetail.customerName || selectedOrderDetail.walkInCustomerName || "",
+              customerEmail: "",
+              shippingAddress: selectedOrderDetail.shippingAddress
+                ? `${selectedOrderDetail.shippingAddress.venue || ""} ${selectedOrderDetail.shippingAddress.ward || ""} ${selectedOrderDetail.shippingAddress.district || ""} ${selectedOrderDetail.shippingAddress.city || ""}`.trim()
+                : "",
+              items: selectedOrderDetail.items.map((item) => ({
+                id: item.id,
+                productName: item.productName,
+                variantName: item.variantName,
+                quantity: item.quantity,
+                price: item.unitPrice,
+              })) as any,
+              totalAmount: selectedOrderDetail.finalAmount,
+            } as unknown as OrderDto
+          )
+        : null)
     : null;
 
   return (

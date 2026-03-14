@@ -52,6 +52,7 @@ const MANAGER_SUB_LINKS: { path: string; label: string; icon: React.ReactNode }[
   { path: "/manager/products", label: "Products", icon: <StorefrontOutlined /> },
   { path: "/manager/inbound", label: "Inbound", icon: <MoveToInboxOutlined /> },
   { path: "/manager/promotions", label: "Promotions", icon: <LocalOfferOutlined /> },
+  { path: "/manager/preorder-summary", label: "Pre-Orders", icon: <ScheduleOutlined /> },
 ];
 
 const ADMIN_SUB_LINKS: { path: string; label: string; icon: React.ReactNode }[] = [

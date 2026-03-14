@@ -91,4 +91,22 @@ public sealed class ManagerInventoryController : BaseApiController
         return HandleResult(await Mediator.Send(
             new GetOutboundDetail.Query { OrderId = orderId }, ct));
     }
+
+    // Xem tóm tắt PreOrder — tất cả variant có PreOrder được bật hoặc có demand chưa fulfill
+    // Giúp manager theo dõi nhu cầu PreOrder chưa được hoàn thành
+    // Sắp xếp theo số lượng chờ inbound (Pending) từ cao đến thấp
+    // Filter:
+    //   includeEmptyPreOrders=true: hiển thị cả variant PreOrder nhưng chưa có khách đặt
+    //   includeEmptyPreOrders=false (mặc định): chỉ hiển thị variant có demand chưa fulfill
+    [HttpGet("preorder-summary")]
+    public async Task<IActionResult> GetPreOrderSummary(
+        [FromQuery] bool includeEmptyPreOrders = false,
+        CancellationToken ct = default)
+    {
+        return HandleResult(await Mediator.Send(
+            new GetPreOrderSummary.Query
+            {
+                IncludeEmptyPreOrders = includeEmptyPreOrders
+            }, ct));
+    }
 }

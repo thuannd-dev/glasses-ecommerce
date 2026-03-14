@@ -53,6 +53,7 @@ import {
   InboundRecordsScreen,
   InboundRecordDetailScreen,
   PromotionsScreen,
+  PreOrderSummaryScreen,
 } from "../../features/Manager/screens";
 import { ManagerProductCreateWizardScreen } from "../../features/Manager/screens";
 import AdminDashboard from "../../features/Admin/AdminDashboard";
@@ -152,6 +153,7 @@ export const router = createBrowserRouter([
               { path: "inbound", element: <InboundRecordsScreen /> },
               { path: "inbound/:id", element: <InboundRecordDetailScreen /> },
               { path: "promotions", element: <PromotionsScreen /> },
+              { path: "preorder-summary", element: <PreOrderSummaryScreen /> },
             ],
           },
         ],

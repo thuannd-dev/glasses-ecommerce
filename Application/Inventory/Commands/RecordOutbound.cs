@@ -76,7 +76,12 @@ public sealed class RecordOutbound
                 // 5. Lock stock rows with UPDLOCK to prevent race conditions on concurrent outbound requests
                 List<Guid> variantIds = order.OrderItems.Select(oi => oi.ProductVariantId).Distinct().ToList();
                 List<Stock> stocks = await context.GetStocksWithLockAsync(variantIds, ct);
+                List<ProductVariant> variants = await context.ProductVariants
+                    .Where(pv => variantIds.Contains(pv.Id))
+                    .ToListAsync(ct);
+
                 Dictionary<Guid, Stock> stockByVariant = stocks.ToDictionary(s => s.ProductVariantId);
+                Dictionary<Guid, ProductVariant> variantById = variants.ToDictionary(v => v.Id);
 
                 foreach (OrderItem item in order.OrderItems)
                 {
@@ -84,9 +89,27 @@ public sealed class RecordOutbound
                         return Result<Unit>.Failure(
                             $"Stock record not found for product variant '{item.ProductVariantId}'.", 409);
 
-                    if (stock.QuantityOnHand < item.Quantity || stock.QuantityReserved < item.Quantity)
+                    if (!variantById.TryGetValue(item.ProductVariantId, out ProductVariant? variant))
                         return Result<Unit>.Failure(
-                            $"Insufficient stock for product variant '{item.ProductVariantId}'.", 409);
+                            $"Product variant '{item.ProductVariantId}' not found.", 409);
+
+                    // Validate stock availability based on order type and variant type
+                    bool isPreOrderVariant = variant.IsPreOrder;
+                    bool isPreOrderOrder = order.OrderType == OrderType.PreOrder;
+
+                    // For PreOrder items: must have been auto-fulfilled from inbound (QuantityReserved > 0)
+                    // For regular items: QuantityReserved must cover the quantity
+                    if (isPreOrderVariant || isPreOrderOrder)
+                    {
+                        if (stock.QuantityReserved < item.Quantity)
+                            return Result<Unit>.Failure(
+                                $"Pre-order item not yet fulfilled from inbound for variant '{item.ProductVariantId}'. " +
+                                $"Expected {item.Quantity} units reserved, but only {stock.QuantityReserved} available.", 409);
+                    }
+
+                    if (stock.QuantityOnHand < item.Quantity)
+                        return Result<Unit>.Failure(
+                            $"Insufficient on-hand stock for product variant '{item.ProductVariantId}'.", 409);
 
                     stock.QuantityOnHand -= item.Quantity;
                     stock.QuantityReserved -= item.Quantity;
