@@ -814,6 +814,7 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
 
             entity.HasIndex(e => new { e.OrderId, e.ProductVariantId, e.PrescriptionId })
                 .IsUnique()
+                .HasFilter("[PrescriptionId] IS NOT NULL")
                 .HasDatabaseName("UX_OrderItem_Order_ProductVariant");
 
             //Constraints
@@ -906,10 +907,8 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
             entity.HasIndex(e => e.CreatedAt)
                 .HasDatabaseName("IX_Prescription_CreatedAt");
 
-            // Required for composite foreign key from OrderItem
-            entity.HasIndex(e => new { e.Id, e.OrderId })
-                .IsUnique()
-                .HasDatabaseName("UX_Prescription_Id_OrderId");
+            // Implicitly handled by the PrincipalKey on the relationship, no need for second unique index:
+            // UX_Prescription_Id_OrderId removed.
 
             //Constraints
             entity.ToTable(t =>

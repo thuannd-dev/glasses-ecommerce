@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -24,12 +24,6 @@ namespace Persistence.Migrations
                 columns: new[] { "Id", "OrderId" });
 
             migrationBuilder.CreateIndex(
-                name: "UX_Prescription_Id_OrderId",
-                table: "Prescriptions",
-                columns: new[] { "Id", "OrderId" },
-                unique: true);
-
-            migrationBuilder.CreateIndex(
                 name: "IX_OrderItems_PrescriptionId_OrderId",
                 table: "OrderItems",
                 columns: new[] { "PrescriptionId", "OrderId" });
@@ -52,10 +46,6 @@ namespace Persistence.Migrations
 
             migrationBuilder.DropUniqueConstraint(
                 name: "AK_Prescriptions_Id_OrderId",
-                table: "Prescriptions");
-
-            migrationBuilder.DropIndex(
-                name: "UX_Prescription_Id_OrderId",
                 table: "Prescriptions");
 
             migrationBuilder.DropIndex(
