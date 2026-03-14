@@ -70,7 +70,7 @@ public class Order
 
     public ICollection<OrderItem> OrderItems { get; set; } = [];
     public ICollection<OrderStatusHistory> StatusHistories { get; set; } = [];
-    public Prescription? Prescription { get; set; }
+    public ICollection<Prescription> Prescriptions { get; set; } = [];
     public ShipmentInfo? ShipmentInfo { get; set; }
     public ICollection<Payment> Payments { get; set; } = [];
     public ICollection<AfterSalesTicket> AfterSalesTickets { get; set; } = [];

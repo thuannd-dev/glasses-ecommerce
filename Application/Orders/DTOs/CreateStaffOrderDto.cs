@@ -30,6 +30,4 @@ public sealed class CreateStaffOrderDto
     public string? CustomerNote { get; set; }
     public string? PromoCode { get; set; }
 
-    // Prescription (required if OrderType = Prescription)
-    public PrescriptionInputDto? Prescription { get; set; }
 }

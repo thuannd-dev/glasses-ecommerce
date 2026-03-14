@@ -1,6 +1,5 @@
 using Application.Core;
 using Application.Orders.DTOs;
-using AutoMapper;
 using Domain;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -19,7 +18,7 @@ public sealed class GetOperationsOrders
         public OrderSource? OrderSource { get; set; }
     }
 
-    internal sealed class Handler(AppDbContext context, IMapper mapper)
+    internal sealed class Handler(AppDbContext context)
         : IRequestHandler<Query, Result<PagedResult<StaffOrderListDto>>>
     {
         public async Task<Result<PagedResult<StaffOrderListDto>>> Handle(Query request, CancellationToken ct)
@@ -41,56 +40,55 @@ public sealed class GetOperationsOrders
 
             int totalCount = await query.CountAsync(ct);
 
-            // Load orders with related data
-            List<Order> orders = await query
-                .AsNoTracking()
-                .Include(o => o.Address)
-                .Include(o => o.User)
-                .Include(o => o.SalesStaff)
-                .Include(o => o.ShipmentInfo)
-                .Include(o => o.Prescription)
-                .Include(o => o.OrderItems!)
-                    .ThenInclude(oi => oi.ProductVariant!)
-                    .ThenInclude(pv => pv.Product)
+            // Pre-compute on the app side — DateTime.ToString("O") cannot be translated to SQL.
+            string expectedStockDate = DateTime.UtcNow.AddDays(14).ToString("O");
+
+            // Project directly to DTO in SQL — no full entity load, no cartesian-product joins.
+            // Prescriptions.Any() → EXISTS subquery (much cheaper than Include + load all rows).
+            List<StaffOrderListDto> mappedOrders = await query
                 .OrderByDescending(o => o.CreatedAt)
                 .Skip((request.PageNumber - 1) * request.PageSize)
                 .Take(request.PageSize)
+                .Select(o => new StaffOrderListDto
+                {
+                    Id = o.Id,
+                    OrderNumber = "ORD-" + o.Id.ToString().Substring(0, 8).ToUpper(),
+                    OrderSource = o.OrderSource.ToString(),
+                    OrderType = o.OrderType.ToString(),
+                    OrderStatus = o.OrderStatus.ToString(),
+                    TotalAmount = o.TotalAmount,
+                    FinalAmount = o.TotalAmount + o.ShippingFee - o.PromoUsageLogs.Sum(p => p.DiscountApplied),
+                    WalkInCustomerName = o.WalkInCustomerName,
+                    WalkInCustomerPhone = o.WalkInCustomerPhone,
+                    CustomerName = o.Address != null ? o.Address.RecipientName : o.WalkInCustomerName,
+                    CustomerPhone = o.Address != null ? o.Address.RecipientPhone : o.WalkInCustomerPhone,
+                    CustomerEmail = o.User != null ? o.User.Email : null,
+                    ShippingAddress = o.Address != null
+                        ? $"{o.Address.Venue}, {o.Address.Ward}, {o.Address.District}, {o.Address.City}"
+                        : null,
+                    CreatedBySalesStaff = o.CreatedBySalesStaff,
+                    SalesStaffName = o.SalesStaff != null ? o.SalesStaff.DisplayName : null,
+                    ItemCount = o.OrderItems.Count,
+                    CreatedAt = o.CreatedAt,
+                    ExpectedStockDate = o.OrderType == OrderType.PreOrder ? expectedStockDate : null,
+                    PrescriptionStatus = o.Prescriptions.Any() ? "lens_ordered" : null,
+                    ShipmentId = o.ShipmentInfo != null ? o.ShipmentInfo.Id : (Guid?)null,
+                    TrackingNumber = o.ShipmentInfo != null ? o.ShipmentInfo.TrackingCode : null,
+                    Carrier = o.ShipmentInfo != null ? o.ShipmentInfo.CarrierName.ToString() : null,
+                    Items = o.OrderItems.Select(oi => new StaffOrderItemDto
+                    {
+                        Id = oi.Id,
+                        ProductVariantId = oi.ProductVariantId,
+                        ProductName = oi.ProductVariant != null && oi.ProductVariant.Product != null
+                            ? oi.ProductVariant.Product.ProductName
+                            : "Unknown",
+                        Sku = oi.ProductVariant != null ? oi.ProductVariant.SKU : "N/A",
+                        Quantity = oi.Quantity,
+                        Price = oi.UnitPrice,
+                        PrescriptionId = oi.PrescriptionId == null ? null : oi.PrescriptionId.Value.ToString()
+                    }).ToList()
+                })
                 .ToListAsync(ct);
-
-            // Map to DTOs with items populated
-            List<StaffOrderListDto> mappedOrders = new();
-            foreach (Order order in orders)
-            {
-                StaffOrderListDto dto = mapper.Map<Order, StaffOrderListDto>(order);
-                
-                // Set ExpectedStockDate for pre-orders
-                if (order.OrderType == OrderType.PreOrder)
-                    dto.ExpectedStockDate = DateTime.UtcNow.AddDays(14).ToString("O");
-                
-                // Set PrescriptionStatus for prescriptions
-                if (order.Prescription != null)
-                    dto.PrescriptionStatus = "lens_ordered";
-                
-                // Set ShipmentInfo details
-                if (order.ShipmentInfo != null)
-                {
-                    dto.ShipmentId = order.ShipmentInfo.Id;
-                    dto.TrackingNumber = order.ShipmentInfo.TrackingCode;
-                    dto.Carrier = order.ShipmentInfo.CarrierName.ToString();
-                }
-                
-                dto.Items = order.OrderItems.Select(oi => new StaffOrderItemDto
-                {
-                    Id = oi.Id,
-                    ProductVariantId = oi.ProductVariantId,
-                    ProductName = oi.ProductVariant?.Product?.ProductName ?? "Unknown",
-                    Sku = oi.ProductVariant?.SKU ?? "N/A",
-                    Quantity = oi.Quantity,
-                    Price = oi.UnitPrice,
-                    PrescriptionId = null
-                }).ToList();
-                mappedOrders.Add(dto);
-            }
 
             PagedResult<StaffOrderListDto> result = new()
             {

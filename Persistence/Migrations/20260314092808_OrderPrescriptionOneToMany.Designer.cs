@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Persistence;
 
@@ -11,9 +12,11 @@ using Persistence;
 namespace Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260314092808_OrderPrescriptionOneToMany")]
+    partial class OrderPrescriptionOneToMany
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -326,7 +329,8 @@ namespace Persistence.Migrations
                         .HasDatabaseName("IX_CartItem_ProductVariantId");
 
                     b.HasIndex("CartId", "ProductVariantId")
-                        .HasDatabaseName("IX_CartItem_Cart_ProductVariant");
+                        .IsUnique()
+                        .HasDatabaseName("UX_CartItem_Cart_ProductVariant");
 
                     b.ToTable("CartItems", t =>
                         {
@@ -725,15 +729,14 @@ namespace Persistence.Migrations
                     b.HasIndex("OrderId")
                         .HasDatabaseName("IX_OrderItem_OrderId");
 
+                    b.HasIndex("PrescriptionId");
+
                     b.HasIndex("ProductVariantId")
                         .HasDatabaseName("IX_OrderItem_ProductVariantId");
 
-                    b.HasIndex("PrescriptionId", "OrderId");
-
-                    b.HasIndex("OrderId", "ProductVariantId", "PrescriptionId")
+                    b.HasIndex("OrderId", "ProductVariantId")
                         .IsUnique()
-                        .HasDatabaseName("UX_OrderItem_Order_ProductVariant")
-                        .HasFilter("[PrescriptionId] IS NOT NULL");
+                        .HasDatabaseName("UX_OrderItem_Order_ProductVariant");
 
                     b.ToTable("OrderItems", t =>
                         {
@@ -2089,17 +2092,16 @@ namespace Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("Domain.Prescription", "Prescription")
+                        .WithMany()
+                        .HasForeignKey("PrescriptionId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Domain.ProductVariant", "ProductVariant")
                         .WithMany()
                         .HasForeignKey("ProductVariantId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.HasOne("Domain.Prescription", "Prescription")
-                        .WithMany()
-                        .HasForeignKey("PrescriptionId", "OrderId")
-                        .HasPrincipalKey("Id", "OrderId")
-                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Order");
 

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Persistence;
 
@@ -11,9 +12,11 @@ using Persistence;
 namespace Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260314190736_EnforceOrderItemPrescriptionOrderIsolation")]
+    partial class EnforceOrderItemPrescriptionOrderIsolation
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -728,12 +731,11 @@ namespace Persistence.Migrations
                     b.HasIndex("ProductVariantId")
                         .HasDatabaseName("IX_OrderItem_ProductVariantId");
 
-                    b.HasIndex("PrescriptionId", "OrderId");
-
-                    b.HasIndex("OrderId", "ProductVariantId", "PrescriptionId")
+                    b.HasIndex("OrderId", "ProductVariantId")
                         .IsUnique()
-                        .HasDatabaseName("UX_OrderItem_Order_ProductVariant")
-                        .HasFilter("[PrescriptionId] IS NOT NULL");
+                        .HasDatabaseName("UX_OrderItem_Order_ProductVariant");
+
+                    b.HasIndex("PrescriptionId", "OrderId");
 
                     b.ToTable("OrderItems", t =>
                         {
@@ -1019,6 +1021,10 @@ namespace Persistence.Migrations
 
                     b.HasIndex("VerifiedBy")
                         .HasDatabaseName("IX_Prescription_VerifiedBy");
+
+                    b.HasIndex("Id", "OrderId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_Prescription_Id_OrderId");
 
                     b.ToTable("Prescriptions", t =>
                         {

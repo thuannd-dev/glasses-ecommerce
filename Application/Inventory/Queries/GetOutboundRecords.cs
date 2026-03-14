@@ -58,6 +58,7 @@ public sealed class GetOutboundRecords
             // Fetch the aggregated transaction data
             var pagedTxnStats = await query
                 .OrderByDescending(x => x.RecordedAt) // Order by the time it was recorded
+                .ThenByDescending(x => x.OrderId) // deterministic sort
                 .Skip((request.PageNumber - 1) * request.PageSize)
                 .Take(request.PageSize)
                 .ToListAsync(ct);
@@ -74,7 +75,7 @@ public sealed class GetOutboundRecords
                 });
             }
 
-            var orderIds = pagedTxnStats.Select(x => x.OrderId).ToList();
+            List<Guid> orderIds = pagedTxnStats.Select(x => x.OrderId).ToList();
 
             // Fetch order details in a single query
             var orderDetails = await context.Orders
@@ -84,8 +85,8 @@ public sealed class GetOutboundRecords
                 {
                     o.Id,
                     o.OrderStatus,
-                    CustomerName = o.Address != null && !string.IsNullOrWhiteSpace(o.Address.RecipientName) 
-                        ? o.Address.RecipientName 
+                    CustomerName = o.Address != null && !string.IsNullOrWhiteSpace(o.Address.RecipientName)
+                        ? o.Address.RecipientName
                         : o.WalkInCustomerName
                 })
                 .ToDictionaryAsync(o => o.Id, ct);

@@ -31,7 +31,7 @@ public sealed class GetOutboundDetail
                     o.Id,
                     o.OrderStatus,
                     o.WalkInCustomerName,
-                    o.Address
+                    RecipientName = o.Address != null ? o.Address.RecipientName : null
                 })
                 .FirstOrDefaultAsync(ct);
 
@@ -79,8 +79,8 @@ public sealed class GetOutboundDetail
                 OrderId = orderInfo.Id,
                 OrderNumber = "ORD-" + orderInfo.Id.ToString().Substring(0, 8).ToUpper(),
                 OrderStatus = orderInfo.OrderStatus.ToString(),
-                CustomerName = orderInfo.Address != null && !string.IsNullOrWhiteSpace(orderInfo.Address.RecipientName)
-                                    ? orderInfo.Address.RecipientName
+                CustomerName = !string.IsNullOrWhiteSpace(orderInfo.RecipientName)
+                                    ? orderInfo.RecipientName
                                     : orderInfo.WalkInCustomerName,
                 TotalItems = txns.Count,
                 TotalQuantity = txns.Sum(t => t.Quantity),

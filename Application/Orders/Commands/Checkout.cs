@@ -65,7 +65,7 @@ public sealed class Checkout
                 if (cart == null || cart.Items.Count == 0)
                     return Result<Guid>.Failure("Cart is empty.", 400);
 
-                var selectedItems = cart.Items
+                List<CartItem> selectedItems = cart.Items
                     .Where(i => dto.SelectedCartItemIds.Contains(i.Id))
                     .ToList();
 
@@ -150,23 +150,57 @@ public sealed class Checkout
                     }
                 }
 
-                // 4. Calculate totals (use mergedItems for order items too)
-                decimal totalAmount = 0;
-                List<OrderItem> orderItems = new List<OrderItem>();
+                // 4. Calculate totals and build OrderItems.
+                // Items with prescriptions are kept as individual order lines so each line can hold
+                // a distinct prescription. Non-prescription items are merged by variant as before.
+                HashSet<Guid> prescriptionCartItemIds = dto.Prescriptions?
+                    .Select(p => p.CartItemId)
+                    .ToHashSet() ?? [];
 
-                foreach (var mergedItem in mergedItems)
+                // cartItemId → OrderItem lookup for prescription items (used when linking prescriptions below)
+                Dictionary<Guid, OrderItem> cartItemOrderItemMap = [];
+
+                decimal totalAmount = 0;
+                List<OrderItem> orderItems = [];
+
+                // Non-prescription items: merge by variant (aggregate quantity)
+                var mergedNonPrescriptionItems = selectedItems
+                    .Where(i => !prescriptionCartItemIds.Contains(i.Id))
+                    .GroupBy(i => i.ProductVariantId)
+                    .Select(g => new { ProductVariantId = g.Key, Quantity = g.Sum(i => i.Quantity) })
+                    .ToList();
+
+                foreach (var item in mergedNonPrescriptionItems)
                 {
-                    ProductVariant variant = variants.First(v => v.Id == mergedItem.ProductVariantId);
+                    ProductVariant variant = variants.First(v => v.Id == item.ProductVariantId);
                     decimal unitPrice = variant.Price;
-                    totalAmount += unitPrice * mergedItem.Quantity;
+                    totalAmount += unitPrice * item.Quantity;
 
                     orderItems.Add(new OrderItem
                     {
-                        ProductVariantId = mergedItem.ProductVariantId,
-                        Quantity = mergedItem.Quantity,
+                        ProductVariantId = item.ProductVariantId,
+                        Quantity = item.Quantity,
                         UnitPrice = unitPrice,
                         OrderId = Guid.Empty,
                     });
+                }
+
+                // Prescription items: one OrderItem per cart item to allow a distinct prescription per line
+                foreach (CartItem cartItem in selectedItems.Where(i => prescriptionCartItemIds.Contains(i.Id)))
+                {
+                    ProductVariant variant = variants.First(v => v.Id == cartItem.ProductVariantId);
+                    decimal unitPrice = variant.Price;
+                    totalAmount += unitPrice * cartItem.Quantity;
+
+                    OrderItem orderItem = new OrderItem
+                    {
+                        ProductVariantId = cartItem.ProductVariantId,
+                        Quantity = cartItem.Quantity,
+                        UnitPrice = unitPrice,
+                        OrderId = Guid.Empty,
+                    };
+                    orderItems.Add(orderItem);
+                    cartItemOrderItemMap[cartItem.Id] = orderItem;
                 }
 
                 decimal shippingFee = 0; // TODO: Calculate shipping fee
@@ -311,27 +345,37 @@ public sealed class Checkout
                 }
 
                 // 11. Prescription (lưu nếu có, bất kể OrderType — PreOrder cũng có thể kèm đơn thuốc)
-                if (dto.Prescription != null)
+                if (dto.Prescriptions != null && dto.Prescriptions.Count > 0)
                 {
-                    Prescription prescription = new Prescription
+                    foreach (OrderItemPrescriptionDto prescriptionInfo in dto.Prescriptions)
                     {
-                        OrderId = order.Id,
-                        IsVerified = false,
-                    };
-                    context.Prescriptions.Add(prescription);
-
-                    foreach (PrescriptionDetailInputDto detail in dto.Prescription.Details)
-                    {
-                        context.PrescriptionDetails.Add(new PrescriptionDetail
+                        Prescription prescription = new Prescription
                         {
-                            PrescriptionId = prescription.Id,
-                            Eye = detail.Eye,
-                            SPH = detail.SPH,
-                            CYL = detail.CYL,
-                            AXIS = detail.AXIS,
-                            PD = detail.PD,
-                            ADD = detail.ADD,
-                        });
+                            OrderId = order.Id,
+                            IsVerified = false,
+                        };
+                        context.Prescriptions.Add(prescription);
+
+                        foreach (PrescriptionDetailInputDto detail in prescriptionInfo.Prescription.Details)
+                        {
+                            context.PrescriptionDetails.Add(new PrescriptionDetail
+                            {
+                                PrescriptionId = prescription.Id,
+                                Eye = detail.Eye,
+                                SPH = detail.SPH,
+                                CYL = detail.CYL,
+                                AXIS = detail.AXIS,
+                                PD = detail.PD,
+                                ADD = detail.ADD,
+                            });
+                        }
+
+                        // Direct lookup: each prescription cart item has its own dedicated OrderItem,
+                        // built during OrderItem creation above — no variant-ambiguity possible.
+                        if (!cartItemOrderItemMap.TryGetValue(prescriptionInfo.CartItemId, out OrderItem? orderItem))
+                            return Result<Guid>.Failure($"Cart item {prescriptionInfo.CartItemId} for prescription not found in selected items.", 400);
+
+                        orderItem.PrescriptionId = prescription.Id;
                     }
                 }
 
@@ -346,7 +390,7 @@ public sealed class Checkout
                 });
 
                 // 13. Cart Split Logic for Partial Checkout
-                var unselectedItems = cart.Items.Except(selectedItems).ToList();
+                List<CartItem> unselectedItems = cart.Items.Except(selectedItems).ToList();
 
                 // Mark original (now holding only ordered items) as Converted FIRST
                 cart.Status = CartStatus.Converted;
@@ -367,7 +411,7 @@ public sealed class Checkout
                     context.Carts.Add(newActiveCart);
 
                     // Move unselected items to the new cart, preserving their existing IDs
-                    foreach (var item in unselectedItems)
+                    foreach (CartItem item in unselectedItems)
                     {
                         cart.Items.Remove(item);
                         item.CartId = newActiveCart.Id;

@@ -34,7 +34,7 @@ public sealed class StaffOrderDto
     // Nested
     public List<OrderItemOutputDto> Items { get; set; } = [];
     public OrderPaymentDto? Payment { get; set; }
-    public OrderPrescriptionDto? Prescription { get; set; }
+    public List<OrderPrescriptionDto> Prescriptions { get; set; } = [];
     public ShipmentInfoDto? Shipment { get; set; }
     public List<OrderStatusHistoryDto> StatusHistories { get; set; } = [];
 }

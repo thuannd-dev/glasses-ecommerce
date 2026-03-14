@@ -158,7 +158,7 @@ public sealed class MappingProfiles : Profile
                 s.SalesStaff != null ? s.SalesStaff.DisplayName : null))
             .ForMember(d => d.Items, o => o.MapFrom(s => s.OrderItems))
             .ForMember(d => d.Payment, o => o.MapFrom(s => s.Payments.FirstOrDefault()))
-            .ForMember(d => d.Prescription, o => o.MapFrom(s => s.Prescription))
+            .ForMember(d => d.Prescriptions, o => o.MapFrom(s => s.Prescriptions))
             .ForMember(d => d.Shipment, o => o.MapFrom(s => s.ShipmentInfo))
             .ForMember(d => d.StatusHistories, o => o.MapFrom(s =>
                 s.StatusHistories.OrderBy(h => h.CreatedAt)));
@@ -220,7 +220,7 @@ public sealed class MappingProfiles : Profile
             .ForMember(d => d.ShippingAddress, o => o.MapFrom(s => s.Address))
             .ForMember(d => d.Items, o => o.MapFrom(s => s.OrderItems))
             .ForMember(d => d.Payment, o => o.MapFrom(s => s.Payments.FirstOrDefault()))
-            .ForMember(d => d.Prescription, o => o.MapFrom(s => s.Prescription))
+            .ForMember(d => d.Prescriptions, o => o.MapFrom(s => s.Prescriptions))
             .ForMember(d => d.Shipment, o => o.MapFrom(s => s.ShipmentInfo))
             .ForMember(d => d.StatusHistories, o => o.MapFrom(s =>
                 s.StatusHistories.OrderBy(h => h.CreatedAt)));

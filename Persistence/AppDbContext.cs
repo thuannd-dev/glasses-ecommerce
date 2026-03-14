@@ -646,8 +646,7 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
                 .HasDatabaseName("IX_CartItem_ProductVariantId");
 
             entity.HasIndex(e => new { e.CartId, e.ProductVariantId })
-                .IsUnique()
-                .HasDatabaseName("UX_CartItem_Cart_ProductVariant");
+                .HasDatabaseName("IX_CartItem_Cart_ProductVariant");
 
             //Constraints
             entity.ToTable(t =>
@@ -789,12 +788,18 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
             entity.HasOne(oi => oi.Order)
                 .WithMany(o => o.OrderItems)
                 .HasForeignKey(oi => oi.OrderId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Cascade); // Keep Cascade from Order
 
             entity.HasOne(oi => oi.ProductVariant)
                 .WithMany()
                 .HasForeignKey(oi => oi.ProductVariantId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(oi => oi.Prescription)
+                .WithMany()
+                .HasForeignKey(oi => new { oi.PrescriptionId, oi.OrderId })
+                .HasPrincipalKey(p => new { p.Id, p.OrderId })
+                .OnDelete(DeleteBehavior.Restrict); // Changed from SetNull to Restrict to avoid cycle
 
             //Properties
             entity.Property(oi => oi.UnitPrice).HasColumnType("decimal(10,2)");
@@ -807,8 +812,9 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
             entity.HasIndex(e => e.ProductVariantId)
                 .HasDatabaseName("IX_OrderItem_ProductVariantId");
 
-            entity.HasIndex(e => new { e.OrderId, e.ProductVariantId })
+            entity.HasIndex(e => new { e.OrderId, e.ProductVariantId, e.PrescriptionId })
                 .IsUnique()
+                .HasFilter("[PrescriptionId] IS NOT NULL")
                 .HasDatabaseName("UX_OrderItem_Order_ProductVariant");
 
             //Constraints
@@ -873,8 +879,8 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
         {
             // Relationships
             entity.HasOne(p => p.Order)
-                .WithOne(o => o.Prescription)
-                .HasForeignKey<Prescription>(p => p.OrderId)
+                .WithMany(o => o.Prescriptions)
+                .HasForeignKey(p => p.OrderId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasOne(p => p.Verifier)
@@ -887,8 +893,7 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
 
             // Indexes
             entity.HasIndex(e => e.OrderId)
-                .IsUnique()
-                .HasDatabaseName("UX_Prescription_OrderId");
+                .HasDatabaseName("IX_Prescription_OrderId");
 
             entity.HasIndex(e => e.IsVerified)
                 .HasDatabaseName("IX_Prescription_IsVerified");
@@ -901,6 +906,9 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
 
             entity.HasIndex(e => e.CreatedAt)
                 .HasDatabaseName("IX_Prescription_CreatedAt");
+
+            // Implicitly handled by the PrincipalKey on the relationship, no need for second unique index:
+            // UX_Prescription_Id_OrderId removed.
 
             //Constraints
             entity.ToTable(t =>
