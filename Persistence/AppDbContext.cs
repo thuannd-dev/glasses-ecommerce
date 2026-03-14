@@ -812,7 +812,7 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
             entity.HasIndex(e => e.ProductVariantId)
                 .HasDatabaseName("IX_OrderItem_ProductVariantId");
 
-            entity.HasIndex(e => new { e.OrderId, e.ProductVariantId })
+            entity.HasIndex(e => new { e.OrderId, e.ProductVariantId, e.PrescriptionId })
                 .IsUnique()
                 .HasDatabaseName("UX_OrderItem_Order_ProductVariant");
 
