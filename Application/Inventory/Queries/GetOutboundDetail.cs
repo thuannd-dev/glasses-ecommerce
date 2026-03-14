@@ -22,7 +22,6 @@ public sealed class GetOutboundDetail
             // 1. Retrieve order details
             var orderInfo = await context.Orders
                 .AsNoTracking()
-                .Include(o => o.Address)
                 .Where(o => o.Id == request.OrderId)
                 .Select(o => new
                 {
@@ -43,17 +42,19 @@ public sealed class GetOutboundDetail
             var txns = await context.InventoryTransactions
                 .AsNoTracking()
                 .Where(t => t.ReferenceId == request.OrderId &&
-                            t.TransactionType == TransactionType.Outbound)
+                            t.TransactionType == TransactionType.Outbound &&
+                            t.ReferenceType == ReferenceType.Order)
+                .OrderBy(t => t.CreatedAt)
                 .Select(t => new
                 {
-                    TransactionId    = t.Id,
+                    TransactionId = t.Id,
                     ProductVariantId = t.ProductVariantId,
-                    VariantName      = t.ProductVariant.VariantName,
-                    SKU              = t.ProductVariant.SKU,
-                    Quantity         = t.Quantity,
-                    Notes            = t.Notes,
-                    CreatedAt        = t.CreatedAt,
-                    CreatorName      = t.Creator != null ? t.Creator.DisplayName : null
+                    VariantName = t.ProductVariant.VariantName,
+                    SKU = t.ProductVariant.SKU,
+                    Quantity = t.Quantity,
+                    Notes = t.Notes,
+                    CreatedAt = t.CreatedAt,
+                    CreatorName = t.Creator != null ? t.Creator.DisplayName : null
                 })
                 .ToListAsync(ct);
 
@@ -62,27 +63,34 @@ public sealed class GetOutboundDetail
                 return Result<OutboundRecordDto>.Failure("No outbound record found for this order.", 404);
             }
 
+            // Chọn transaction sớm nhất theo CreatedAt (và TransactionId để cố định thứ tự khi trùng thời gian)
+            var earliestTxn = txns
+                .OrderBy(t => t.CreatedAt)
+                .ThenBy(t => t.TransactionId)
+                .First();
+
+
             // 3. Assemble DTO
             var dto = new OutboundRecordDto
             {
-                OrderId        = orderInfo.Id,
-                OrderNumber    = "ORD-" + orderInfo.Id.ToString().Substring(0, 8).ToUpper(),
-                OrderStatus    = orderInfo.OrderStatus.ToString(),
-                CustomerName   = orderInfo.Address != null
+                OrderId = orderInfo.Id,
+                OrderNumber = "ORD-" + orderInfo.Id.ToString().Substring(0, 8).ToUpper(),
+                OrderStatus = orderInfo.OrderStatus.ToString(),
+                CustomerName = orderInfo.Address != null
                                     ? orderInfo.Address.RecipientName
                                     : orderInfo.WalkInCustomerName,
-                TotalItems     = txns.Count,
-                TotalQuantity  = txns.Sum(t => t.Quantity),
-                RecordedAt     = txns.Min(t => t.CreatedAt),
-                RecordedByName = txns.Select(t => t.CreatorName).FirstOrDefault(name => name != null),
-                Items          = txns.Select(t => new OutboundRecordItemDto
+                TotalItems = txns.Count,
+                TotalQuantity = txns.Sum(t => t.Quantity),
+                RecordedAt = earliestTxn.CreatedAt,
+                RecordedByName = earliestTxn.CreatorName,
+                Items = txns.Select(t => new OutboundRecordItemDto
                 {
-                    TransactionId    = t.TransactionId,
+                    TransactionId = t.TransactionId,
                     ProductVariantId = t.ProductVariantId,
-                    VariantName      = t.VariantName,
-                    SKU              = t.SKU,
-                    Quantity         = t.Quantity,
-                    Notes            = t.Notes
+                    VariantName = t.VariantName,
+                    SKU = t.SKU,
+                    Quantity = t.Quantity,
+                    Notes = t.Notes
                 }).ToList()
             };
 

@@ -27,7 +27,7 @@ public sealed class GetOutboundRecords
 
             IQueryable<InventoryTransaction> txnQuery = context.InventoryTransactions
                 .AsNoTracking()
-                .Where(t => t.TransactionType == TransactionType.Outbound);
+                .Where(t => t.TransactionType == TransactionType.Outbound && t.ReferenceType == ReferenceType.Order);
 
             if (request.OrderId.HasValue)
                 txnQuery = txnQuery.Where(t => t.ReferenceId == request.OrderId.Value);
@@ -42,7 +42,10 @@ public sealed class GetOutboundRecords
                     TotalItems = g.Count(),
                     TotalQuantity = g.Sum(x => x.Quantity),
                     RecordedAt = g.Min(x => x.CreatedAt),
-                    RecordedByName = g.Select(x => x.Creator != null ? x.Creator.DisplayName : null).FirstOrDefault()
+                    RecordedByName = g.Where(x => x.Creator != null)
+                                      .OrderBy(x => x.CreatedAt)
+                                      .Select(x => x.Creator!.DisplayName)
+                                      .FirstOrDefault()     
                 });
 
             int totalCount = await query.CountAsync(ct);
@@ -60,7 +63,7 @@ public sealed class GetOutboundRecords
                 return Result<PagedResult<OutboundRecordListDto>>.Success(new PagedResult<OutboundRecordListDto>
                 {
                     Items = [],
-                    TotalCount = 0,
+                    TotalCount = totalCount,
                     PageNumber = request.PageNumber,
                     PageSize = request.PageSize
                 });
@@ -99,10 +102,10 @@ public sealed class GetOutboundRecords
 
             PagedResult<OutboundRecordListDto> result = new()
             {
-                Items      = items,
+                Items = items,
                 TotalCount = totalCount,
                 PageNumber = request.PageNumber,
-                PageSize   = request.PageSize
+                PageSize = request.PageSize
             };
 
             return Result<PagedResult<OutboundRecordListDto>>.Success(result);
