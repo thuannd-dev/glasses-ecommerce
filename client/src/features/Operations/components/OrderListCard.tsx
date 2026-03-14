@@ -22,6 +22,7 @@ export interface OrderListCardProps {
   /** Optional actions in the expanded detail area */
   onProcessingClick?: (orderId: string) => void;
   onMarkShippedClick?: (orderId: string) => void;
+  onMarkDeliveredClick?: (orderId: string) => void;
 }
 
 export function OrderListCard({
@@ -32,6 +33,7 @@ export function OrderListCard({
   onToggleSelected,
   onProcessingClick,
   onMarkShippedClick,
+  onMarkDeliveredClick,
 }: OrderListCardProps) {
   const [expanded, setExpanded] = useState(false);
   const { data, isLoading } = useOperationsOrderDetail(expanded ? summary.id : undefined);
@@ -228,6 +230,7 @@ export function OrderListCard({
                 onProcessOrderClick={onProcessingClick}
                 showAddTrackingButton={mode === "confirmed" || mode === "packing"}
                 onAddTrackingClick={onMarkShippedClick}
+                onMarkDeliveredClick={onMarkDeliveredClick}
               />
             </>
           )}
