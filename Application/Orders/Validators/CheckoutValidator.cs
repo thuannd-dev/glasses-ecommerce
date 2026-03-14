@@ -42,7 +42,9 @@ public sealed class CheckoutValidator : AbstractValidator<Checkout.Command>
             {
                 RuleFor(x => x.Dto.Prescriptions)
                     .Must((root, prescriptions) => prescriptions!.All(p => root.Dto.SelectedCartItemIds.Contains(p.CartItemId)))
-                    .WithMessage("Prescription must be linked to a selected cart item.");
+                    .WithMessage("Prescription must be linked to a selected cart item.")
+                    .Must(prescriptions => prescriptions!.Select(p => p.CartItemId).Distinct().Count() == prescriptions!.Count)
+                    .WithMessage("Each selected cart item can only have one prescription.");
 
                 RuleForEach(x => x.Dto.Prescriptions).ChildRules(prescriptionInfo =>
                 {
