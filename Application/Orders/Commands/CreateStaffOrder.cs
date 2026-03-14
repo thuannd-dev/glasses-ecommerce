@@ -326,10 +326,12 @@ public sealed class CreateStaffOrder
                     }
 
                     var orderItem = orderItems.FirstOrDefault(oi => oi.ProductVariantId == itemWithPrescription.ProductVariantId && oi.PrescriptionId == null);
-                    if (orderItem != null)
+                    if (orderItem == null)
                     {
-                        orderItem.PrescriptionId = prescription.Id;
+                        return Result<Guid>.Failure($"Could not link prescription to an available order item for variant {itemWithPrescription.ProductVariantId}. Multiple prescriptions for the same variant are not supported.", 400);
                     }
+
+                    orderItem.PrescriptionId = prescription.Id;
                 }
 
                 // 12. Create initial status history

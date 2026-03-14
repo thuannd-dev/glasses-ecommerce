@@ -40,6 +40,10 @@ public sealed class CheckoutValidator : AbstractValidator<Checkout.Command>
 
             When(x => x.Dto.Prescriptions != null, () =>
             {
+                RuleFor(x => x.Dto.Prescriptions)
+                    .Must((root, prescriptions) => prescriptions!.All(p => root.Dto.SelectedCartItemIds.Contains(p.CartItemId)))
+                    .WithMessage("Prescription must be linked to a selected cart item.");
+
                 RuleForEach(x => x.Dto.Prescriptions).ChildRules(prescriptionInfo =>
                 {
                     prescriptionInfo.RuleFor(p => p.CartItemId)
