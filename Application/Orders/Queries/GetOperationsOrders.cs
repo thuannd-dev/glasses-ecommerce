@@ -58,12 +58,15 @@ public sealed class GetOperationsOrders
                     OrderStatus = o.OrderStatus.ToString(),
                     TotalAmount = o.TotalAmount,
                     FinalAmount = o.TotalAmount + o.ShippingFee - o.PromoUsageLogs.Sum(p => p.DiscountApplied),
+                    WalkInCustomerName = o.WalkInCustomerName,
+                    WalkInCustomerPhone = o.WalkInCustomerPhone,
                     CustomerName = o.Address != null ? o.Address.RecipientName : o.WalkInCustomerName,
                     CustomerPhone = o.Address != null ? o.Address.RecipientPhone : o.WalkInCustomerPhone,
                     CustomerEmail = o.User != null ? o.User.Email : null,
                     ShippingAddress = o.Address != null
                         ? $"{o.Address.Venue}, {o.Address.Ward}, {o.Address.District}, {o.Address.City}"
                         : null,
+                    CreatedBySalesStaff = o.CreatedBySalesStaff,
                     SalesStaffName = o.SalesStaff != null ? o.SalesStaff.DisplayName : null,
                     ItemCount = o.OrderItems.Count,
                     CreatedAt = o.CreatedAt,

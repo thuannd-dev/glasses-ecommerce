@@ -38,7 +38,7 @@ public sealed class CheckoutValidator : AbstractValidator<Checkout.Command>
                 .When(x => x.Dto.OrderType == OrderType.Prescription)
                 .WithMessage("Prescription details are required for prescription orders.");
 
-            When(x => x.Dto.Prescriptions != null, () =>
+            When(x => x.Dto.Prescriptions != null && x.Dto.SelectedCartItemIds != null, () =>
             {
                 RuleFor(x => x.Dto.Prescriptions)
                     .Must((root, prescriptions) => prescriptions!.All(p => root.Dto.SelectedCartItemIds.Contains(p.CartItemId)))
@@ -48,18 +48,18 @@ public sealed class CheckoutValidator : AbstractValidator<Checkout.Command>
 
                 RuleForEach(x => x.Dto.Prescriptions).ChildRules(prescriptionInfo =>
                 {
-                    prescriptionInfo.RuleFor(p => p.CartItemId)
-                        .NotEmpty().WithMessage("CartItemId is required for each prescription.");
-
                     prescriptionInfo.RuleFor(p => p.Prescription)
                         .NotNull().WithMessage("Prescription details are required.");
+
+                    prescriptionInfo.RuleFor(p => p.CartItemId)
+                        .NotEmpty().WithMessage("CartItemId is required for each prescription.");
 
                     prescriptionInfo.When(p => p.Prescription != null, () =>
                     {
                         prescriptionInfo.RuleFor(p => p.Prescription.Details)
                             .NotEmpty().WithMessage("Each prescription must have at least one eye detail.");
 
-                        prescriptionInfo.RuleForEach(p => p.Prescription.Details).ChildRules(detail =>
+                        prescriptionInfo.RuleForEach(p => p.Prescription!.Details).ChildRules(detail =>
                         {
                             detail.RuleFor(d => d.Eye)
                                 .IsInEnum()
