@@ -29,6 +29,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import ImageIcon from "@mui/icons-material/Image";
 import DeleteIcon from "@mui/icons-material/Delete";
 import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import {
   DndContext,
   closestCenter,
@@ -922,21 +923,10 @@ export default function ProductDetail() {
                 <Typography sx={{ fontSize: 12, color: "text.secondary", fontWeight: 700, mb: 1 }}>
                   IMAGE FILE
                 </Typography>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0] ?? null;
-                    if (newImagePreviewUrl) URL.revokeObjectURL(newImagePreviewUrl);
-                    setNewImageFile(file);
-                    setNewImagePreviewUrl(file ? URL.createObjectURL(file) : null);
-                    (e.target as HTMLInputElement).value = "";
-                  }}
-                />
                 {newImagePreviewUrl ? (
                   <Box
                     sx={{
-                      mt: 1.5,
+                      position: "relative",
                       borderRadius: 2,
                       overflow: "hidden",
                       border: "1px solid rgba(0,0,0,0.08)",
@@ -947,10 +937,112 @@ export default function ProductDetail() {
                       component="img"
                       src={newImagePreviewUrl}
                       alt="Preview"
-                      sx={{ width: "100%", maxHeight: 240, objectFit: "cover" }}
+                      sx={{ width: "100%", maxHeight: 240, objectFit: "cover", display: "block" }}
+                    />
+                    <Box
+                      sx={{
+                        position: "absolute",
+                        bottom: 8,
+                        right: 8,
+                        display: "flex",
+                        gap: 1,
+                      }}
+                    >
+                      <Button
+                        size="small"
+                        variant="contained"
+                        component="label"
+                        sx={{
+                          textTransform: "none",
+                          fontWeight: 700,
+                          bgcolor: "rgba(0,0,0,0.6)",
+                          "&:hover": { bgcolor: "rgba(0,0,0,0.8)" },
+                          fontSize: 12,
+                          borderRadius: 1.5,
+                          minWidth: 0,
+                          px: 1.5,
+                        }}
+                      >
+                        Change
+                        <input
+                          type="file"
+                          accept="image/*"
+                          hidden
+                          onChange={(e) => {
+                            const file = e.target.files?.[0] ?? null;
+                            if (newImagePreviewUrl) URL.revokeObjectURL(newImagePreviewUrl);
+                            setNewImageFile(file);
+                            setNewImagePreviewUrl(file ? URL.createObjectURL(file) : null);
+                            (e.target as HTMLInputElement).value = "";
+                          }}
+                        />
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="contained"
+                        onClick={() => {
+                          if (newImagePreviewUrl) URL.revokeObjectURL(newImagePreviewUrl);
+                          setNewImageFile(null);
+                          setNewImagePreviewUrl(null);
+                        }}
+                        sx={{
+                          textTransform: "none",
+                          fontWeight: 700,
+                          bgcolor: "rgba(220,38,38,0.8)",
+                          "&:hover": { bgcolor: "rgba(220,38,38,1)" },
+                          fontSize: 12,
+                          borderRadius: 1.5,
+                          minWidth: 0,
+                          px: 1.5,
+                        }}
+                      >
+                        Remove
+                      </Button>
+                    </Box>
+                  </Box>
+                ) : (
+                  <Box
+                    component="label"
+                    sx={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 1,
+                      py: 4,
+                      px: 2,
+                      borderRadius: 2,
+                      border: "2px dashed rgba(0,0,0,0.15)",
+                      bgcolor: "rgba(0,0,0,0.02)",
+                      cursor: "pointer",
+                      transition: "all 0.2s",
+                      "&:hover": {
+                        borderColor: "#B68C5A",
+                        bgcolor: "rgba(182,140,90,0.04)",
+                      },
+                    }}
+                  >
+                    <CloudUploadIcon sx={{ fontSize: 40, color: "rgba(0,0,0,0.25)" }} />
+                    <Typography sx={{ fontSize: 14, fontWeight: 600, color: "text.secondary" }}>
+                      Click to upload image
+                    </Typography>
+                    <Typography sx={{ fontSize: 12, color: "text.disabled" }}>
+                      PNG, JPG, WEBP up to 10MB
+                    </Typography>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      hidden
+                      onChange={(e) => {
+                        const file = e.target.files?.[0] ?? null;
+                        if (newImagePreviewUrl) URL.revokeObjectURL(newImagePreviewUrl);
+                        setNewImageFile(file);
+                        setNewImagePreviewUrl(file ? URL.createObjectURL(file) : null);
+                        (e.target as HTMLInputElement).value = "";
+                      }}
                     />
                   </Box>
-                ) : null}
+                )}
               </Box>
             </Grid>
 
@@ -1388,21 +1480,10 @@ export default function ProductDetail() {
                 <Typography sx={{ fontSize: 12, color: "text.secondary", fontWeight: 700, mb: 1 }}>
                   IMAGE FILE
                 </Typography>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0] ?? null;
-                    if (newVariantImagePreviewUrl) URL.revokeObjectURL(newVariantImagePreviewUrl);
-                    setNewVariantImageFile(file);
-                    setNewVariantImagePreviewUrl(file ? URL.createObjectURL(file) : null);
-                    (e.target as HTMLInputElement).value = "";
-                  }}
-                />
                 {newVariantImagePreviewUrl ? (
                   <Box
                     sx={{
-                      mt: 1.5,
+                      position: "relative",
                       borderRadius: 2,
                       overflow: "hidden",
                       border: "1px solid rgba(0,0,0,0.08)",
@@ -1413,10 +1494,112 @@ export default function ProductDetail() {
                       component="img"
                       src={newVariantImagePreviewUrl}
                       alt="Preview"
-                      sx={{ width: "100%", maxHeight: 240, objectFit: "cover" }}
+                      sx={{ width: "100%", maxHeight: 240, objectFit: "cover", display: "block" }}
+                    />
+                    <Box
+                      sx={{
+                        position: "absolute",
+                        bottom: 8,
+                        right: 8,
+                        display: "flex",
+                        gap: 1,
+                      }}
+                    >
+                      <Button
+                        size="small"
+                        variant="contained"
+                        component="label"
+                        sx={{
+                          textTransform: "none",
+                          fontWeight: 700,
+                          bgcolor: "rgba(0,0,0,0.6)",
+                          "&:hover": { bgcolor: "rgba(0,0,0,0.8)" },
+                          fontSize: 12,
+                          borderRadius: 1.5,
+                          minWidth: 0,
+                          px: 1.5,
+                        }}
+                      >
+                        Change
+                        <input
+                          type="file"
+                          accept="image/*"
+                          hidden
+                          onChange={(e) => {
+                            const file = e.target.files?.[0] ?? null;
+                            if (newVariantImagePreviewUrl) URL.revokeObjectURL(newVariantImagePreviewUrl);
+                            setNewVariantImageFile(file);
+                            setNewVariantImagePreviewUrl(file ? URL.createObjectURL(file) : null);
+                            (e.target as HTMLInputElement).value = "";
+                          }}
+                        />
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="contained"
+                        onClick={() => {
+                          if (newVariantImagePreviewUrl) URL.revokeObjectURL(newVariantImagePreviewUrl);
+                          setNewVariantImageFile(null);
+                          setNewVariantImagePreviewUrl(null);
+                        }}
+                        sx={{
+                          textTransform: "none",
+                          fontWeight: 700,
+                          bgcolor: "rgba(220,38,38,0.8)",
+                          "&:hover": { bgcolor: "rgba(220,38,38,1)" },
+                          fontSize: 12,
+                          borderRadius: 1.5,
+                          minWidth: 0,
+                          px: 1.5,
+                        }}
+                      >
+                        Remove
+                      </Button>
+                    </Box>
+                  </Box>
+                ) : (
+                  <Box
+                    component="label"
+                    sx={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 1,
+                      py: 4,
+                      px: 2,
+                      borderRadius: 2,
+                      border: "2px dashed rgba(0,0,0,0.15)",
+                      bgcolor: "rgba(0,0,0,0.02)",
+                      cursor: "pointer",
+                      transition: "all 0.2s",
+                      "&:hover": {
+                        borderColor: "#B68C5A",
+                        bgcolor: "rgba(182,140,90,0.04)",
+                      },
+                    }}
+                  >
+                    <CloudUploadIcon sx={{ fontSize: 40, color: "rgba(0,0,0,0.25)" }} />
+                    <Typography sx={{ fontSize: 14, fontWeight: 600, color: "text.secondary" }}>
+                      Click to upload image
+                    </Typography>
+                    <Typography sx={{ fontSize: 12, color: "text.disabled" }}>
+                      PNG, JPG, WEBP up to 10MB
+                    </Typography>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      hidden
+                      onChange={(e) => {
+                        const file = e.target.files?.[0] ?? null;
+                        if (newVariantImagePreviewUrl) URL.revokeObjectURL(newVariantImagePreviewUrl);
+                        setNewVariantImageFile(file);
+                        setNewVariantImagePreviewUrl(file ? URL.createObjectURL(file) : null);
+                        (e.target as HTMLInputElement).value = "";
+                      }}
                     />
                   </Box>
-                ) : null}
+                )}
               </Box>
             </Grid>
 
