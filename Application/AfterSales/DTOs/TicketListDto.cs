@@ -17,4 +17,5 @@ public sealed class TicketListDto
     public bool IsRequiredEvidence { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? ResolvedAt { get; set; }
+    public DateTime? ReceivedAt { get; set; }
 }

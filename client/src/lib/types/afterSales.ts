@@ -11,6 +11,7 @@ export interface AfterSalesTicketDto {
   customerName?: string;
   ticketType?: string;
   refundAmount?: number;
+  receivedAt?: string | null;
   [key: string]: any;
 }
 

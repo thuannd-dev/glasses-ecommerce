@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import agent from "../api/agent";
-import type { AfterSalesTicketsResponse, AfterSalesTicketDto } from "../types/afterSales";
+import type { AfterSalesTicketsResponse, TicketDetailDto } from "../types/afterSales";
 import type { AfterSalesTicketsQueryParams } from "./useAfterSalesTickets";
 
 // ---- Operations after-sales tickets ----
@@ -27,8 +27,8 @@ export function useOperationsAfterSalesTickets(params?: AfterSalesTicketsQueryPa
 
 // ---- Detail + actions (receive / inspect) ----
 
-async function fetchOperationsAfterSalesTicketById(id: string): Promise<AfterSalesTicketDto> {
-  const res = await agent.get<AfterSalesTicketDto>(`/operations/after-sales/${id}`);
+async function fetchOperationsAfterSalesTicketById(id: string): Promise<TicketDetailDto> {
+  const res = await agent.get<TicketDetailDto>(`/operations/after-sales/${id}`);
   return res.data;
 }
 
@@ -40,13 +40,18 @@ export function useOperationsAfterSalesTicket(id: string | undefined) {
   });
 }
 
-async function receiveAfterSalesTicket(id: string): Promise<AfterSalesTicketDto> {
-  const res = await agent.put<AfterSalesTicketDto>(`/operations/after-sales/${id}/receive`, {});
+async function receiveAfterSalesTicket(id: string): Promise<TicketDetailDto> {
+  const res = await agent.put<TicketDetailDto>(`/operations/after-sales/${id}/receive`, {});
   return res.data;
 }
 
-async function inspectAfterSalesTicket(id: string): Promise<AfterSalesTicketDto> {
-  const res = await agent.put<AfterSalesTicketDto>(`/operations/after-sales/${id}/inspect`, {});
+interface InspectDecisionPayload {
+  isAccepted: boolean;
+  notes: string;
+}
+
+async function inspectAfterSalesTicket(id: string, decision: InspectDecisionPayload): Promise<TicketDetailDto> {
+  const res = await agent.put<TicketDetailDto>(`/operations/after-sales/${id}/inspect`, decision);
   return res.data;
 }
 
@@ -54,19 +59,36 @@ export function useReceiveAfterSalesTicket() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => receiveAfterSalesTicket(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["operations", "after-sales"] });
+    onSuccess: async () => {
+      console.log("✅ Receive success - invalidating operations queries");
+      // Invalidate all operations-related queries
+      await queryClient.invalidateQueries({
+        queryKey: ["operations"],
+      });
+      // Give queries a moment to refetch
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      console.log("✅ Invalidation completed - queries stale and will refetch");
     },
+
   });
 }
 
 export function useInspectAfterSalesTicket() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => inspectAfterSalesTicket(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["operations", "after-sales"] });
+    mutationFn: (params: { id: string; decision: InspectDecisionPayload }) =>
+      inspectAfterSalesTicket(params.id, params.decision),
+    onSuccess: async () => {
+      console.log("✅ Inspect success - invalidating all operations queries");
+      // Invalidate all operations-related queries to force refetch
+      await queryClient.invalidateQueries({
+        queryKey: ["operations"],
+      });
+      // Give queries a moment to refetch
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      console.log("✅ Invalidation completed - queries stale and will refetch");
     },
+
   });
 }
 

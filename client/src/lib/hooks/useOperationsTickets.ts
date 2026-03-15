@@ -22,24 +22,24 @@ async function fetchOperationsTickets(
 
   const response = res.data;
 
-  // Filter on the frontend based on status and receivedAt
+  // Filter on the frontend based on status
   if (params?.status && params.status !== "All") {
     response.items = response.items.filter((ticket) => {
-      const hasReceivedAt = !!ticket.receivedAt;
+      const ticketStatus = ticket.ticketStatus || ticket.status;
       
       switch (params.status) {
         case "Awaiting":
-          // Approved but not yet received by Operations
-          return !hasReceivedAt;
+          // Pending or InProgress tickets not yet received
+          return ticketStatus === "Pending" || (ticketStatus === "InProgress" && !ticket.receivedAt);
         case "Inspecting":
-          // Received, waiting for inspection decision
-          return hasReceivedAt && ticket.ticketStatus === "InProgress";
+          // InProgress tickets that have been received
+          return ticketStatus === "InProgress" && !!ticket.receivedAt;
         case "Accepted":
-          // Inspection passed, resolved
-          return ticket.ticketStatus === "Resolved";
+          // Resolved tickets (accepted inspection)
+          return ticketStatus === "Resolved";
         case "Rejected":
-          // Inspection failed
-          return ticket.ticketStatus === "Rejected";
+          // Rejected tickets (failed inspection)
+          return ticketStatus === "Rejected";
         default:
           return true;
       }

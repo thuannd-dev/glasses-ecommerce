@@ -25,9 +25,20 @@ public sealed class GetOpsTicketDetail
             TicketDetailDto? dto = await context.AfterSalesTickets
                 .AsNoTracking()
                 .Where(t => t.Id == request.Id &&
-                            t.TicketStatus == AfterSalesTicketStatus.InProgress &&
+                            (t.TicketStatus == AfterSalesTicketStatus.InProgress ||
+                             t.TicketStatus == AfterSalesTicketStatus.Resolved ||
+                             t.TicketStatus == AfterSalesTicketStatus.Rejected) &&
                             t.ResolutionType != null &&
                             t.ResolutionType != TicketResolutionType.RefundOnly)
+                .Include(t => t.Order)
+                .ThenInclude(o => o.OrderItems)
+                .ThenInclude(oi => oi.ProductVariant)
+                .ThenInclude(pv => pv.Product)
+                .ThenInclude(p => p.Images)
+                .Include(t => t.OrderItem)
+                .ThenInclude(oi => oi.ProductVariant)
+                .ThenInclude(pv => pv.Product)
+                .ThenInclude(p => p.Images)
                 .ProjectTo<TicketDetailDto>(mapper.ConfigurationProvider)
                 .FirstOrDefaultAsync(ct);
 

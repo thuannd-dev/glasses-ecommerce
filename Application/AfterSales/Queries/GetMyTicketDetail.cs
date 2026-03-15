@@ -29,6 +29,15 @@ public sealed class GetMyTicketDetail
             TicketDetailDto? dto = await context.AfterSalesTickets
                 .AsNoTracking()
                 .Where(t => t.Id == request.Id && t.CustomerId == userId)
+                .Include(t => t.Order)
+                .ThenInclude(o => o.OrderItems)
+                .ThenInclude(oi => oi.ProductVariant)
+                .ThenInclude(pv => pv.Product)
+                .ThenInclude(p => p.Images)
+                .Include(t => t.OrderItem)
+                .ThenInclude(oi => oi.ProductVariant)
+                .ThenInclude(pv => pv.Product)
+                .ThenInclude(p => p.Images)
                 .ProjectTo<TicketDetailDto>(mapper.ConfigurationProvider)
                 .FirstOrDefaultAsync(ct);
 

@@ -10,6 +10,7 @@ import {
   TableRow,
   Chip,
   Button,
+  Avatar,
 } from "@mui/material";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import type { TicketDetailDto } from "../../../lib/types/afterSales";
@@ -341,15 +342,24 @@ export function TicketDetailExpanded({ detail, onApprove, onReject, isLoading }:
                 {detail.items.map((item) => (
                   <TableRow key={`${item.productVariantId}-${item.quantity}`}>
                     <TableCell sx={{ fontSize: 12, color: "#171717" }}>
-                      <Box>
-                        <Typography sx={{ fontWeight: 600, fontSize: 12 }}>
-                          {item.productName}
-                        </Typography>
-                        {item.variantName && (
-                          <Typography sx={{ fontSize: 11, color: "#6B6B6B" }}>
-                            {item.variantName}
-                          </Typography>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        {item.productImageUrl && (
+                          <Avatar
+                            variant="rounded"
+                            src={item.productImageUrl}
+                            sx={{ width: 40, height: 40, flexShrink: 0 }}
+                          />
                         )}
+                        <Box>
+                          <Typography sx={{ fontWeight: 600, fontSize: 12 }}>
+                            {item.productName}
+                          </Typography>
+                          {item.variantName && (
+                            <Typography sx={{ fontSize: 11, color: "#6B6B6B" }}>
+                              {item.variantName}
+                            </Typography>
+                          )}
+                        </Box>
                       </Box>
                     </TableCell>
                     <TableCell sx={{ fontSize: 12, color: "#171717" }} align="right">

@@ -4,8 +4,11 @@ import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import type { AfterSalesTicketDto } from "../../../lib/types/afterSales";
+import { useOperationsAfterSalesTicket, useReceiveAfterSalesTicket, useInspectAfterSalesTicket } from "../../../lib/hooks/useOperationsAfterSalesTickets";
+import { OperationsTicketDetailExpanded } from "./OperationsTicketDetailExpanded";
+import { RejectReasonDialog } from "./RejectReasonDialog";
 
-function getStatusChipColors(status: string) {
+function getStatusChipColors(status: string, receivedAt?: string | null) {
   const s = (status || "").toString();
   switch (s) {
     case "Pending":
@@ -15,7 +18,7 @@ function getStatusChipColors(status: string) {
         border: "rgba(249,115,22,0.4)",
         bg: "rgba(249,115,22,0.12)",
         color: "#c2410c",
-        label: "Inspecting",
+        label: receivedAt ? "Inspecting" : "Awaiting",
       };
     case "Resolved":
       return { border: "#D4E5D5", bg: "#EEF5EE", color: "#466A4A", label: "Accepted" };
@@ -48,13 +51,95 @@ export interface OperationsTicketListCardProps {
 
 export function OperationsTicketListCard({ summary }: OperationsTicketListCardProps) {
   const [expanded, setExpanded] = useState(false);
+  const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const { data: detail, isLoading: isLoadingDetail } = useOperationsAfterSalesTicket(
+    expanded ? summary.id : undefined,
+  );
+  const { mutateAsync: markAsReceivedAsync, isPending: isReceiving } = useReceiveAfterSalesTicket();
+  const { mutateAsync: inspectAsync, isPending: isInspecting } = useInspectAfterSalesTicket();
 
   const status = (summary.status ?? summary.ticketStatus ?? "").toString();
-  const { border, bg, color, label } = getStatusChipColors(status);
+  const { border, bg, color, label } = getStatusChipColors(status, summary.receivedAt);
   const createdAt = summary.createdAt ? new Date(summary.createdAt) : null;
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
+  };
+
+  const handleReceive = async () => {
+    try {
+      console.log("🔘 Marking ticket as received:", summary.id);
+      await markAsReceivedAsync(summary.id);
+      console.log("✅ Success! Ticket marked as received. Refetch in progress...");
+      // Wait for refetch to complete and UI to update
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      setExpanded(false);
+    } catch (error: unknown) {
+      console.error("❌ Error marking ticket as received:", error);
+      const message = 
+        (error as any)?.response?.data?.message || 
+        (error as any)?.message || 
+        "Failed to mark ticket as received. Please check the console for details.";
+      alert(message);
+    }
+  };
+
+  const handleAccept = async () => {
+    try {
+      console.log("✅ Accepting ticket:", summary.id);
+      
+      // Determine staff notes based on resolution type
+      let notes = "Inspection passed. Item accepted.";
+      if (detail?.resolutionType === "WarrantyReplace") {
+        notes = "Inspection passed. Warranty replacement is/are on route";
+      } else if (detail?.resolutionType === "ReturnAndRefund") {
+        notes = "Inspection passed. Return accepted";
+      } else if (detail?.resolutionType === "WarrantyRepair") {
+        notes = "Inspection passed. Warranty repaired is/are on route";
+      }
+      
+      await inspectAsync({
+        id: summary.id,
+        decision: {
+          isAccepted: true,
+          notes,
+        },
+      });
+      console.log("✅ Ticket accepted successfully");
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      setExpanded(false);
+    } catch (error: unknown) {
+      console.error("❌ Error accepting ticket:", error);
+      const message = 
+        (error as any)?.response?.data?.message || 
+        (error as any)?.message || 
+        "Failed to accept ticket. Please check the console for details.";
+      alert(message);
+    }
+  };
+
+  const handleRejectWithReason = async (reason: string) => {
+    try {
+      console.log("❌ Rejecting ticket:", summary.id);
+      await inspectAsync({
+        id: summary.id,
+        decision: {
+          isAccepted: false,
+          notes: reason,
+        },
+      });
+      console.log("✅ Ticket rejected successfully");
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      setShowRejectDialog(false);
+      setExpanded(false);
+    } catch (error: unknown) {
+      console.error("❌ Error rejecting ticket:", error);
+      const message = 
+        (error as any)?.response?.data?.message || 
+        (error as any)?.message || 
+        "Failed to reject ticket. Please check the console for details.";
+      alert(message);
+    }
   };
 
   return (
@@ -251,9 +336,27 @@ export function OperationsTicketListCard({ summary }: OperationsTicketListCardPr
       {/* Expanded Detail Section */}
       <Collapse in={expanded} timeout="auto" unmountOnExit>
         <Box sx={{ mt: 1.5, pt: 1.5, borderTop: "1px solid rgba(0,0,0,0.06)" }}>
-          <Typography sx={{ fontSize: 12, color: "#6B6B6B", mb: 1 }}>
-            Ticket detail view will be expanded here
-          </Typography>
+          {detail ? (
+            <>
+              <OperationsTicketDetailExpanded
+                detail={detail}
+                isLoading={isLoadingDetail}
+                isReceiving={isReceiving}
+                isInspecting={isInspecting}
+                onReceive={handleReceive}
+                onAccept={handleAccept}
+                onReject={() => setShowRejectDialog(true)}
+              />
+              <RejectReasonDialog
+                open={showRejectDialog}
+                onClose={() => setShowRejectDialog(false)}
+                onSubmit={handleRejectWithReason}
+                isLoading={isInspecting}
+              />
+            </>
+          ) : (
+            <Typography sx={{ fontSize: 12, color: "#6B6B6B" }}>Loading details...</Typography>
+          )}
         </Box>
       </Collapse>
     </Paper>

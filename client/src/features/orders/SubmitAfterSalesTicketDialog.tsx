@@ -24,11 +24,15 @@ import {
   Alert,
   Card,
   CardContent,
+  Modal,
+  IconButton,
 } from "@mui/material";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-toastify";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import DeleteIcon from "@mui/icons-material/Delete";
+import PlayArrowIcon from "@mui/icons-material/PlayArrow";
+import CloseIcon from "@mui/icons-material/Close";
 import type { CustomerOrderDetailDto } from "../../lib/types/order";
 import agent from "../../lib/api/agent";
 import { useTicketsByOrder } from "../../lib/hooks/useAfterSales";
@@ -59,6 +63,24 @@ const PALETTE = {
 
 const STEPS = ["Ticket Type", "Select Items", "Reason", "Upload Evidence", "Review"];
 
+// Helper function to determine file type
+const getFileType = (fileName: string): "image" | "video" | "pdf" | "other" => {
+  const ext = fileName.split(".").pop()?.toLowerCase() || "";
+  const imageExts = ["jpg", "jpeg", "png", "gif", "webp"];
+  const videoExts = ["mp4", "webm"];
+  
+  if (imageExts.includes(ext)) return "image";
+  if (videoExts.includes(ext)) return "video";
+  if (ext === "pdf") return "pdf";
+  return "other";
+};
+
+// Helper function to check if file is viewable in preview
+const isViewableFile = (fileName: string): boolean => {
+  const type = getFileType(fileName);
+  return type === "image" || type === "video";
+};
+
 export function SubmitAfterSalesTicketDialog({
   open,
   onClose,
@@ -75,6 +97,9 @@ export function SubmitAfterSalesTicketDialog({
   const [uploading, setUploading] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [itemsInExistingTickets, setItemsInExistingTickets] = useState<Set<string>>(new Set());
+  const [refundedItemIds, setRefundedItemIds] = useState<Set<string>>(new Set());
+  const [previewFile, setPreviewFile] = useState<UploadedFile | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const queryClient = useQueryClient();
 
   // Query existing tickets for this order
@@ -83,11 +108,14 @@ export function SubmitAfterSalesTicketDialog({
   );
 
   // Build set of items already in non-closed tickets
+  // Also build set of items that have been refunded (in closed/resolved tickets with refundAmount)
   useEffect(() => {
     if (existingTickets && existingTickets.length > 0) {
       const itemIds = new Set<string>();
+      const refundedIds = new Set<string>();
+      
       existingTickets.forEach((ticket) => {
-        // Only mark items as unavailable if ticket is not closed/rejected/resolved
+        // Items in non-closed tickets are unavailable for new tickets
         const isClosedStatus =
           ticket.ticketStatus === "Resolved" ||
           ticket.ticketStatus === "Rejected" ||
@@ -98,10 +126,25 @@ export function SubmitAfterSalesTicketDialog({
             itemIds.add(item.id);
           });
         }
+
+        // Items in closed/resolved tickets with refund amount are marked as refunded
+        // This includes Return, Warranty, or Refund tickets that resulted in a refund
+        const isRefundedStatus =
+          ticket.ticketStatus === "Resolved" ||
+          ticket.ticketStatus === "Closed";
+        
+        if (isRefundedStatus && ticket.refundAmount && ticket.refundAmount > 0 && ticket.items && ticket.items.length > 0) {
+          ticket.items.forEach((item) => {
+            refundedIds.add(item.id);
+          });
+        }
       });
+      
       setItemsInExistingTickets(itemIds);
+      setRefundedItemIds(refundedIds);
     } else {
       setItemsInExistingTickets(new Set());
+      setRefundedItemIds(new Set());
     }
   }, [existingTickets]);
 
@@ -237,8 +280,8 @@ export function SubmitAfterSalesTicketDialog({
   }, [open]);
 
   const handleSelectItem = (itemId: string) => {
-    // Don't allow selecting items that are already in tickets
-    if (itemsInExistingTickets.has(itemId)) {
+    // Don't allow selecting items that are already in tickets or have been refunded
+    if (itemsInExistingTickets.has(itemId) || refundedItemIds.has(itemId)) {
       return;
     }
     setSelectedItemIds((prev) =>
@@ -250,7 +293,7 @@ export function SubmitAfterSalesTicketDialog({
 
   const handleSelectAllItems = () => {
     const availableItemIds = order?.items
-      ?.filter((item: any) => !itemsInExistingTickets.has(item.id))
+      ?.filter((item: any) => !itemsInExistingTickets.has(item.id) && !refundedItemIds.has(item.id))
       .map((item: any) => item.id) ?? [];
 
     if (selectedItemIds.length === availableItemIds.length) {
@@ -502,13 +545,21 @@ export function SubmitAfterSalesTicketDialog({
               Select which items to include:
             </Typography>
 
-            {itemsInExistingTickets.size > 0 && (
+            {(itemsInExistingTickets.size > 0 || refundedItemIds.size > 0) && (
               <Alert severity="info" sx={{ mb: 1 }}>
                 <Typography fontSize={13} fontWeight={600} sx={{ mb: 0.5 }}>
                   Some items are unavailable
                 </Typography>
                 <Typography fontSize={13}>
-                  Products already in other tickets cannot be selected. Please check your existing tickets or select different items.
+                  {itemsInExistingTickets.size > 0 && (
+                    <>Products already in other tickets cannot be selected. </>
+                  )}
+                  {refundedItemIds.size > 0 && (
+                    <>Items marked as "Refunded" cannot be selected as they have already been refunded.</>
+                  )}
+                  {itemsInExistingTickets.size > 0 && refundedItemIds.size > 0 && (
+                    <> Please select different items.</>
+                  )}
                 </Typography>
               </Alert>
             )}
@@ -518,15 +569,15 @@ export function SubmitAfterSalesTicketDialog({
                 control={
                   <Checkbox
                     checked={
-                      selectedItemIds.length === (itemsCount - itemsInExistingTickets.size) &&
-                      itemsCount - itemsInExistingTickets.size > 0
+                      selectedItemIds.length === (itemsCount - itemsInExistingTickets.size - refundedItemIds.size) &&
+                      itemsCount - itemsInExistingTickets.size - refundedItemIds.size > 0
                     }
                     indeterminate={
                       selectedItemIds.length > 0 &&
-                      selectedItemIds.length < (itemsCount - itemsInExistingTickets.size)
+                      selectedItemIds.length < (itemsCount - itemsInExistingTickets.size - refundedItemIds.size)
                     }
                     onChange={handleSelectAllItems}
-                    disabled={itemsInExistingTickets.size === itemsCount}
+                    disabled={itemsInExistingTickets.size + refundedItemIds.size === itemsCount}
                   />
                 }
                 label={
@@ -552,6 +603,9 @@ export function SubmitAfterSalesTicketDialog({
               <List sx={{ p: 0 }}>
                 {order?.items?.map((item: any, idx: number) => {
                   const isUnavailable = itemsInExistingTickets.has(item.id);
+                  const isRefunded = refundedItemIds.has(item.id);
+                  const isDisabled = isUnavailable || isRefunded;
+                  
                   return (
                     <ListItem
                       key={item.id}
@@ -565,14 +619,14 @@ export function SubmitAfterSalesTicketDialog({
                         display: "flex",
                         alignItems: "center",
                         gap: 1.5,
-                        opacity: isUnavailable ? 0.6 : 1,
-                        backgroundColor: isUnavailable ? "rgba(0,0,0,0.02)" : "transparent",
+                        opacity: isDisabled ? 0.6 : 1,
+                        backgroundColor: isDisabled ? "rgba(0,0,0,0.02)" : "transparent",
                       }}
                     >
                       <Checkbox
                         checked={selectedItemIds.includes(item.id)}
                         onChange={() => handleSelectItem(item.id)}
-                        disabled={isUnavailable}
+                        disabled={isDisabled}
                       />
                       {(item.productImageUrl || item.imageUrl) && (
                         <Box
@@ -586,7 +640,8 @@ export function SubmitAfterSalesTicketDialog({
                             alignItems: "center",
                             justifyContent: "center",
                             backgroundColor: PALETTE.divider,
-                            opacity: isUnavailable ? 0.6 : 1,
+                            opacity: isDisabled ? 0.6 : 1,
+                            position: "relative",
                           }}
                         >
                           <Box
@@ -599,6 +654,30 @@ export function SubmitAfterSalesTicketDialog({
                               objectFit: "cover",
                             }}
                           />
+                          {isRefunded && (
+                            <Box
+                              sx={{
+                                position: "absolute",
+                                inset: 0,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                backgroundColor: "rgba(0,0,0,0.5)",
+                              }}
+                            >
+                              <Typography
+                                fontSize={10}
+                                fontWeight={700}
+                                sx={{
+                                  color: "#DC2626",
+                                  textAlign: "center",
+                                  px: 0.5,
+                                }}
+                              >
+                                REFUNDED
+                              </Typography>
+                            </Box>
+                          )}
                         </Box>
                       )}
                       <Box sx={{ flex: 1, display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 2 }}>
@@ -618,7 +697,15 @@ export function SubmitAfterSalesTicketDialog({
                               {item.variantName}
                             </Typography>
                           )}
-                          {isUnavailable && (
+                          {isRefunded && (
+                            <Typography
+                              fontSize={12}
+                              sx={{ color: "#DC2626", fontWeight: 600, mt: 0.5 }}
+                            >
+                              Refunded
+                            </Typography>
+                          )}
+                          {isUnavailable && !isRefunded && (
                             <Typography
                               fontSize={12}
                               sx={{ color: "#D97706", fontWeight: 600, mt: 0.5 }}
@@ -728,45 +815,156 @@ export function SubmitAfterSalesTicketDialog({
             {uploadedFiles.length > 0 && (
               <Paper sx={{ border: `1px solid ${PALETTE.cardBorder}`, p: 2 }}>
                 <List sx={{ p: 0 }}>
-                  {uploadedFiles.map((file, idx) => (
-                    <ListItem
-                      key={file.id}
-                      sx={{
-                        py: 1.5,
-                        px: 0,
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        borderBottom:
-                          idx < uploadedFiles.length - 1
-                            ? `1px solid ${PALETTE.divider}`
-                            : "none",
-                      }}
-                    >
-                      <Box>
-                        <Typography
-                          fontSize={14}
-                          sx={{ color: PALETTE.textMain }}
-                        >
-                          {file.fileName}
-                        </Typography>
-                        <Typography
-                          fontSize={12}
-                          sx={{ color: PALETTE.textMuted }}
-                        >
-                          ✓ Uploaded
-                        </Typography>
-                      </Box>
-                      <Button
-                        size="small"
-                        onClick={() => handleRemoveFile(file.id)}
-                        startIcon={<DeleteIcon />}
-                        sx={{ color: "#B91C1C" }}
+                  {uploadedFiles.map((file, idx) => {
+                    const fileType = getFileType(file.fileName);
+                    const isViewable = isViewableFile(file.fileName);
+                    
+                    return (
+                      <ListItem
+                        key={file.id}
+                        sx={{
+                          py: 1.5,
+                          px: 0,
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          borderBottom:
+                            idx < uploadedFiles.length - 1
+                              ? `1px solid ${PALETTE.divider}`
+                              : "none",
+                        }}
                       >
-                        Remove
-                      </Button>
-                    </ListItem>
-                  ))}
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flex: 1, minWidth: 0 }}>
+                          {fileType === "image" && (
+                            <Box
+                              sx={{
+                                width: 50,
+                                height: 50,
+                                flexShrink: 0,
+                                borderRadius: 1,
+                                overflow: "hidden",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                backgroundColor: PALETTE.divider,
+                                cursor: isViewable ? "pointer" : "default",
+                                position: "relative",
+                                "&:hover": isViewable ? {
+                                  opacity: 0.8,
+                                } : {},
+                              }}
+                              onClick={() => {
+                                if (isViewable) {
+                                  setPreviewFile(file);
+                                  setPreviewOpen(true);
+                                }
+                              }}
+                            >
+                              <Box
+                                component="img"
+                                src={file.fileUrl}
+                                alt={file.fileName}
+                                sx={{
+                                  width: "100%",
+                                  height: "100%",
+                                  objectFit: "cover",
+                                }}
+                              />
+                            </Box>
+                          )}
+                          {fileType === "video" && (
+                            <Box
+                              sx={{
+                                width: 50,
+                                height: 50,
+                                flexShrink: 0,
+                                borderRadius: 1,
+                                overflow: "hidden",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                backgroundColor: PALETTE.divider,
+                                cursor: "pointer",
+                                position: "relative",
+                                "&:hover": {
+                                  opacity: 0.8,
+                                },
+                              }}
+                              onClick={() => {
+                                if (isViewable) {
+                                  setPreviewFile(file);
+                                  setPreviewOpen(true);
+                                }
+                              }}
+                            >
+                              <PlayArrowIcon sx={{ fontSize: 32, color: PALETTE.accent }} />
+                            </Box>
+                          )}
+                          {fileType === "pdf" && (
+                            <Box
+                              sx={{
+                                width: 50,
+                                height: 50,
+                                flexShrink: 0,
+                                borderRadius: 1,
+                                overflow: "hidden",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                backgroundColor: PALETTE.divider,
+                              }}
+                            >
+                              <Typography fontSize={12} sx={{ color: PALETTE.accent, fontWeight: 700 }}>
+                                PDF
+                              </Typography>
+                            </Box>
+                          )}
+                          <Box sx={{ flex: 1, minWidth: 0 }}>
+                            <Typography
+                              fontSize={14}
+                              sx={{ color: PALETTE.textMain, overflow: "hidden", textOverflow: "ellipsis" }}
+                              title={file.fileName}
+                            >
+                              {file.fileName}
+                            </Typography>
+                            <Box sx={{ display: "flex", gap: 1, mt: 0.5 }}>
+                              <Typography
+                                fontSize={12}
+                                sx={{ color: PALETTE.textMuted }}
+                              >
+                                ✓ Uploaded
+                              </Typography>
+                              {isViewable && (
+                                <Typography
+                                  fontSize={12}
+                                  sx={{
+                                    color: PALETTE.accent,
+                                    cursor: "pointer",
+                                    fontWeight: 500,
+                                    textDecoration: "underline",
+                                  }}
+                                  onClick={() => {
+                                    setPreviewFile(file);
+                                    setPreviewOpen(true);
+                                  }}
+                                >
+                                  View
+                                </Typography>
+                              )}
+                            </Box>
+                          </Box>
+                        </Box>
+                        <Button
+                          size="small"
+                          onClick={() => handleRemoveFile(file.id)}
+                          startIcon={<DeleteIcon />}
+                          sx={{ color: "#B91C1C", flexShrink: 0 }}
+                        >
+                          Remove
+                        </Button>
+                      </ListItem>
+                    );
+                  })}
                 </List>
               </Paper>
             )}
@@ -967,36 +1165,234 @@ export function SubmitAfterSalesTicketDialog({
                 >
                   UPLOADED EVIDENCE ({uploadedFiles.length}/5)
                 </Typography>
-                <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                  {uploadedFiles.map((file, idx) => (
-                    <Box
-                      key={file.id}
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 1,
-                        pb: 1,
-                        borderBottom:
-                          idx < uploadedFiles.length - 1
-                            ? `1px solid ${PALETTE.divider}`
-                            : "none",
-                        "&:last-child": { pb: 0 },
-                      }}
-                    >
-                      <Typography
-                        fontSize={13}
-                        sx={{ color: PALETTE.textMain, flex: 1, overflow: "hidden", textOverflow: "ellipsis" }}
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+                  {uploadedFiles.map((file, idx) => {
+                    const fileType = getFileType(file.fileName);
+                    const isViewable = isViewableFile(file.fileName);
+                    
+                    return (
+                      <Box
+                        key={file.id}
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1.5,
+                          pb: 1.5,
+                          borderBottom:
+                            idx < uploadedFiles.length - 1
+                              ? `1px solid ${PALETTE.divider}`
+                              : "none",
+                          "&:last-child": { pb: 0 },
+                        }}
                       >
-                        ✓ {file.fileName}
-                      </Typography>
-                    </Box>
-                  ))}
+                        {fileType === "image" && (
+                          <Box
+                            sx={{
+                              width: 45,
+                              height: 45,
+                              flexShrink: 0,
+                              borderRadius: 1,
+                              overflow: "hidden",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              backgroundColor: PALETTE.divider,
+                              cursor: isViewable ? "pointer" : "default",
+                              "&:hover": isViewable ? {
+                                opacity: 0.8,
+                              } : {},
+                            }}
+                            onClick={() => {
+                              if (isViewable) {
+                                setPreviewFile(file);
+                                setPreviewOpen(true);
+                              }
+                            }}
+                          >
+                            <Box
+                              component="img"
+                              src={file.fileUrl}
+                              alt={file.fileName}
+                              sx={{
+                                width: "100%",
+                                height: "100%",
+                                objectFit: "cover",
+                              }}
+                            />
+                          </Box>
+                        )}
+                        {fileType === "video" && (
+                          <Box
+                            sx={{
+                              width: 45,
+                              height: 45,
+                              flexShrink: 0,
+                              borderRadius: 1,
+                              overflow: "hidden",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              backgroundColor: PALETTE.divider,
+                              cursor: "pointer",
+                              "&:hover": {
+                                opacity: 0.8,
+                              },
+                            }}
+                            onClick={() => {
+                              if (isViewable) {
+                                setPreviewFile(file);
+                                setPreviewOpen(true);
+                              }
+                            }}
+                          >
+                            <PlayArrowIcon sx={{ fontSize: 28, color: PALETTE.accent }} />
+                          </Box>
+                        )}
+                        {fileType === "pdf" && (
+                          <Box
+                            sx={{
+                              width: 45,
+                              height: 45,
+                              flexShrink: 0,
+                              borderRadius: 1,
+                              overflow: "hidden",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              backgroundColor: PALETTE.divider,
+                            }}
+                          >
+                            <Typography fontSize={10} sx={{ color: PALETTE.accent, fontWeight: 700 }}>
+                              PDF
+                            </Typography>
+                          </Box>
+                        )}
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                          <Typography
+                            fontSize={13}
+                            sx={{ color: PALETTE.textMain, flex: 1, overflow: "hidden", textOverflow: "ellipsis" }}
+                            title={file.fileName}
+                          >
+                            ✓ {file.fileName}
+                          </Typography>
+                          {isViewable && (
+                            <Typography
+                              fontSize={12}
+                              sx={{
+                                color: PALETTE.accent,
+                                cursor: "pointer",
+                                fontWeight: 500,
+                              }}
+                              onClick={() => {
+                                setPreviewFile(file);
+                                setPreviewOpen(true);
+                              }}
+                            >
+                              Click to view
+                            </Typography>
+                          )}
+                        </Box>
+                      </Box>
+                    );
+                  })}
                 </Box>
               </Paper>
             )}
           </Box>
         )}
       </DialogContent>
+
+      {/* Preview Modal */}
+      {previewFile && (
+        <Modal
+          open={previewOpen}
+          onClose={() => {
+            setPreviewOpen(false);
+            setPreviewFile(null);
+          }}
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Box
+            sx={{
+              position: "relative",
+              maxWidth: "90vw",
+              maxHeight: "90vh",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              bgcolor: "rgba(0, 0, 0, 0.95)",
+              borderRadius: 2,
+              outline: "none",
+            }}
+          >
+            <IconButton
+              onClick={() => {
+                setPreviewOpen(false);
+                setPreviewFile(null);
+              }}
+              sx={{
+                position: "absolute",
+                top: 8,
+                right: 8,
+                color: "white",
+                zIndex: 10,
+                "&:hover": {
+                  bgcolor: "rgba(255, 255, 255, 0.1)",
+                },
+              }}
+            >
+              <CloseIcon />
+            </IconButton>
+
+            {getFileType(previewFile.fileName) === "image" && (
+              <Box
+                component="img"
+                src={previewFile.fileUrl}
+                alt={previewFile.fileName}
+                sx={{
+                  maxWidth: "100%",
+                  maxHeight: "100%",
+                  objectFit: "contain",
+                }}
+              />
+            )}
+
+            {getFileType(previewFile.fileName) === "video" && (
+              <Box
+                component="video"
+                src={previewFile.fileUrl}
+                controls
+                autoPlay
+                sx={{
+                  maxWidth: "100%",
+                  maxHeight: "100%",
+                  objectFit: "contain",
+                }}
+              />
+            )}
+
+            <Typography
+              sx={{
+                position: "absolute",
+                bottom: 16,
+                left: 16,
+                right: 16,
+                color: "white",
+                fontSize: 12,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+              title={previewFile.fileName}
+            >
+              {previewFile.fileName}
+            </Typography>
+          </Box>
+        </Modal>
+      )}
 
       <DialogActions
         sx={{

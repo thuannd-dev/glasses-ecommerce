@@ -33,18 +33,18 @@ const PALETTE = {
 };
 
 const TICKET_TYPE_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  Return: { bg: "#FEF3C7", text: "#92400E", border: "#FCD34D" },
-  Warranty: { bg: "#DBEAFE", text: "#1E40AF", border: "#93C5FD" },
-  Refund: { bg: "#D1FAE5", text: "#065F46", border: "#A7F3D0" },
+  Return: { bg: "#DBEAFE", text: "#1E40AF", border: "#93C5FD" },
+  Warranty: { bg: "#D1FAE5", text: "#065F46", border: "#A7F3D0" },
+  Refund: { bg: "#E9D5FF", text: "#6B21A8", border: "#D8B4FE" },
   Unknown: { bg: "#F3F4F6", text: "#4B5563", border: "#E5E7EB" },
 };
 
 const TICKET_STATUS_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  Pending: { bg: "#FEF3C7", text: "#92400E", border: "#FCD34D" },
-  InProgress: { bg: "#DBEAFE", text: "#1E40AF", border: "#93C5FD" },
+  Pending: { bg: "#F3F4F6", text: "#4B5563", border: "#E5E7EB" },
+  InProgress: { bg: "#FEF3C7", text: "#92400E", border: "#FCD34D" },
   Resolved: { bg: "#D1FAE5", text: "#065F46", border: "#A7F3D0" },
   Rejected: { bg: "#FEE2E2", text: "#7F1D1D", border: "#FECACA" },
-  Closed: { bg: "#F3F4F6", text: "#4B5563", border: "#E5E7EB" },
+  Closed: { bg: "#FEE2E2", text: "#7F1D1D", border: "#FECACA" },
 };
 
 export function OrderTicketsSection({ orderId }: OrderTicketsSectionProps) {
@@ -141,7 +141,7 @@ export function OrderTicketsSection({ orderId }: OrderTicketsSectionProps) {
               }}
             >
               <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75, flex: 1, minWidth: 0 }}>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
                   <Typography fontSize={13} fontWeight={600} sx={{ color: PALETTE.textMuted }}>
                     Ticket ID:
                   </Typography>
@@ -153,6 +153,18 @@ export function OrderTicketsSection({ orderId }: OrderTicketsSectionProps) {
                   >
                     {ticket.id.toUpperCase()}
                   </Typography>
+                  <Chip
+                    size="small"
+                    label={ticket.ticketType}
+                    sx={{
+                      height: 24,
+                      fontSize: 12,
+                      fontWeight: 600,
+                      bgcolor: typeColors.bg,
+                      color: typeColors.text,
+                      border: `1px solid ${typeColors.border}`,
+                    }}
+                  />
                 </Box>
                 {ticket.refundAmount ? (
                   <Typography fontSize={12} sx={{ color: PALETTE.textSecondary }}>
@@ -164,19 +176,7 @@ export function OrderTicketsSection({ orderId }: OrderTicketsSectionProps) {
               <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexShrink: 0 }}>
                 <Chip
                   size="small"
-                  label={ticket.ticketType}
-                  sx={{
-                    height: 24,
-                    fontSize: 12,
-                    fontWeight: 600,
-                    bgcolor: typeColors.bg,
-                    color: typeColors.text,
-                    border: `1px solid ${typeColors.border}`,
-                  }}
-                />
-                <Chip
-                  size="small"
-                  label={ticket.ticketStatus}
+                  label={ticket.ticketStatus === "InProgress" ? "In Progress" : ticket.ticketStatus}
                   sx={{
                     height: 24,
                     fontSize: 12,
