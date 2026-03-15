@@ -33,6 +33,7 @@ import { useCategories, useProducts } from "../../lib/hooks/useProducts";
 import UserMenu from "./UserMenu";
 import CartDropdown from "../components/cart/CartDropdown";
 import { COLORS } from "../theme/colors";
+import { normalizeForSearch } from "../../lib/utils/searchUtils";
 
 // ===== Styles =====
 const ACCENT = COLORS.accentGold;
@@ -243,17 +244,38 @@ const NavBar = observer(function NavBar() {
   const searchItemRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const debouncedSearch = useDebouncedValue(searchTerm.trim(), 300);
 
+  // Gửi API từ ngắn để có superset, rồi lọc client theo full keyword (để "ray ban" / "rayban" đều ra Ray-Ban)
+  const searchForApi = (() => {
+    if (!debouncedSearch) return undefined;
+    if (debouncedSearch.includes(" "))
+      return debouncedSearch.trim().split(/\s+/)[0] || undefined;
+    if (debouncedSearch.length >= 3) return debouncedSearch.slice(0, 3);
+    return debouncedSearch;
+  })();
+
   const { products: searchProducts, isFetching: isSearchLoading } = useProducts(
     {
-      search: debouncedSearch || undefined,
+      search: searchForApi,
       pageSize: 10,
     },
     { enabled: debouncedSearch.length > 0 },
   );
 
-  const showDropdown = searchDropdownOpen && searchTerm.trim().length > 0;
-  const viewAllIndex = searchProducts.length; // index for "View all results" row
-  const maxFocusIndex = searchProducts.length; // 0..length-1 = products, length = view all
+  // Chỉ hiển thị sản phẩm có từ khóa trong tên hoặc brand (bỏ qua dấu, ký tự đặc biệt), so sánh theo chuẩn hóa
+  const filteredSearchProducts = useMemo(() => {
+    const q = normalizeForSearch(debouncedSearch);
+    if (!q) return searchProducts;
+    return searchProducts.filter(
+      (p) =>
+        normalizeForSearch(p.name).includes(q) ||
+        normalizeForSearch(p.brand).includes(q),
+    );
+  }, [searchProducts, debouncedSearch]);
+
+  const hasSearchTerm = searchTerm.trim().length > 0;
+  const showDropdown = searchDropdownOpen;
+  const viewAllIndex = filteredSearchProducts.length; // index for "View all results" row
+  const maxFocusIndex = filteredSearchProducts.length; // 0..length-1 = products, length = view all
 
   const closeDropdown = useCallback(() => {
     setSearchDropdownOpen(false);
@@ -286,14 +308,14 @@ const NavBar = observer(function NavBar() {
       }
       if (e.key === "Enter" && searchFocusedIndex >= 0) {
         e.preventDefault();
-        if (searchFocusedIndex < searchProducts.length) {
-          navigate(`/product/${searchProducts[searchFocusedIndex].id}`);
+        if (searchFocusedIndex < filteredSearchProducts.length) {
+          navigate(`/product/${filteredSearchProducts[searchFocusedIndex].id}`);
           closeDropdown();
         } else {
           const trimmed = searchTerm.trim();
           const target = trimmed
-            ? `/collections?search=${encodeURIComponent(trimmed)}`
-            : "/collections";
+            ? `/collections/all?search=${encodeURIComponent(trimmed)}`
+            : "/collections/all";
           navigate(target);
           closeDropdown();
         }
@@ -305,7 +327,7 @@ const NavBar = observer(function NavBar() {
     showDropdown,
     searchFocusedIndex,
     maxFocusIndex,
-    searchProducts,
+    filteredSearchProducts,
     searchTerm,
     navigate,
     closeDropdown,
@@ -315,7 +337,7 @@ const NavBar = observer(function NavBar() {
   useEffect(() => {
     if (
       searchFocusedIndex < 0 ||
-      searchFocusedIndex >= searchProducts.length ||
+      searchFocusedIndex >= filteredSearchProducts.length ||
       !searchItemRefs.current[searchFocusedIndex]
     )
       return;
@@ -323,7 +345,7 @@ const NavBar = observer(function NavBar() {
       block: "nearest",
       behavior: "smooth",
     });
-  }, [searchFocusedIndex, searchProducts.length]);
+  }, [searchFocusedIndex, filteredSearchProducts.length]);
 
   useEffect(() => {
     if (!showDropdown) return;
@@ -346,26 +368,41 @@ const NavBar = observer(function NavBar() {
     return FALLBACK_MENU_ITEMS.map((m) => ({ label: m.label, to: m.to }));
   }, [categories]);
 
-  // Sync navbar search with current URL query (?search=...)
+  // Sync navbar search với URL khi dropdown đóng (không auto-mở dropdown để tránh mở lại sau khi ấn View all)
   useEffect(() => {
+    if (searchDropdownOpen) return;
     const params = new URLSearchParams(location.search);
     const urlSearch = params.get("search") ?? "";
     setSearchTerm(urlSearch);
-  }, [location.search]);
+  }, [location.search, searchDropdownOpen]);
+
+  // Khi đang ở trang collections, cập nhật URL theo nội dung ô search (debounced)
+  // để URL và thanh search luôn khớp nhau
+  useEffect(() => {
+    if (!location.pathname.startsWith("/collections")) return;
+    const trimmed = debouncedSearch.trim();
+    const params = new URLSearchParams(location.search);
+    const currentSearch = params.get("search") ?? "";
+    if (trimmed === currentSearch) return;
+    if (trimmed) params.set("search", trimmed);
+    else params.delete("search");
+    const newSearch = params.toString();
+    navigate(`${location.pathname}${newSearch ? `?${newSearch}` : ""}`, { replace: true });
+  }, [debouncedSearch, location.pathname, location.search, navigate]);
 
   const handleSubmitSearch = (e: React.FormEvent) => {
     e.preventDefault();
 
     const trimmed = searchTerm.trim();
 
-    // If not on collections, go to /collections with search param
-    if (!location.pathname.startsWith("/collections")) {
-      const target = trimmed ? `/collections?search=${encodeURIComponent(trimmed)}` : "/collections";
+    // Luôn qua trang danh sách (CollectionPage) tại /collections/all, có search thì thêm ?search=
+    if (!location.pathname.startsWith("/collections") || location.pathname === "/collections") {
+      const target = trimmed ? `/collections/all?search=${encodeURIComponent(trimmed)}` : "/collections/all";
       navigate(target);
       return;
     }
 
-    // If already on collections, update search param but keep path
+    // Đã ở /collections/:category thì chỉ cập nhật param search
     const params = new URLSearchParams(location.search);
     if (trimmed) {
       params.set("search", trimmed);
@@ -450,13 +487,36 @@ const NavBar = observer(function NavBar() {
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     onFocus={() => setSearchDropdownOpen(true)}
-                    onBlur={() => setTimeout(closeDropdown, 200)}
+                    onBlur={(e) => {
+                    const next = e.relatedTarget as Node | null;
+                    if (next && searchContainerRef.current?.contains(next)) return;
+                    setTimeout(closeDropdown, 200);
+                  }}
                   />
                 </Box>
 
                 {showDropdown && (
                   <Paper sx={SEARCH_DROPDOWN_PAPER_SX} elevation={0}>
-                    {isSearchLoading ? (
+                    {!hasSearchTerm ? (
+                      <Box
+                        sx={{
+                          py: 4,
+                          px: 3,
+                          textAlign: "center",
+                        }}
+                      >
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: COLORS.textMuted,
+                            fontWeight: 500,
+                            letterSpacing: "0.02em",
+                          }}
+                        >
+                          Type to search by brand or product name
+                        </Typography>
+                      </Box>
+                    ) : isSearchLoading ? (
                       <Box
                         sx={{
                           py: 4,
@@ -475,7 +535,7 @@ const NavBar = observer(function NavBar() {
                           Searching...
                         </Typography>
                       </Box>
-                    ) : searchProducts.length === 0 ? (
+                    ) : filteredSearchProducts.length === 0 ? (
                       <Box
                         sx={{
                           py: 5,
@@ -510,8 +570,8 @@ const NavBar = observer(function NavBar() {
                           ref={searchDropdownScrollRef}
                           className="search-dropdown-scroll"
                         >
-                          <List disablePadding>
-                            {searchProducts.map((p, idx) => (
+                          <List disablePadding sx={{ width: "100%" }}>
+                            {filteredSearchProducts.map((p, idx) => (
                               <ListItemButton
                                 key={p.id}
                                 ref={(el) => {
@@ -589,13 +649,15 @@ const NavBar = observer(function NavBar() {
                           ref={(el) => {
                             searchItemRefs.current[viewAllIndex] = el as HTMLButtonElement | null;
                           }}
-                          onClick={() => {
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
                             const trimmed = searchTerm.trim();
                             const target = trimmed
-                              ? `/collections?search=${encodeURIComponent(trimmed)}`
-                              : "/collections";
-                            navigate(target);
+                              ? `/collections/all?search=${encodeURIComponent(trimmed)}`
+                              : "/collections/all";
                             closeDropdown();
+                            navigate(target);
                           }}
                           onMouseEnter={() => setSearchFocusedIndex(viewAllIndex)}
                           sx={{
@@ -605,6 +667,7 @@ const NavBar = observer(function NavBar() {
                             cursor: "pointer",
                             width: "calc(100% - 24px)",
                             alignSelf: "center",
+                            font: "inherit",
                             backgroundColor:
                               searchFocusedIndex === viewAllIndex
                                 ? alpha(COLORS.bgSubtle, 0.6)
