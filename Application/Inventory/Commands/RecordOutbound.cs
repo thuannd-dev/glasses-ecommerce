@@ -97,8 +97,8 @@ public sealed class RecordOutbound
                     bool isPreOrderVariant = variant.IsPreOrder;
                     bool isPreOrderOrder = order.OrderType == OrderType.PreOrder;
 
-                    // For PreOrder items: must have been auto-fulfilled from inbound (QuantityReserved > 0)
-                    // For regular items: QuantityReserved must cover the quantity
+                    // For both pre-order and regular items: QuantityReserved must cover item.Quantity
+                    // Pre-order message wording is handled separately for clearer API feedback.
                     if (stock.QuantityReserved < item.Quantity)
                     {
                         string message = isPreOrderVariant || isPreOrderOrder
