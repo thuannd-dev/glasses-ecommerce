@@ -99,12 +99,13 @@ public sealed class RecordOutbound
 
                     // For PreOrder items: must have been auto-fulfilled from inbound (QuantityReserved > 0)
                     // For regular items: QuantityReserved must cover the quantity
-                    if (isPreOrderVariant || isPreOrderOrder)
+                    if (stock.QuantityReserved < item.Quantity)
                     {
-                        if (stock.QuantityReserved < item.Quantity)
-                            return Result<Unit>.Failure(
-                                $"Pre-order item not yet fulfilled from inbound for variant '{item.ProductVariantId}'. " +
-                                $"Expected {item.Quantity} units reserved, but only {stock.QuantityReserved} available.", 409);
+                        string message = isPreOrderVariant || isPreOrderOrder
+                            ? $"Pre-order item not yet fulfilled from inbound for variant '{item.ProductVariantId}'. Expected {item.Quantity} units reserved, but only {stock.QuantityReserved} available."
+                            : $"Reserved quantity is insufficient for product variant '{item.ProductVariantId}'. Expected {item.Quantity} units reserved, but only {stock.QuantityReserved} available.";
+
+                        return Result<Unit>.Failure(message, 409);
                     }
 
                     if (stock.QuantityOnHand < item.Quantity)
