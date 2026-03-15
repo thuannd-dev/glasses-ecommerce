@@ -3,6 +3,7 @@ import { useParams, useSearchParams } from "react-router-dom";
 
 import { useProducts, useCategories, useBrands } from "../../../lib/hooks/useProducts";
 import { useDebouncedValue } from "../../../lib/hooks/useDebouncedValue";
+import { normalizeForSearch } from "../../../lib/utils/searchUtils";
 import type { FiltersState, SortKey, Product } from "../../../lib/types";
 
 const PAGE_SIZE = 8;
@@ -109,10 +110,21 @@ export function useCollectionPage() {
     }
   }, [categorySlug]);
 
+  const searchKeyword = filters.keyword.trim();
+  // Gửi từ ngắn để API trả superset, rồi lọc client theo full keyword (để "ray ban" / "rayban" đều ra Ray-Ban)
+  const searchForApi = (() => {
+    if (!searchKeyword) return undefined;
+    if (searchKeyword.includes(" "))
+      return searchKeyword.trim().split(/\s+/)[0] || undefined;
+    if (searchKeyword.length >= 3) return searchKeyword.slice(0, 3);
+    return searchKeyword;
+  })();
+  const normalizedKeyword = searchKeyword ? normalizeForSearch(searchKeyword) : "";
+
   const productsParams = {
     pageSize: PAGE_SIZE,
     categoryIds,
-    search: filters.keyword.trim() || undefined,
+    search: searchForApi,
     minPrice: debouncedMinPrice ?? undefined,
     maxPrice: debouncedMaxPrice ?? undefined,
     brand: filters.brand ?? undefined,
@@ -139,12 +151,21 @@ export function useCollectionPage() {
   );
 
   const rawProducts: Product[] = Array.isArray(apiProducts) ? apiProducts : [];
+  const byKeyword = (list: Product[]) =>
+    !normalizedKeyword
+      ? list
+      : list.filter(
+          (p) =>
+            normalizeForSearch(p.name).includes(normalizedKeyword) ||
+            normalizeForSearch(p.brand).includes(normalizedKeyword)
+        );
+  const keywordFiltered = byKeyword(rawProducts);
   const pageProducts =
-    hasGlassesTypeFilter && rawProducts.length > 0
-      ? rawProducts.filter(
+    hasGlassesTypeFilter && keywordFiltered.length > 0
+      ? keywordFiltered.filter(
           (p) => p.glassesType && filters.glassesTypes.includes(p.glassesType)
         )
-      : rawProducts;
+      : keywordFiltered;
 
   const isFirstPage = page === 1;
   const isShortFirstPage = pageProducts.length < PAGE_SIZE;
@@ -158,10 +179,12 @@ export function useCollectionPage() {
   );
 
   const page2Filtered: Product[] =
-    needMergePage2 && filters.glassesTypes.length > 0 && Array.isArray(apiPage2)
-      ? apiPage2.filter(
-          (p) => p.glassesType && filters.glassesTypes.includes(p.glassesType)
-        )
+    needMergePage2 && Array.isArray(apiPage2)
+      ? hasGlassesTypeFilter
+        ? byKeyword(apiPage2).filter(
+            (p) => p.glassesType && filters.glassesTypes.includes(p.glassesType)
+          )
+        : byKeyword(apiPage2)
       : [];
 
   const mergedProducts =
@@ -169,8 +192,11 @@ export function useCollectionPage() {
       ? [...pageProducts, ...page2Filtered]
       : pageProducts;
 
-  const effectiveTotal =
-    needMergePage2 && mergedProducts.length > 0
+  const effectiveTotal = normalizedKeyword
+    ? needMergePage2
+      ? mergedProducts.length
+      : pageProducts.length
+    : needMergePage2 && mergedProducts.length > 0
       ? mergedProducts.length
       : hasCategoryIds && isFirstPage && isShortFirstPage
         ? pageProducts.length

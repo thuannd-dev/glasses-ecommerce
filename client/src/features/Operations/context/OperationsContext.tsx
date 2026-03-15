@@ -10,7 +10,13 @@ import {
 import { useLookups } from "../../../lib/hooks/useLookups";
 import { useCreateInventoryOutbound } from "../../../lib/hooks/useOperationsInventory";
 import { CreateShipmentDialog } from "../components";
-import type { OrderDto, ShipmentDto } from "../../../lib/types";
+import type {
+  OrderDto,
+  OrderItemDto,
+  OrderStatus,
+  OrderType,
+  ShipmentDto,
+} from "../../../lib/types";
 
 type OperationsContextValue = {
   orders: OrderDto[];
@@ -159,31 +165,35 @@ export function OperationsProvider({ children }: { children: React.ReactNode }) 
     setExpandedOrderId,
   };
 
-  const selectedOrder: OrderDto | null = createShipOrderId 
-    ? safeOrders.find((o) => o.id === createShipOrderId) ?? 
+  const selectedOrder: OrderDto | null = createShipOrderId
+    ? safeOrders.find((o) => o.id === createShipOrderId) ??
       (selectedOrderDetail
-        ? (
-            {
-              id: selectedOrderDetail.id,
-              orderNumber: selectedOrderDetail.id,
-              orderType: "Regular" as any,
-              status: selectedOrderDetail.orderStatus as any,
-              createdAt: selectedOrderDetail.createdAt,
-              customerName: selectedOrderDetail.customerName || selectedOrderDetail.walkInCustomerName || "",
-              customerEmail: "",
-              shippingAddress: selectedOrderDetail.shippingAddress
-                ? `${selectedOrderDetail.shippingAddress.venue || ""} ${selectedOrderDetail.shippingAddress.ward || ""} ${selectedOrderDetail.shippingAddress.district || ""} ${selectedOrderDetail.shippingAddress.city || ""}`.trim()
-                : "",
-              items: selectedOrderDetail.items.map((item) => ({
+        ? ({
+            id: selectedOrderDetail.id,
+            orderNumber: selectedOrderDetail.id,
+            orderType: selectedOrderDetail.orderType as OrderType,
+            status: selectedOrderDetail.orderStatus as OrderStatus,
+            createdAt: selectedOrderDetail.createdAt,
+            customerName:
+              selectedOrderDetail.customerName ||
+              selectedOrderDetail.walkInCustomerName ||
+              "",
+            customerEmail: "",
+            shippingAddress: selectedOrderDetail.shippingAddress
+              ? `${selectedOrderDetail.shippingAddress.venue ?? ""} ${selectedOrderDetail.shippingAddress.ward ?? ""} ${selectedOrderDetail.shippingAddress.district ?? ""} ${selectedOrderDetail.shippingAddress.city ?? ""}`.trim()
+              : "",
+            items: selectedOrderDetail.items.map(
+              (item): OrderItemDto => ({
                 id: item.id,
+                productVariantId: item.productVariantId,
                 productName: item.productName,
-                variantName: item.variantName,
+                sku: item.sku,
                 quantity: item.quantity,
                 price: item.unitPrice,
-              })) as any,
-              totalAmount: selectedOrderDetail.finalAmount,
-            } as unknown as OrderDto
-          )
+              })
+            ),
+            totalAmount: selectedOrderDetail.finalAmount,
+          } as OrderDto)
         : null)
     : null;
 
