@@ -9,7 +9,7 @@ namespace Infrastructure.Payments;
 
 public sealed class VnPayService(IOptions<VnpaySettings> config) : IVnPayService
 {
-    public string CreatePaymentUrl(PaymentInformationModel model, HttpContext context)
+    public string CreatePaymentUrl(PaymentInformationDto model, HttpContext context)
     {
         TimeZoneInfo timeZoneById = GetPaymentTimeZone();
         DateTime timeNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, timeZoneById);
@@ -35,36 +35,36 @@ public sealed class VnPayService(IOptions<VnpaySettings> config) : IVnPayService
         return paymentUrl;
     }
 
-    public PaymentResponseModel PaymentExecute(IQueryCollection collections)
+    public PaymentResponseDto PaymentExecute(IQueryCollection collections)
     {
         VnPayLibrary pay = new VnPayLibrary();
-        PaymentResponseModel response = pay.GetFullResponseData(collections, config.Value.HashSecret);
+        PaymentResponseDto response = pay.GetFullResponseData(collections, config.Value.HashSecret);
 
         return response;
     }
 
     private TimeZoneInfo GetPaymentTimeZone()
+    {
+        var configuredTimeZoneId = config.Value.TimeZoneId;
+        var timeZoneCandidates = OperatingSystem.IsWindows()
+            ? new[] { configuredTimeZoneId, "SE Asia Standard Time", "Asia/Bangkok" }
+            : new[] { configuredTimeZoneId, "Asia/Bangkok", "SE Asia Standard Time" };
+
+        foreach (var timeZoneId in timeZoneCandidates.Where(id => !string.IsNullOrWhiteSpace(id)).Distinct(StringComparer.OrdinalIgnoreCase))
         {
-            var configuredTimeZoneId = config.Value.TimeZoneId;
-            var timeZoneCandidates = OperatingSystem.IsWindows()
-                ? new[] { configuredTimeZoneId, "SE Asia Standard Time", "Asia/Bangkok" }
-                : new[] { configuredTimeZoneId, "Asia/Bangkok", "SE Asia Standard Time" };
-
-            foreach (var timeZoneId in timeZoneCandidates.Where(id => !string.IsNullOrWhiteSpace(id)).Distinct(StringComparer.OrdinalIgnoreCase))
+            try
             {
-                try
-                {
-                    return TimeZoneInfo.FindSystemTimeZoneById(timeZoneId!);
-                }
-                catch (TimeZoneNotFoundException)
-                {
-                }
-                catch (InvalidTimeZoneException)
-                {
-                }
+                return TimeZoneInfo.FindSystemTimeZoneById(timeZoneId!);
             }
-
-            return TimeZoneInfo.Local;
+            catch (TimeZoneNotFoundException)
+            {
+            }
+            catch (InvalidTimeZoneException)
+            {
+            }
         }
+
+        return TimeZoneInfo.Local;
+    }
 }
 

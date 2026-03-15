@@ -2,7 +2,7 @@ namespace Application.Payments.DTOs;
 /// <summary>
 /// Dto chứa thông tin để tạo URL thanh toán VnPay
 /// </summary>
-public sealed class PaymentInformationModel
+public sealed class PaymentInformationDto
 {
     public Guid OrderId { get; set; }
     public string OrderType { get; set; }

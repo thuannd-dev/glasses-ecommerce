@@ -13,7 +13,7 @@ public sealed class CreatePaymentUrls
 {
     public sealed class Command : IRequest<Result<string>>
     {
-        public required PaymentInformationModel Model { get; set; }
+        public required PaymentInformationDto Model { get; set; }
     }
 
     internal sealed class Handler(

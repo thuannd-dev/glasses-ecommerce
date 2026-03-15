@@ -13,7 +13,7 @@ namespace API.Controllers;
 public sealed class PaymentsController(IVnPayService vnPayService) : BaseApiController
 {
     [HttpPost("create-url")]
-    public async Task<IActionResult> CreatePaymentUrl(PaymentInformationModel dto, CancellationToken ct)
+    public async Task<IActionResult> CreatePaymentUrl(PaymentInformationDto dto, CancellationToken ct)
     {
         return HandleResult(await Mediator.Send(new CreatePaymentUrls.Command { Model = dto }, ct));
     }
@@ -23,7 +23,7 @@ public sealed class PaymentsController(IVnPayService vnPayService) : BaseApiCont
     [HttpGet("/api/payments/vnpay/ipn")]
     public async Task<IActionResult> IpnCallback(CancellationToken ct)
     {
-        PaymentResponseModel response = vnPayService.PaymentExecute(Request.Query);
+        PaymentResponseDto response = vnPayService.PaymentExecute(Request.Query);
 
         Result<Unit> result = await Mediator.Send(new HandleVnPayIpn.Command { Response = response }, ct);
 

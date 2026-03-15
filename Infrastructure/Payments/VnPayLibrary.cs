@@ -13,7 +13,7 @@ internal sealed class VnPayLibrary
     private readonly SortedList<string, string> _requestData = new SortedList<string, string>(new VnPayCompare());
     private readonly SortedList<string, string> _responseData = new SortedList<string, string>(new VnPayCompare());
 
-    public PaymentResponseModel GetFullResponseData(IQueryCollection collection, string hashSecret)
+    public PaymentResponseDto GetFullResponseData(IQueryCollection collection, string hashSecret)
     {
         var vnPay = new VnPayLibrary();
 
@@ -36,12 +36,12 @@ internal sealed class VnPayLibrary
             vnPay.ValidateSignature(vnpSecureHash, hashSecret); //check Signature
 
         if (!checkSignature)
-            return new PaymentResponseModel()
+            return new PaymentResponseDto()
             {
                 Success = false
             };
 
-        return new PaymentResponseModel()
+        return new PaymentResponseDto()
         {
             Success = vnpResponseCode.Equals("00"),
             PaymentMethod = "VnPay",
@@ -58,7 +58,7 @@ internal sealed class VnPayLibrary
         try
         {
             var remoteIpAddress = context.Connection.RemoteIpAddress;
-        
+
             if (remoteIpAddress != null)
             {
                 if (remoteIpAddress.AddressFamily == AddressFamily.InterNetworkV6)
@@ -66,7 +66,7 @@ internal sealed class VnPayLibrary
                     // Convert to IPv4 safely without blocking on reverse DNS lookup
                     remoteIpAddress = remoteIpAddress.MapToIPv4();
                 }
-        
+
                 return remoteIpAddress.ToString();
             }
         }

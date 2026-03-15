@@ -1,5 +1,7 @@
 namespace Application.Products.DTOs;
-
+/// <summary>
+/// Dto chứa thông tin để cập nhật URL của file 3D model (.glb)
+/// </summary>      
 public sealed class UpdateImageModelUrlDto
 {
     /// <summary>

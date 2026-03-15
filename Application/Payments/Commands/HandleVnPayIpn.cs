@@ -11,14 +11,14 @@ public sealed class HandleVnPayIpn
 {
     public sealed class Command : IRequest<Result<Unit>>
     {
-        public required PaymentResponseModel Response { get; set; }
+        public required PaymentResponseDto Response { get; set; }
     }
 
     internal sealed class Handler(AppDbContext context) : IRequestHandler<Command, Result<Unit>>
     {
         public async Task<Result<Unit>> Handle(Command request, CancellationToken ct)
         {
-            PaymentResponseModel response = request.Response;
+            PaymentResponseDto response = request.Response;
 
             // Response.OrderId chứa vnp_TxnRef (tick ta đã ghi vào Payment.TransactionId)
             Payment? payment = await context.Payments

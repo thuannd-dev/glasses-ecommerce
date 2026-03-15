@@ -2,7 +2,7 @@ namespace Application.Payments.DTOs;
 /// <summary>
 ///  Dto chứa thông tin phản hồi từ VnPay sau khi thanh toán
 /// </summary>
-public sealed class PaymentResponseModel
+public sealed class PaymentResponseDto
 {
     public string OrderDescription { get; set; }
     public string TransactionId { get; set; }
