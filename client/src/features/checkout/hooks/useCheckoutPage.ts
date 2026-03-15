@@ -201,15 +201,18 @@ export function useCheckoutPage() {
       });
 
       const hasPrescriptionItems = Object.keys(itemPrescriptions).length > 0;
-      const firstPrescription = hasPrescriptionItems
-        ? Object.values(itemPrescriptions)[0]
-        : null;
-      const prescriptionPayload =
-        firstPrescription != null && firstPrescription.details?.length
-          ? toPrescriptionInputDto(firstPrescription)
-          : undefined;
+      
+      // Build prescriptions array: each cart item with prescription becomes an OrderItemPrescriptionDto
+      const prescriptionsArray = hasPrescriptionItems
+        ? Object.entries(itemPrescriptions)
+            .filter(([_, prescription]) => prescription.details?.length > 0)
+            .map(([cartItemId, prescription]) => ({
+              cartItemId,
+              prescription: toPrescriptionInputDto(prescription),
+            }))
+        : [];
 
-      if (hasPrescriptionItems && !prescriptionPayload) {
+      if (hasPrescriptionItems && prescriptionsArray.length === 0) {
         setSnackbar({
           open: true,
           message: "Prescription details are required for prescription items. Please go back and re-enter prescription for your lens selection.",
@@ -226,7 +229,8 @@ export function useCheckoutPage() {
         orderType: hasPrescriptionItems ? "Prescription" : "ReadyStock",
         selectedCartItemIds: items.map((item) => item.id),
         promoCode: appliedPromo?.promoCode ?? undefined,
-        prescription: prescriptionPayload ?? undefined,
+        prescription: undefined, // Don't use old single-prescription payload
+        prescriptions: prescriptionsArray.length > 0 ? prescriptionsArray : undefined,
       });
 
       queryClient.invalidateQueries({ queryKey: ["cart"] });

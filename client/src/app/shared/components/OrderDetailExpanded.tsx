@@ -299,56 +299,7 @@ export function OrderDetailExpanded({ detail, onProcessOrderClick, showProcessBu
         </Box>
       </Box>
 
-      {/* 2.5) Prescription — for sales to view lens details */}
-      {detail.prescription?.details?.length ? (
-        <Box>
-          <Typography sx={{ fontSize: 14, fontWeight: 700, color: TOKENS.muted, textTransform: "uppercase", letterSpacing: 1, mb: 1.25 }}>
-            Prescription
-          </Typography>
-          <Box
-            sx={{
-              bgcolor: TOKENS.surface,
-              borderRadius: "12px",
-              border: `1px solid ${TOKENS.divider}`,
-              overflow: "hidden",
-              p: 2,
-            }}
-          >
-            {detail.prescription.isVerified != null && (
-              <Typography sx={{ fontSize: 12, color: TOKENS.textSecondary, mb: 1.25 }}>
-                Verified: {detail.prescription.isVerified ? "Yes" : "No"}
-                {detail.prescription.verificationNotes && (
-                  <> · {detail.prescription.verificationNotes}</>
-                )}
-              </Typography>
-            )}
-            <Table size="small" sx={{ "& td, & th": { py: 0.75, px: 1.5, fontSize: 13 } }}>
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 700, color: TOKENS.muted }}>Eye</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: TOKENS.muted }}>SPH</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: TOKENS.muted }}>CYL</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: TOKENS.muted }}>Axis</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: TOKENS.muted }}>PD</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: TOKENS.muted }}>ADD</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {detail.prescription.details.map((row, idx) => (
-                  <TableRow key={row.id ?? row.eye ?? idx}>
-                    <TableCell sx={{ fontWeight: 600, color: TOKENS.textPrimary }}>{row.eye}</TableCell>
-                    <TableCell>{formatPrescriptionVal(row.sph)}</TableCell>
-                    <TableCell>{formatPrescriptionVal(row.cyl)}</TableCell>
-                    <TableCell>{formatPrescriptionVal(row.axis)}</TableCell>
-                    <TableCell>{formatPrescriptionVal(row.pd)}</TableCell>
-                    <TableCell>{formatPrescriptionVal(row.add)}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Box>
-        </Box>
-      ) : null}
+
 
       {/* 3) Items section — e-commerce look with thumbnails */}
       <Box>
@@ -423,6 +374,101 @@ export function OrderDetailExpanded({ detail, onProcessOrderClick, showProcessBu
               </Box>
             );
           })}
+          
+          {/* Prescription details inside Items box */}
+          {detail.prescriptions && detail.prescriptions.length > 0 ? (
+            <>
+              <Divider sx={{ borderColor: TOKENS.divider, my: 2 }} />
+              <Box sx={{ p: 2, pt: 0 }}>
+                <Typography sx={{ fontSize: 12, fontWeight: 700, color: TOKENS.muted, textTransform: "uppercase", letterSpacing: "0.14em", mb: 2 }}>
+                  📋 Prescription Details
+                </Typography>
+                {/* Show all prescriptions with corresponding product names */}
+                {detail.prescriptions.map((rx, rxIdx) => {
+                  // Find the item that has this prescription ID
+                  const correspondingItem = detail.items.find((item) => item.prescriptionId === rx.id);
+                  const productName = correspondingItem?.productName ?? "Unknown Product";
+                  const isVerified = rx.isVerified === true;
+                  
+                  return (
+                    <Box 
+                      key={rx.id ?? `prescription-${rxIdx}`} 
+                      sx={{ 
+                        mb: rxIdx < detail.prescriptions.length - 1 ? 1.5 : 0,
+                        p: 1.5,
+                        borderRadius: 1,
+                        bgcolor: '#FAFAF8',
+                        border: `1px solid ${TOKENS.divider}`,
+                      }}
+                    >
+                      {/* Header with product name and verification status */}
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
+                        <Typography sx={{ fontSize: 13, fontWeight: 600, color: TOKENS.textPrimary }}>
+                          {productName}
+                        </Typography>
+                        {rx.isVerified != null && (
+                          <Box
+                            sx={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              height: 20,
+                              px: 0.75,
+                              borderRadius: 999,
+                              border: `1px solid ${isVerified ? '#D4E5D5' : '#E8CFCF'}`,
+                              bgcolor: isVerified ? '#EEF5EE' : '#F6EAEA',
+                              color: isVerified ? '#466A4A' : '#8E3B3B',
+                              fontSize: 11,
+                              fontWeight: 600,
+                            }}
+                          >
+                            {isVerified ? '✓ Verified' : '✗ Not Verified'}
+                          </Box>
+                        )}
+                      </Box>
+
+                      {/* Prescription details table */}
+                      {rx.details && rx.details.length > 0 ? (
+                        <Table size="small" sx={{ 
+                          "& td, & th": { py: 0.6, px: 1, fontSize: 13 },
+                          "& thead": { bgcolor: '#FFFFFF' },
+                          "& tbody tr:hover": { bgcolor: '#F9F9F7' },
+                        }}>
+                          <TableHead>
+                            <TableRow sx={{ borderTop: `1px solid ${TOKENS.divider}`, borderBottom: `1px solid ${TOKENS.divider}` }}>
+                              <TableCell sx={{ fontWeight: 700, color: TOKENS.muted, fontSize: 12 }}>Eye</TableCell>
+                              <TableCell sx={{ fontWeight: 700, color: TOKENS.muted, fontSize: 12 }}>SPH</TableCell>
+                              <TableCell sx={{ fontWeight: 700, color: TOKENS.muted, fontSize: 12 }}>CYL</TableCell>
+                              <TableCell sx={{ fontWeight: 700, color: TOKENS.muted, fontSize: 12 }}>Axis</TableCell>
+                              <TableCell sx={{ fontWeight: 700, color: TOKENS.muted, fontSize: 12 }}>PD</TableCell>
+                              <TableCell sx={{ fontWeight: 700, color: TOKENS.muted, fontSize: 12 }}>ADD</TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {rx.details.map((row, idx) => (
+                              <TableRow 
+                                key={row.id ?? row.eye ?? idx}
+                                sx={{ 
+                                  borderBottom: `1px solid ${TOKENS.divider}`,
+                                  '&:last-child': { borderBottom: 'none' }
+                                }}
+                              >
+                                <TableCell sx={{ fontWeight: 600, color: TOKENS.textPrimary }}>{row.eye}</TableCell>
+                                <TableCell>{formatPrescriptionVal(row.sph)}</TableCell>
+                                <TableCell>{formatPrescriptionVal(row.cyl)}</TableCell>
+                                <TableCell>{formatPrescriptionVal(row.axis)}</TableCell>
+                                <TableCell sx={{ fontWeight: 500 }}>{formatPrescriptionVal(row.pd)}</TableCell>
+                                <TableCell>{formatPrescriptionVal(row.add)}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      ) : null}
+                    </Box>
+                  );
+                })}
+              </Box>
+            </>
+          ) : null}
         </Box>
       </Box>
 

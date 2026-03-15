@@ -90,9 +90,11 @@ export function useProductDetailPage(initialVariantId?: string | null) {
 
   const handleAddWithPrescription = async (prescription: PrescriptionData) => {
     if (!addToCartPayload) return;
-    if (variantAlreadyInCart) {
+    // Allow adding same variant with different prescription (separate line items)
+    // Only reject if variant already in cart WITHOUT prescription (can't mix)
+    if (variantAlreadyInCart && cartLineHasPrescription === false) {
       toast.error(
-        "This product is already in your cart. You cannot add the same product again with a different option (with/without prescription)."
+        "This product is already in your cart without prescription. You cannot add the same product with prescription. Please place a separate order."
       );
       return;
     }
@@ -107,10 +109,16 @@ export function useProductDetailPage(initialVariantId?: string | null) {
       productVariantId: variantId,
       quantity: 1,
     });
-    let item = cart?.items?.find((i) => i.productVariantId === variantId);
+    // Get the LAST item with this variant (newly added), not first
+    // Important: when same variant added multiple times with different prescriptions,
+    // we need to link the prescription to the specific new cart item, not an old one
+    const variantItems = cart?.items?.filter((i) => i.productVariantId === variantId);
+    let item = variantItems?.[variantItems.length - 1];
+    
     if (!item && cart) {
       const fresh = await queryClient.fetchQuery<CartDto>({ queryKey: ["cart"] });
-      item = fresh?.items?.find((i) => i.productVariantId === variantId);
+      const freshVariantItems = fresh?.items?.filter((i) => i.productVariantId === variantId);
+      item = freshVariantItems?.[freshVariantItems?.length - 1];
     }
     if (item) {
       setCartItemPrescription(item.id, prescription);

@@ -195,6 +195,25 @@ export function OrderListCard({
                 color: "#3730A3",
               }}
             />
+            {summary.prescriptions && summary.prescriptions.length > 0 && (
+              <>
+                <Typography component="span" sx={{ color: "rgba(0,0,0,0.3)", mx: 0.25 }}>
+                  •
+                </Typography>
+                <Chip
+                  label="📋 Prescription"
+                  size="small"
+                  sx={{
+                    height: 22,
+                    borderRadius: 999,
+                    fontSize: 11,
+                    fontWeight: 600,
+                    bgcolor: "#FEF3C7",
+                    color: "#92400E",
+                  }}
+                />
+              </>
+            )}
           </>
         )}
       </Box>

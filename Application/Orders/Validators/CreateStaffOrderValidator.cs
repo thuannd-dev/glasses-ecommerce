@@ -1,4 +1,5 @@
 using Application.Orders.Commands;
+using Application.Orders.DTOs;
 using Domain;
 using FluentValidation;
 
@@ -29,8 +30,31 @@ public sealed class CreateStaffOrderValidator : AbstractValidator<CreateStaffOrd
                 .NotEmpty().WithMessage("Order must have at least one item.")
                 .Must(items => items != null && items.All(i => i != null && i.ProductVariantId != Guid.Empty))
                 .WithMessage("One or more items are null or have invalid (empty) product variant IDs.")
-                .Must(items => items != null && items.Where(i => i != null).Select(i => i.ProductVariantId).Distinct().Count() == items.Count(i => i != null))
-                .WithMessage("Duplicate product variant IDs are not allowed in the same order.");
+                .Must(items => {
+                    if (items == null) return false;
+                    
+                    // Non-prescription items must have unique variants (they will be merged by variant)
+                    List<OrderItemInputDto> nonPrescriptionItems = items
+                        .Where(i => i != null && i.Prescription == null)
+                        .ToList();
+                    List<Guid> nonPrescriptionVariants = nonPrescriptionItems
+                        .Select(i => i.ProductVariantId)
+                        .ToList();
+                    
+                    // Check for duplicate non-prescription items
+                    if (nonPrescriptionVariants.Count != nonPrescriptionVariants.Distinct().Count())
+                        return false;
+                    
+                    // A variant cannot appear as both prescription AND non-prescription items
+                    List<Guid> prescriptionVariants = items
+                        .Where(i => i != null && i.Prescription != null)
+                        .Select(i => i.ProductVariantId)
+                        .ToList();
+                    
+                    var conflictingVariants = nonPrescriptionVariants.Intersect(prescriptionVariants).ToList();
+                    return conflictingVariants.Count == 0;
+                })
+                .WithMessage("Non-prescription items with the same variant must be merged. A variant cannot appear as both prescription and non-prescription in the same order.");
 
             RuleForEach(x => x.Dto.Items).ChildRules(item =>
             {

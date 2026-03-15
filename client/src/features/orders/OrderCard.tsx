@@ -241,6 +241,40 @@ export function OrderCard({ orderSummary }: OrderCardProps) {
           </Box>
         )}
 
+        {/* Prescription Display */}
+        {orderSummary.prescriptions && orderSummary.prescriptions.length > 0 && (
+          <Box sx={{ mt: 2.5, pt: 2.5, borderTop: `1px solid ${PALETTE.divider}` }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: PALETTE.textMain }}>
+              📋 Prescription
+            </Typography>
+            {orderSummary.prescriptions.map((rx) => (
+              <Box key={rx.id || 'prescription'} sx={{ mb: 1.5 }}>
+                {/* Inline prescription table */}
+                {rx.details && rx.details.length > 0 && (
+                  <Box sx={{ fontSize: 13, color: PALETTE.textSecondary }}>
+                    <Box sx={{ display: 'grid', gridTemplateColumns: 'auto 1fr 1fr 1fr 1fr', gap: 1, mb: 1 }}>
+                      <Box sx={{ fontWeight: 600 }}>Eye</Box>
+                      <Box sx={{ fontWeight: 600 }}>SPH</Box>
+                      <Box sx={{ fontWeight: 600 }}>CYL</Box>
+                      <Box sx={{ fontWeight: 600 }}>Axis</Box>
+                      <Box sx={{ fontWeight: 600 }}>PD</Box>
+                    </Box>
+                    {rx.details.map((detail, i) => (
+                      <Box key={i} sx={{ display: 'grid', gridTemplateColumns: 'auto 1fr 1fr 1fr 1fr', gap: 1 }}>
+                        <Box>{detail.eye}</Box>
+                        <Box>{detail.sph ?? '-'}</Box>
+                        <Box>{detail.cyl ?? '-'}</Box>
+                        <Box>{detail.axis ?? '-'}</Box>
+                        <Box>{detail.pd ?? '-'}</Box>
+                      </Box>
+                    ))}
+                  </Box>
+                )}
+              </Box>
+            ))}
+          </Box>
+        )}
+
         <Box
           sx={{
             display: "flex",

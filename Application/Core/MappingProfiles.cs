@@ -133,7 +133,8 @@ public sealed class MappingProfiles : Profile
                 s.SalesStaff != null ? s.SalesStaff.DisplayName : null))
             .ForMember(d => d.ItemCount, o => o.MapFrom(s => s.OrderItems.Count))
             .ForMember(d => d.ExpectedStockDate, o => o.Ignore())
-            .ForMember(d => d.PrescriptionStatus, o => o.Ignore())
+            .ForMember(d => d.PrescriptionStatus, o => o.MapFrom(s => s.Prescriptions.Any() ? "lens_ordered" : null))
+            .ForMember(d => d.Prescriptions, o => o.MapFrom(s => s.Prescriptions))
             .ForMember(d => d.ShipmentId, o => o.Ignore())
             .ForMember(d => d.TrackingNumber, o => o.Ignore())
             .ForMember(d => d.Carrier, o => o.Ignore())
@@ -249,7 +250,9 @@ public sealed class MappingProfiles : Profile
                                     .FirstOrDefault()
                                 : null))
                         : null
-                ).FirstOrDefault()));
+                ).FirstOrDefault()))
+            .ForMember(d => d.PrescriptionStatus, o => o.MapFrom(s => s.Prescriptions.Any() ? "lens_ordered" : null))
+            .ForMember(d => d.Prescriptions, o => o.MapFrom(s => s.Prescriptions));
 
         // Inventory transaction mappings
         CreateMap<InventoryTransaction, Application.Inventory.DTOs.InventoryTransactionDto>()
