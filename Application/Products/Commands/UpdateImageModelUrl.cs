@@ -17,7 +17,7 @@ public sealed class UpdateImageModelUrl
         public required UpdateImageModelUrlDto Dto { get; set; }
     }
 
-    internal sealed class Handler(AppDbContext context, IUserAccessor userAccessor)
+    internal sealed class Handler(AppDbContext context)
         : IRequestHandler<Command, Result<Unit>>
     {
         public async Task<Result<Unit>> Handle(Command request, CancellationToken ct)
@@ -31,6 +31,8 @@ public sealed class UpdateImageModelUrl
 
             image.ModelUrl = string.IsNullOrWhiteSpace(request.Dto.ModelUrl) ? null : request.Dto.ModelUrl;
 
+            if (!context.ChangeTracker.HasChanges())
+                return Result<Unit>.Success(Unit.Value);
 
             bool success = await context.SaveChangesAsync(ct) > 0;
 
