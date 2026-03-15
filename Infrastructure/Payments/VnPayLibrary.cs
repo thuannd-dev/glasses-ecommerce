@@ -28,8 +28,7 @@ internal sealed class VnPayLibrary
         var orderId = vnPay.GetResponseData("vnp_TxnRef");
         var vnPayTranId = vnPay.GetResponseData("vnp_TransactionNo");
         var vnpResponseCode = vnPay.GetResponseData("vnp_ResponseCode");
-        var vnpSecureHash =
-            collection.FirstOrDefault(k => k.Key == "vnp_SecureHash").Value; //hash của dữ liệu trả về
+        var vnpSecureHash = collection.FirstOrDefault(k => k.Key == "vnp_SecureHash").Value.ToString(); //hash của dữ liệu trả về
         var orderInfo = vnPay.GetResponseData("vnp_OrderInfo");
 
         var checkSignature =
@@ -78,7 +77,7 @@ internal sealed class VnPayLibrary
 
         return "127.0.0.1";
     }
-    public void AddRequestData(string key, string value)
+    public void AddRequestData(string key, string? value)
     {
         if (!string.IsNullOrEmpty(value))
         {
@@ -86,7 +85,7 @@ internal sealed class VnPayLibrary
         }
     }
 
-    public void AddResponseData(string key, string value)
+    public void AddResponseData(string key, string? value)
     {
         if (!string.IsNullOrEmpty(value))
         {
@@ -127,7 +126,16 @@ internal sealed class VnPayLibrary
     {
         var rspRaw = GetResponseData();
         var myChecksum = HmacSha512(secretKey, rspRaw);
-        return myChecksum.Equals(inputHash, StringComparison.InvariantCultureIgnoreCase);
+        
+        if (myChecksum.Length != inputHash.Length)
+        {
+            return false;
+        }
+
+        return CryptographicOperations.FixedTimeEquals(
+            Encoding.UTF8.GetBytes(myChecksum),
+            Encoding.UTF8.GetBytes(inputHash.ToLowerInvariant())
+        );
     }
 
     private string HmacSha512(string key, string inputData)
