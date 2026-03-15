@@ -24,6 +24,7 @@ public sealed class UpdateImageModelUrl
         {
             ProductImage? image = await context.ProductImages
                 .FirstOrDefaultAsync(i => i.Id == request.ImageId &&
+                                        !i.IsDeleted &&
                                          (i.ProductId == request.ProductId || i.ProductVariant!.ProductId == request.ProductId), ct);
 
             if (image == null)

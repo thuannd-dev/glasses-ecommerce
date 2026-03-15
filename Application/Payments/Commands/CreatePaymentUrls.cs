@@ -24,6 +24,15 @@ public sealed class CreatePaymentUrls
     {
         public async Task<Result<string>> Handle(Command request, CancellationToken ct)
         {
+            if (request.Model.Amount <= 0)
+                return Result<string>.Failure("Amount must be greater than zero.", 400);
+
+            if (string.IsNullOrWhiteSpace(request.Model.OrderType))
+                return Result<string>.Failure("Order type is required.", 400);
+
+            if (string.IsNullOrWhiteSpace(request.Model.Name))
+                return Result<string>.Failure("Name is required.", 400);
+
             Guid userId = userAccessor.GetUserId();
 
             bool orderExists = await context.Orders
