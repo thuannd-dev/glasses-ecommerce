@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import agent from "../api/agent";
-import type { AfterSalesTicketsResponse, AfterSalesTicketDto } from "../types/afterSales";
+import type { AfterSalesTicketsResponse } from "../types/afterSales";
 
 interface OperationsTicketsQueryParams {
   resolutionType?: "ReturnAndRefund" | "WarrantyReplace";
