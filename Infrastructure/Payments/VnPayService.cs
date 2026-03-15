@@ -19,7 +19,7 @@ public sealed class VnPayService(IOptions<VnpaySettings> config) : IVnPayService
         pay.AddRequestData("vnp_Version", config.Value.Version);
         pay.AddRequestData("vnp_Command", config.Value.Command);
         pay.AddRequestData("vnp_TmnCode", config.Value.TmnCode);
-        pay.AddRequestData("vnp_Amount", ((int)model.Amount * 100).ToString());
+        pay.AddRequestData("vnp_Amount", Math.Round(model.Amount * 100, 0, MidpointRounding.AwayFromZero).ToString("0"));
         pay.AddRequestData("vnp_CreateDate", timeNow.ToString("yyyyMMddHHmmss"));
         pay.AddRequestData("vnp_CurrCode", config.Value.CurrCode);
         pay.AddRequestData("vnp_IpAddr", pay.GetIpAddress(context));

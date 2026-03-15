@@ -41,13 +41,8 @@ public sealed class CreatePaymentUrls
             if (payment is null)
                 return Result<string>.Failure("No pending BankTransfer payment found for this order.", 404);
 
-            string txnRef = DateTime.Now.Ticks.ToString();
-            payment.TransactionId = txnRef;
-
-            bool saved = await context.SaveChangesAsync(ct) > 0;
-            if (!saved)
-                return Result<string>.Failure("Failed to reserve payment transaction.", 500);
-
+            string txnRef = request.Model.OrderId.ToString();
+            
             request.Model.VnPayTxnRef = txnRef;
 
             HttpContext httpContext = httpContextAccessor.HttpContext

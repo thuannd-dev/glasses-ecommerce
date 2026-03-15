@@ -20,10 +20,12 @@ public sealed class HandleVnPayIpn
         {
             PaymentResponseDto response = request.Response;
 
-            // Response.OrderId chứa vnp_TxnRef (tick ta đã ghi vào Payment.TransactionId)
+            if (!Guid.TryParse(response.OrderId, out Guid orderId))
+                return Result<Unit>.Failure("Invalid transaction reference format in IPN.", 400);
+
             Payment? payment = await context.Payments
                 .FirstOrDefaultAsync(p =>
-                    p.TransactionId == response.OrderId &&
+                    p.OrderId == orderId &&
                     p.PaymentMethod == PaymentMethod.BankTransfer &&
                     p.PaymentStatus == PaymentStatus.Pending, ct);
 
