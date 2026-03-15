@@ -70,6 +70,36 @@ public class PhotoService : IPhotoService
         return null;
     }
 
+    public async Task<PhotoUploadResult?> UploadGlb(IFormFile file)
+    {
+        if (file.Length > 0)
+        {
+            await using Stream stream = file.OpenReadStream();
+
+            RawUploadParams uploadParams = new RawUploadParams
+            {
+                File = new FileDescription(file.FileName, stream),
+                Folder = "glasses/models"
+            };
+
+            var uploadResult = await _cloudinary.UploadAsync(uploadParams);
+
+            if (uploadResult.Error != null)
+            {
+                throw new Exception(uploadResult.Error.Message);
+            }
+
+            return new PhotoUploadResult
+            {
+                PublicId = uploadResult.PublicId,
+                Url = uploadResult.SecureUrl.AbsoluteUri
+            };
+        }
+
+        return null;
+    }
+
+
     public async Task<PhotoUploadResult?> UploadPhotoFromUrl(string imageUrl)
     {
         if (string.IsNullOrWhiteSpace(imageUrl))
