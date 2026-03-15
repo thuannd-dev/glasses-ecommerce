@@ -6,3 +6,4 @@ export { default as ManagerProductDetailScreen } from "./ManagerProductDetailScr
 export { default as ManagerProductCreateWizardScreen } from "./ManagerProductCreateWizardScreen";
 export { default as RevenueReportScreen } from "./RevenueReportScreen";
 export { default as PromotionsScreen } from "./PromotionsScreen";
+export { default as PreOrderSummaryScreen } from "./PreOrderSummaryScreen";

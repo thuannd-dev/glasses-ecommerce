@@ -85,6 +85,7 @@ function mapDetailApiToView(api: ProductDetailApi): ProductDetailView {
     price: v.price,
     compareAtPrice: v.compareAtPrice,
     quantityAvailable: v.quantityAvailable,
+    isPreOrder: v.isPreOrder ?? false,
     images: Array.isArray(v.images)
       ? v.images
           .slice()
@@ -121,6 +122,7 @@ function mapDetailApiToView(api: ProductDetailApi): ProductDetailView {
     bridgeWidth: mainVariant?.bridgeWidth ?? null,
     templeLength: mainVariant?.templeLength ?? null,
     quantityAvailable: mainVariant?.quantityAvailable ?? 0,
+    isPreOrder: mainVariant?.isPreOrder ?? false,
     images,
     variants,
   };

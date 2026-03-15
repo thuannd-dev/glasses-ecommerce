@@ -29,6 +29,14 @@ public sealed class UpdatePolicyValidator : AbstractValidator<UpdatePolicy.Comma
                 .GreaterThanOrEqualTo(0).WithMessage("Minimum order amount must be non-negative.")
                 .When(x => x.Dto.MinOrderAmount.HasValue);
 
+            RuleFor(x => x.Dto.RefundOnlyMaxAmount)
+                .GreaterThanOrEqualTo(0).WithMessage("RefundOnlyMaxAmount must be non-negative.")
+                .When(x => x.Dto.RefundOnlyMaxAmount.HasValue);
+
+            RuleFor(x => x.Dto.RefundWindowDays)
+                .InclusiveBetween(0, 365).WithMessage("RefundWindowDays must be between 0 and 365 days.")
+                .When(x => x.Dto.RefundWindowDays.HasValue);
+
             RuleFor(x => x.Dto.EffectiveFrom)
                 .NotEmpty().WithMessage("Effective from date is required.");
                 

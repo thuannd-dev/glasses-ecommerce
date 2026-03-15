@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Box, LinearProgress, Paper, Typography, TextField, InputAdornment } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 
@@ -10,27 +10,77 @@ import { OrderListCard } from "../components";
 
 export function OrderTypeAllScreen() {
   const [pageNumber, setPageNumber] = useState(1);
-  const pageSize = 5;
+  const pageSize = 5; // client-side page size
   const [searchQuery, setSearchQuery] = useState("");
   const [dateFilter, setDateFilter] = useState<string>("");
 
+  // Load 1 trang lớn từ backend, sau đó phân trang sau khi filter ở client
   const { data, isLoading } = useOperationsOrders({
-    pageNumber,
-    pageSize,
+    pageNumber: 1,
+    pageSize: 50,
   });
 
   const safeOrders: StaffOrderDto[] = Array.isArray(data?.items)
     ? (data!.items as unknown as StaffOrderDto[])
     : [];
-  const totalPages = data?.totalPages ?? 1;
-  const totalCount = data?.totalCount ?? safeOrders.length;
+  const totalCountFromApi = data?.totalCount ?? safeOrders.length;
+
+  const filteredOrders = useMemo(() => {
+    return safeOrders.filter((o) => {
+      // 1) Ẩn hoàn toàn đơn Pending & Cancelled khỏi All
+      const status = String((o as any).orderStatus ?? (o as any).status ?? "").toLowerCase();
+      if (status.includes("pending")) return false;
+      if (status.includes("cancel")) return false;
+
+      // 2) Search by customer phone or order id
+      const q = searchQuery.trim().toLowerCase();
+      if (q) {
+        const phone = (
+          (o as any).customerPhone ??
+          (o as any).walkInCustomerPhone ??
+          ""
+        )
+          .toString()
+          .toLowerCase();
+        const orderId = (o.id ?? "").toString().toLowerCase();
+        if (!phone.includes(q) && !orderId.includes(q)) {
+          return false;
+        }
+      }
+
+      // 3) Date filter by createdAt (yyyy-mm-dd)
+      if (dateFilter) {
+        const d = new Date(o.createdAt);
+        const yyyy = String(d.getFullYear()).padStart(4, "0");
+        const mm = String(d.getMonth() + 1).padStart(2, "0");
+        const dd = String(d.getDate()).padStart(2, "0");
+        const ymd = `${yyyy}-${mm}-${dd}`;
+        if (ymd !== dateFilter) return false;
+      }
+
+      return true;
+    });
+  }, [safeOrders, searchQuery, dateFilter]);
+
+  const effectiveTotalCount = filteredOrders.length;
+  const effectiveTotalPages = Math.max(1, Math.ceil(effectiveTotalCount / pageSize));
+
+  useEffect(() => {
+    if (pageNumber > effectiveTotalPages) {
+      setPageNumber(effectiveTotalPages);
+    }
+  }, [pageNumber, effectiveTotalPages]);
+
+  const currentPage = pageNumber;
+  const startIndex = (currentPage - 1) * pageSize;
+  const visibleOrders = filteredOrders.slice(startIndex, startIndex + pageSize);
 
   return (
     <>
       <OperationsPageHeader
         title="All order types"
-        subtitle="All Operations orders across Standard, Pre-order and Prescription."
-        count={totalCount}
+        subtitle="All Operations orders across Standard, Pre-order and Prescription (excluding pending & cancelled)."
+        count={effectiveTotalCount || totalCountFromApi}
         countLabel="orders"
       />
 
@@ -59,7 +109,7 @@ export function OrderTypeAllScreen() {
         >
           {isLoading ? (
             <LinearProgress sx={{ borderRadius: 1 }} />
-          ) : safeOrders.length === 0 ? (
+          ) : filteredOrders.length === 0 ? (
             <Typography color="text.secondary">No operations orders yet.</Typography>
           ) : (
             <>
@@ -150,57 +200,25 @@ export function OrderTypeAllScreen() {
                   },
                 }}
               >
-                {safeOrders
-                  .filter((o) => {
-                    // Search by customer phone or order id
-                    const q = searchQuery.trim().toLowerCase();
-                    if (q) {
-                      const phone = (
-                        (o as any).customerPhone ??
-                        o.walkInCustomerPhone ??
-                        ""
-                      )
-                        .toString()
-                        .toLowerCase();
-                      const orderId = (o.id ?? "").toString().toLowerCase();
-                      if (!phone.includes(q) && !orderId.includes(q)) {
-                        return false;
-                      }
-                    }
-
-                    // Date filter by createdAt (yyyy-mm-dd)
-                    if (dateFilter) {
-                      const d = new Date(o.createdAt);
-                      const yyyy = String(d.getFullYear()).padStart(4, "0");
-                      const mm = String(d.getMonth() + 1).padStart(2, "0");
-                      const dd = String(d.getDate()).padStart(2, "0");
-                      const ymd = `${yyyy}-${mm}-${dd}`;
-                      if (ymd !== dateFilter) return false;
-                    }
-
-                    return true;
-                  })
-                  .map((o) => (
-                    <OrderListCard
-                      key={o.id}
-                      mode="confirmed"
-                      summary={o}
-                      // No primaryActionLabel / onPrimaryActionClick => read-only view
-                    />
-                  ))}
+                {visibleOrders.map((o) => (
+                  <OrderListCard
+                    key={o.id}
+                    mode="confirmed"
+                    summary={o}
+                    // No primaryActionLabel / onPrimaryActionClick => read-only view
+                  />
+                ))}
               </Box>
 
-              {totalPages > 1 && (
-                <AppPagination
-                  page={pageNumber}
-                  totalPages={totalPages}
-                  onChange={setPageNumber}
-                  totalItems={data?.totalCount}
-                  pageSize={pageSize}
-                  unitLabel="orders"
-                  align="flex-end"
-                />
-              )}
+              <AppPagination
+                page={currentPage}
+                totalPages={effectiveTotalPages}
+                onChange={setPageNumber}
+                totalItems={effectiveTotalCount}
+                pageSize={pageSize}
+                unitLabel="orders"
+                align="flex-end"
+              />
             </>
           )}
         </Paper>

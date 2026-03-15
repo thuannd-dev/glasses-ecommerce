@@ -265,7 +265,7 @@ export function OrderDetailScreen() {
               {order.statusHistories.map((h, idx) => (
                 <Box key={idx} sx={{ mb: 0.75 }}>
                   <Typography>
-                    {h.fromStatus} → <b>{h.toStatus}</b>
+                    <b>{h.toStatus}</b>
                   </Typography>
                   <Typography sx={{ color: "text.secondary" }}>
                     {h.notes || ""}

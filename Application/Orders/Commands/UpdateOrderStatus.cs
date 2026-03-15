@@ -31,13 +31,25 @@ public sealed class UpdateOrderStatus
                 // Clear stale change-tracker state so each retry attempt starts fresh.
                 context.ChangeTracker.Clear();
 
-                // Use RepeatableRead to prevent race condition on stock updates
+                // Serializable prevents phantom reads on the outbound-existence check:
+                // RepeatableRead would allow UpdateOrderStatus to read "no outbound" while
+                // RecordOutbound is mid-transaction inserting one, causing double stock deduction.
+                // Both handlers now hold the same range locks so their outbound checks are serialized.
                 await using IDbContextTransaction transaction =
-                    await context.Database.BeginTransactionAsync(IsolationLevel.RepeatableRead, ct);
+                    await context.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
 
+                // Acquire UPDLOCK+HOLDLOCK on the Orders row upfront — same lock ordering as RecordOutbound
+                // (Orders first, then Stocks). Prevents the S→X upgrade deadlock cycle:
+                // previously this handler took S-lock on Orders, then UPDLOCK on Stocks,
+                // then tried to upgrade S→X on Orders at SaveChanges — forming a cycle if
+                // RecordOutbound held S-lock on Orders waiting for UPDLOCK on Stocks.
                 Order? order = await context.Orders
+                    .FromSqlRaw(
+                        "SELECT * FROM Orders WITH (UPDLOCK, HOLDLOCK) WHERE Id = @p0",
+                        request.OrderId)
                     .Include(o => o.ShipmentInfo)
-                    .FirstOrDefaultAsync(o => o.Id == request.OrderId, ct);
+                    .Include(o => o.Payments)
+                    .FirstOrDefaultAsync(ct);
 
                 if (order == null)
                     return Result<Unit>.Failure("Order not found.", 404);
@@ -68,13 +80,7 @@ public sealed class UpdateOrderStatus
 
                     // Lock stock rows with UPDLOCK
                     List<Guid> variantIds = items.Select(oi => oi.ProductVariantId).Distinct().ToList();
-                    string paramList = string.Join(", ", variantIds.Select((_, i) => $"@p{i}"));
-                    object[] sqlParams = variantIds
-                        .Select((id, i) => (object)new SqlParameter($"@p{i}", id)).ToArray();
-
-                    List<Stock> stocks = await context.Stocks
-                        .FromSqlRaw($"SELECT * FROM Stocks WITH (UPDLOCK) WHERE ProductVariantId IN ({paramList})", sqlParams)
-                        .ToListAsync(ct);
+                    List<Stock> stocks = await context.GetStocksWithLockAsync(variantIds, ct);
                     Dictionary<Guid, Stock> stockByVariant = stocks.ToDictionary(s => s.ProductVariantId);
 
                     // Load variants chỉ khi là PreOrder order — cần biết IsPreOrder của từng item
@@ -147,19 +153,53 @@ public sealed class UpdateOrderStatus
 
                     if (newStatus == OrderStatus.Completed)
                     {
-                        foreach (OrderItem item in items)
-                        {
-                            if (!stockByVariant.TryGetValue(item.ProductVariantId, out Stock? stock))
-                                return Result<Unit>.Failure(
-                                    $"Stock record not found for product variant '{item.ProductVariantId}'.", 409);
-                            if (stock.QuantityOnHand < item.Quantity || stock.QuantityReserved < item.Quantity)
-                                return Result<Unit>.Failure(
-                                    $"Insufficient stock for product variant '{item.ProductVariantId}'.", 409);
+                        // Load all outbound transactions for this order to validate per-variant coverage.
+                        // AnyAsync is too coarse: one stray row would skip deductions for all variants.
+                        // Group by variant and sum quantities so multi-row outbounds (split shipments) are handled correctly.
+                        Dictionary<Guid, int> outboundQtyByVariant = (await context.InventoryTransactions
+                            .Where(t => t.ReferenceType == ReferenceType.Order
+                                && t.ReferenceId == order.Id
+                                && t.TransactionType == TransactionType.Outbound)
+                            .ToListAsync(ct))
+                            .GroupBy(t => t.ProductVariantId)
+                            .ToDictionary(g => g.Key, g => g.Sum(t => t.Quantity));
 
-                            stock.QuantityOnHand -= item.Quantity;
-                            stock.QuantityReserved -= item.Quantity;
-                            stock.UpdatedAt = DateTime.UtcNow;
-                            stock.UpdatedBy = staffUserId;
+                        if (outboundQtyByVariant.Count == 0)
+                        {
+                            // No outbound recorded at all — this order bypassed RecordOutbound (e.g. offline/walk-in).
+                            // Deduct stock here.
+                            foreach (OrderItem item in items)
+                            {
+                                if (!stockByVariant.TryGetValue(item.ProductVariantId, out Stock? stock))
+                                    return Result<Unit>.Failure(
+                                        $"Stock record not found for product variant '{item.ProductVariantId}'.", 409);
+                                if (stock.QuantityOnHand < item.Quantity || stock.QuantityReserved < item.Quantity)
+                                    return Result<Unit>.Failure(
+                                        $"Insufficient stock for product variant '{item.ProductVariantId}'.", 409);
+
+                                stock.QuantityOnHand -= item.Quantity;
+                                stock.QuantityReserved -= item.Quantity;
+                                stock.UpdatedAt = DateTime.UtcNow;
+                                stock.UpdatedBy = staffUserId;
+                            }
+                        }
+                        else
+                        {
+                            // Outbound rows exist — validate full per-variant coverage before skipping deduction.
+                            // Partial coverage (missing variant or short quantity) is a data-integrity violation → 409.
+                            foreach (OrderItem item in items)
+                            {
+                                if (!outboundQtyByVariant.TryGetValue(item.ProductVariantId, out int outboundQty))
+                                    return Result<Unit>.Failure(
+                                        $"Outbound record missing for product variant '{item.ProductVariantId}'. " +
+                                        "Cannot complete order with partial outbound coverage.", 409);
+
+                                if (outboundQty < item.Quantity)
+                                    return Result<Unit>.Failure(
+                                        $"Outbound quantity ({outboundQty}) for product variant '{item.ProductVariantId}' " +
+                                        $"is less than order quantity ({item.Quantity}). Cannot complete order.", 409);
+                            }
+                            // All variants fully covered by outbound — stock already deducted by RecordOutbound.
                         }
                     }
                 }
@@ -189,6 +229,19 @@ public sealed class UpdateOrderStatus
 
                 order.OrderStatus = newStatus;
                 order.UpdatedAt = DateTime.UtcNow;
+
+                // When order is delivered, set payment status to Completed
+                if (newStatus == OrderStatus.Delivered && order.Payments.Count > 0)
+                {
+                    foreach (Payment payment in order.Payments)
+                    {
+                        if (payment.PaymentStatus != PaymentStatus.Refunded)
+                        {
+                            payment.PaymentStatus = PaymentStatus.Completed;
+                            payment.PaymentAt = DateTime.UtcNow;
+                        }
+                    }
+                }
 
                 context.OrderStatusHistories.Add(new OrderStatusHistory
                 {

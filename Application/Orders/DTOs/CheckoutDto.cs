@@ -10,5 +10,5 @@ public sealed class CheckoutDto
     public PaymentMethod PaymentMethod { get; set; } = PaymentMethod.Cod;
     public string? PromoCode { get; set; }
     public string? CustomerNote { get; set; }
-    public PrescriptionInputDto? Prescription { get; set; }
+    public List<OrderItemPrescriptionDto>? Prescriptions { get; set; }
 }

@@ -1,13 +1,5 @@
 import { useState } from "react";
-import {
-  Box,
-  Checkbox,
-  Chip,
-  Collapse,
-  IconButton,
-  Paper,
-  Typography,
-} from "@mui/material";
+import { Box, Checkbox, Chip, Collapse, IconButton, Paper, Typography } from "@mui/material";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
@@ -27,9 +19,10 @@ export interface OrderListCardProps {
   showCheckbox?: boolean;
   selected?: boolean;
   onToggleSelected?: (orderId: string) => void;
-  /** Optional primary action chip on the right (e.g. Processing / Mark shipped) */
-  primaryActionLabel?: string;
-  onPrimaryActionClick?: (orderId: string) => void;
+  /** Optional actions in the expanded detail area */
+  onProcessingClick?: (orderId: string) => void;
+  onMarkShippedClick?: (orderId: string) => void;
+  onMarkDeliveredClick?: (orderId: string) => void;
 }
 
 export function OrderListCard({
@@ -38,8 +31,9 @@ export function OrderListCard({
   showCheckbox,
   selected,
   onToggleSelected,
-  primaryActionLabel,
-  onPrimaryActionClick,
+  onProcessingClick,
+  onMarkShippedClick,
+  onMarkDeliveredClick,
 }: OrderListCardProps) {
   const [expanded, setExpanded] = useState(false);
   const { data, isLoading } = useOperationsOrderDetail(expanded ? summary.id : undefined);
@@ -139,30 +133,6 @@ export function OrderListCard({
             }}
           />
 
-          {/* Optional primary action as secondary chip (e.g. Processing / Mark shipped) */}
-          {(mode === "confirmed" || mode === "packing") && primaryActionLabel && onPrimaryActionClick && (
-            <Chip
-              label={primaryActionLabel}
-              size="small"
-              clickable
-              onClick={(e) => {
-                e.stopPropagation();
-                onPrimaryActionClick(summary.id);
-              }}
-              sx={{
-                fontWeight: 600,
-                fontSize: 12,
-                textTransform: "capitalize",
-                borderRadius: 999,
-                height: 26,
-                px: 1.25,
-                border: "1px solid rgba(249,115,22,0.5)",
-                bgcolor: "rgba(249,115,22,0.08)",
-                color: "#c2410c",
-              }}
-            />
-          )}
-
           <IconButton
             size="small"
             onClick={() => setExpanded((e) => !e)}
@@ -249,11 +219,20 @@ export function OrderListCard({
       </Box>
 
       <Collapse in={expanded} timeout="auto" unmountOnExit>
-        <Box sx={{ mt: 1.5 }}>
+        <Box sx={{ mt: 1.5, display: "flex", flexDirection: "column", gap: 1.5 }}>
           {isLoading || !detail ? (
             <Typography sx={{ fontSize: 13, color: "#6B6B6B" }}>Loading detail...</Typography>
           ) : (
-            <OrderDetailExpanded detail={detail} />
+            <>
+              <OrderDetailExpanded 
+                detail={detail} 
+                showProcessButton={mode === "confirmed" || mode === "packing"}
+                onProcessOrderClick={onProcessingClick}
+                showAddTrackingButton={mode === "confirmed" || mode === "packing"}
+                onAddTrackingClick={onMarkShippedClick}
+                onMarkDeliveredClick={onMarkDeliveredClick}
+              />
+            </>
           )}
         </Box>
       </Collapse>

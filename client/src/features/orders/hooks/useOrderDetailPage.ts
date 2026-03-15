@@ -10,7 +10,7 @@ export function useOrderDetailPage() {
 
   const order = data as CustomerOrderDetailDto | undefined;
   const orderLabel = order?.orderNumber ?? order?.id ?? "";
-  const orderStatus = order?.orderStatus ?? order?.status ?? "";
+  const orderStatus: string = order?.orderStatus ?? order?.status ?? "";
   const items: CustomerOrderItemDto[] = order?.items ?? [];
   const cachedAddress = getOrderShippingAddress(id);
   const addressStr = formatOrderAddress(cachedAddress ?? order?.shippingAddress);

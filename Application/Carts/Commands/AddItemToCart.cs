@@ -68,37 +68,15 @@ public sealed class AddItemToCart
                 await context.SaveChangesAsync(cancellationToken);
             }
 
-            // Check if item already exists in cart
-            CartItem? existingItem = await context.CartItems
-                .FirstOrDefaultAsync(ci => ci.CartId == cart.Id
-                    && ci.ProductVariantId == request.AddCartItemDto.ProductVariantId, cancellationToken);
-
-            if (existingItem != null)
+            // Always create a new CartItem row — each row gets its own unique ID,
+            // allowing the same variant to appear multiple times with separate prescriptions.
+            CartItem cartItem = new()
             {
-                // Update quantity
-                int newQuantity = existingItem.Quantity + request.AddCartItemDto.Quantity;
-
-                // Re-validate stock cho new total quantity, chỉ khi không phải PreOrder
-                if (!productVariant.IsPreOrder
-                    && productVariant.Stock!.QuantityAvailable < newQuantity)
-                {
-                    return Result<CartItemDto>.Failure(
-                        $"Insufficient stock. You already have {existingItem.Quantity} in cart. Only {productVariant.Stock.QuantityAvailable} items available.", 400);
-                }
-
-                existingItem.Quantity = newQuantity;
-            }
-            else
-            {
-                // Add new item
-                CartItem cartItem = new()
-                {
-                    CartId = cart.Id,
-                    ProductVariantId = request.AddCartItemDto.ProductVariantId,
-                    Quantity = request.AddCartItemDto.Quantity
-                };
-                context.CartItems.Add(cartItem);
-            }
+                CartId = cart.Id,
+                ProductVariantId = request.AddCartItemDto.ProductVariantId,
+                Quantity = request.AddCartItemDto.Quantity
+            };
+            context.CartItems.Add(cartItem);
 
             cart.UpdatedAt = DateTime.UtcNow;
             bool success = await context.SaveChangesAsync(cancellationToken) > 0;
@@ -108,10 +86,8 @@ public sealed class AddItemToCart
                 return Result<CartItemDto>.Failure("Failed to add item to cart.", 500);
             }
 
-            // Use ProjectTo for optimal performance - only select needed data
             CartItemDto? cartItemDto = await context.CartItems
-                .Where(ci => ci.CartId == cart.Id
-                    && ci.ProductVariantId == request.AddCartItemDto.ProductVariantId)
+                .Where(ci => ci.Id == cartItem.Id)
                 .ProjectTo<CartItemDto>(mapper.ConfigurationProvider)
                 .FirstOrDefaultAsync(cancellationToken);
 

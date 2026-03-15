@@ -41,6 +41,7 @@ export default function CheckoutPage() {
         setPrivatePromoInput,
         handleApplyActivePromo,
         handleApplyPrivatePromo,
+        handleRemovePromo,
         isApplyingPromo,
         submitting,
         snackbar,
@@ -781,17 +782,43 @@ export default function CheckoutPage() {
                                                                         },
                                                                     }}
                                                                 >
-                                                                    <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
-                                                                        <Typography sx={{ fontSize: 13, fontWeight: 600 }}>
-                                                                            {promo.promoName || promo.promoCode}
-                                                                        </Typography>
-                                                                        <Typography sx={{ fontSize: 11, color: "#6B6B6B" }}>
-                                                                            {estimatedDiscount > 0
-                                                                                ? `Save ${formatMoney(estimatedDiscount)} · New total ${formatMoney(
-                                                                                      estimatedTotal,
-                                                                                  )}`
-                                                                                : `New total ${formatMoney(estimatedTotal)}`}
-                                                                        </Typography>
+                                                                    <Box
+                                                                        sx={{
+                                                                            display: "flex",
+                                                                            flexDirection: "row",
+                                                                            alignItems: "center",
+                                                                            gap: 1,
+                                                                        }}
+                                                                    >
+                                                                        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
+                                                                            <Typography sx={{ fontSize: 13, fontWeight: 600 }}>
+                                                                                {promo.promoName || promo.promoCode}
+                                                                            </Typography>
+                                                                            <Typography sx={{ fontSize: 11, color: "#6B6B6B" }}>
+                                                                                {estimatedDiscount > 0
+                                                                                    ? `Save ${formatMoney(estimatedDiscount)} · New total ${formatMoney(
+                                                                                          estimatedTotal,
+                                                                                      )}`
+                                                                                    : `New total ${formatMoney(estimatedTotal)}`}
+                                                                            </Typography>
+                                                                        </Box>
+                                                                        {selected && (
+                                                                            <Typography
+                                                                                component="span"
+                                                                                sx={{
+                                                                                    fontSize: 14,
+                                                                                    fontWeight: 700,
+                                                                                    ml: 0.5,
+                                                                                    cursor: "pointer",
+                                                                                }}
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    handleRemovePromo();
+                                                                                }}
+                                                                            >
+                                                                                ×
+                                                                            </Typography>
+                                                                        )}
                                                                     </Box>
                                                                 </Button>
                                                             );

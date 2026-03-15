@@ -305,6 +305,21 @@ export function InventoryTransactionsScreen() {
         >
           <Button
             component={NavLink}
+            to="/operations/stock"
+            variant="text"
+            sx={{
+              borderRadius: 999,
+              px: 2.5,
+              py: 0.9,
+              fontWeight: 600,
+              textTransform: "none",
+              color: "#6B6B6B",
+            }}
+          >
+            Stock
+          </Button>
+          <Button
+            component={NavLink}
             to="/operations/inbound"
             variant="text"
             sx={{

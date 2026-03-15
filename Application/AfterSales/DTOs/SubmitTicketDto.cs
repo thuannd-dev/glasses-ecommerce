@@ -8,7 +8,10 @@ namespace Application.AfterSales.DTOs;
 public sealed class SubmitTicketDto
 {
     public required Guid OrderId { get; set; }
-    public Guid? OrderItemId { get; set; }
+    /// <summary>
+    /// List of order item IDs to include in the ticket. If null or empty, ticket is for whole order.
+    /// </summary>
+    public List<Guid>? OrderItemIds { get; set; }
     public required AfterSalesTicketType TicketType { get; set; }
     public required string Reason { get; set; }
     public string? RequestedAction { get; set; }

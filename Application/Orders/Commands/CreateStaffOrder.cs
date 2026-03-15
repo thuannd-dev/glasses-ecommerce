@@ -6,7 +6,6 @@ using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Domain;
 using MediatR;
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Persistence;
@@ -78,16 +77,16 @@ public sealed class CreateStaffOrder
                 }
 
                 // 2. Validate Prescription requirement
-                if (dto.OrderType == OrderType.Prescription && dto.Prescription == null)
+                if (dto.OrderType == OrderType.Prescription && !dto.Items.Any(i => i.Prescription != null))
                     return Result<Guid>.Failure("Prescription details are required for prescription orders.", 400);
 
                 // 3. Validate items and stock
                 if (dto.Items.Count == 0)
                     return Result<Guid>.Failure("Order must have at least one item.", 400);
 
-                // Merge duplicate ProductVariantId entries to prevent DB unique constraint violation
-                // and ensure aggregate stock check is correct
-                List<OrderItemInputDto> mergedItems = dto.Items
+                // Aggregate ALL items by variant for stock validation and reservation.
+                // Prescription items still draw from the same stock pool, so the aggregate is correct.
+                List<OrderItemInputDto> mergedForStock = dto.Items
                     .GroupBy(i => i.ProductVariantId)
                     .Select(g => new OrderItemInputDto
                     {
@@ -96,7 +95,7 @@ public sealed class CreateStaffOrder
                     })
                     .ToList();
 
-                List<Guid> variantIds = mergedItems.Select(i => i.ProductVariantId).ToList();
+                List<Guid> variantIds = mergedForStock.Select(i => i.ProductVariantId).ToList();
                 List<ProductVariant> variants = await context.ProductVariants
                     .Include(pv => pv.Product)
                     .Where(pv => variantIds.Contains(pv.Id))
@@ -105,18 +104,12 @@ public sealed class CreateStaffOrder
                 if (variants.Count != variantIds.Distinct().Count())
                     return Result<Guid>.Failure("One or more product variants not found.", 404);
 
-                // Load stocks with UPDLOCK to prevent race condition on reservation
-                string paramList = string.Join(", ", variantIds.Select((_, i) => $"@p{i}"));
-                object[] sqlParams = variantIds
-                    .Select((id, i) => (object)new SqlParameter($"@p{i}", id)).ToArray();
-
-                await context.Stocks
-                    .FromSqlRaw($"SELECT * FROM Stocks WITH (UPDLOCK) WHERE ProductVariantId IN ({paramList})", sqlParams)
-                    .ToListAsync(ct);
-                // EF Core relationship fixup auto-links variant.Stock
+                // Load stocks with UPDLOCK to prevent race condition on reservation;
+                // EF Core relationship fixup auto-links each variant.Stock navigation property.
+                _ = await context.GetStocksWithLockAsync(variantIds, ct);
 
                 // Ensure all ordered product variants are active
-                foreach (OrderItemInputDto item in mergedItems)
+                foreach (OrderItemInputDto item in mergedForStock)
                 {
                     ProductVariant variant = variants.First(v => v.Id == item.ProductVariantId);
                     if (!variant.IsActive)
@@ -126,7 +119,7 @@ public sealed class CreateStaffOrder
                 // Validate stock for ReadyStock and Prescription orders
                 if (dto.OrderType == OrderType.ReadyStock || dto.OrderType == OrderType.Prescription)
                 {
-                    foreach (OrderItemInputDto item in mergedItems)
+                    foreach (OrderItemInputDto item in mergedForStock)
                     {
                         ProductVariant variant = variants.First(v => v.Id == item.ProductVariantId);
                         if (variant.Stock == null || variant.Stock.QuantityAvailable < item.Quantity)
@@ -135,11 +128,29 @@ public sealed class CreateStaffOrder
                     }
                 }
 
-                // 4. Calculate totals
+                // 4. Calculate totals and build OrderItems.
+                // Items with a prescription are kept as individual order lines so each can hold its own prescription.
+                // Items without a prescription are merged by variant (aggregated quantity).
+                List<OrderItemInputDto> prescriptionItems = dto.Items.Where(i => i.Prescription != null).ToList();
+
+                // inputItem → OrderItem lookup for prescription items (used when linking prescriptions below)
+                Dictionary<OrderItemInputDto, OrderItem> prescriptionItemOrderItemMap = [];
+
                 decimal totalAmount = 0;
                 List<OrderItem> orderItems = new List<OrderItem>();
 
-                foreach (OrderItemInputDto item in mergedItems)
+                // Non-prescription items: merge by variant
+                List<OrderItemInputDto> mergedNonPrescription = dto.Items
+                    .Where(i => i.Prescription == null)
+                    .GroupBy(i => i.ProductVariantId)
+                    .Select(g => new OrderItemInputDto
+                    {
+                        ProductVariantId = g.Key,
+                        Quantity = g.Sum(i => i.Quantity),
+                    })
+                    .ToList();
+
+                foreach (OrderItemInputDto item in mergedNonPrescription)
                 {
                     ProductVariant variant = variants.First(v => v.Id == item.ProductVariantId);
                     decimal unitPrice = variant.Price;
@@ -150,8 +161,26 @@ public sealed class CreateStaffOrder
                         ProductVariantId = item.ProductVariantId,
                         Quantity = item.Quantity,
                         UnitPrice = unitPrice,
-                        OrderId = Guid.Empty // Will be set after order creation
+                        OrderId = Guid.Empty
                     });
+                }
+
+                // Prescription items: one OrderItem per input item to allow a distinct prescription per line
+                foreach (OrderItemInputDto item in prescriptionItems)
+                {
+                    ProductVariant variant = variants.First(v => v.Id == item.ProductVariantId);
+                    decimal unitPrice = variant.Price;
+                    totalAmount += unitPrice * item.Quantity;
+
+                    OrderItem orderItem = new OrderItem
+                    {
+                        ProductVariantId = item.ProductVariantId,
+                        Quantity = item.Quantity,
+                        UnitPrice = unitPrice,
+                        OrderId = Guid.Empty
+                    };
+                    orderItems.Add(orderItem);
+                    prescriptionItemOrderItemMap[item] = orderItem;
                 }
 
                 decimal shippingFee = dto.OrderSource == OrderSource.Offline ? 0 : 0; // TODO: Calculate shipping fee for online orders
@@ -245,7 +274,7 @@ public sealed class CreateStaffOrder
                 // 8. Reserve stock for ReadyStock and Prescription orders; track demand for PreOrder
                 if (dto.OrderType == OrderType.ReadyStock || dto.OrderType == OrderType.Prescription)
                 {
-                    foreach (OrderItemInputDto item in mergedItems)
+                    foreach (OrderItemInputDto item in mergedForStock)
                     {
                         Stock stock = variants.First(v => v.Id == item.ProductVariantId).Stock!;
                         stock.QuantityReserved += item.Quantity;
@@ -255,7 +284,7 @@ public sealed class CreateStaffOrder
                 }
                 else if (dto.OrderType == OrderType.PreOrder)
                 {
-                    foreach (OrderItemInputDto item in mergedItems)
+                    foreach (OrderItemInputDto item in mergedForStock)
                     {
                         ProductVariant variant = variants.First(v => v.Id == item.ProductVariantId);
                         if (variant.Stock == null)
@@ -308,17 +337,19 @@ public sealed class CreateStaffOrder
                 }
 
                 // 11. Create Prescription (lưu nếu có, bất kể OrderType — PreOrder cũng có thể kèm đơn thuốc)
-                if (dto.Prescription != null)
+                foreach (OrderItemInputDto itemWithPrescription in prescriptionItems)
                 {
                     Prescription prescription = new Prescription
                     {
                         OrderId = order.Id,
-                        IsVerified = false,
+                        IsVerified = true,
+                        VerifiedAt = DateTime.UtcNow,
+                        VerifiedBy = staffUserId
                     };
 
                     context.Prescriptions.Add(prescription);
 
-                    foreach (PrescriptionDetailInputDto detail in dto.Prescription.Details)
+                    foreach (PrescriptionDetailInputDto detail in itemWithPrescription.Prescription!.Details)
                     {
                         context.PrescriptionDetails.Add(new PrescriptionDetail
                         {
@@ -331,6 +362,11 @@ public sealed class CreateStaffOrder
                             ADD = detail.ADD,
                         });
                     }
+
+                    // Direct lookup: each prescription item has its own dedicated OrderItem,
+                    // built during OrderItem creation above — no variant-ambiguity possible.
+                    OrderItem orderItem = prescriptionItemOrderItemMap[itemWithPrescription];
+                    orderItem.PrescriptionId = prescription.Id;
                 }
 
                 // 12. Create initial status history

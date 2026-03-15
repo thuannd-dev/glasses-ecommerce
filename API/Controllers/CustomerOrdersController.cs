@@ -37,6 +37,7 @@ public sealed class CustomerOrdersController : BaseApiController
     public async Task<IActionResult> GetMyOrders(
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 10,
+        [FromQuery] string? status = null,
         CancellationToken ct = default)
     {
         //Customer chỉ thấy đơn của mình (filter by UserId)
@@ -44,7 +45,8 @@ public sealed class CustomerOrdersController : BaseApiController
             new GetMyOrders.Query
             {
                 PageNumber = pageNumber,
-                PageSize = pageSize
+                PageSize = pageSize,
+                Status = status
             }, ct));
     }
 

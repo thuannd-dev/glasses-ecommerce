@@ -138,6 +138,7 @@ export type ProductDetailView = {
   bridgeWidth: number | null;
   templeLength: number | null;
   quantityAvailable: number;
+  isPreOrder: boolean;
   images: Array<{ url: string; modelUrl: string | null }>;
   variants: Array<{
     id: string;
@@ -153,6 +154,7 @@ export type ProductDetailView = {
     price: number;
     compareAtPrice: number | null;
     quantityAvailable: number;
+    isPreOrder: boolean;
     images: Array<{ url: string; modelUrl: string | null }>;
   }>;
 };

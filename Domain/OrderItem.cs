@@ -21,4 +21,7 @@ public class OrderItem
 
     // Computed property (not mapped to DB)
     public decimal TotalPrice => Quantity * UnitPrice;
+
+    public Guid? PrescriptionId { get; set; }
+    public Prescription? Prescription { get; set; }
 }

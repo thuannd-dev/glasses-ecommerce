@@ -125,6 +125,76 @@ export interface InventoryInboundRecordsResponse {
   hasNextPage: boolean;
 }
 
+export interface InventoryOutboundRecordItem {
+  orderId: string;
+  orderNumber: string | null;
+  orderStatus: string | null;
+  customerName: string | null;
+  totalItems: number;
+  totalQuantity: number;
+  recordedAt: string;
+  recordedByName: string | null;
+}
+
+export interface InventoryOutboundRecordDetailItem {
+  id: string;
+  productVariantId: string;
+  variantName: string | null;
+  sku: string | null;
+  quantity: number;
+  notes: string | null;
+}
+
+export interface InventoryOutboundRecordDetail {
+  orderId: string;
+  orderNumber: string | null;
+  orderStatus: string | null;
+  customerName: string | null;
+  totalItems: number;
+  totalQuantity: number;
+  recordedAt: string;
+  recordedBy: string | null;
+  recordedByName: string | null;
+  items: InventoryOutboundRecordDetailItem[];
+}
+
+export interface InventoryOutboundRecordsParams {
+  pageNumber?: number;
+  pageSize?: number;
+  orderId?: string;
+}
+
+export interface InventoryOutboundRecordsResponse {
+  items: InventoryOutboundRecordItem[];
+  totalCount: number;
+  pageNumber: number;
+  pageSize: number;
+  totalPages: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
+}
+
+export interface PreOrderSummaryItemDto {
+  productId: string;
+  productName: string;
+  brand?: string;
+  variantId: string;
+  variantName?: string;
+  sku: string;
+  quantityPreOrdered: number;
+  quantityReserved: number;
+  quantityPending: number;
+  isPreOrderVariant: boolean;
+}
+
+export interface PreOrderSummaryResponseDto {
+  totalPreOrderVariants: number;
+  totalPreOrderDemand: number;
+  totalFulfilledQuantity: number;
+  totalPendingQuantity: number;
+  items: PreOrderSummaryItemDto[];
+}
+
 async function createInbound(payload: InventoryAdjustPayload): Promise<unknown> {
   const normalizedNotes = payload.notes?.trim() || null;
   const normalizedSourceType = payload.sourceType?.trim() || "Supplier";
@@ -285,6 +355,72 @@ async function fetchInventoryInboundRecords(
   };
 }
 
+async function fetchInventoryOutboundRecords(
+  params: InventoryOutboundRecordsParams = {},
+): Promise<InventoryOutboundRecordsResponse> {
+  const pageNumber = params.pageNumber ?? 1;
+  const pageSize = params.pageSize ?? 10;
+  const res = await agent.get<InventoryOutboundRecordsResponse>("/operations/inventory/outbound", {
+    params: {
+      pageNumber,
+      pageSize,
+      orderId: params.orderId || undefined,
+    },
+  });
+  const data = res.data;
+  return {
+    items: Array.isArray(data?.items) ? data.items : [],
+    totalCount: data?.totalCount ?? 0,
+    pageNumber: data?.pageNumber ?? pageNumber,
+    pageSize: data?.pageSize ?? pageSize,
+    totalPages: data?.totalPages ?? 1,
+    hasPreviousPage: data?.hasPreviousPage ?? false,
+    hasNextPage: data?.hasNextPage ?? false,
+  };
+}
+
+async function fetchInventoryOutboundDetail(
+  orderId: string,
+): Promise<InventoryOutboundRecordDetail> {
+  const res = await agent.get<InventoryOutboundRecordDetail>(
+    `/operations/inventory/outbound/${orderId}`,
+  );
+  const data = res.data;
+  return {
+    orderId: data?.orderId ?? orderId,
+    orderNumber: data?.orderNumber ?? null,
+    orderStatus: data?.orderStatus ?? null,
+    customerName: data?.customerName ?? null,
+    totalItems: data?.totalItems ?? 0,
+    totalQuantity: data?.totalQuantity ?? 0,
+    recordedAt: data?.recordedAt ?? "",
+    recordedBy: data?.recordedBy ?? null,
+    recordedByName: data?.recordedByName ?? null,
+    items: Array.isArray(data?.items) ? data.items : [],
+  };
+}
+
+async function fetchPreOrderSummary(
+  includeEmptyPreOrders: boolean = false,
+): Promise<PreOrderSummaryResponseDto> {
+  const res = await agent.get<PreOrderSummaryResponseDto>(
+    "/manager/inventory/preorder-summary",
+    {
+      params: {
+        includeEmptyPreOrders,
+      },
+    },
+  );
+  const data = res.data;
+  return {
+    totalPreOrderVariants: data?.totalPreOrderVariants ?? 0,
+    totalPreOrderDemand: data?.totalPreOrderDemand ?? 0,
+    totalFulfilledQuantity: data?.totalFulfilledQuantity ?? 0,
+    totalPendingQuantity: data?.totalPendingQuantity ?? 0,
+    items: Array.isArray(data?.items) ? data.items : [],
+  };
+}
+
 export function useInventoryCatalog(params: InventoryCatalogParams = {}) {
   return useQuery({
     queryKey: ["operations", "inventory", "catalog", params],
@@ -331,5 +467,28 @@ export function useCreateInventoryOutbound() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["operations", "inventory"] });
     },
+  });
+}
+
+
+export function useInventoryOutboundRecords(params: InventoryOutboundRecordsParams = {}) {
+  return useQuery({
+    queryKey: ['operations', 'inventory', 'outbound-records', params],
+    queryFn: () => fetchInventoryOutboundRecords(params),
+  });
+}
+
+export function useInventoryOutboundDetail(orderId: string | undefined) {
+  return useQuery({
+    queryKey: ['operations', 'inventory', 'outbound-detail', orderId],
+    queryFn: () => (orderId ? fetchInventoryOutboundDetail(orderId) : Promise.resolve({} as InventoryOutboundRecordDetail)),
+    enabled: !!orderId,
+  });
+}
+
+export function usePreOrderSummary(includeEmptyPreOrders: boolean = false) {
+  return useQuery({
+    queryKey: ['manager', 'inventory', 'preorder-summary', includeEmptyPreOrders],
+    queryFn: () => fetchPreOrderSummary(includeEmptyPreOrders),
   });
 }

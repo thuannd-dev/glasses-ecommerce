@@ -56,6 +56,15 @@ public sealed class UpdatePolicy
                     return Result<PolicyConfigurationDto>.Failure("WarrantyMonths must be null for non-Warranty policies.", 400);
                 }
 
+                if (policy.PolicyType != PolicyType.Refund && dto.RefundOnlyMaxAmount.HasValue)
+                {
+                    return Result<PolicyConfigurationDto>.Failure("RefundOnlyMaxAmount must be null for non-Refund policies.", 400);
+                }
+                if (policy.PolicyType != PolicyType.Refund && dto.RefundWindowDays.HasValue)
+                {
+                    return Result<PolicyConfigurationDto>.Failure("RefundWindowDays must be null for non-Refund policies.", 400);
+                }
+
                 // Basic Date Validation
                 if (dto.EffectiveTo.HasValue && dto.EffectiveTo <= dto.EffectiveFrom)
                 {
@@ -89,6 +98,8 @@ public sealed class UpdatePolicy
                 policy.CustomizedLensRefundable = dto.CustomizedLensRefundable;
                 policy.EvidenceRequired = dto.EvidenceRequired;
                 policy.MinOrderAmount = dto.MinOrderAmount;
+                policy.RefundOnlyMaxAmount = dto.RefundOnlyMaxAmount;
+                policy.RefundWindowDays = dto.RefundWindowDays;
                 policy.IsActive = dto.IsActive;
                 policy.EffectiveFrom = dto.EffectiveFrom;
                 policy.EffectiveTo = dto.EffectiveTo;

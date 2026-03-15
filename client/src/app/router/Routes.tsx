@@ -29,6 +29,7 @@ import RequireRole from "./RequireRole";
 import SalesLayout from "../../features/Sales/SalesLayout";
 import { OverviewScreen as SalesOverviewScreen } from "../../features/Sales/screens/OverviewScreen";
 import { OrdersScreen as SalesOrdersScreen } from "../../features/Sales/screens/OrdersScreen";
+import { TicketsScreen as SalesTicketsScreen } from "../../features/Sales/screens/TicketsScreen";
 import OperationsLayout from "../../features/Operations/OperationsLayout";
 import {
   PackScreen,
@@ -41,6 +42,8 @@ import {
   InboundInventoryScreen,
   OutboundInventoryScreen,
   InventoryTransactionsScreen,
+  StockInventoryScreen,
+  OperationsAfterSalesTicketsScreen,
 } from "../../features/Operations/screens";
 import ManagerLayout from "../../features/Manager/ManagerLayout";
 import ManagerDashboard from "../../features/Manager/ManagerDashboard";
@@ -50,6 +53,7 @@ import {
   InboundRecordsScreen,
   InboundRecordDetailScreen,
   PromotionsScreen,
+  PreOrderSummaryScreen,
 } from "../../features/Manager/screens";
 import { ManagerProductCreateWizardScreen } from "../../features/Manager/screens";
 import AdminDashboard from "../../features/Admin/AdminDashboard";
@@ -105,6 +109,7 @@ export const router = createBrowserRouter([
             children: [
               { index: true, element: <SalesOverviewScreen /> },
               { path: "orders", element: <SalesOrdersScreen /> },
+              { path: "tickets", element: <SalesTicketsScreen /> },
             ],
           },
         ],
@@ -124,6 +129,8 @@ export const router = createBrowserRouter([
               { path: "standard", element: <StandardScreen /> },
               { path: "pre-order", element: <PreOrderScreen /> },
               { path: "prescription", element: <PrescriptionScreen /> },
+              { path: "tickets", element: <OperationsAfterSalesTicketsScreen /> },
+              { path: "stock", element: <StockInventoryScreen /> },
               { path: "inbound", element: <InboundInventoryScreen /> },
               { path: "outbound", element: <OutboundInventoryScreen /> },
               { path: "inventory-transactions", element: <InventoryTransactionsScreen /> },
@@ -146,6 +153,7 @@ export const router = createBrowserRouter([
               { path: "inbound", element: <InboundRecordsScreen /> },
               { path: "inbound/:id", element: <InboundRecordDetailScreen /> },
               { path: "promotions", element: <PromotionsScreen /> },
+              { path: "preorder-summary", element: <PreOrderSummaryScreen /> },
             ],
           },
         ],

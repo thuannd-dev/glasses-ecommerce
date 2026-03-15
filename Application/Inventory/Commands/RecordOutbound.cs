@@ -4,6 +4,7 @@ using Application.Interfaces;
 using Application.Inventory.DTOs;
 using Domain;
 using MediatR;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Persistence;
@@ -35,10 +36,17 @@ public sealed class RecordOutbound
                 await using IDbContextTransaction transaction =
                     await context.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
 
-                // 1. Validate order exists
+                // 1. Lock Orders row upfront with UPDLOCK+HOLDLOCK before acquiring Stocks locks.
+                //    Both RecordOutbound and UpdateOrderStatus must take the Orders lock first,
+                //    then Stocks — establishing a consistent lock ordering that prevents deadlock cycles.
+                //    Without this, RecordOutbound holds S-lock on Orders then waits for UPDLOCK on Stocks,
+                //    while UpdateOrderStatus holds UPDLOCK on Stocks and then upgrades S→X on Orders.
                 Order? order = await context.Orders
+                    .FromSqlRaw(
+                        "SELECT * FROM Orders WITH (UPDLOCK, HOLDLOCK) WHERE Id = @p0",
+                        request.Dto.OrderId)
                     .Include(o => o.OrderItems)
-                    .FirstOrDefaultAsync(o => o.Id == request.Dto.OrderId, ct);
+                    .FirstOrDefaultAsync(ct);
 
                 if (order == null)
                     return Result<Unit>.Failure("Order not found.", 404);
@@ -65,8 +73,50 @@ public sealed class RecordOutbound
                 if (order.OrderItems.Count == 0)
                     return Result<Unit>.Failure("Order has no items to record outbound.", 400);
 
+                // 5. Lock stock rows with UPDLOCK to prevent race conditions on concurrent outbound requests
+                List<Guid> variantIds = order.OrderItems.Select(oi => oi.ProductVariantId).Distinct().ToList();
+                List<Stock> stocks = await context.GetStocksWithLockAsync(variantIds, ct);
+                List<ProductVariant> variants = await context.ProductVariants
+                    .Where(pv => variantIds.Contains(pv.Id))
+                    .ToListAsync(ct);
+
+                Dictionary<Guid, Stock> stockByVariant = stocks.ToDictionary(s => s.ProductVariantId);
+                Dictionary<Guid, ProductVariant> variantById = variants.ToDictionary(v => v.Id);
+
                 foreach (OrderItem item in order.OrderItems)
                 {
+                    if (!stockByVariant.TryGetValue(item.ProductVariantId, out Stock? stock))
+                        return Result<Unit>.Failure(
+                            $"Stock record not found for product variant '{item.ProductVariantId}'.", 409);
+
+                    if (!variantById.TryGetValue(item.ProductVariantId, out ProductVariant? variant))
+                        return Result<Unit>.Failure(
+                            $"Product variant '{item.ProductVariantId}' not found.", 409);
+
+                    // Validate stock availability based on order type and variant type
+                    bool isPreOrderVariant = variant.IsPreOrder;
+                    bool isPreOrderOrder = order.OrderType == OrderType.PreOrder;
+
+                    // For PreOrder items: must have been auto-fulfilled from inbound (QuantityReserved > 0)
+                    // For regular items: QuantityReserved must cover the quantity
+                    if (stock.QuantityReserved < item.Quantity)
+                    {
+                        string message = isPreOrderVariant || isPreOrderOrder
+                            ? $"Pre-order item not yet fulfilled from inbound for variant '{item.ProductVariantId}'. Expected {item.Quantity} units reserved, but only {stock.QuantityReserved} available."
+                            : $"Reserved quantity is insufficient for product variant '{item.ProductVariantId}'. Expected {item.Quantity} units reserved, but only {stock.QuantityReserved} available.";
+
+                        return Result<Unit>.Failure(message, 409);
+                    }
+
+                    if (stock.QuantityOnHand < item.Quantity)
+                        return Result<Unit>.Failure(
+                            $"Insufficient on-hand stock for product variant '{item.ProductVariantId}'.", 409);
+
+                    stock.QuantityOnHand -= item.Quantity;
+                    stock.QuantityReserved -= item.Quantity;
+                    stock.UpdatedAt = DateTime.UtcNow;
+                    stock.UpdatedBy = staffUserId;
+
                     context.InventoryTransactions.Add(new InventoryTransaction
                     {
                         UserId = staffUserId,

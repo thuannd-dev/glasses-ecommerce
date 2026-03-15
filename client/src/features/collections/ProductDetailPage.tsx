@@ -550,8 +550,8 @@ export default function ProductDetailPage() {
                             </>
                         )}
 
-                        {/* Show Pre-Order only if out of stock */}
-                        {(currentVariant?.quantityAvailable ?? 0) === 0 && (
+                        {/* Show Pre-Order only if out of stock AND variant is enabled for pre-order */}
+                        {(currentVariant?.quantityAvailable ?? 0) === 0 && currentVariant?.isPreOrder && (
                             <Button
                                 variant="contained"
                                 onClick={() => {

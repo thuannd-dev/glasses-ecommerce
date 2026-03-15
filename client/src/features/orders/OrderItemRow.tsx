@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Box, Typography } from "@mui/material";
 import { useProductDetail } from "../../lib/hooks/useProducts";
 import { formatMoney } from "../../lib/utils/format";
@@ -69,7 +68,6 @@ export function OrderItemRow({ item, compact, orderId, showPrescriptionDetails }
     orderId && productVariantId ? getOrderPrescription(orderId, productVariantId) : undefined;
 
   const thumbSize = compact ? 40 : 56;
-  const [isPrescriptionOpen, setIsPrescriptionOpen] = useState(false);
 
   return (
     <Box
@@ -140,26 +138,8 @@ export function OrderItemRow({ item, compact, orderId, showPrescriptionDetails }
         </Typography>
         {prescription &&
           (showPrescriptionDetails ? (
-            <Box sx={{ mt: 0.25 }}>
-              <Typography
-                fontSize={12}
-                fontWeight={700}
-                sx={{
-                  color: "#B68C5A",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 0.5,
-                  cursor: "pointer",
-                }}
-                onClick={() => setIsPrescriptionOpen((v) => !v)}
-              >
-                Prescription details {isPrescriptionOpen ? "▲" : "▼"}
-              </Typography>
-              {isPrescriptionOpen && (
-                <Box sx={{ mt: 0.5 }}>
-                  <PrescriptionDisplay prescription={prescription} variant="inline" />
-                </Box>
-              )}
+            <Box sx={{ mt: 0.5 }}>
+              <PrescriptionDisplay prescription={prescription} variant="inline" />
             </Box>
           ) : (
             <Typography

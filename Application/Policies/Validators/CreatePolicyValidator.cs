@@ -54,6 +54,23 @@ public sealed class CreatePolicyValidator : AbstractValidator<CreatePolicy.Comma
                 .GreaterThanOrEqualTo(0).WithMessage("Minimum order amount must be non-negative.")
                 .When(x => x.Dto.MinOrderAmount.HasValue);
 
+            RuleFor(x => x.Dto.RefundOnlyMaxAmount)
+                .GreaterThanOrEqualTo(0).WithMessage("RefundOnlyMaxAmount must be non-negative.")
+                .When(x => x.Dto.RefundOnlyMaxAmount.HasValue);
+
+            RuleFor(x => x.Dto.RefundWindowDays)
+                .InclusiveBetween(0, 365).WithMessage("RefundWindowDays must be between 0 and 365 days.")
+                .When(x => x.Dto.RefundWindowDays.HasValue);
+
+            When(x => x.Dto.PolicyType != PolicyType.Refund && x.Dto.PolicyType != PolicyType.Unknown, () =>
+            {
+                RuleFor(x => x.Dto.RefundOnlyMaxAmount)
+                    .Null().WithMessage("RefundOnlyMaxAmount must be null for non-Refund policies.");
+
+                RuleFor(x => x.Dto.RefundWindowDays)
+                    .Null().WithMessage("RefundWindowDays must be null for non-Refund policies.");
+            });
+
             RuleFor(x => x.Dto.EffectiveFrom)
                 .NotEmpty().WithMessage("Effective from date is required.");
                 
