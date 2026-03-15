@@ -5,6 +5,7 @@ using Application.Core;
 using Application.Interfaces;
 using Domain;
 using FluentValidation;
+using Infrastructure.Payments;
 using Infrastructure.Photos;
 using Infrastructure.Security;
 using Microsoft.AspNetCore.Authorization;
@@ -81,6 +82,9 @@ builder.Services.AddMediatR(x =>
 
 builder.Services.AddScoped<IUserAccessor, UserAccessor>();
 builder.Services.AddScoped<IPhotoService, PhotoService>();
+builder.Services.AddScoped<IVnPayService, VnPayService>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.Configure<VnpaySettings>(builder.Configuration.GetSection("VnPay"));
 
 /*
     Register auto mapper and specify where the assembly - [kết quả biên dịch (compile) của project]
