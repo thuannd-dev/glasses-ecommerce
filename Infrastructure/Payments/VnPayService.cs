@@ -11,11 +11,10 @@ public sealed class VnPayService(IOptions<VnpaySettings> config) : IVnPayService
 {
     public string CreatePaymentUrl(PaymentInformationModel model, HttpContext context)
     {
-        var timeZoneById = GetPaymentTimeZone();
-        var timeNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, timeZoneById);
-        var tick = DateTime.Now.Ticks.ToString();
-        var pay = new VnPayLibrary();
-        var urlCallBack = config.Value.ReturnUrl;
+        TimeZoneInfo timeZoneById = GetPaymentTimeZone();
+        DateTime timeNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, timeZoneById);
+        VnPayLibrary pay = new VnPayLibrary();
+        string urlCallBack = config.Value.ReturnUrl;
 
         pay.AddRequestData("vnp_Version", config.Value.Version);
         pay.AddRequestData("vnp_Command", config.Value.Command);
@@ -28,18 +27,18 @@ public sealed class VnPayService(IOptions<VnpaySettings> config) : IVnPayService
         pay.AddRequestData("vnp_OrderInfo", $"{model.Name} {model.OrderDescription} {model.Amount}");
         pay.AddRequestData("vnp_OrderType", model.OrderType);
         pay.AddRequestData("vnp_ReturnUrl", urlCallBack);
-        pay.AddRequestData("vnp_TxnRef", tick);
+        pay.AddRequestData("vnp_NotifyUrl", config.Value.IpnUrl);
+        pay.AddRequestData("vnp_TxnRef", model.VnPayTxnRef);
 
-        var paymentUrl =
-            pay.CreateRequestUrl(config.Value.BaseUrl, config.Value.HashSecret);
+        string paymentUrl = pay.CreateRequestUrl(config.Value.BaseUrl, config.Value.HashSecret);
 
         return paymentUrl;
     }
 
     public PaymentResponseModel PaymentExecute(IQueryCollection collections)
     {
-        var pay = new VnPayLibrary();
-        var response = pay.GetFullResponseData(collections, config.Value.HashSecret);
+        VnPayLibrary pay = new VnPayLibrary();
+        PaymentResponseModel response = pay.GetFullResponseData(collections, config.Value.HashSecret);
 
         return response;
     }

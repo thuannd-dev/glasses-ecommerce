@@ -22,6 +22,7 @@ import CartPage from "../../features/cart/CartPage";
 
 import CheckoutPage from "../../features/checkout/CheckoutPage";
 import OrderSuccessPage from "../../features/collections/OrderSuccessPage";
+import PaymentResultPage from "../../features/payment/PaymentResultPage";
 import OrdersPage from "../../features/orders/OrdersPage";
 import OrderDetailPage from "../../features/orders/OrderDetailPage";
 import ProfilePage from "../../features/Customer/profile/ProfilePage";
@@ -201,6 +202,7 @@ export const router = createBrowserRouter([
       { path: "cart", element: <CartPage /> },
       { path: "checkout", element: <CheckoutPage /> },
       { path: "order-success", element: <OrderSuccessPage /> },
+      { path: "payment/result", element: <PaymentResultPage /> },
       {
         path: "orders",
         element: <Outlet />,
