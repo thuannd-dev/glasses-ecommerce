@@ -3,7 +3,7 @@ using System.Globalization;
 
 namespace Infrastructure.Payments;
 
-public class VnPayCompare : IComparer<string>
+internal sealed class VnPayCompare : IComparer<string>
 {
     public int Compare(string x, string y)
     {

@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace Infrastructure.Payments;
 
-public class VnPayLibrary
+internal sealed class VnPayLibrary
 {
     private readonly SortedList<string, string> _requestData = new SortedList<string, string>(new VnPayCompare());
     private readonly SortedList<string, string> _responseData = new SortedList<string, string>(new VnPayCompare());
@@ -25,8 +25,8 @@ public class VnPayLibrary
             }
         }
 
-        var orderId = Convert.ToInt64(vnPay.GetResponseData("vnp_TxnRef"));
-        var vnPayTranId = Convert.ToInt64(vnPay.GetResponseData("vnp_TransactionNo"));
+        var orderId = vnPay.GetResponseData("vnp_TxnRef");
+        var vnPayTranId = vnPay.GetResponseData("vnp_TransactionNo");
         var vnpResponseCode = vnPay.GetResponseData("vnp_ResponseCode");
         var vnpSecureHash =
             collection.FirstOrDefault(k => k.Key == "vnp_SecureHash").Value; //hash của dữ liệu trả về
@@ -46,16 +46,15 @@ public class VnPayLibrary
             Success = vnpResponseCode.Equals("00"),
             PaymentMethod = "VnPay",
             OrderDescription = orderInfo,
-            OrderId = orderId.ToString(),
-            PaymentId = vnPayTranId.ToString(),
-            TransactionId = vnPayTranId.ToString(),
+            OrderId = orderId,
+            PaymentId = vnPayTranId,
+            TransactionId = vnPayTranId,
             Token = vnpSecureHash,
             VnPayResponseCode = vnpResponseCode
         };
     }
     public string GetIpAddress(HttpContext context)
     {
-        var ipAddress = string.Empty;
         try
         {
             var remoteIpAddress = context.Connection.RemoteIpAddress;
@@ -64,18 +63,17 @@ public class VnPayLibrary
             {
                 if (remoteIpAddress.AddressFamily == AddressFamily.InterNetworkV6)
                 {
-                    remoteIpAddress = Dns.GetHostEntry(remoteIpAddress).AddressList
-                        .FirstOrDefault(x => x.AddressFamily == AddressFamily.InterNetwork);
+                    // Convert to IPv4 safely without blocking on reverse DNS lookup
+                    remoteIpAddress = remoteIpAddress.MapToIPv4();
                 }
         
-                if (remoteIpAddress != null) ipAddress = remoteIpAddress.ToString();
-        
-                return ipAddress;
+                return remoteIpAddress.ToString();
             }
         }
-        catch (Exception ex)
+        catch
         {
-            return ex.Message;
+            // Fallback safely instead of leaking exception details and causing invalid IP format
+            return "127.0.0.1";
         }
 
         return "127.0.0.1";
