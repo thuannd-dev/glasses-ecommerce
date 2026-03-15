@@ -118,6 +118,18 @@ public sealed class ManagerProductsController : BaseApiController
             new ReorderProductImages.Command { ProductId = id, Dto = dto }, ct));
     }
 
+    /// <summary>
+    /// Cập nhật ModelUrl cho một ảnh đã có (dùng chung cho product-level và variant-level).
+    /// Truyền ModelUrl = null để xóa 3D model khỏi ảnh này.
+    /// </summary>
+    [HttpPatch("{id}/images/{imageId}/model-url")]
+    public async Task<IActionResult> UpdateImageModelUrl(Guid id, Guid imageId, UpdateImageModelUrlDto dto, CancellationToken ct)
+    {
+        return HandleResult(await Mediator.Send(
+            new UpdateImageModelUrl.Command { ProductId = id, ImageId = imageId, Dto = dto }, ct));
+    }
+
+
     // ────────────────────────── VARIANT IMAGES ──────────────────────────
 
     /// <summary>
