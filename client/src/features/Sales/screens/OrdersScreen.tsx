@@ -17,6 +17,13 @@ function getStatusColors(status: string) {
       return { border: "#EAEAEA", bg: "#F6F6F6", color: "#4B4B4B" };
     case "Confirmed":
       return { border: "#D4E5D5", bg: "#EEF5EE", color: "#466A4A" };
+    case "Processing":
+      return { border: "#F5D7B8", bg: "#FDE8D4", color: "#9B4B0F" };
+    case "Shipped":
+      return { border: "#D4B5A4", bg: "#F5E8E1", color: "#6B5B56" };
+    case "Delivered":
+    case "Completed":
+      return { border: "#BBE5B8", bg: "#E8F7E6", color: "#2E7D32" };
     case "Rejected":
     case "Cancelled":
       return { border: "#E8CFCF", bg: "#F6EAEA", color: "#8E3B3B" };
@@ -265,7 +272,7 @@ function SalesOrderRow({ summary }: { summary: StaffOrderDto }) {
 }
 
 export function OrdersScreen() {
-  const { pageNumber, setPageNumber, statusFilter, filteredOrders, isLoading, meta, statusTabs } =
+  const { pageNumber, setPageNumber, statusFilter, typeFilter, filteredOrders, isLoading, meta, statusTabs } =
     useOrdersScreen();
 
   return (
@@ -323,11 +330,12 @@ export function OrdersScreen() {
       >
         {statusTabs.map((tab) => {
           const active = statusFilter === tab.value;
+          const typeParam = typeFilter === "All" ? "" : `&type=${typeFilter}`;
           return (
             <Button
               key={tab.value}
               component={RouterLink}
-              to={`/sales/orders?status=${tab.value}`}
+              to={`/sales/orders?status=${tab.value}${typeParam}`}
               sx={{
                 borderRadius: 999,
                 px: 2.5,

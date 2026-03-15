@@ -2,11 +2,15 @@ import type { MeOrderItemDto } from "./order";
 export interface AfterSalesTicketDto {
   id: string;
   status?: string;
+  ticketStatus?: string;
   createdAt?: string;
   orderId?: string;
+  orderType?: string;
   subject?: string;
   reason?: string;
   customerName?: string;
+  ticketType?: string;
+  refundAmount?: number;
   [key: string]: any;
 }
 
@@ -55,6 +59,7 @@ export interface TicketItemDto {
 export interface TicketDetailDto {
   id: string;
   orderId: string;
+  orderType?: string;
   orderItemId?: string;
   ticketType: AfterSalesTicketType;
   originalTicketType?: AfterSalesTicketType;

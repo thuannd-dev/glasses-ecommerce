@@ -290,9 +290,11 @@ public sealed class MappingProfiles : Profile
         // AfterSales mappings
         CreateMap<TicketAttachment, TicketAttachmentDto>();
 
-        CreateMap<AfterSalesTicket, TicketListDto>();
+        CreateMap<AfterSalesTicket, TicketListDto>()
+            .ForMember(d => d.OrderType, o => o.MapFrom(s => s.Order.OrderType.ToString()));
 
         CreateMap<AfterSalesTicket, TicketDetailDto>()
+            .ForMember(d => d.OrderType, o => o.MapFrom(s => s.Order.OrderType.ToString()))
             .ForMember(d => d.Attachments, o => o.MapFrom(s =>
                 s.Attachments.Where(a => a.DeletedAt == null).OrderBy(a => a.CreatedAt)));
 

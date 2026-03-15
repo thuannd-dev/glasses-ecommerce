@@ -31,6 +31,7 @@ public sealed class StaffOrdersController : BaseApiController
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 10,
         [FromQuery] OrderStatus? status = null,
+        [FromQuery] OrderType? orderType = null,
         CancellationToken ct = default)
     {
         //Staff chỉ thấy đơn mình tạo (filter by CreatedBySalesStaff) hoặc đơn online có trạng thái là pending, confirmed hoặc cancelled
@@ -39,7 +40,8 @@ public sealed class StaffOrdersController : BaseApiController
             {
                 PageNumber = pageNumber,
                 PageSize = pageSize,
-                Status = status
+                Status = status,
+                OrderType = orderType
             }, ct));
     }
 

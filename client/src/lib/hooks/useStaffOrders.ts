@@ -14,6 +14,7 @@ export interface StaffOrdersQueryParams {
   pageNumber?: number;
   pageSize?: number;
   status?: string;
+  orderType?: string;
 }
 
 async function fetchStaffOrders(params?: StaffOrdersQueryParams): Promise<StaffOrdersResponse> {
@@ -22,6 +23,7 @@ async function fetchStaffOrders(params?: StaffOrdersQueryParams): Promise<StaffO
       pageNumber: params?.pageNumber ?? 1,
       pageSize: params?.pageSize ?? 10,
       status: params?.status,
+      orderType: params?.orderType,
     },
   });
   return res.data;
@@ -54,7 +56,7 @@ async function fetchStaffRevenueReport(): Promise<StaffRevenueReport> {
 
 export function useStaffOrders(params?: StaffOrdersQueryParams) {
   return useQuery({
-    queryKey: ["staff", "orders", "list", params],
+    queryKey: ["staff", "orders", "list", params?.pageNumber ?? 1, params?.pageSize ?? 10, params?.status, params?.orderType],
     queryFn: () => fetchStaffOrders(params),
   });
 }

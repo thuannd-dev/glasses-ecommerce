@@ -9,6 +9,7 @@ public sealed class TicketDetailDto
 {
     public Guid Id { get; set; }
     public Guid OrderId { get; set; }
+    public string? OrderType { get; set; }
     public Guid? OrderItemId { get; set; }
     public Guid CustomerId { get; set; }
     public AfterSalesTicketType TicketType { get; set; }

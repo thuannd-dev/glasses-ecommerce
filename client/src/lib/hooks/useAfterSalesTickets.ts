@@ -7,6 +7,8 @@ import type { AfterSalesTicketDto, AfterSalesTicketsResponse } from "../types/af
 export interface AfterSalesTicketsQueryParams {
   pageNumber?: number;
   pageSize?: number;
+  ticketType?: string;
+  status?: string;
 }
 
 async function fetchAfterSalesTickets(
@@ -16,6 +18,8 @@ async function fetchAfterSalesTickets(
     params: {
       pageNumber: params?.pageNumber ?? 1,
       pageSize: params?.pageSize ?? 10,
+      ...(params?.ticketType && { ticketType: params.ticketType }),
+      ...(params?.status && { status: params.status }),
     },
   });
 
@@ -44,13 +48,19 @@ export function useStaffAfterSalesTicket(id: string | undefined) {
   });
 }
 
-async function approveStaffAfterSalesTicket(id: string): Promise<AfterSalesTicketDto> {
-  const res = await agent.put<AfterSalesTicketDto>(`/staff/after-sales/${id}/approve`, {});
+async function approveStaffAfterSalesTicket(ticketId: string, dto: { resolutionType: string; staffNotes?: string; refundAmount?: number }): Promise<AfterSalesTicketDto> {
+  const res = await agent.put<AfterSalesTicketDto>(`/staff/after-sales/${ticketId}/approve`, {
+    resolutionType: dto.resolutionType,
+    staffNotes: dto.staffNotes,
+    refundAmount: dto.refundAmount,
+  });
   return res.data;
 }
 
-async function rejectStaffAfterSalesTicket(id: string): Promise<AfterSalesTicketDto> {
-  const res = await agent.put<AfterSalesTicketDto>(`/staff/after-sales/${id}/reject`, {});
+async function rejectStaffAfterSalesTicket(ticketId: string, dto: { reason: string }): Promise<AfterSalesTicketDto> {
+  const res = await agent.put<AfterSalesTicketDto>(`/staff/after-sales/${ticketId}/reject`, {
+    reason: dto.reason,
+  });
   return res.data;
 }
 
@@ -62,7 +72,12 @@ async function requestEvidenceForStaffAfterSalesTicket(id: string): Promise<Afte
 export function useApproveStaffAfterSalesTicket() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => approveStaffAfterSalesTicket(id),
+    mutationFn: (params: { ticketId: string; resolutionType: string; staffNotes?: string; refundAmount?: number }) =>
+      approveStaffAfterSalesTicket(params.ticketId, {
+        resolutionType: params.resolutionType,
+        staffNotes: params.staffNotes,
+        refundAmount: params.refundAmount,
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["staff", "after-sales"] });
     },
@@ -72,7 +87,8 @@ export function useApproveStaffAfterSalesTicket() {
 export function useRejectStaffAfterSalesTicket() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => rejectStaffAfterSalesTicket(id),
+    mutationFn: (params: { ticketId: string; reason: string }) =>
+      rejectStaffAfterSalesTicket(params.ticketId, { reason: params.reason }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["staff", "after-sales"] });
     },

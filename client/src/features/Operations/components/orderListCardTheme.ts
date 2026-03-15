@@ -6,12 +6,16 @@ export const ORDER_CARD_TOKENS = {
   gutterX: 2.75,
 } as const;
 
-export type OrderListCardMode = "confirmed" | "packing" | "shipped";
+export type OrderListCardMode = "confirmed" | "packing" | "in-transit" | "completed";
 
 export function getStatusChipColors(status: string, mode: OrderListCardMode) {
   const s = status.toLowerCase();
 
-  if (s.includes("shipped") || s.includes("delivered") || mode === "shipped") {
+  if (s.includes("shipped") || s.includes("delivered") || mode === "in-transit") {
+    return { bg: "rgba(34,197,94,0.12)", color: "#15803d", border: "rgba(34,197,94,0.4)" };
+  }
+
+  if (s.includes("completed") || mode === "completed") {
     return { bg: "rgba(34,197,94,0.12)", color: "#15803d", border: "rgba(34,197,94,0.4)" };
   }
 

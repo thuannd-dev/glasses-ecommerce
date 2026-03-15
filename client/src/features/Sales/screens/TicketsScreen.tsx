@@ -1,144 +1,38 @@
 import { useState } from "react";
-import { Box, Paper, Typography, Chip, LinearProgress } from "@mui/material";
+import { useSearchParams } from "react-router";
+import { Box, Paper, Typography, LinearProgress } from "@mui/material";
 import { AppPagination } from "../../../app/shared/components/AppPagination";
 import { useAfterSalesTickets } from "../../../lib/hooks/useAfterSalesTickets";
-import type { AfterSalesTicketDto } from "../../../lib/types/afterSales";
-
-function getStatusChip(ticket: AfterSalesTicketDto) {
-  const status = (ticket.status ?? "").toString();
-
-  switch (status) {
-    case "Pending":
-      return {
-        label: "Pending",
-        border: "#EAEAEA",
-        bg: "#F6F6F6",
-        color: "#4B4B4B",
-      };
-    case "Approved":
-      return {
-        label: "Approved",
-        border: "#D4E5D5",
-        bg: "#EEF5EE",
-        color: "#466A4A",
-      };
-    case "Rejected":
-      return {
-        label: "Rejected",
-        border: "#E8CFCF",
-        bg: "#F6EAEA",
-        color: "#8E3B3B",
-      };
-    default:
-      return {
-        label: status || "—",
-        border: "#EAEAEA",
-        bg: "#F6F6F6",
-        color: "#4B4B4B",
-      };
-  }
-}
-
-function TicketRow({ ticket }: { ticket: AfterSalesTicketDto }) {
-  const createdAt = ticket.createdAt ? new Date(ticket.createdAt) : null;
-  const statusChip = getStatusChip(ticket);
-
-  return (
-    <Paper
-      elevation={0}
-      sx={{
-        borderRadius: 3,
-        border: "1px solid rgba(0,0,0,0.08)",
-        bgcolor: "#FFFFFF",
-        boxShadow: "0 12px 30px rgba(0,0,0,0.06)",
-        px: 2.75,
-        py: 2.25,
-        display: "flex",
-        flexDirection: "column",
-        gap: 1.25,
-      }}
-    >
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: 1,
-        }}
-      >
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-          <Typography
-            sx={{ fontSize: 12, fontWeight: 600, color: "#8A8A8A", textTransform: "uppercase" }}
-          >
-            Ticket
-          </Typography>
-          <Typography
-            sx={{
-              fontFamily: "monospace",
-              fontSize: 14,
-              fontWeight: 700,
-              color: "#171717",
-            }}
-          >
-            {ticket.id}
-          </Typography>
-          {ticket.orderId && (
-            <Typography sx={{ fontSize: 12, color: "#6B6B6B" }}>
-              Order:{" "}
-              <Typography component="span" sx={{ fontFamily: "monospace", fontSize: 12 }}>
-                {ticket.orderId}
-              </Typography>
-            </Typography>
-          )}
-        </Box>
-
-        <Chip
-          label={statusChip.label}
-          size="small"
-          sx={{
-            fontWeight: 600,
-            fontSize: 12,
-            borderRadius: 10,
-            border: `1px solid ${statusChip.border}`,
-            bgcolor: statusChip.bg,
-            color: statusChip.color,
-          }}
-        />
-      </Box>
-
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-        {ticket.subject && (
-          <Typography sx={{ fontSize: 13.5, fontWeight: 600, color: "#171717" }}>
-            {ticket.subject}
-          </Typography>
-        )}
-        {ticket.reason && (
-          <Typography sx={{ fontSize: 13, color: "#6B6B6B" }}>{ticket.reason}</Typography>
-        )}
-        {ticket.customerName && (
-          <Typography sx={{ fontSize: 12, color: "#8A8A8A" }}>
-            Customer: {ticket.customerName}
-          </Typography>
-        )}
-        {createdAt && (
-          <Typography sx={{ fontSize: 12, color: "#8A8A8A" }}>
-            Created at: {createdAt.toLocaleString()}
-          </Typography>
-        )}
-      </Box>
-    </Paper>
-  );
-}
+import { TicketStatusFilterTabs } from "../components/TicketStatusFilterTabs";
+import { TicketListCard } from "../components/TicketListCard";
+import type { TicketStatusFilterValue } from "../components/TicketStatusFilterTabs";
 
 export function TicketsScreen() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [pageNumber, setPageNumber] = useState(1);
+
+  // Get filters from URL query params
+  const ticketType = searchParams.get("type") || null;
+  const urlStatus = searchParams.get("status") || null;
+
+  // Map URL status to filter value
+  const statusFilterValue: TicketStatusFilterValue = urlStatus 
+    ? (urlStatus as TicketStatusFilterValue)
+    : "All";
+
   const pageSize = 10;
 
-  const { data, isLoading } = useAfterSalesTickets({ pageNumber, pageSize });
-  const tickets: AfterSalesTicketDto[] = Array.isArray(data?.items)
-    ? (data!.items as AfterSalesTicketDto[])
-    : [];
+  // Map filter value to query param
+  const queryStatus = statusFilterValue === "All" ? undefined : statusFilterValue;
+
+  const { data, isLoading } = useAfterSalesTickets({
+    pageNumber,
+    pageSize,
+    ticketType: ticketType || undefined,
+    status: queryStatus,
+  });
+
+  const tickets = data?.items ?? [];
 
   const meta = data
     ? {
@@ -148,11 +42,30 @@ export function TicketsScreen() {
       }
     : null;
 
+  const handleStatusChange = (newStatus: TicketStatusFilterValue) => {
+    setPageNumber(1);
+
+    // Update URL params
+    const newParams = new URLSearchParams(searchParams);
+    if (newStatus === "All") {
+      newParams.delete("status");
+    } else {
+      newParams.set("status", newStatus);
+    }
+    setSearchParams(newParams, { replace: true });
+  };
+
+  const getDisplayTitle = () => {
+    if (ticketType) {
+      return `${ticketType} Tickets`;
+    }
+    return "After‑sales Tickets";
+  };
+
   return (
     <Box
       sx={{
-        px: { xs: 2, md: 3, lg: 4 },
-        py: 4,
+        px: { xs: 0, md: 0 },
         height: "calc(100vh - 56px)",
         boxSizing: "border-box",
         display: "flex",
@@ -160,13 +73,19 @@ export function TicketsScreen() {
         overflow: "hidden",
       }}
     >
-      <Box sx={{ mb: 2.5 }}>
+      {/* Header */}
+      <Box
+        sx={{
+          px: { xs: 2, md: 3, lg: 4 },
+          py: 3,
+        }}
+      >
         <Typography sx={{ fontSize: 11, letterSpacing: 4, textTransform: "uppercase", color: "#8A8A8A" }}>
           SALES CENTER
         </Typography>
         <Box sx={{ mt: 0.75, display: "flex", alignItems: "baseline", gap: 1.25, flexWrap: "wrap" }}>
           <Typography sx={{ fontSize: { xs: 24, md: 30 }, fontWeight: 800, color: "#171717" }}>
-            After‑sales tickets
+            {getDisplayTitle()}
           </Typography>
           <Typography
             component="span"
@@ -189,55 +108,68 @@ export function TicketsScreen() {
         </Typography>
       </Box>
 
-      {isLoading && (
-        <Box sx={{ px: 0.5, pt: 1 }}>
-          <LinearProgress />
-        </Box>
-      )}
-
-      <Box
+      {/* Main Content */}
+      <Paper
+        elevation={0}
         sx={{
-          mt: 2,
+          px: { xs: 2, md: 3, lg: 4 },
+          py: 3,
+          borderRadius: 3,
+          border: "1px solid rgba(0,0,0,0.08)",
           flex: 1,
+          minHeight: 0,
           display: "flex",
           flexDirection: "column",
-          gap: 2,
           overflow: "hidden",
+          mx: { xs: 2, md: 3, lg: 4 },
+          mb: { xs: 2, md: 3, lg: 4 },
         }}
       >
-        <Box
-          sx={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            gap: 1.5,
-            overflowY: "auto",
-            pr: { md: 1 },
-            scrollbarWidth: "none",
-            "&::-webkit-scrollbar": { display: "none" },
-          }}
-        >
-          {tickets.length === 0 && !isLoading ? (
-            <Typography sx={{ fontSize: 13, color: "#6B6B6B" }}>
-              No after‑sales tickets yet.
-            </Typography>
-          ) : (
-            tickets.map((t) => <TicketRow key={t.id} ticket={t} />)
-          )}
-        </Box>
+        {isLoading ? (
+          <LinearProgress sx={{ borderRadius: 1 }} />
+        ) : (
+          <>
+            <TicketStatusFilterTabs value={statusFilterValue} onChange={handleStatusChange} hideAll={false} />
 
-        {meta && (
-          <AppPagination
-            page={pageNumber}
-            totalPages={meta.totalPages || 1}
-            onChange={setPageNumber}
-            totalItems={meta.totalCount}
-            pageSize={meta.pageSize}
-            unitLabel="tickets"
-            align="flex-end"
-          />
+            {tickets.length === 0 ? (
+              <Typography color="text.secondary">No after‑sales tickets found.</Typography>
+            ) : (
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 2,
+                  mt: 1,
+                  flex: 1,
+                  minHeight: 0,
+                  overflowY: "auto",
+                  pr: { md: 1 },
+                  scrollbarWidth: "none",
+                  "&::-webkit-scrollbar": {
+                    display: "none",
+                  },
+                }}
+              >
+                {tickets.map((t) => (
+                  <TicketListCard key={t.id} summary={t} />
+                ))}
+              </Box>
+            )}
+
+            {meta && meta.totalPages > 1 && (
+              <AppPagination
+                page={pageNumber}
+                totalPages={meta.totalPages || 1}
+                onChange={setPageNumber}
+                totalItems={meta.totalCount}
+                pageSize={meta.pageSize}
+                unitLabel="tickets"
+                align="flex-end"
+              />
+            )}
+          </>
         )}
-      </Box>
+      </Paper>
     </Box>
   );
 }

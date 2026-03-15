@@ -35,6 +35,8 @@ import {
   PackScreen,
   CreateShipmentScreen,
   TrackingScreen,
+  InTransitScreen,
+  CompletedOrdersScreen,
   PreOrderScreen,
   PrescriptionScreen,
   StandardScreen,
@@ -43,7 +45,7 @@ import {
   OutboundInventoryScreen,
   InventoryTransactionsScreen,
   StockInventoryScreen,
-  OperationsAfterSalesTicketsScreen,
+  OperationsTicketsScreen,
 } from "../../features/Operations/screens";
 import ManagerLayout from "../../features/Manager/ManagerLayout";
 import ManagerDashboard from "../../features/Manager/ManagerDashboard";
@@ -125,11 +127,13 @@ export const router = createBrowserRouter([
               { path: "pack", element: <PackScreen /> },
               { path: "create-shipment", element: <CreateShipmentScreen /> },
               { path: "tracking", element: <TrackingScreen /> },
+              { path: "in-transit", element: <InTransitScreen /> },
+              { path: "completed", element: <CompletedOrdersScreen /> },
               { path: "order-types", element: <OrderTypeAllScreen /> },
               { path: "standard", element: <StandardScreen /> },
               { path: "pre-order", element: <PreOrderScreen /> },
               { path: "prescription", element: <PrescriptionScreen /> },
-              { path: "tickets", element: <OperationsAfterSalesTicketsScreen /> },
+              { path: "tickets", element: <OperationsTicketsScreen /> },
               { path: "stock", element: <StockInventoryScreen /> },
               { path: "inbound", element: <InboundInventoryScreen /> },
               { path: "outbound", element: <OutboundInventoryScreen /> },
