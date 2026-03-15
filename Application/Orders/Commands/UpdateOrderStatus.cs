@@ -230,6 +230,28 @@ public sealed class UpdateOrderStatus
                 order.OrderStatus = newStatus;
                 order.UpdatedAt = DateTime.UtcNow;
 
+                // When order is cancelled, automatically mark completed payments as refunded
+                // and create a Completed Refund record to satisfy accounting.
+                if (newStatus == OrderStatus.Cancelled && order.Payments.Count > 0)
+                {
+                    foreach (Payment payment in order.Payments)
+                    {
+                        if (payment.PaymentStatus == PaymentStatus.Completed)
+                        {
+                            payment.PaymentStatus = PaymentStatus.Refunded;
+
+                            context.Set<Refund>().Add(new Refund
+                            {
+                                PaymentId = payment.Id,
+                                Amount = payment.Amount,
+                                RefundStatus = RefundStatus.Completed,
+                                RefundAt = DateTime.UtcNow,
+                                RefundReason = $"Order Cancelled by System (Staff ID {staffUserId})"
+                            });
+                        }
+                    }
+                }
+
                 // When order is delivered, set payment status to Completed
                 if (newStatus == OrderStatus.Delivered && order.Payments.Count > 0)
                 {

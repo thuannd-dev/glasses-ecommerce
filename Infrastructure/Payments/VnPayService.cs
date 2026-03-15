@@ -9,7 +9,7 @@ namespace Infrastructure.Payments;
 
 public sealed class VnPayService(IOptions<VnpaySettings> config) : IVnPayService
 {
-    public string CreatePaymentUrl(PaymentInformationDto model, HttpContext context)
+    public string CreatePaymentUrl(PaymentInformationDto model, string ipAddress)
     {
         TimeZoneInfo timeZoneById = GetPaymentTimeZone();
         DateTime timeNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, timeZoneById);
@@ -22,7 +22,7 @@ public sealed class VnPayService(IOptions<VnpaySettings> config) : IVnPayService
         pay.AddRequestData("vnp_Amount", Math.Round(model.Amount * 100, 0, MidpointRounding.AwayFromZero).ToString("0"));
         pay.AddRequestData("vnp_CreateDate", timeNow.ToString("yyyyMMddHHmmss"));
         pay.AddRequestData("vnp_CurrCode", config.Value.CurrCode);
-        pay.AddRequestData("vnp_IpAddr", pay.GetIpAddress(context));
+        pay.AddRequestData("vnp_IpAddr", ipAddress);
         pay.AddRequestData("vnp_Locale", config.Value.Locale);
         pay.AddRequestData("vnp_OrderInfo", $"{model.Name} {model.OrderDescription} {model.Amount}");
         pay.AddRequestData("vnp_OrderType", model.OrderType);

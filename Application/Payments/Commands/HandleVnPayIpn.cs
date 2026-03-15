@@ -24,6 +24,7 @@ public sealed class HandleVnPayIpn
                 return Result<Unit>.Failure("Invalid transaction reference format in IPN.", 400);
 
             Payment? payment = await context.Payments
+                .Include(p => p.Order)
                 .FirstOrDefaultAsync(p =>
                     p.OrderId == orderId &&
                     p.PaymentMethod == PaymentMethod.BankTransfer &&

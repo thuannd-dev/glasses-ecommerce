@@ -52,31 +52,7 @@ internal sealed class VnPayLibrary
             VnPayResponseCode = vnpResponseCode
         };
     }
-    public string GetIpAddress(HttpContext context)
-    {
-        try
-        {
-            var remoteIpAddress = context.Connection.RemoteIpAddress;
 
-            if (remoteIpAddress != null)
-            {
-                if (remoteIpAddress.AddressFamily == AddressFamily.InterNetworkV6)
-                {
-                    // Convert to IPv4 safely without blocking on reverse DNS lookup
-                    remoteIpAddress = remoteIpAddress.MapToIPv4();
-                }
-
-                return remoteIpAddress.ToString();
-            }
-        }
-        catch
-        {
-            // Fallback safely instead of leaking exception details and causing invalid IP format
-            return "127.0.0.1";
-        }
-
-        return "127.0.0.1";
-    }
     public void AddRequestData(string key, string? value)
     {
         if (!string.IsNullOrEmpty(value))
@@ -100,23 +76,23 @@ internal sealed class VnPayLibrary
 
     public string CreateRequestUrl(string baseUrl, string vnpHashSecret)
     {
-        var data = new StringBuilder();
+        StringBuilder data = new StringBuilder();
 
-        foreach (var (key, value) in _requestData.Where(kv => !string.IsNullOrEmpty(kv.Value)))
+        foreach ((string key, string value) in _requestData.Where(kv => !string.IsNullOrWhiteSpace(kv.Value)))
         {
             data.Append(WebUtility.UrlEncode(key) + "=" + WebUtility.UrlEncode(value) + "&");
         }
 
-        var querystring = data.ToString();
+        string querystring = data.ToString();
 
         baseUrl += "?" + querystring;
-        var signData = querystring;
+        string signData = querystring;
         if (signData.Length > 0)
         {
             signData = signData.Remove(data.Length - 1, 1);
         }
 
-        var vnpSecureHash = HmacSha512(vnpHashSecret, signData);
+        string vnpSecureHash = HmacSha512(vnpHashSecret, signData);
         baseUrl += "vnp_SecureHash=" + vnpSecureHash;
 
         return baseUrl;
@@ -124,9 +100,9 @@ internal sealed class VnPayLibrary
 
     public bool ValidateSignature(string inputHash, string secretKey)
     {
-        var rspRaw = GetResponseData();
-        var myChecksum = HmacSha512(secretKey, rspRaw);
-        
+        string rspRaw = GetResponseData();
+        string myChecksum = HmacSha512(secretKey, rspRaw);
+
         if (myChecksum.Length != inputHash.Length)
         {
             return false;
@@ -140,12 +116,12 @@ internal sealed class VnPayLibrary
 
     private string HmacSha512(string key, string inputData)
     {
-        var hash = new StringBuilder();
-        var keyBytes = Encoding.UTF8.GetBytes(key);
-        var inputBytes = Encoding.UTF8.GetBytes(inputData);
+        StringBuilder hash = new StringBuilder();
+        byte[] keyBytes = Encoding.UTF8.GetBytes(key);
+        byte[] inputBytes = Encoding.UTF8.GetBytes(inputData);
         using (var hmac = new HMACSHA512(keyBytes))
         {
-            var hashValue = hmac.ComputeHash(inputBytes);
+            byte[] hashValue = hmac.ComputeHash(inputBytes);
             foreach (var theByte in hashValue)
             {
                 hash.Append(theByte.ToString("x2"));

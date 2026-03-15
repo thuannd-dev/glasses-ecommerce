@@ -48,7 +48,11 @@ public sealed class CreatePaymentUrls
             HttpContext httpContext = httpContextAccessor.HttpContext
                 ?? throw new InvalidOperationException("HttpContext is not available.");
 
-            string paymentUrl = vnPayService.CreatePaymentUrl(request.Model, httpContext);
+            string ipAddress = httpContext.Connection.RemoteIpAddress?.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6 
+                ? httpContext.Connection.RemoteIpAddress.MapToIPv4().ToString() 
+                : httpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
+
+            string paymentUrl = vnPayService.CreatePaymentUrl(request.Model, ipAddress);
 
             return Result<string>.Success(paymentUrl);
         }
