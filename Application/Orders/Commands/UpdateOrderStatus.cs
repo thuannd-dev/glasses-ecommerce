@@ -62,6 +62,24 @@ public sealed class UpdateOrderStatus
                     return Result<Unit>.Failure(
                         $"Cannot transition from '{oldStatus}' to '{newStatus}'.", 400);
 
+                // Auto-verify prescriptions when order transitions from Pending → Confirmed
+                // Applies to both Prescription and PreOrder orders that have prescriptions
+                if ((order.OrderType == OrderType.Prescription || order.OrderType == OrderType.PreOrder)
+                    && oldStatus == OrderStatus.Pending 
+                    && newStatus == OrderStatus.Confirmed)
+                {
+                    List<Prescription> unverifiedPrescriptions = await context.Prescriptions
+                        .Where(p => p.OrderId == order.Id && !p.IsVerified)
+                        .ToListAsync(ct);
+
+                    foreach (Prescription prescription in unverifiedPrescriptions)
+                    {
+                        prescription.IsVerified = true;
+                        prescription.VerifiedAt = DateTime.UtcNow;
+                        prescription.VerifiedBy = staffUserId;
+                    }
+                }
+
                 // ReadyStock, Prescription và PreOrder orders đều cần điều chỉnh stock khi cancel/complete:
                 //  - ReadyStock / Prescription: khi tạo đơn đã reserve → giải phóng QuantityReserved khi cancel, trừ QuantityOnHand khi complete.
                 //  - PreOrder (thuần / mixed): PreOrder items dùng QuantityPreOrdered (chưa có hàng)

@@ -52,7 +52,8 @@ export function useCheckoutPage() {
   const [submitting, setSubmitting] = useState(false);
   const [snackbar, setSnackbar] = useState<CheckoutSnackbarState>(initialSnackbar);
 
-  const selectedCartItemIds = (location.state as { selectedCartItemIds?: string[] } | null)?.selectedCartItemIds;
+  const selectedCartItemIds = (location.state as { selectedCartItemIds?: string[]; isPreOrder?: boolean } | null)?.selectedCartItemIds;
+  const isPreOrder = (location.state as { selectedCartItemIds?: string[]; isPreOrder?: boolean } | null)?.isPreOrder ?? false;
   
   const cartItems = useMemo(() => cart?.items ?? [], [cart?.items]);
   const items = useMemo(() => {
@@ -201,15 +202,18 @@ export function useCheckoutPage() {
       });
 
       const hasPrescriptionItems = Object.keys(itemPrescriptions).length > 0;
-      const firstPrescription = hasPrescriptionItems
-        ? Object.values(itemPrescriptions)[0]
-        : null;
-      const prescriptionPayload =
-        firstPrescription != null && firstPrescription.details?.length
-          ? toPrescriptionInputDto(firstPrescription)
-          : undefined;
+      
+      // Build prescriptions array: each cart item with prescription becomes an OrderItemPrescriptionDto
+      const prescriptionsArray = hasPrescriptionItems
+        ? Object.entries(itemPrescriptions)
+            .filter(([_, prescription]) => prescription.details?.length > 0)
+            .map(([cartItemId, prescription]) => ({
+              cartItemId,
+              prescription: toPrescriptionInputDto(prescription),
+            }))
+        : [];
 
-      if (hasPrescriptionItems && !prescriptionPayload) {
+      if (hasPrescriptionItems && prescriptionsArray.length === 0) {
         setSnackbar({
           open: true,
           message: "Prescription details are required for prescription items. Please go back and re-enter prescription for your lens selection.",
@@ -223,10 +227,11 @@ export function useCheckoutPage() {
         addressId: createdAddress.id,
         paymentMethod: toApiPaymentMethod(paymentMethod),
         orderNote: address.orderNote || null,
-        orderType: hasPrescriptionItems ? "Prescription" : "ReadyStock",
+        orderType: isPreOrder ? "PreOrder" : hasPrescriptionItems ? "Prescription" : "ReadyStock",
         selectedCartItemIds: items.map((item) => item.id),
         promoCode: appliedPromo?.promoCode ?? undefined,
-        prescription: prescriptionPayload ?? undefined,
+        prescription: undefined, // Don't use old single-prescription payload
+        prescriptions: prescriptionsArray.length > 0 ? prescriptionsArray : undefined,
       });
 
       queryClient.invalidateQueries({ queryKey: ["cart"] });
@@ -275,13 +280,18 @@ export function useCheckoutPage() {
       });
       setOrderItemImages(orderForState.id, variantToImage);
       setOrderShippingAddress(orderForState.id, shippingAddr);
-      const prescriptionsByCartItem = itemPrescriptions;
-      const prescriptionsByVariant: Record<string, PrescriptionData> = {};
-      items.forEach((cartItem) => {
-        const prescription = prescriptionsByCartItem[cartItem.id];
-        if (prescription) prescriptionsByVariant[cartItem.productVariantId] = prescription;
+      
+      // Map prescriptions from cart items to order items
+      // Important: items array is in same order as orderForState.items after creation
+      const prescriptionsByOrderItem: Record<string, PrescriptionData> = {};
+      items.forEach((cartItem, index) => {
+        const orderItem = orderForState.items[index];
+        const prescription = itemPrescriptions[cartItem.id];
+        if (orderItem && prescription) {
+          prescriptionsByOrderItem[orderItem.id] = prescription;
+        }
       });
-      setOrderPrescriptions(orderForState.id, prescriptionsByVariant);
+      setOrderPrescriptions(orderForState.id, prescriptionsByOrderItem);
       const orderItemsWithImage = orderForState.items.map((oItem) => ({
         ...oItem,
         imageUrl: variantToImage[oItem.productVariantId] ?? undefined,

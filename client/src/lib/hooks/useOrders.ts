@@ -18,14 +18,15 @@ export function useCreateOrder() {
         addressId: payload.addressId,
         orderType: payload.orderType ?? "ReadyStock",
         paymentMethod: payload.paymentMethod,
-        orderNote: payload.orderNote ?? null,
+        customerNote: payload.orderNote ?? null,
         selectedCartItemIds: payload.selectedCartItemIds,
       };
       if (payload.promoCode != null && payload.promoCode.trim() !== "") {
         body.promoCode = payload.promoCode.trim();
       }
-      if (payload.prescription != null && payload.prescription.Details?.length) {
-        body.Prescription = payload.prescription;
+      // Send prescriptions array formatted as OrderItemPrescriptionDto for backend
+      if (payload.prescriptions != null && payload.prescriptions.length > 0) {
+        body.prescriptions = payload.prescriptions;
       }
       const res = await agent.post<MeOrderDto>("/me/orders", body);
       return res.data;

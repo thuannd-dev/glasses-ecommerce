@@ -60,6 +60,8 @@ type Props = {
     onClose: () => void;
     /** When true, use full-page layout (for dedicated route) instead of small centered popup. */
     fullPage?: boolean;
+    /** When true, this dialog is used for pre-order prescription. */
+    isPreOrder?: boolean;
     productName: string;
     variantLabel: string;
     productImageUrl: string;
@@ -74,6 +76,7 @@ export function SelectLensesDialog({
     open,
     onClose,
     fullPage,
+    isPreOrder,
     productName,
     variantLabel,
     productImageUrl,
@@ -303,9 +306,29 @@ export function SelectLensesDialog({
                             {/* Step: Prescription form */}
                             {step === "form" && (
                                 <Box sx={{ width: "100%" }}>
-                                    <Typography fontWeight={700} sx={{ mb: 2 }}>
-                                        Fill in your prescription details
-                                    </Typography>
+                                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
+                                        <Typography fontWeight={700}>
+                                            {isPreOrder ? "Pre-Order Prescription Details" : "Fill in your prescription details"}
+                                        </Typography>
+                                        {isPreOrder && (
+                                            <Box
+                                                sx={{
+                                                    display: "inline-flex",
+                                                    alignItems: "center",
+                                                    height: 20,
+                                                    px: 0.75,
+                                                    borderRadius: 999,
+                                                    bgcolor: "#FEF3C7",
+                                                    border: "1px solid #FCD34D",
+                                                    color: "#92400E",
+                                                    fontSize: 11,
+                                                    fontWeight: 600,
+                                                }}
+                                            >
+                                                📦 Pre-Order
+                                            </Box>
+                                        )}
+                                    </Box>
                                     <Table size="small" sx={{ mb: 2 }}>
                                         <TableHead>
                                             <TableRow>

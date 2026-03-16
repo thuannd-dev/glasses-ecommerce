@@ -17,4 +17,6 @@ public sealed class CustomerOrderListDto
     public string? FirstItemImageUrl { get; set; }
 
     public DateTime CreatedAt { get; set; }
+    public string? PrescriptionStatus { get; set; }
+    public List<OrderPrescriptionDto> Prescriptions { get; set; } = [];
 }

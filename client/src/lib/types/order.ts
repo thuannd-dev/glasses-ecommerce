@@ -21,8 +21,16 @@ export interface CreateOrderPayload {
   selectedCartItemIds: string[];
   /** Optional promo code (validated via POST /api/promotions/validate) */
   promoCode?: string | null;
-  /** Required when orderType is Prescription. Matches API PrescriptionInputDto (PascalCase). */
+  /** Deprecated: Use prescriptions array instead */
   prescription?: PrescriptionInputDto | null;
+  /** Array of prescriptions linked to specific cart items */
+  prescriptions?: OrderItemPrescriptionPayload[];
+}
+
+/** Single prescription linked to a cart item in POST /api/me/orders */
+export interface OrderItemPrescriptionPayload {
+  cartItemId: string;
+  prescription: PrescriptionInputDto;
 }
 
 /** Prescription request shape for POST /api/me/orders (PascalCase for API) */
@@ -90,6 +98,8 @@ export interface MyOrderSummaryDto {
   finalAmount: number;
   itemCount: number;
   createdAt: string;
+  prescriptionStatus?: string | null;
+  prescriptions?: StaffOrderPrescriptionDto[];
 }
 
 /** Paged response for GET /api/me/orders */

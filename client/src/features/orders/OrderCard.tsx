@@ -240,7 +240,6 @@ export function OrderCard({ orderSummary }: OrderCardProps) {
             ))}
           </Box>
         )}
-
         <Box
           sx={{
             display: "flex",
