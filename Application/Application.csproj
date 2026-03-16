@@ -23,6 +23,9 @@
 
   <ItemGroup>
     <Folder Include="Interfaces\" />
+    <Folder Include="Payments\" />
+    <Folder Include="Payments\Commands\" />
+    <Folder Include="Payments\DTOs\" />
     <Folder Include="Profiles\Commands\" />
     <Folder Include="Profiles\DTOs\" />
     <Folder Include="Profiles\Queries\" />
