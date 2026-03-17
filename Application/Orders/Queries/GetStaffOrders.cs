@@ -29,6 +29,10 @@ public sealed class GetStaffOrders
                 return Result<PagedResult<StaffOrderListDto>>
                     .Failure("Invalid pagination parameters.", 400);
 
+            if (request.OrderType.HasValue && !Enum.IsDefined(typeof(OrderType), request.OrderType.Value))
+                return Result<PagedResult<StaffOrderListDto>>
+                    .Failure("Invalid order type.", 400);
+
             Guid staffUserId = userAccessor.GetUserId();
 
             IQueryable<Order> query = context.Orders
