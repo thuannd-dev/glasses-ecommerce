@@ -51,6 +51,7 @@ public sealed class ReceiveReturn
 
             AfterSalesTicket? updatedTicket = await context.AfterSalesTickets
                 .AsNoTracking()
+                .AsSplitQuery()
                 .Where(t => t.Id == ticket.Id)
                 .Include(t => t.Order)
                 .ThenInclude(o => o.OrderItems)

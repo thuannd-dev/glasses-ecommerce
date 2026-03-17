@@ -28,6 +28,7 @@ public sealed class GetMyTicketDetail
 
             AfterSalesTicket? ticket = await context.AfterSalesTickets
                 .AsNoTracking()
+                .AsSplitQuery()
                 .Where(t => t.Id == request.Id && t.CustomerId == userId)
                 .Include(t => t.Order)
                 .ThenInclude(o => o.OrderItems)

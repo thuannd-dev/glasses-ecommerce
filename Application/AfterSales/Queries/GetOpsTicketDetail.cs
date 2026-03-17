@@ -24,6 +24,7 @@ public sealed class GetOpsTicketDetail
         {
             AfterSalesTicket? ticket = await context.AfterSalesTickets
                 .AsNoTracking()
+                .AsSplitQuery()
                 .Where(t => t.Id == request.Id &&
                             (t.TicketStatus == AfterSalesTicketStatus.InProgress ||
                              t.TicketStatus == AfterSalesTicketStatus.Resolved ||
