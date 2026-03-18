@@ -525,7 +525,7 @@ export default function CheckoutPage() {
                                     value={paymentMethod}
                                     onChange={(e) =>
                                         setPaymentMethod(
-                                            e.target.value as "COD" | "BANK" | "MOMO",
+                                            e.target.value as "COD" | "BANK",
                                         )
                                     }
                                 >
@@ -538,12 +538,7 @@ export default function CheckoutPage() {
                                         {
                                             value: "BANK",
                                             label: "Bank Transfer",
-                                            description: "Complete your order with a bank transfer.",
-                                        },
-                                        {
-                                            value: "MOMO",
-                                            label: "MoMo / E‑Wallet",
-                                            description: "Pay via MoMo or supported e‑wallets.",
+                                            description: "Complete your order via VNPay.",
                                         },
                                     ].map((opt) => (
                                         <Box

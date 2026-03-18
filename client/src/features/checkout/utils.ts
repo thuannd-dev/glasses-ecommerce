@@ -7,7 +7,6 @@ export function toApiPaymentMethod(ui: PaymentMethodUI): string {
   const map: Record<PaymentMethodUI, string> = {
     COD: "Cod",
     BANK: "BankTransfer",
-    MOMO: "QrCode",
   };
   return map[ui];
 }

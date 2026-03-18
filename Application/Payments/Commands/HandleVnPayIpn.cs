@@ -20,7 +20,10 @@ public sealed class HandleVnPayIpn
         {
             PaymentResponseDto response = request.Response;
 
-            if (!Guid.TryParse(response.OrderId, out Guid orderId))
+            string txnRef = response.OrderId ?? string.Empty;
+            string actualOrderIdStr = txnRef.Contains('_') ? txnRef.Split('_')[0] : txnRef;
+
+            if (!Guid.TryParse(actualOrderIdStr, out Guid orderId))
                 return Result<Unit>.Failure("Invalid transaction reference format in IPN.", 404);
 
             Payment? payment = await context.Payments

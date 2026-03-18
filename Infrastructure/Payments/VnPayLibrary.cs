@@ -1,6 +1,7 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net;
-using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
 using Application.Payments.DTOs;
@@ -29,13 +30,13 @@ internal sealed class VnPayLibrary
         string orderId = vnPay.GetResponseData("vnp_TxnRef");
         string vnPayTranId = vnPay.GetResponseData("vnp_TransactionNo");
         string vnpResponseCode = vnPay.GetResponseData("vnp_ResponseCode");
-        string vnpSecureHash = collection.FirstOrDefault(k => k.Key == "vnp_SecureHash").Value.ToString() ?? string.Empty; //hash của dữ liệu trả về
+        string vnpSecureHash = collection.FirstOrDefault(k => k.Key == "vnp_SecureHash").Value.ToString() ?? string.Empty;
         string orderInfo = vnPay.GetResponseData("vnp_OrderInfo");
-        
+
         string vnpAmountRaw = vnPay.GetResponseData("vnp_Amount");
         decimal vnpAmount = decimal.TryParse(vnpAmountRaw, out decimal parsedAmount) ? (parsedAmount / 100m) : 0m;
 
-        bool checkSignature = vnPay.ValidateSignature(vnpSecureHash, hashSecret); //check Signature
+        bool checkSignature = vnPay.ValidateSignature(vnpSecureHash, hashSecret);
 
         if (!checkSignature)
             return new PaymentResponseDto()
@@ -94,8 +95,13 @@ internal sealed class VnPayLibrary
         string signData = querystring;
         if (signData.Length > 0)
         {
-            signData = signData.Remove(data.Length - 1, 1);
+            signData = signData.Remove(signData.Length - 1, 1);
         }
+
+        Console.WriteLine("\n\n====== VNPAY DEBUG START ======");
+        string partialSecret = !string.IsNullOrEmpty(vnpHashSecret) && vnpHashSecret.Length > 4 ? vnpHashSecret.Substring(0, 4) : "NULL";
+        Console.WriteLine($"[1] ACTIVE HashSecret starts with: {partialSecret}...");
+        Console.WriteLine($"[2] signData Payload: {signData}");
 
         string vnpSecureHash = HmacSha512(vnpHashSecret, signData);
         baseUrl += "vnp_SecureHash=" + vnpSecureHash;

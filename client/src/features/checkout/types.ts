@@ -3,7 +3,7 @@
  */
 
 /** UI payment method; mapped to API lookups.paymentMethod on submit */
-export type PaymentMethodUI = "COD" | "BANK" | "MOMO";
+export type PaymentMethodUI = "COD" | "BANK";
 
 /** Shipping form fields on checkout page */
 export interface CheckoutShippingForm {
