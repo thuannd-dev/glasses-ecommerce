@@ -21,17 +21,19 @@ public sealed class HandleVnPayIpn
             PaymentResponseDto response = request.Response;
 
             if (!Guid.TryParse(response.OrderId, out Guid orderId))
-                return Result<Unit>.Failure("Invalid transaction reference format in IPN.", 400);
+                return Result<Unit>.Failure("Invalid transaction reference format in IPN.", 404);
 
             Payment? payment = await context.Payments
                 .Include(p => p.Order)
                 .FirstOrDefaultAsync(p =>
                     p.OrderId == orderId &&
-                    p.PaymentMethod == PaymentMethod.BankTransfer &&
-                    p.PaymentStatus == PaymentStatus.Pending, ct);
+                    p.PaymentMethod == PaymentMethod.BankTransfer, ct);
 
             if (payment is null)
-                return Result<Unit>.Failure("Payment record not found or already processed.", 409);
+                return Result<Unit>.Failure("Payment record not found.", 404);
+
+            if (payment.PaymentStatus != PaymentStatus.Pending)
+                return Result<Unit>.Failure("Payment already processed.", 409);
 
             if (response.Success)
             {

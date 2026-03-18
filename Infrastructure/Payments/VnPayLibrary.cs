@@ -37,7 +37,8 @@ internal sealed class VnPayLibrary
         if (!checkSignature)
             return new PaymentResponseDto()
             {
-                Success = false
+                Success = false,
+                VnPayResponseCode = "97"
             };
 
         return new PaymentResponseDto()

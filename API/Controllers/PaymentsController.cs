@@ -25,11 +25,19 @@ public sealed class PaymentsController(IVnPayService vnPayService) : BaseApiCont
     {
         PaymentResponseDto response = vnPayService.PaymentExecute(Request.Query);
 
+        if (response.VnPayResponseCode == "97")
+            return Ok(new { RspCode = "97", Message = "Invalid signature" });
+
         Result<Unit> result = await Mediator.Send(new HandleVnPayIpn.Command { Response = response }, ct);
 
-        // VnPay yêu cầu response format cụ thể để xác nhận đã nhận IPN
-        return result.IsSuccess
-            ? Ok(new { RspCode = "00", Message = "Confirm Success" })
-            : Ok(new { RspCode = "99", Message = "Unknown error" });
+        if (result.IsSuccess)
+            return Ok(new { RspCode = "00", Message = "Confirm Success" });
+
+        return result.Code switch
+        {
+            404 => Ok(new { RspCode = "01", Message = "Order not found" }),
+            409 => Ok(new { RspCode = "02", Message = "Order already confirmed" }),
+            _ => Ok(new { RspCode = "99", Message = "Unknown error" })
+        };
     }
 }
