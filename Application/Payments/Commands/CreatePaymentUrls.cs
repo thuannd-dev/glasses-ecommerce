@@ -24,21 +24,13 @@ public sealed class CreatePaymentUrls
     {
         public async Task<Result<string>> Handle(Command request, CancellationToken ct)
         {
-            if (request.Model.Amount <= 0)
-                return Result<string>.Failure("Amount must be greater than zero.", 400);
-
-            if (string.IsNullOrWhiteSpace(request.Model.OrderType))
-                return Result<string>.Failure("Order type is required.", 400);
-
-            if (string.IsNullOrWhiteSpace(request.Model.Name))
-                return Result<string>.Failure("Name is required.", 400);
-
             Guid userId = userAccessor.GetUserId();
 
-            bool orderExists = await context.Orders
-                .AnyAsync(o => o.Id == request.Model.OrderId && o.UserId == userId, ct);
+            Order? order = await context.Orders
+                .Include(o => o.User)
+                .FirstOrDefaultAsync(o => o.Id == request.Model.OrderId && o.UserId == userId, ct);
 
-            if (!orderExists)
+            if (order is null)
                 return Result<string>.Failure("Order not found.", 404);
 
             Payment? payment = await context.Payments
@@ -50,9 +42,11 @@ public sealed class CreatePaymentUrls
             if (payment is null)
                 return Result<string>.Failure("No pending BankTransfer payment found for this order.", 404);
 
-            string txnRef = request.Model.OrderId.ToString();
-            
-            request.Model.VnPayTxnRef = txnRef;
+            request.Model.Amount = payment.Amount;
+            request.Model.OrderType = order.OrderType.ToString();
+            request.Model.Name = order.WalkInCustomerName ?? order.User?.DisplayName ?? "Customer";
+            request.Model.OrderDescription = $"Payment for order {order.Id}";
+            request.Model.VnPayTxnRef = order.Id.ToString();
 
             HttpContext httpContext = httpContextAccessor.HttpContext
                 ?? throw new InvalidOperationException("HttpContext is not available.");

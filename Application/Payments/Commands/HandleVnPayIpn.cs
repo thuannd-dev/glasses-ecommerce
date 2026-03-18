@@ -35,8 +35,14 @@ public sealed class HandleVnPayIpn
             if (payment.PaymentStatus != PaymentStatus.Pending)
                 return Result<Unit>.Failure("Payment already processed.", 409);
 
+            decimal expectedAmount = Math.Round(payment.Amount * 100, 0, MidpointRounding.AwayFromZero) / 100m;
+            if (response.Amount != expectedAmount)
+                return Result<Unit>.Failure("Invalid payment amount.", 400);
+
             if (response.Success)
             {
+                if (string.IsNullOrWhiteSpace(response.TransactionId))
+                    return Result<Unit>.Failure("Missing VNPay transaction ID.", 400);
                 payment.PaymentStatus = PaymentStatus.Completed;
                 payment.TransactionId = response.TransactionId; // real VnPay transaction ID
                 payment.PaymentAt = DateTime.UtcNow;

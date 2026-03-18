@@ -31,6 +31,9 @@ internal sealed class VnPayLibrary
         string vnpResponseCode = vnPay.GetResponseData("vnp_ResponseCode");
         string vnpSecureHash = collection.FirstOrDefault(k => k.Key == "vnp_SecureHash").Value.ToString() ?? string.Empty; //hash của dữ liệu trả về
         string orderInfo = vnPay.GetResponseData("vnp_OrderInfo");
+        
+        string vnpAmountRaw = vnPay.GetResponseData("vnp_Amount");
+        decimal vnpAmount = decimal.TryParse(vnpAmountRaw, out decimal parsedAmount) ? (parsedAmount / 100m) : 0m;
 
         bool checkSignature = vnPay.ValidateSignature(vnpSecureHash, hashSecret); //check Signature
 
@@ -50,7 +53,8 @@ internal sealed class VnPayLibrary
             PaymentId = string.IsNullOrEmpty(vnPayTranId) ? null : vnPayTranId,
             TransactionId = string.IsNullOrEmpty(vnPayTranId) ? null : vnPayTranId,
             Token = vnpSecureHash,
-            VnPayResponseCode = vnpResponseCode
+            VnPayResponseCode = vnpResponseCode,
+            Amount = vnpAmount
         };
     }
 

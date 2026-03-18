@@ -35,6 +35,7 @@ public sealed class PaymentsController(IVnPayService vnPayService) : BaseApiCont
 
         return result.Code switch
         {
+            400 => Ok(new { RspCode = "04", Message = "Invalid amount" }),
             404 => Ok(new { RspCode = "01", Message = "Order not found" }),
             409 => Ok(new { RspCode = "02", Message = "Order already confirmed" }),
             _ => Ok(new { RspCode = "99", Message = "Unknown error" })
