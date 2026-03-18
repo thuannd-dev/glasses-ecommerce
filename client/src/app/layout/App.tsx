@@ -2,15 +2,17 @@ import { Box, Container, CssBaseline } from "@mui/material";
 import NavBar from "./NavBar";
 import DashboardLayout from "./DashboardLayout";
 import { Outlet, ScrollRestoration, useLocation } from "react-router";
-import HomePage from "../../features/home/HomePage";
+import CollectionLandingPage from "../../features/collections/CollectionLandingPage";
 import Footer from "./Footer";
 import ScrollToTopButton from "../components/ScrollToTopButton";
 import ChatbotWidget from "../../features/chatbot/ChatbotWidget";
+import { useEffect, useState } from "react";
 
 function App() {
   const location = useLocation();
 
   const isHome = location.pathname === "/";
+  const isCollectionsLanding = location.pathname === "/collections";
   const isDashboard = ["/sales", "/operations", "/manager", "/admin"].some((p) =>
     location.pathname.startsWith(p),
   );
@@ -26,13 +28,22 @@ function App() {
       <CssBaseline /> {/*Reset Css*/}
 
       {isHome ? (
-        <HomePage />
+        <>
+          <NavBar appearance="hero" showSearch={false} />
+          <CollectionLandingPage />
+          <Footer />
+          <ScrollToTopButton />
+          <ChatbotWidget />
+        </>
       ) : isDashboard ? (
         <DashboardLayout />
       ) : (
         <>
-          <NavBar />
-          <Container maxWidth="xl" sx={{ mt: 3 }}>
+          <NavBar
+            appearance={isCollectionsLanding ? "hero" : undefined}
+            showSearch={isCollectionsLanding ? false : true}
+          />
+          <Container maxWidth="xl" sx={{ mt: isCollectionsLanding ? 0 : 3 }}>
             <Outlet />
           </Container>
           <Footer />

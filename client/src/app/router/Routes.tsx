@@ -2,7 +2,6 @@ import { createBrowserRouter, Navigate, Outlet } from "react-router";
 import App from "../layout/App";
 import AuthLayout from "../layout/AuthLayout";
 
-import HomePage from "../../features/home/HomePage";
 import Counter from "../../features/counter/Counter";
 
 import CollectionLandingPage from "../../features/collections/CollectionLandingPage";
@@ -63,16 +62,7 @@ import AdminDashboard from "../../features/Admin/AdminDashboard";
 import AdminLayout from "../../features/Admin/AdminLayout";
 import RoleManagement from "../../features/Admin/RoleManagement";
 import AdminPolicies from "../../features/Admin/AdminPolicies";
-import ChatbotWidget from "../../features/chatbot/ChatbotWidget";
 export const router = createBrowserRouter([
-  // ======================
-  // HOME (NO NAVBAR)
-  // ======================
-  {
-    path: "/",
-    element: <><HomePage /><ChatbotWidget /></>,
-  },
-
   // ======================
   // AUTH (NO NAVBAR)
   // ======================

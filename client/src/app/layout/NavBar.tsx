@@ -37,72 +37,105 @@ import { normalizeForSearch } from "../../lib/utils/searchUtils";
 
 // ===== Styles =====
 const ACCENT = COLORS.accentGold;
+const NAV_HEIGHT = 56; // keep in sync with hero padding-top
 
-const NAV_BTN_SX = {
-  textTransform: "none",
-  fontWeight: 600,
-  fontSize: 13.5,
-  color: COLORS.textPrimary,
-  px: 1.4,
-  position: "relative",
-  "&::after": {
-    content: '""',
-    position: "absolute",
-    left: "20%",
-    right: "20%",
-    bottom: 0,
-    height: 2,
+type NavAppearance = "hero" | "scrolled";
+
+function makeNavBtnSx(appearance: NavAppearance) {
+  const hero = appearance === "hero";
+  const color = hero ? "rgba(255,255,255,0.92)" : COLORS.textPrimary;
+  const hoverColor = hero ? "#FFFFFF" : "#171717";
+  const underline = hero ? "rgba(255,255,255,0.85)" : ACCENT;
+
+  return {
+    textTransform: "none",
+    fontWeight: 600,
+    fontSize: 13.5,
+    color,
+    px: 1.4,
+    position: "relative",
+    "&::after": {
+      content: '""',
+      position: "absolute",
+      left: "20%",
+      right: "20%",
+      bottom: 0,
+      height: 2,
+      borderRadius: 999,
+      backgroundColor: underline,
+      opacity: 0,
+      transform: "scaleX(0.6)",
+      transition: "opacity 160ms ease, transform 160ms ease",
+    },
+    "&:hover": {
+      backgroundColor: "transparent",
+      color: hoverColor,
+      "&::after": {
+        opacity: hero ? 0.55 : 0.4,
+        transform: "scaleX(1)",
+      },
+    },
+    "&.active": {
+      color: hoverColor,
+      fontWeight: 700,
+      "&::after": {
+        opacity: 1,
+        transform: "scaleX(1)",
+      },
+    },
+  } as const;
+}
+
+function makeAppBarSx(appearance: NavAppearance) {
+  const hero = appearance === "hero";
+  const bg = hero ? "transparent" : "rgba(250,248,244,0.86)";
+  const border = hero ? "transparent" : COLORS.borderSoft;
+  const blur = hero ? 0 : 22;
+  const shadow = hero ? "none" : "0 10px 30px rgba(0,0,0,0.06)";
+
+  return {
+    top: 0,
+    backgroundColor: bg,
+    color: hero ? "rgba(255,255,255,0.92)" : COLORS.textPrimary,
+    borderBottom: `1px solid ${border}`,
+    zIndex: 3000,
+    backdropFilter: blur ? `blur(${blur}px)` : "none",
+    WebkitBackdropFilter: blur ? `blur(${blur}px)` : "none",
+    boxShadow: shadow,
+    transition:
+      "background-color 260ms ease, border-color 260ms ease, box-shadow 260ms ease, color 260ms ease, backdrop-filter 260ms ease",
+  } as const;
+}
+
+function makeSearchBoxSx(appearance: NavAppearance) {
+  const hero = appearance === "hero";
+  const bg = hero ? "rgba(255,255,255,0.10)" : "rgba(255,255,255,0.55)";
+  const border = hero ? "rgba(255,255,255,0.18)" : "rgba(17,24,39,0.12)";
+  const focusBorder = hero ? "rgba(255,255,255,0.32)" : alpha(ACCENT, 0.65);
+  const focusRing = hero ? "rgba(255,255,255,0.18)" : alpha(ACCENT, 0.16);
+
+  return {
+    width: { xs: "100%", sm: 420, md: 520 },
+    maxWidth: 640,
+    display: "flex",
+    alignItems: "center",
+    gap: 1,
+    px: 1.6,
+    height: 40,
     borderRadius: 999,
-    backgroundColor: ACCENT,
-    opacity: 0,
-    transform: "scaleX(0.6)",
-    transition: "opacity 160ms ease, transform 160ms ease",
-  },
-  "&:hover": {
-    backgroundColor: "transparent",
-    color: "#171717",
-    "&::after": {
-      opacity: 0.4,
-      transform: "scaleX(1)",
+    border: `1px solid ${border}`,
+    backgroundColor: bg,
+    backdropFilter: hero ? "blur(12px)" : "blur(18px)",
+    WebkitBackdropFilter: hero ? "blur(12px)" : "blur(18px)",
+    transition:
+      "border-color 200ms ease, box-shadow 200ms ease, background-color 200ms ease, backdrop-filter 200ms ease",
+    "&:focus-within": {
+      borderColor: focusBorder,
+      boxShadow: `0 0 0 1px ${focusRing}`,
+      backgroundColor: hero ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.70)",
     },
-  },
-  "&.active": {
-    color: "#171717",
-    fontWeight: 700,
-    "&::after": {
-      opacity: 1,
-      transform: "scaleX(1)",
-    },
-  },
-} as const;
-
-const APP_BAR_SX = {
-  top: 0,
-  backgroundColor: "rgba(250,248,244,0.92)",
-  color: COLORS.textPrimary,
-  borderBottom: `1px solid ${COLORS.borderSoft}`,
-  zIndex: 3000,
-  backdropFilter: "blur(8px)",
-} as const;
-
-const SEARCH_BOX_SX = {
-  width: { xs: "100%", sm: 420, md: 520 },
-  maxWidth: 640,
-  display: "flex",
-  alignItems: "center",
-  gap: 1,
-  px: 1.5,
-  height: 40,
-  borderRadius: 999,
-  border: `1px solid ${COLORS.borderSoft}`,
-  backgroundColor: COLORS.bgSubtle,
-  transition: "border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease",
-  "&:focus-within": {
-    borderColor: ACCENT,
-    boxShadow: `0 0 0 1px ${alpha(ACCENT, 0.18)}`,
-    backgroundColor: COLORS.bgSurface,
-  },
-} as const;
+  } as const;
+}
 
 /** Format price as USD for premium display (assumes API may return VND; convert if > 1000) */
 function formatPriceUsd(price: number): string {
@@ -208,19 +241,27 @@ const VIEW_ALL_ROW_SX = {
   },
 } as const;
 
-const ICON_BUTTON_SX = {
-  color: COLORS.textSecondary,
-  width: 40,
-  height: 40,
-  borderRadius: "999px",
-  border: "1px solid transparent",
-  transition: "background-color 160ms ease, border-color 160ms ease, transform 160ms ease, color 160ms ease",
-  "&:hover": {
-    backgroundColor: COLORS.bgSubtle,
-    borderColor: COLORS.borderSoft,
-    transform: "translateY(-1px)",
-  },
-} as const;
+function makeIconButtonSx(appearance: NavAppearance) {
+  const hero = appearance === "hero";
+  const color = hero ? "rgba(255,255,255,0.90)" : COLORS.textSecondary;
+  const hoverBg = hero ? "rgba(255,255,255,0.10)" : COLORS.bgSubtle;
+  const hoverBorder = hero ? "rgba(255,255,255,0.14)" : COLORS.borderSoft;
+
+  return {
+    color,
+    width: 40,
+    height: 40,
+    borderRadius: "999px",
+    border: "1px solid transparent",
+    transition:
+      "background-color 200ms ease, border-color 200ms ease, transform 200ms ease, color 200ms ease",
+    "&:hover": {
+      backgroundColor: hoverBg,
+      borderColor: hoverBorder,
+      transform: "translateY(-1px)",
+    },
+  } as const;
+}
 
 const FALLBACK_MENU_ITEMS = [
   { label: "Eyeglasses", to: "/collections/eyeglasses" },
@@ -229,13 +270,23 @@ const FALLBACK_MENU_ITEMS = [
 ] as const;
 
 // ================= COMPONENT =================
-const NavBar = observer(function NavBar() {
+const NavBar = observer(function NavBar({
+  collapsed,
+  appearance,
+  showSearch = true,
+}: {
+  collapsed?: boolean;
+  appearance?: NavAppearance;
+  showSearch?: boolean;
+}) {
   const { uiStore } = useStore();
   const { currentUser } = useAccount();
   const { cart } = useCart();
   const { categories } = useCategories();
   const navigate = useNavigate();
   const location = useLocation();
+  const isHeroPage = location.pathname === "/";
+  const [isPastHero, setIsPastHero] = useState(!isHeroPage);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchDropdownOpen, setSearchDropdownOpen] = useState(false);
   const [searchFocusedIndex, setSearchFocusedIndex] = useState(-1);
@@ -368,6 +419,48 @@ const NavBar = observer(function NavBar() {
     return FALLBACK_MENU_ITEMS.map((m) => ({ label: m.label, to: m.to }));
   }, [categories]);
 
+  // Visual mode: single navbar, style switches by isPastHero (or forced appearance)
+  const computedAppearance: NavAppearance =
+    appearance ?? (isHeroPage ? (isPastHero ? "scrolled" : "hero") : "scrolled");
+
+  // Home-only: observe hero to switch appearance. Other pages: always scrolled.
+  useEffect(() => {
+    if (!isHeroPage || appearance) {
+      setIsPastHero(true);
+      return;
+    }
+
+    setIsPastHero(false);
+    const hero = document.getElementById("home-hero");
+    if (!hero) return;
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        setIsPastHero(!entry.isIntersecting);
+      },
+      { threshold: 0, rootMargin: "-56px 0px 0px 0px" },
+    );
+
+    io.observe(hero);
+    return () => io.disconnect();
+  }, [appearance, isHeroPage]);
+
+  const APP_BAR_SX = useMemo(() => makeAppBarSx(computedAppearance), [computedAppearance]);
+  const SEARCH_BOX_SX = useMemo(
+    () => makeSearchBoxSx(computedAppearance),
+    [computedAppearance],
+  );
+  const ICON_BUTTON_SX = useMemo(
+    () => makeIconButtonSx(computedAppearance),
+    [computedAppearance],
+  );
+  const hero = computedAppearance === "hero";
+  const logoColor = hero ? "rgba(255,255,255,0.92)" : COLORS.textPrimary;
+  const dividerColor = hero ? "rgba(255,255,255,0.14)" : "rgba(0,0,0,0.08)";
+  const searchIconColor = hero ? "rgba(255,255,255,0.70)" : COLORS.textMuted;
+  const searchPlaceholderColor = hero ? "rgba(255,255,255,0.66)" : COLORS.textMuted;
+
   // Sync navbar search với URL khi dropdown đóng (không auto-mở dropdown để tránh mở lại sau khi ấn View all)
   useEffect(() => {
     if (searchDropdownOpen) return;
@@ -419,22 +512,33 @@ const NavBar = observer(function NavBar() {
           key={item.to}
           component={NavLink}
           to={item.to}
-          sx={NAV_BTN_SX}
+          sx={makeNavBtnSx(computedAppearance)}
         >
           {item.label}
         </Button>
       )),
-    [menuItems]
+    [menuItems, computedAppearance]
   );
 
   return (
     <Box sx={{ flexGrow: 1 }}>
-      <AppBar position="fixed" elevation={0} sx={APP_BAR_SX}>
+      <AppBar
+        position="fixed"
+        elevation={0}
+        sx={{
+          ...APP_BAR_SX,
+          opacity: collapsed ? 0 : 1,
+          transform: collapsed ? "translateY(-14px)" : "translateY(0px)",
+          pointerEvents: collapsed ? "none" : "auto",
+          transition:
+            "opacity 220ms ease, transform 220ms ease, background-color 260ms ease, border-color 260ms ease, box-shadow 260ms ease, color 260ms ease, backdrop-filter 260ms ease",
+        }}
+      >
         <Container maxWidth="xl" sx={{ px: { xs: 2, md: 3 } }}>
           <Toolbar
             disableGutters
             sx={{
-              minHeight: 72,
+              minHeight: NAV_HEIGHT,
               display: "flex",
               alignItems: "center",
               gap: { xs: 1.5, md: 3 },
@@ -451,7 +555,7 @@ const NavBar = observer(function NavBar() {
                   fontWeight: 800,
                   letterSpacing: "0.18em",
                   fontSize: 18,
-                  color: COLORS.textPrimary,
+                  color: logoColor,
                 }}
               >
                 EYEWEAR
@@ -464,39 +568,42 @@ const NavBar = observer(function NavBar() {
             </Box>
 
             {/* Search */}
-            <Box sx={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <Box
-                ref={searchContainerRef}
-                sx={{ position: "relative", width: "100%", maxWidth: 640 }}
-              >
+            {showSearch ? (
+              <Box sx={{ flex: 1, display: "flex", justifyContent: "center" }}>
                 <Box
-                  component="form"
-                  onSubmit={handleSubmitSearch}
-                  sx={SEARCH_BOX_SX}
+                  ref={searchContainerRef}
+                  sx={{ position: "relative", width: "100%", maxWidth: 640 }}
                 >
-                  <Search sx={{ fontSize: 18, color: COLORS.textMuted }} />
-                  <InputBase
-                    placeholder="Search by brand or product name..."
-                    sx={{
-                      flex: 1,
-                      fontSize: 13.5,
-                      "& input::placeholder": {
-                        color: COLORS.textMuted,
-                      },
-                    }}
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    onFocus={() => setSearchDropdownOpen(true)}
-                    onBlur={(e) => {
-                    const next = e.relatedTarget as Node | null;
-                    if (next && searchContainerRef.current?.contains(next)) return;
-                    setTimeout(closeDropdown, 200);
-                  }}
-                  />
-                </Box>
+                  <Box
+                    component="form"
+                    onSubmit={handleSubmitSearch}
+                    sx={SEARCH_BOX_SX}
+                  >
+                    <Search sx={{ fontSize: 18, color: searchIconColor }} />
+                    <InputBase
+                      placeholder="Search by brand or product name..."
+                      sx={{
+                        flex: 1,
+                        fontSize: 13.5,
+                        "& input::placeholder": {
+                          color: searchPlaceholderColor,
+                          opacity: 1,
+                        },
+                        color: hero ? "rgba(255,255,255,0.92)" : COLORS.textPrimary,
+                      }}
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      onFocus={() => setSearchDropdownOpen(true)}
+                      onBlur={(e) => {
+                        const next = e.relatedTarget as Node | null;
+                        if (next && searchContainerRef.current?.contains(next)) return;
+                        setTimeout(closeDropdown, 200);
+                      }}
+                    />
+                  </Box>
 
-                {showDropdown && (
-                  <Paper sx={SEARCH_DROPDOWN_PAPER_SX} elevation={0}>
+                  {showDropdown && (
+                    <Paper sx={SEARCH_DROPDOWN_PAPER_SX} elevation={0}>
                     {!hasSearchTerm ? (
                       <Box
                         sx={{
@@ -687,10 +794,13 @@ const NavBar = observer(function NavBar() {
                         </Box>
                       </>
                     )}
-                  </Paper>
-                )}
+                    </Paper>
+                  )}
+                </Box>
               </Box>
-            </Box>
+            ) : (
+              <Box sx={{ flex: 1 }} />
+            )}
 
             {/* Right icons */}
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -701,7 +811,7 @@ const NavBar = observer(function NavBar() {
               <Divider
                 orientation="vertical"
                 flexItem
-                sx={{ mx: 0.75, borderColor: "rgba(0,0,0,0.08)" }}
+                sx={{ mx: 0.75, borderColor: dividerColor }}
               />
 
               {currentUser ? (
@@ -725,8 +835,8 @@ const NavBar = observer(function NavBar() {
                     badgeContent={cart?.totalQuantity ?? 0}
                     sx={{
                       "& .MuiBadge-badge": {
-                        bgcolor: "#111827",
-                        color: "#FFFFFF",
+                        bgcolor: hero ? "rgba(255,255,255,0.92)" : "#111827",
+                        color: hero ? "#111827" : "#FFFFFF",
                         fontSize: 11,
                         minWidth: 18,
                         height: 18,
