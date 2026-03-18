@@ -23,7 +23,8 @@ public sealed class Checkout
     internal sealed class Handler(
         AppDbContext context,
         IMapper mapper,
-        IUserAccessor userAccessor) : IRequestHandler<Command, Result<CustomerOrderDto>>
+        IUserAccessor userAccessor,
+        IEmailService emailService) : IRequestHandler<Command, Result<CustomerOrderDto>>
     {
         public async Task<Result<CustomerOrderDto>> Handle(Command request, CancellationToken ct)
         {
@@ -438,7 +439,15 @@ public sealed class Checkout
             if (!transactionResult.IsSuccess)
                 return Result<CustomerOrderDto>.Failure(transactionResult.Error!, transactionResult.Code);
 
-            // 15. Re-query with ProjectTo (outside retry delegate).
+            // 15. Get customer email for email sending (before final query)
+            Order? orderForEmail = await context.Orders
+                .Include(o => o.User)
+                .Include(o => o.OrderItems)
+                  .ThenInclude(oi => oi.ProductVariant)
+                  .ThenInclude(pv => pv.Product)
+                .FirstOrDefaultAsync(o => o.Id == transactionResult.Value, ct);
+
+            // 16. Re-query with ProjectTo (outside retry delegate).
             // If this fails it does NOT retry the transaction.
             CustomerOrderDto result = await context.Orders
                 .AsNoTracking()
@@ -454,10 +463,31 @@ public sealed class Checkout
                 .Include(o => o.Prescriptions)
                 .Include(o => o.ShipmentInfo)
                 .Include(o => o.StatusHistories)
-                .Include(o => o.User)
                 .AsSplitQuery()
                 .ProjectTo<CustomerOrderDto>(mapper.ConfigurationProvider)
                 .FirstAsync(ct);
+
+            // 17. Send order confirmation email to customer asynchronously (fire-and-forget)
+            if (orderForEmail?.User != null && !string.IsNullOrWhiteSpace(orderForEmail.User.Email))
+            {
+                _ = Task.Run(async () =>
+                {
+                    List<(string ProductName, int Quantity, decimal Price)> items = orderForEmail.OrderItems
+                        .Select(oi => (
+                            ProductName: oi.ProductVariant?.Product?.ProductName ?? "Unknown Product",
+                            Quantity: oi.Quantity,
+                            Price: oi.UnitPrice))
+                        .ToList();
+
+                    await emailService.SendOrderConfirmationEmailAsync(
+                        orderForEmail.User.Email,
+                        orderForEmail.Id.ToString(),
+                        orderForEmail.User.DisplayName ?? orderForEmail.User.Email,
+                        orderForEmail.TotalAmount,
+                        items,
+                        CancellationToken.None);
+                }, ct);
+            }
 
             return Result<CustomerOrderDto>.Success(result);
         }
