@@ -35,6 +35,8 @@ builder.Services.AddControllers(opt =>
 {
     // Configure the JSON serializer to convert enum values to their string representations
     options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+    // Configure camelCase for both serialization and deserialization (requests and responses)
+    options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
 });
 
 builder.Services.AddOpenApi();

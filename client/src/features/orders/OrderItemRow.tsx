@@ -66,7 +66,7 @@ export function OrderItemRow({ item, compact, orderId, showPrescriptionDetails }
   const price = getItemPrice(item as Parameters<typeof getItemPrice>[0]);
 
   const prescription =
-    orderId && productVariantId ? getOrderPrescription(orderId, productVariantId) : undefined;
+    orderId && item.id ? getOrderPrescription(orderId, item.id) : undefined;
 
   const thumbSize = compact ? 40 : 56;
 

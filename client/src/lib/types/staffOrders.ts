@@ -11,6 +11,8 @@ export interface StaffOrderDto {
   salesStaffName: string | null;
   itemCount: number;
   createdAt: string;
+  prescriptionStatus?: string | null;
+  prescriptions?: StaffOrderPrescriptionDto[];
 }
 
 export interface StaffOrdersResponse {
@@ -48,6 +50,7 @@ export interface StaffOrderItemDto {
   unitPrice: number;
   totalPrice: number;
   productImageUrl?: string | null;
+  prescriptionId?: string | null;
 }
 
 export interface StaffOrderPaymentDto {
@@ -131,7 +134,7 @@ export interface StaffOrderDetailDto {
   updatedAt: string | null;
   items: StaffOrderItemDto[];
   payment: StaffOrderPaymentDto | null;
-  prescription: StaffOrderPrescriptionDto | null;
+  prescriptions: StaffOrderPrescriptionDto[];
   shipment?: ShipmentInfoDto | null;
   statusHistories: StaffOrderStatusHistoryDto[];
 }

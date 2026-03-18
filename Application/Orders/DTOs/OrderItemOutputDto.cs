@@ -12,4 +12,5 @@ public sealed class OrderItemOutputDto
     public decimal UnitPrice { get; set; }
     public decimal TotalPrice { get; set; }
     public string? ProductImageUrl { get; set; }
+    public Guid? PrescriptionId { get; set; }
 }

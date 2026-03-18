@@ -299,56 +299,7 @@ export function OrderDetailExpanded({ detail, onProcessOrderClick, showProcessBu
         </Box>
       </Box>
 
-      {/* 2.5) Prescription — for sales to view lens details */}
-      {detail.prescription?.details?.length ? (
-        <Box>
-          <Typography sx={{ fontSize: 14, fontWeight: 700, color: TOKENS.muted, textTransform: "uppercase", letterSpacing: 1, mb: 1.25 }}>
-            Prescription
-          </Typography>
-          <Box
-            sx={{
-              bgcolor: TOKENS.surface,
-              borderRadius: "12px",
-              border: `1px solid ${TOKENS.divider}`,
-              overflow: "hidden",
-              p: 2,
-            }}
-          >
-            {detail.prescription.isVerified != null && (
-              <Typography sx={{ fontSize: 12, color: TOKENS.textSecondary, mb: 1.25 }}>
-                Verified: {detail.prescription.isVerified ? "Yes" : "No"}
-                {detail.prescription.verificationNotes && (
-                  <> · {detail.prescription.verificationNotes}</>
-                )}
-              </Typography>
-            )}
-            <Table size="small" sx={{ "& td, & th": { py: 0.75, px: 1.5, fontSize: 13 } }}>
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 700, color: TOKENS.muted }}>Eye</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: TOKENS.muted }}>SPH</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: TOKENS.muted }}>CYL</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: TOKENS.muted }}>Axis</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: TOKENS.muted }}>PD</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: TOKENS.muted }}>ADD</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {detail.prescription.details.map((row, idx) => (
-                  <TableRow key={row.id ?? row.eye ?? idx}>
-                    <TableCell sx={{ fontWeight: 600, color: TOKENS.textPrimary }}>{row.eye}</TableCell>
-                    <TableCell>{formatPrescriptionVal(row.sph)}</TableCell>
-                    <TableCell>{formatPrescriptionVal(row.cyl)}</TableCell>
-                    <TableCell>{formatPrescriptionVal(row.axis)}</TableCell>
-                    <TableCell>{formatPrescriptionVal(row.pd)}</TableCell>
-                    <TableCell>{formatPrescriptionVal(row.add)}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Box>
-        </Box>
-      ) : null}
+
 
       {/* 3) Items section — e-commerce look with thumbnails */}
       <Box>
@@ -365,6 +316,10 @@ export function OrderDetailExpanded({ detail, onProcessOrderClick, showProcessBu
         >
           {detail.items.map((item, idx) => {
             const lineTotal = item.totalPrice ?? item.unitPrice * item.quantity;
+            // Find the prescription for this item
+            const prescription = detail.prescriptions?.find((rx) => rx.id === item.prescriptionId);
+            const isVerified = prescription?.isVerified === true;
+            
             return (
               <Box key={item.id}>
                 {idx > 0 && <Divider sx={{ borderColor: TOKENS.divider }} />}
@@ -420,9 +375,74 @@ export function OrderDetailExpanded({ detail, onProcessOrderClick, showProcessBu
                     )}
                   </Box>
                 </Box>
+
+                {/* Prescription details for this item if it exists */}
+                {prescription && prescription.details && prescription.details.length > 0 && (
+                  <Box sx={{ borderTop: `1px solid ${TOKENS.divider}`, p: 2, pt: 1.5, bgcolor: '#FAFAF8' }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
+                      <Typography sx={{ fontSize: 12, fontWeight: 700, color: TOKENS.muted, textTransform: "uppercase", letterSpacing: "0.14em" }}>
+                        📋 Prescription Details
+                      </Typography>
+                      {prescription.isVerified != null && (
+                        <Box
+                          sx={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            height: 20,
+                            px: 0.75,
+                            borderRadius: 999,
+                            border: `1px solid ${isVerified ? '#D4E5D5' : '#E8CFCF'}`,
+                            bgcolor: isVerified ? '#EEF5EE' : '#F6EAEA',
+                            color: isVerified ? '#466A4A' : '#8E3B3B',
+                            fontSize: 11,
+                            fontWeight: 600,
+                          }}
+                        >
+                          {isVerified ? '✓ Verified' : '✗ Not Verified'}
+                        </Box>
+                      )}
+                    </Box>
+
+                    <Table size="small" sx={{ 
+                      "& td, & th": { py: 0.6, px: 1, fontSize: 13 },
+                      "& thead": { bgcolor: '#FFFFFF' },
+                      "& tbody tr:hover": { bgcolor: '#F9F9F7' },
+                    }}>
+                      <TableHead>
+                        <TableRow sx={{ borderTop: `1px solid ${TOKENS.divider}`, borderBottom: `1px solid ${TOKENS.divider}` }}>
+                          <TableCell sx={{ fontWeight: 700, color: TOKENS.muted, fontSize: 12 }}>Eye</TableCell>
+                          <TableCell sx={{ fontWeight: 700, color: TOKENS.muted, fontSize: 12 }}>SPH</TableCell>
+                          <TableCell sx={{ fontWeight: 700, color: TOKENS.muted, fontSize: 12 }}>CYL</TableCell>
+                          <TableCell sx={{ fontWeight: 700, color: TOKENS.muted, fontSize: 12 }}>Axis</TableCell>
+                          <TableCell sx={{ fontWeight: 700, color: TOKENS.muted, fontSize: 12 }}>PD</TableCell>
+                          <TableCell sx={{ fontWeight: 700, color: TOKENS.muted, fontSize: 12 }}>ADD</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {prescription.details.map((row, idx) => (
+                          <TableRow 
+                            key={row.id ?? row.eye ?? idx}
+                            sx={{ 
+                              borderBottom: `1px solid ${TOKENS.divider}`,
+                              '&:last-child': { borderBottom: 'none' }
+                            }}
+                          >
+                            <TableCell sx={{ fontWeight: 600, color: TOKENS.textPrimary }}>{row.eye}</TableCell>
+                            <TableCell>{formatPrescriptionVal(row.sph)}</TableCell>
+                            <TableCell>{formatPrescriptionVal(row.cyl)}</TableCell>
+                            <TableCell>{formatPrescriptionVal(row.axis)}</TableCell>
+                            <TableCell sx={{ fontWeight: 500 }}>{formatPrescriptionVal(row.pd)}</TableCell>
+                            <TableCell>{formatPrescriptionVal(row.add)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </Box>
+                )}
               </Box>
             );
           })}
+
         </Box>
       </Box>
 

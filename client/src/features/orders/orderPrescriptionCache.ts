@@ -1,6 +1,6 @@
 import type { PrescriptionData } from "../../lib/types/prescription";
 
-/** Prescriptions per order: orderId -> productVariantId -> PrescriptionData (set when placing order). */
+/** Prescriptions per order: orderId -> orderItemId -> PrescriptionData (set when placing order). */
 const STORAGE_KEY = "orderPrescriptions";
 
 type Cache = Record<string, Record<string, PrescriptionData>>;
@@ -24,19 +24,19 @@ function write(data: Cache) {
 
 export function setOrderPrescriptions(
   orderId: string,
-  byVariant: Record<string, PrescriptionData>
+  byOrderItem: Record<string, PrescriptionData>
 ) {
   const cache = read();
-  cache[orderId] = byVariant;
+  cache[orderId] = byOrderItem;
   write(cache);
 }
 
 export function getOrderPrescription(
   orderId: string | undefined,
-  productVariantId: string | undefined
+  orderItemId: string | undefined
 ): PrescriptionData | undefined {
-  if (!orderId || !productVariantId) return undefined;
-  return read()[orderId]?.[productVariantId];
+  if (!orderId || !orderItemId) return undefined;
+  return read()[orderId]?.[orderItemId];
 }
 
 export function getOrderPrescriptions(orderId: string | undefined): Record<string, PrescriptionData> {

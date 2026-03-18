@@ -525,7 +525,7 @@ export default function OrderSuccessPage() {
                       × {item.quantity}
                     </Typography>
                     {(() => {
-                      const prescription = getOrderPrescription(order.id, item.productVariantId);
+                      const prescription = getOrderPrescription(order.id, item.id);
                       return prescription ? (
                         <PrescriptionDisplay prescription={prescription} variant="inline" />
                       ) : null;

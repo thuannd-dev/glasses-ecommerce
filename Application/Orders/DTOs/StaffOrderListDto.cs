@@ -35,4 +35,5 @@ public sealed class StaffOrderListDto
     public string? Carrier { get; set; }
 
     public List<StaffOrderItemDto> Items { get; set; } = [];
+    public List<OrderPrescriptionDto> Prescriptions { get; set; } = [];
 }

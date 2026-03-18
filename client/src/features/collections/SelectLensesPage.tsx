@@ -8,6 +8,7 @@ export default function SelectLensesPage() {
     const location = useLocation();
     const state = location.state as { variantId?: string | null; isPreOrder?: boolean } | null;
     const initialVariantId = state?.variantId ?? null;
+    const isPreOrder = state?.isPreOrder ?? false;
     const { product, isLoading, currentVariant, images, handleAddWithPrescription } =
         useProductDetailPage(initialVariantId);
 
@@ -29,11 +30,20 @@ export default function SelectLensesPage() {
         );
     }
 
+    const handleDialogClose = () => {
+        if (isPreOrder) {
+            navigate("/checkout", { state: { isPreOrder: true } });
+        } else {
+            navigate(-1);
+        }
+    };
+
     return (
         <SelectLensesDialog
             open
             fullPage
-            onClose={() => navigate(-1)}
+            isPreOrder={isPreOrder}
+            onClose={handleDialogClose}
             onLogoClick={() => navigate("/collections")}
             productName={product.name}
             variantLabel={currentVariant?.variantName ?? currentVariant?.color ?? product.sku ?? ""}

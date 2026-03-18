@@ -59,6 +59,13 @@ public sealed class GetMyOrders
             int totalCount = await query.CountAsync(cancellationToken);
 
             List<CustomerOrderListDto> orders = await query
+                .Include(o => o.Prescriptions)
+                    .ThenInclude(p => p.Details)
+                .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.ProductVariant)
+                        .ThenInclude(pv => pv!.Product)
+                .Include(o => o.Address)
+                .Include(o => o.PromoUsageLogs)
                 .OrderByDescending(o => o.CreatedAt)
                 .Skip((request.PageNumber - 1) * request.PageSize)
                 .Take(request.PageSize)
