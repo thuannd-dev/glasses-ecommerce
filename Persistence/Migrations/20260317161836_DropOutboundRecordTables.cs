@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -11,11 +11,8 @@ namespace Persistence.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(
-                name: "OutboundRecordItems");
-
-            migrationBuilder.DropTable(
-                name: "OutboundRecords");
+            migrationBuilder.Sql("IF OBJECT_ID(N'[OutboundRecordItems]', N'U') IS NOT NULL DROP TABLE [OutboundRecordItems];");
+            migrationBuilder.Sql("IF OBJECT_ID(N'[OutboundRecords]', N'U') IS NOT NULL DROP TABLE [OutboundRecords];");
         }
 
         /// <inheritdoc />
