@@ -1,3 +1,5 @@
+using System.Net;
+using System.Net.Sockets;
 using Application.Core;
 using Application.Interfaces;
 using Application.Payments.DTOs;
@@ -51,9 +53,13 @@ public sealed class CreatePaymentUrls
             HttpContext httpContext = httpContextAccessor.HttpContext
                 ?? throw new InvalidOperationException("HttpContext is not available.");
 
-            string ipAddress = httpContext.Connection.RemoteIpAddress?.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6 
-                ? httpContext.Connection.RemoteIpAddress.MapToIPv4().ToString() 
-                : httpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
+            IPAddress? remoteIpAddress = httpContext.Connection.RemoteIpAddress;
+            if (remoteIpAddress is null)
+                return Result<string>.Failure("Client IP address is not available.", 400);
+
+            string ipAddress = remoteIpAddress.AddressFamily == AddressFamily.InterNetworkV6
+                ? remoteIpAddress.MapToIPv4().ToString()
+                : remoteIpAddress.ToString();
 
             string paymentUrl = vnPayService.CreatePaymentUrl(request.Model, ipAddress);
 
