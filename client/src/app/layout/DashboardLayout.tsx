@@ -62,6 +62,7 @@ const ADMIN_SUB_LINKS: { path: string; label: string; icon: React.ReactNode }[] 
   { path: "/admin", label: "Dashboard", icon: <AdminPanelSettingsIcon /> },
   { path: "/admin/roles", label: "Role Management", icon: <SecurityIcon /> },
   { path: "/admin/policies", label: "Policies", icon: <SecurityIcon /> },
+  { path: "/admin/feature-toggles", label: "Feature Toggles", icon: <SecurityIcon /> },
 ];
 
 export default function DashboardLayout() {

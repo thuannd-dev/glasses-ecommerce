@@ -1,4 +1,4 @@
-import { Suspense, lazy, useMemo, useState } from "react";
+import { Suspense, lazy, useMemo, useState, useEffect } from "react";
 import {
     Accordion,
     AccordionDetails,
@@ -20,6 +20,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { useProductDetailPage } from "./hooks/useProductDetailPage";
 import { RelatedProductsCarousel } from "./components/ProductDetailPageComponents/RelatedProductsCarousel";
 import { usePreOrderButton } from "./components/ProductDetailPageComponents/PreOrderDialog";
+import agent from "../../lib/api/agent";
 
 const VirtualTryOn = lazy(() => import("../Manager/components/VirtualTryOn"));
 const ModelViewer3D = lazy(() => import("./components/ModelViewer3D"));
@@ -46,6 +47,35 @@ export default function ProductDetailPage() {
     } = useProductDetailPage();
     const [tryOnOpen, setTryOnOpen] = useState(false);
     const [viewer3DOpen, setViewer3DOpen] = useState(false);
+    const [enable3DModels, setEnable3DModels] = useState(true);
+    const [enableVirtualTryOn, setEnableVirtualTryOn] = useState(true);
+
+    // Check feature toggles on mount
+    useEffect(() => {
+        const checkToggles = async () => {
+            try {
+                // Check 3D Models toggle
+                const response3D = await agent.get<boolean>(
+                    "/feature-toggles/check/3DModels"
+                );
+                setEnable3DModels(response3D.data);
+            } catch {
+                setEnable3DModels(true); // Fail-open: show feature by default
+            }
+
+            try {
+                // Check Virtual Try-On toggle
+                const responseVTryOn = await agent.get<boolean>(
+                    "/feature-toggles/check/VirtualTryOn"
+                );
+                setEnableVirtualTryOn(responseVTryOn.data);
+            } catch {
+                setEnableVirtualTryOn(true); // Fail-open: show feature by default
+            }
+        };
+
+        checkToggles();
+    }, []);
 
     // Find the first available modelUrl from all product + variant images
     const modelUrl = useMemo(() => {
@@ -238,27 +268,29 @@ export default function ProductDetailPage() {
                                 gap: 1,
                             }}
                         >
-                            <Button
-                                variant="contained"
-                                startIcon={<CameraAltIcon sx={{ fontSize: 18 }} />}
-                                onClick={() => setTryOnOpen(true)}
-                                sx={{
-                                    borderRadius: 999,
-                                    textTransform: "none",
-                                    fontWeight: 800,
-                                    fontSize: 13,
-                                    bgcolor: "rgba(17,24,39,0.85)",
-                                    backdropFilter: "blur(6px)",
-                                    "&:hover": { bgcolor: "rgba(17,24,39,0.95)" },
-                                    px: 2.5,
-                                    py: 1,
-                                    boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
-                                    whiteSpace: "nowrap",
-                                }}
-                            >
-                                Try On
-                            </Button>
-                            {modelUrl && (
+                            {enableVirtualTryOn && (
+                                <Button
+                                    variant="contained"
+                                    startIcon={<CameraAltIcon sx={{ fontSize: 18 }} />}
+                                    onClick={() => setTryOnOpen(true)}
+                                    sx={{
+                                        borderRadius: 999,
+                                        textTransform: "none",
+                                        fontWeight: 800,
+                                        fontSize: 13,
+                                        bgcolor: "rgba(17,24,39,0.85)",
+                                        backdropFilter: "blur(6px)",
+                                        "&:hover": { bgcolor: "rgba(17,24,39,0.95)" },
+                                        px: 2.5,
+                                        py: 1,
+                                        boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
+                                        whiteSpace: "nowrap",
+                                    }}
+                                >
+                                    Try On
+                                </Button>
+                            )}
+                            {enable3DModels && modelUrl && (
                                 <Button
                                     variant="contained"
                                     startIcon={<ViewInArIcon sx={{ fontSize: 18 }} />}

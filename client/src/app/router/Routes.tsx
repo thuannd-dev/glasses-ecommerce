@@ -63,6 +63,7 @@ import AdminDashboard from "../../features/Admin/AdminDashboard";
 import AdminLayout from "../../features/Admin/AdminLayout";
 import RoleManagement from "../../features/Admin/RoleManagement";
 import AdminPolicies from "../../features/Admin/AdminPolicies";
+import AdminFeatureToggles from "../../features/Admin/AdminFeatureToggles";
 import ChatbotWidget from "../../features/chatbot/ChatbotWidget";
 export const router = createBrowserRouter([
   // ======================
@@ -173,6 +174,7 @@ export const router = createBrowserRouter([
               { index: true, element: <AdminDashboard /> },
               { path: "roles", element: <RoleManagement /> },
               { path: "policies", element: <AdminPolicies /> },
+              { path: "feature-toggles", element: <AdminFeatureToggles /> },
             ],
           },
         ],
