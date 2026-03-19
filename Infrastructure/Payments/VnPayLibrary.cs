@@ -1,6 +1,7 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net;
-using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
 using Application.Payments.DTOs;
@@ -29,13 +30,16 @@ internal sealed class VnPayLibrary
         string orderId = vnPay.GetResponseData("vnp_TxnRef");
         string vnPayTranId = vnPay.GetResponseData("vnp_TransactionNo");
         string vnpResponseCode = vnPay.GetResponseData("vnp_ResponseCode");
-        string vnpSecureHash = collection.FirstOrDefault(k => k.Key == "vnp_SecureHash").Value.ToString() ?? string.Empty; //hash của dữ liệu trả về
+        string vnpTransactionStatus = vnPay.GetResponseData("vnp_TransactionStatus");
+        string vnpSecureHash = collection.TryGetValue("vnp_SecureHash", out StringValues secureHashValues)
+            ? secureHashValues.ToString()
+            : string.Empty;
         string orderInfo = vnPay.GetResponseData("vnp_OrderInfo");
-        
+
         string vnpAmountRaw = vnPay.GetResponseData("vnp_Amount");
         decimal vnpAmount = decimal.TryParse(vnpAmountRaw, out decimal parsedAmount) ? (parsedAmount / 100m) : 0m;
 
-        bool checkSignature = vnPay.ValidateSignature(vnpSecureHash, hashSecret); //check Signature
+        bool checkSignature = vnPay.ValidateSignature(vnpSecureHash, hashSecret);
 
         if (!checkSignature)
             return new PaymentResponseDto()
@@ -46,7 +50,7 @@ internal sealed class VnPayLibrary
 
         return new PaymentResponseDto()
         {
-            Success = vnpResponseCode.Equals("00"),
+            Success = vnpResponseCode.Equals("00") && vnpTransactionStatus.Equals("00"),
             PaymentMethod = "VnPay",
             OrderDescription = orderInfo,
             OrderId = string.IsNullOrEmpty(orderId) ? null : orderId,
@@ -54,6 +58,7 @@ internal sealed class VnPayLibrary
             TransactionId = string.IsNullOrEmpty(vnPayTranId) ? null : vnPayTranId,
             Token = vnpSecureHash,
             VnPayResponseCode = vnpResponseCode,
+            VnPayTransactionStatus = vnpTransactionStatus,
             Amount = vnpAmount
         };
     }
@@ -94,8 +99,10 @@ internal sealed class VnPayLibrary
         string signData = querystring;
         if (signData.Length > 0)
         {
-            signData = signData.Remove(data.Length - 1, 1);
+            signData = signData.Remove(signData.Length - 1, 1);
         }
+
+
 
         string vnpSecureHash = HmacSha512(vnpHashSecret, signData);
         baseUrl += "vnp_SecureHash=" + vnpSecureHash;

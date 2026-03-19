@@ -1063,15 +1063,11 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
                     "CK_Payment_Transaction_By_Method",
                     @"
                     (
-                        PaymentMethod = 1
+                        PaymentMethod IN (1, 4)
                     )
                     OR
                     (
-                        PaymentMethod IN (2,3) AND TransactionId IS NOT NULL
-                    )
-                    OR
-                    (
-                        PaymentMethod = 4
+                        PaymentMethod IN (2,3) AND (TransactionId IS NOT NULL OR PaymentStatus = 1)
                     )
                     "
                 );

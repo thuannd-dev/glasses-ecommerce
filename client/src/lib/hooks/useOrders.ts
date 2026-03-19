@@ -8,6 +8,23 @@ import type {
 
 const QUERY_KEY_MY_ORDERS = ["me", "orders"];
 
+export interface CreatePaymentUrlPayload {
+  orderId: string;
+  orderType: string;
+  amount: number;
+  name: string;
+  orderDescription?: string;
+}
+
+export function useCreatePaymentUrl() {
+  return useMutation({
+    mutationFn: async (payload: CreatePaymentUrlPayload) => {
+      const res = await agent.post<string>("/me/payments/create-url", payload);
+      return res.data;
+    },
+  });
+}
+
 /** POST /api/me/orders — create order from current cart */
 export function useCreateOrder() {
   const queryClient = useQueryClient();

@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -10,9 +10,9 @@ namespace Persistence.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropIndex(
-                name: "UX_Prescription_Id_OrderId",
-                table: "Prescriptions");
+            // Using raw SQL to ensure idempotency when dropping the index
+            migrationBuilder.Sql("IF EXISTS (SELECT * FROM sys.indexes WHERE name = 'UX_Prescription_Id_OrderId' AND object_id = OBJECT_ID(N'[Prescriptions]')) " +
+                                 "DROP INDEX [UX_Prescription_Id_OrderId] ON [Prescriptions];");
         }
 
         /// <inheritdoc />

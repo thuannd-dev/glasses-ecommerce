@@ -65,3 +65,11 @@ export type {
   PagedPoliciesResponse,
 } from "./policy";
 export { PolicyTypeEnum, POLICY_TYPE_LABELS, getPolicyTypeLabel } from "./policy";
+export type {
+  FeatureToggleDto,
+  CreateFeatureTogglePayload,
+  UpdateFeatureTogglePayload,
+  SetFeatureToggleEnabledPayload,
+  AdminFeatureTogglesQueryParams,
+  PagedFeatureTogglesResponse,
+} from "./featureToggle";

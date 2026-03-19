@@ -306,9 +306,9 @@ public sealed class MappingProfiles : Profile
             {
                 // Populate Items after standard mapping
                 List<OrderItemOutputDto> items = [];
-                
-                if (src.OrderItemId.HasValue && src.OrderItem != null && 
-                    src.OrderItem.ProductVariant != null && 
+
+                if (src.OrderItemId.HasValue && src.OrderItem != null &&
+                    src.OrderItem.ProductVariant != null &&
                     src.OrderItem.ProductVariant.Product != null)
                 {
                     // Ticket is for a specific item
@@ -350,7 +350,7 @@ public sealed class MappingProfiles : Profile
                         })
                         .ToList();
                 }
-                
+
                 dest.Items = items ?? [];
             });
 

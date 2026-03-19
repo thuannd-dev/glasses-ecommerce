@@ -1,15 +1,16 @@
 using System;
+using System.Globalization;
 using Application.Interfaces;
 using Application.Payments.DTOs;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
-using System.Globalization;
 
 namespace Infrastructure.Payments;
 
 public sealed class VnPayService(IOptions<VnpaySettings> config) : IVnPayService
 {
+    public decimal UsdToVndRate => config.Value.UsdToVndRate;
     public string CreatePaymentUrl(PaymentInformationDto model, string ipAddress)
     {
         TimeZoneInfo timeZoneById = GetPaymentTimeZone();
@@ -20,15 +21,16 @@ public sealed class VnPayService(IOptions<VnpaySettings> config) : IVnPayService
         pay.AddRequestData("vnp_Version", config.Value.Version);
         pay.AddRequestData("vnp_Command", config.Value.Command);
         pay.AddRequestData("vnp_TmnCode", config.Value.TmnCode);
-        pay.AddRequestData("vnp_Amount", Math.Round(model.Amount * 100, 0, MidpointRounding.AwayFromZero).ToString("0", CultureInfo.InvariantCulture));
+        decimal amountInVnd = model.Amount * UsdToVndRate;
+        pay.AddRequestData("vnp_Amount", Math.Round(amountInVnd * 100, 0, MidpointRounding.AwayFromZero).ToString("0", CultureInfo.InvariantCulture));
         pay.AddRequestData("vnp_CreateDate", timeNow.ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture));
         pay.AddRequestData("vnp_CurrCode", config.Value.CurrCode);
         pay.AddRequestData("vnp_IpAddr", ipAddress);
         pay.AddRequestData("vnp_Locale", config.Value.Locale);
-        pay.AddRequestData("vnp_OrderInfo", $"{model.Name} {model.OrderDescription} {model.Amount}");
-        pay.AddRequestData("vnp_OrderType", model.OrderType);
+        pay.AddRequestData("vnp_OrderInfo", $"{model.Name} {model.OrderDescription} {model.Amount.ToString("0", CultureInfo.InvariantCulture)}");
+        pay.AddRequestData("vnp_OrderType", "other");
         pay.AddRequestData("vnp_ReturnUrl", urlCallBack);
-        pay.AddRequestData("vnp_NotifyUrl", config.Value.IpnUrl);
+        //Thêm vnp_NotifyUrl sẽ bị lỗi invalid signature
         pay.AddRequestData("vnp_TxnRef", model.VnPayTxnRef);
 
         string paymentUrl = pay.CreateRequestUrl(config.Value.BaseUrl, config.Value.HashSecret);

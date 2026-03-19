@@ -29,6 +29,7 @@ public sealed class CreatePaymentUrls
             Guid userId = userAccessor.GetUserId();
 
             Order? order = await context.Orders
+                .AsNoTracking()
                 .Include(o => o.User)
                 .FirstOrDefaultAsync(o => o.Id == request.Model.OrderId && o.UserId == userId, ct);
 
@@ -36,6 +37,7 @@ public sealed class CreatePaymentUrls
                 return Result<string>.Failure("Order not found.", 404);
 
             Payment? payment = await context.Payments
+                .AsNoTracking()
                 .FirstOrDefaultAsync(p =>
                     p.OrderId == request.Model.OrderId &&
                     p.PaymentMethod == PaymentMethod.BankTransfer &&
@@ -47,8 +49,10 @@ public sealed class CreatePaymentUrls
             request.Model.Amount = payment.Amount;
             request.Model.OrderType = order.OrderType.ToString();
             request.Model.Name = order.WalkInCustomerName ?? order.User?.DisplayName ?? "Customer";
-            request.Model.OrderDescription = $"Payment for order {order.Id}";
-            request.Model.VnPayTxnRef = order.Id.ToString();
+            request.Model.VnPayTxnRef = order.Id.ToString("N") + "_" + DateTime.UtcNow.Ticks.ToString();
+
+            // vnp_OrderInfo is restricted from having special characters (including hyphens)
+            request.Model.OrderDescription = $"Payment for order {order.Id.ToString("N")}";
 
             HttpContext httpContext = httpContextAccessor.HttpContext
                 ?? throw new InvalidOperationException("HttpContext is not available.");
@@ -60,6 +64,9 @@ public sealed class CreatePaymentUrls
             string ipAddress = remoteIpAddress.AddressFamily == AddressFamily.InterNetworkV6
                 ? remoteIpAddress.MapToIPv4().ToString()
                 : remoteIpAddress.ToString();
+
+            if (ipAddress == "0.0.0.0" || string.IsNullOrEmpty(ipAddress))
+                ipAddress = "127.0.0.1";
 
             string paymentUrl = vnPayService.CreatePaymentUrl(request.Model, ipAddress);
 

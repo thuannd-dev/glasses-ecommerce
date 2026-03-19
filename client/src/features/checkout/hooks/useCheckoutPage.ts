@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCart } from "../../../lib/hooks/useCart";
 import { useAddresses, useCreateAddress, useDefaultAddress } from "../../../lib/hooks/useAddresses";
-import { useCreateOrder } from "../../../lib/hooks/useOrders";
+import { useCreateOrder, useCreatePaymentUrl } from "../../../lib/hooks/useOrders";
 import { useValidatePromotion, useActivePromotions } from "../../../lib/hooks/usePromotions";
 import { setOrderItemImages } from "../../orders/orderImageCache";
 import { setOrderShippingAddress } from "../../orders/orderShippingAddressCache";
@@ -40,6 +40,7 @@ export function useCheckoutPage() {
   const { data: defaultAddress } = useDefaultAddress();
   const createAddress = useCreateAddress();
   const createOrder = useCreateOrder();
+  const createPaymentUrl = useCreatePaymentUrl();
   const validatePromotion = useValidatePromotion();
   const { data: activePromotions = [] } = useActivePromotions();
 
@@ -206,7 +207,7 @@ export function useCheckoutPage() {
       // Build prescriptions array: each cart item with prescription becomes an OrderItemPrescriptionDto
       const prescriptionsArray = hasPrescriptionItems
         ? Object.entries(itemPrescriptions)
-            .filter(([_, prescription]) => prescription.details?.length > 0)
+            .filter(([, prescription]) => prescription.details?.length > 0)
             .map(([cartItemId, prescription]) => ({
               cartItemId,
               prescription: toPrescriptionInputDto(prescription),
@@ -296,6 +297,28 @@ export function useCheckoutPage() {
         ...oItem,
         imageUrl: variantToImage[oItem.productVariantId] ?? undefined,
       }));
+
+      if (paymentMethod === "BANK") {
+        const urlReq = await createPaymentUrl.mutateAsync({
+          orderId: orderForState.id,
+          orderType: orderForState.orderType,
+          amount: finalAmount, // backend uses exact amount from pending payment
+          name: address.recipientName,
+        });
+
+        const urlString = typeof urlReq === "string" ? urlReq : (urlReq as { value?: string })?.value;
+        if (urlString) {
+          window.location.href = urlString;
+          return; // Stop execution, browser will redirect
+        } else {
+          setSnackbar({
+            open: true,
+            message: "Failed to generate payment URL. Please try again.",
+            severity: "error",
+          });
+          return;
+        }
+      }
 
       navigate("/order-success", {
         state: { order: { ...orderForState, items: orderItemsWithImage }, address: shippingAddr },
