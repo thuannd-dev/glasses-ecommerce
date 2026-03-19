@@ -3,6 +3,7 @@ using Application.Interfaces;
 using Domain;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Options;
 
 namespace Application.Accounts.Commands;
 
@@ -15,8 +16,11 @@ public sealed class ForgotPassword
 
     internal sealed class Handler(
         UserManager<User> userManager,
-        IEmailService emailService) : IRequestHandler<Command, Result<Unit>>
+        IEmailService emailService,
+        IOptions<EmailSettings> emailSettings) : IRequestHandler<Command, Result<Unit>>
     {
+        private readonly EmailSettings _settings = emailSettings.Value;
+
         public async Task<Result<Unit>> Handle(Command request, CancellationToken cancellationToken)
         {
             // Find user by email
@@ -35,16 +39,16 @@ public sealed class ForgotPassword
             // Encode token for URL (make it safe to pass in URL)
             string encodedToken = System.Web.HttpUtility.UrlEncode(resetToken);
 
-            // Build reset link (frontend will handle the actual reset page)
-            // Frontend should construct: https://frontend.com/reset-password?email={email}&token={token}
-            string resetLink = $"https://localhost:3000/reset-password?email={System.Web.HttpUtility.UrlEncode(user.Email ?? "")}&token={encodedToken}";
+            // Build reset link params using configured frontend URL
+            // Frontend will construct: https://glasses-ecommerce.azurewebsites.net/reset-password?email={email}&token={token}
+            string resetLinkParams = $"email={System.Web.HttpUtility.UrlEncode(user.Email ?? "")}&token={encodedToken}";
 
             // Send password recovery email
             string userName = user.DisplayName ?? user.Email ?? user.UserName ?? "User";
             bool emailSent = await emailService.SendPasswordRecoveryEmailAsync(
                 user.Email!,
                 userName,
-                resetLink,
+                resetLinkParams,
                 cancellationToken);
 
             if (!emailSent)

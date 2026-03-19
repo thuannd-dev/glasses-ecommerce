@@ -6,17 +6,6 @@ using Microsoft.Extensions.Options;
 
 namespace Infrastructure.Email;
 
-public sealed class EmailSettings
-{
-    public required string SmtpServer { get; set; }
-    public required int SmtpPort { get; set; }
-    public required string SmtpUsername { get; set; }
-    public required string SmtpPassword { get; set; }
-    public required string FromEmail { get; set; }
-    public required string FromName { get; set; }
-    public bool EnableSsl { get; set; } = true;
-}
-
 public sealed class EmailService(
     IOptions<EmailSettings> emailSettings,
     ILogger<EmailService> logger) : IEmailService
@@ -169,7 +158,8 @@ public sealed class EmailService(
         string resetLink,
         CancellationToken cancellationToken = default)
     {
-        string htmlContent = GeneratePasswordRecoveryTemplate(userName, resetLink);
+        string frontendResetLink = $"{_settings.FrontendUrl.TrimEnd('/')}/reset-password?{resetLink}";
+        string htmlContent = GeneratePasswordRecoveryTemplate(userName, frontendResetLink);
         return await SendEmailAsync(toEmail, "Password Recovery Request", htmlContent, cancellationToken);
     }
 
@@ -255,11 +245,12 @@ public sealed class EmailService(
         string userName,
         CancellationToken cancellationToken = default)
     {
-        string htmlContent = GenerateWelcomeTemplate(userName);
+        string frontendUrl = _settings.FrontendUrl.TrimEnd('/');
+        string htmlContent = GenerateWelcomeTemplate(userName, frontendUrl);
         return await SendEmailAsync(toEmail, "Welcome to Glasses E-commerce!", htmlContent, cancellationToken);
     }
 
-    private static string GenerateWelcomeTemplate(string userName)
+    private static string GenerateWelcomeTemplate(string userName, string frontendUrl)
     {
         return $@"
             <!DOCTYPE html>
@@ -329,7 +320,7 @@ public sealed class EmailService(
                         </div>
                         
                         <div class='cta-button'>
-                            <a href='https://localhost:3000'>Start Shopping Now</a>
+                            <a href='{frontendUrl}'>Start Shopping Now</a>
                         </div>
                         
                         <h3>Quick Tips:</h3>

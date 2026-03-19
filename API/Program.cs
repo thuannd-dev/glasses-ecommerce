@@ -5,7 +5,6 @@ using Application.Core;
 using Application.Interfaces;
 using Domain;
 using FluentValidation;
-using Infrastructure.Email;
 using Infrastructure.Payments;
 using Infrastructure.Photos;
 using Infrastructure.Security;
@@ -147,7 +146,10 @@ app.UseMiddleware<ExceptionMiddleware>();
 */
 app.UseCors(options => options.AllowAnyHeader()
                                 .AllowAnyMethod().AllowCredentials()
-                                .WithOrigins("http://localhost:3000", "https://localhost:3000"));
+                                .WithOrigins(
+                                    "http://localhost:3000",
+                                    "https://localhost:3000",
+                                    "https://glasses-ecommerce.azurewebsites.net"));
 
 app.UseAuthentication();
 app.UseAuthorization();
