@@ -40,7 +40,7 @@ const SLIDES: StorySlide[] = [
   },
   {
     id: "02",
-    image: "https://images.unsplash.com/photo-1511499767150-a48a237f0083?auto=format&fit=crop&w=2200&q=80",
+    image: "https://res.cloudinary.com/ds0b8jtbr/image/upload/v1770195404/glasses/natrtu1emsrgfbxtyfgq.jpg",
     eyebrow: "CRAFT • FIT • FINISH",
     title: "Studio‑made details.\nStreet‑tested comfort.",
     description:

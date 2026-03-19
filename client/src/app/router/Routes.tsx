@@ -90,6 +90,9 @@ export const router = createBrowserRouter([
     path: "/",
     element: <App />,
     children: [
+      // Landing page (was /collections)
+      { index: true, element: <CollectionLandingPage /> },
+
       // ======================
       // ROLE-BASED AREAS
       // ======================
@@ -172,7 +175,8 @@ export const router = createBrowserRouter([
       {
         path: "collections",
         children: [
-          { index: true, element: <CollectionLandingPage /> }, // /collections
+          // Keep /collections working, but redirect index to /
+          { index: true, element: <Navigate replace to="/" /> }, // /collections
           { path: ":category", element: <CollectionPage /> }, // /collections/glasses
         ],
       },

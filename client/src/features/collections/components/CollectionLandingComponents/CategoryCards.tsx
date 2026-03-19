@@ -1,5 +1,5 @@
 import { Box, Button, Typography } from "@mui/material";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { motion, useReducedMotion } from "motion/react";
 
 type Category = {
@@ -63,6 +63,7 @@ const CARD_SX = {
 } as const;
 
 export default function CategoryCards() {
+    const navigate = useNavigate();
     const reduce = useReducedMotion();
     const easeEditorial = [0.22, 1, 0.36, 1] as const;
     const SMALL_H_MD = 380;
@@ -188,10 +189,15 @@ export default function CategoryCards() {
                             sx={{ borderRadius: 0, height: "100%" }}
                         >
                             <Box
-                                component={NavLink}
-                                to={bigCard.to}
+                                component="div"
+                                role="link"
+                                tabIndex={0}
                                 sx={{ ...CARD_SX, height: "100%" }}
                                 aria-label={`Go to ${bigCard.title}`}
+                                onClick={() => navigate(bigCard.to)}
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter" || e.key === " ") navigate(bigCard.to);
+                                }}
                             >
                                 {/* Image wrapper (overflow hidden) */}
                                 <Box sx={{ position: "absolute", inset: 0, overflow: "hidden" }}>
@@ -366,10 +372,15 @@ export default function CategoryCards() {
                                     sx={{ borderRadius: 0, height: "100%" }}
                                 >
                                     <Box
-                                        component={NavLink}
-                                        to={c.to}
+                                        component="div"
+                                        role="link"
+                                        tabIndex={0}
                                         sx={{ ...CARD_SX, height: "100%" }}
                                         aria-label={`Go to ${c.title}`}
+                                        onClick={() => navigate(c.to)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === "Enter" || e.key === " ") navigate(c.to);
+                                        }}
                                     >
                                         <Box sx={{ position: "absolute", inset: 0, overflow: "hidden" }}>
                                             <Box

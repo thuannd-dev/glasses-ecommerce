@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { observer, Observer } from "mobx-react-lite";
 import {
-  FavoriteBorder,
   LocalMallOutlined,
   PersonOutline,
   Search,
@@ -547,7 +546,7 @@ const NavBar = observer(function NavBar({
             {/* Logo */}
             <Box
               component={NavLink}
-              to="/collections"
+              to="/"
               sx={{ display: "flex", alignItems: "center", mr: 1, textDecoration: "none" }}
             >
               <Typography
@@ -804,16 +803,6 @@ const NavBar = observer(function NavBar({
 
             {/* Right icons */}
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <IconButton sx={ICON_BUTTON_SX}>
-                <FavoriteBorder />
-              </IconButton>
-
-              <Divider
-                orientation="vertical"
-                flexItem
-                sx={{ mx: 0.75, borderColor: dividerColor }}
-              />
-
               {currentUser ? (
                 <UserMenu />
               ) : (
@@ -821,6 +810,12 @@ const NavBar = observer(function NavBar({
                   <PersonOutline />
                 </IconButton>
               )}
+
+              <Divider
+                orientation="vertical"
+                flexItem
+                sx={{ mx: 0.75, borderColor: dividerColor }}
+              />
 
               {/* CART */}
               <Box sx={{ position: "relative" }}>

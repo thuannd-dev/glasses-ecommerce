@@ -156,135 +156,180 @@ export default function ItemTopSeller() {
                   gridColumn: { xs: "span 1", sm: "span 1", md: "span 1" },
                   gridRow: { xs: "span 1", sm: "span 1", md: "span 1" },
                   aspectRatio: "1 / 1",
-                  bgcolor: "#F6F4F1",
-                  borderRight: "1px solid rgba(17,17,17,0.06)",
-                  borderBottom: "1px solid rgba(17,17,17,0.06)",
+                  display: "flex",
+                  alignItems: "stretch",
+                  justifyContent: "stretch",
                 }}
-              />
+              >
+                <Box
+                  sx={{
+                    flex: 1,
+                    borderRadius: 0,
+                    bgcolor: "#F6F4F1",
+                    borderRight: "1px solid rgba(0,0,0,0.14)",
+                    borderBottom: "1px solid rgba(0,0,0,0.14)",
+                  }}
+                />
+              </Box>
             );
           }
 
           const product: Product = p;
-          const imgScale = 0.9 + ((idx % 4) * 0.025);
-          const imgY = idx % 2 === 0 ? "52%" : "46%";
 
           return (
             <Box
               key={product.id + "-" + idx}
-              onClick={() => navigate(`/product/${product.id}`)}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") navigate(`/product/${product.id}`);
-              }}
               sx={{
                 gridColumn: { xs: "span 1", sm: "span 1", md: "span 1" },
                 gridRow: { xs: "span 1", sm: "span 1", md: "span 1" },
                 aspectRatio: "1 / 1",
-                position: "relative",
-                bgcolor: idx % 2 === 0 ? "#F6F4F1" : "#F3F0EB",
-                borderRight: "1px solid rgba(17,17,17,0.06)",
-                borderBottom: "1px solid rgba(17,17,17,0.06)",
-                overflow: "hidden",
-                cursor: "pointer",
-                outline: "none",
-                "&:focus-visible": { boxShadow: "0 0 0 2px rgba(17,24,39,0.14)" },
-                "&:hover .media": { transform: "scale(1.01)" },
+                display: "flex",
+                alignItems: "stretch",
+                justifyContent: "stretch",
               }}
             >
               <Box
-                className="media"
+                onClick={() => navigate(`/product/${product.id}`)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") navigate(`/product/${product.id}`);
+                }}
                 sx={{
-                  position: "absolute",
-                  inset: 0,
-                  px: { xs: 2, sm: 2.5, md: 3 },
-                  pt: { xs: 2, sm: 2.5, md: 3 },
-                  // reserve space for caption strip inside square tile
-                  pb: { xs: 9, sm: 9.5, md: 10 },
-                  transition: "transform .7s cubic-bezier(.22,1,.36,1)",
+                  flex: 1,
+                  display: "flex",
+                  flexDirection: "column",
+                  borderRadius: 0,
+                  borderRight: "1px solid rgba(0,0,0,0.14)",
+                  borderBottom: "1px solid rgba(0,0,0,0.14)",
+                  bgcolor: "#F8F6F1",
+                  overflow: "hidden",
+                  cursor: "pointer",
+                  outline: "none",
+                  transition: "background-color 160ms ease",
+                  "&:hover": {
+                    bgcolor: "#F3F0EA",
+                  },
+                  "&:focus-visible": { boxShadow: "0 0 0 2px rgba(17,24,39,0.25)" },
+                  position: "relative",
                 }}
               >
-                {product.image ? (
-                  <Box
-                    component="img"
-                    src={product.image}
-                    alt={product.name}
+                {/* Glass film overlay (phủ cả ảnh + info), nhưng nằm dưới nội dung */}
+                <Box
+                  sx={{
+                    pointerEvents: "none",
+                    position: "absolute",
+                    inset: 0,
+                    zIndex: 2,
+                    bgcolor: "#000000",
+                    mixBlendMode: "multiply",
+                    opacity: 0.10,
+                  }}
+                />
+                <Box
+                  sx={{
+                    pointerEvents: "none",
+                    position: "absolute",
+                    inset: 0,
+                    zIndex: 2,
+                    background:
+                      "linear-gradient(180deg, rgba(0,0,0,0.06) 0%, rgba(0,0,0,0.14) 55%, rgba(0,0,0,0.24) 100%)",
+                  }}
+                />
+
+                {/* Image area */}
+                <Box
+                  sx={{
+                    position: "relative",
+                    zIndex: 1,
+                    bgcolor: "#F6F4F2",
+                    px: 2.2,
+                    pt: 2.2,
+                    pb: 1.8,
+                    aspectRatio: "4 / 3",
+                    overflow: "hidden",
+                  }}
+                >
+                  {product.image ? (
+                    <Box
+                      component="img"
+                      src={product.image}
+                      alt={product.name}
+                      sx={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "contain",
+                        transform: "scale(1.01)",
+                        transition: "transform .45s ease",
+                        "&:hover": {
+                          transform: "scale(1.05)",
+                        },
+                      }}
+                    />
+                  ) : (
+                    <Box
+                      sx={{
+                        width: "100%",
+                        height: "100%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Typography sx={{ fontSize: 12, color: "rgba(107,114,128,0.9)" }}>
+                        Image coming soon
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+
+                {/* Info area */}
+                <Box sx={{ px: 2.2, pt: 1.4, pb: 2, position: "relative", zIndex: 3 }}>
+                  <Typography
                     sx={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "contain",
-                      objectPosition: `center ${imgY}`,
-                      transform: `scale(${imgScale})`,
-                      transition: "transform .7s cubic-bezier(.22,1,.36,1)",
-                    }}
-                  />
-                ) : (
-                  <Box
-                    sx={{
-                      width: "100%",
-                      height: "100%",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
+                      fontWeight: 700,
+                      letterSpacing: "0.16em",
+                      fontSize: 10.5,
+                      textTransform: "uppercase",
+                      color: "#8A8A8A",
                     }}
                   >
-                    <Typography sx={{ fontSize: 12, color: "rgba(107,114,128,0.9)" }}>
-                      Image coming soon
-                    </Typography>
-                  </Box>
-                )}
-              </Box>
+                    {product.brand || "Eyewear"}
+                  </Typography>
 
-              {/* Caption strip */}
-              <Box
-                sx={{
-                  position: "absolute",
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  px: { xs: 2, sm: 2.25, md: 2.5 },
-                  py: { xs: 1.75, sm: 2, md: 2.1 },
-                  bgcolor: "rgba(243,240,235,0.94)",
-                  backdropFilter: "blur(6px)",
-                  borderTop: "1px solid rgba(17,17,17,0.06)",
-                }}
-              >
-                <Typography
-                  sx={{
-                    fontSize: 10.5,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.28em",
-                    color: "rgba(23,23,23,0.55)",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {product.brand || "Eyewear"}
-                </Typography>
-                <Typography
-                  sx={{
-                    mt: 0.65,
-                    fontSize: 13.5,
-                    fontWeight: 800,
-                    color: "#171717",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {product.name}
-                </Typography>
-                <Typography
-                  sx={{ mt: 0.5, fontSize: 13, color: "rgba(23,23,23,0.72)", fontWeight: 700 }}
-                >
-                  {product.price.toLocaleString("en-US", {
-                    style: "currency",
-                    currency: "USD",
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
-                </Typography>
+                  <Typography
+                    sx={{
+                      mt: 0.55,
+                      fontSize: 13.5,
+                      fontWeight: 600,
+                      lineHeight: 1.35,
+                      color: "#171717",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      display: "-webkit-box",
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical" as const,
+                    }}
+                  >
+                    {product.name}
+                  </Typography>
+
+                  <Typography
+                    sx={{
+                      mt: 1,
+                      fontWeight: 700,
+                      fontSize: 15,
+                      color: "#171717",
+                    }}
+                  >
+                    {product.price.toLocaleString("en-US", {
+                      style: "currency",
+                      currency: "USD",
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </Typography>
+                </Box>
               </Box>
             </Box>
           );

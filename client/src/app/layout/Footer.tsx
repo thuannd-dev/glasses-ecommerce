@@ -1,5 +1,6 @@
 import {
     Box,
+    Button,
     Container,
     Grid,
     Link as MuiLink,
@@ -9,6 +10,9 @@ import {
 import { NavLink } from "react-router-dom";
 import FacebookIcon from "@mui/icons-material/Facebook";
 import InstagramIcon from "@mui/icons-material/Instagram";
+import MailOutlineIcon from "@mui/icons-material/MailOutline";
+import MusicNoteIcon from "@mui/icons-material/MusicNote";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import { COLORS } from "../theme/colors";
 
 /**
@@ -72,16 +76,174 @@ export default function Footer() {
         <Box
             component="footer"
             sx={{
-                bgcolor: COLORS.bgSubtle,
-                borderTop: `1px solid ${COLORS.borderSoft}`,
-                pt: { xs: 6, md: 8 },
-                pb: { xs: 5, md: 7 },
+                // Giữ nền footer đồng nhất với banner để tránh lộ "strip" màu nhạt
+                // khi chỉ render banner footer.
+                bgcolor: "#0B0B0B",
+                borderTop: "1px solid rgba(255,255,255,0.06)",
+                // Banner footer tự set padding riêng; wrapper pt/pb lớn sẽ tạo khoảng trắng
+                // khi các section bên dưới đang bị ẩn.
+                pt: 0,
+                pb: 0,
                 position: "relative",
             }}
         >
-            <Container maxWidth="xl">
+            <Container maxWidth={false} disableGutters>
+                {/* ===== Banner Footer (fashion editorial) ===== */}
+                <Box
+                    sx={{
+                        position: "relative",
+                        zIndex: 1,
+                        py: { xs: 6, md: 8 },
+                        borderTop: `1px solid rgba(255,255,255,0.06)`,
+                        bgcolor: "#0B0B0B",
+                        overflow: "hidden",
+                    }}
+                >
+                    <Box
+                        aria-hidden
+                        sx={{
+                            position: "absolute",
+                            inset: 0,
+                            background:
+                                "radial-gradient(90% 70% at 50% 35%, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.02) 40%, transparent 70%), linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.55) 100%)",
+                        }}
+                    />
+
+                    <Box sx={{ position: "relative", zIndex: 1, textAlign: "center", px: { xs: 2, md: 4 } }}>
+                        <Typography
+                            sx={{
+                                fontFamily: '"Playfair Display","Times New Roman",Times,serif',
+                                fontSize: { xs: 28, md: 44 },
+                                lineHeight: 1.05,
+                                letterSpacing: "0.08em",
+                                textTransform: "uppercase",
+                                color: "rgba(255,255,255,0.92)",
+                                mb: 3,
+                                whiteSpace: "pre-line",
+                            }}
+                        >
+                            “LUXURY AESTHETICS. PHYSICIAN EXPERTISE.”
+                        </Typography>
+
+                        <Button
+                            variant="outlined"
+                            endIcon={<ArrowForwardIcon sx={{ fontSize: 18 }} />}
+                            sx={{
+                                borderRadius: 999,
+                                border: "1px solid rgba(255,255,255,0.55)",
+                                color: "rgba(255,255,255,0.92)",
+                                px: { xs: 2.5, md: 4 },
+                                py: 1.1,
+                                fontWeight: 800,
+                                textTransform: "none",
+                                letterSpacing: "0.01em",
+                                bgcolor: "rgba(0,0,0,0.12)",
+                                "&:hover": {
+                                    borderColor: COLORS.accentGold,
+                                    color: "rgba(255,255,255,0.96)",
+                                    bgcolor: "rgba(0,0,0,0.18)",
+                                },
+                            }}
+                        >
+                            Book Consultation
+                        </Button>
+
+                        <Stack direction="row" spacing={1.5} justifyContent="center" sx={{ mt: 2.5 }}>
+                            <MuiLink
+                                href="#"
+                                aria-label="Instagram"
+                                sx={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    width: 40,
+                                    height: 40,
+                                    borderRadius: "999px",
+                                    border: "1px solid rgba(255,255,255,0.18)",
+                                    color: "rgba(255,255,255,0.90)",
+                                    transition: "all 160ms ease",
+                                    "&:hover": { borderColor: COLORS.accentGold, color: COLORS.accentGold },
+                                }}
+                            >
+                                <InstagramIcon fontSize="small" />
+                            </MuiLink>
+
+                            <MuiLink
+                                href="#"
+                                aria-label="Email"
+                                sx={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    width: 40,
+                                    height: 40,
+                                    borderRadius: "999px",
+                                    border: "1px solid rgba(255,255,255,0.18)",
+                                    color: "rgba(255,255,255,0.90)",
+                                    transition: "all 160ms ease",
+                                    "&:hover": { borderColor: COLORS.accentGold, color: COLORS.accentGold },
+                                }}
+                            >
+                                <MailOutlineIcon fontSize="small" />
+                            </MuiLink>
+
+                            <MuiLink
+                                href="#"
+                                aria-label="Facebook"
+                                sx={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    width: 40,
+                                    height: 40,
+                                    borderRadius: "999px",
+                                    border: "1px solid rgba(255,255,255,0.18)",
+                                    color: "rgba(255,255,255,0.90)",
+                                    transition: "all 160ms ease",
+                                    "&:hover": { borderColor: COLORS.accentGold, color: COLORS.accentGold },
+                                }}
+                            >
+                                <FacebookIcon fontSize="small" />
+                            </MuiLink>
+
+                            <MuiLink
+                                href="#"
+                                aria-label="TikTok"
+                                sx={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    width: 40,
+                                    height: 40,
+                                    borderRadius: "999px",
+                                    border: "1px solid rgba(255,255,255,0.18)",
+                                    color: "rgba(255,255,255,0.90)",
+                                    transition: "all 160ms ease",
+                                    "&:hover": { borderColor: COLORS.accentGold, color: COLORS.accentGold },
+                                }}
+                            >
+                                <MusicNoteIcon fontSize="small" />
+                            </MuiLink>
+                        </Stack>
+
+                        <Typography
+                            sx={{
+                                mt: 4.5,
+                                fontSize: 11,
+                                letterSpacing: "0.22em",
+                                textTransform: "uppercase",
+                                color: "rgba(255,255,255,0.52)",
+                                lineHeight: 1.6,
+                                px: { xs: 1, md: 0 },
+                            }}
+                        >
+                            LINE ERASER MD, 79 W MT PLEASANT AVE, LIVINGSTON, NJ 07039, USA
+                        </Typography>
+                    </Box>
+                </Box>
+
                 {/* ===== TOP AREA ===== */}
-                <Grid container spacing={6}>
+                <Grid container spacing={6} sx={{ display: "none" }}>
                     {/* Left: brand + tagline + socials */}
                     <Grid item xs={12} md={4}>
                         <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -239,6 +401,7 @@ export default function Footer() {
                 {/* ===== BOTTOM AREA ===== */}
                 <Box
                     sx={{
+                        display: "none",
                         mt: { xs: 5, md: 6 },
                         pt: { xs: 3, md: 4 },
                         borderTop: "1px solid rgba(0,0,0,0.06)",
@@ -334,12 +497,12 @@ export default function Footer() {
                     role="button"
                     tabIndex={0}
                     sx={{
+                        display: "none",
                         position: "absolute",
                         right: { xs: 16, md: 28 },
                         bottom: { xs: 18, md: 24 },
                         cursor: "pointer",
                         userSelect: "none",
-                        display: "flex",
                         flexDirection: "column",
                         alignItems: "center",
                         color: "#6B7280",

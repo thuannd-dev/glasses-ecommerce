@@ -6,7 +6,6 @@ import CollectionLandingPage from "../../features/collections/CollectionLandingP
 import Footer from "./Footer";
 import ScrollToTopButton from "../components/ScrollToTopButton";
 import ChatbotWidget from "../../features/chatbot/ChatbotWidget";
-import { useEffect, useState } from "react";
 
 function App() {
   const location = useLocation();
@@ -21,6 +20,8 @@ function App() {
     <Box
       sx={{
         minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
         background: "linear-gradient(180deg,#FFFFFF 0%,#FAFAF5 100%)",
       }}
     >
@@ -30,8 +31,12 @@ function App() {
       {isHome ? (
         <>
           <NavBar appearance="hero" showSearch={false} />
-          <CollectionLandingPage />
-          <Footer />
+          <Box component="main" sx={{ flex: 1 }}>
+            <CollectionLandingPage />
+          </Box>
+          <Box sx={{ mt: "auto" }}>
+            <Footer />
+          </Box>
           <ScrollToTopButton />
           <ChatbotWidget />
         </>
@@ -43,10 +48,14 @@ function App() {
             appearance={isCollectionsLanding ? "hero" : undefined}
             showSearch={isCollectionsLanding ? false : true}
           />
-          <Container maxWidth="xl" sx={{ mt: isCollectionsLanding ? 0 : 3 }}>
-            <Outlet />
-          </Container>
-          <Footer />
+          <Box component="main" sx={{ flex: 1 }}>
+            <Container maxWidth="xl" sx={{ mt: isCollectionsLanding ? 0 : 3 }}>
+              <Outlet />
+            </Container>
+          </Box>
+          <Box sx={{ mt: "auto" }}>
+            <Footer />
+          </Box>
           <ScrollToTopButton />
           <ChatbotWidget />
         </>
