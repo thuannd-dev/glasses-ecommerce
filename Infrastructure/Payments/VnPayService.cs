@@ -21,7 +21,7 @@ public sealed class VnPayService(IOptions<VnpaySettings> config) : IVnPayService
         pay.AddRequestData("vnp_Version", config.Value.Version);
         pay.AddRequestData("vnp_Command", config.Value.Command);
         pay.AddRequestData("vnp_TmnCode", config.Value.TmnCode);
-        decimal amountInVnd = model.Amount * config.Value.UsdToVndRate;
+        decimal amountInVnd = model.Amount * UsdToVndRate;
         pay.AddRequestData("vnp_Amount", Math.Round(amountInVnd * 100, 0, MidpointRounding.AwayFromZero).ToString("0", CultureInfo.InvariantCulture));
         pay.AddRequestData("vnp_CreateDate", timeNow.ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture));
         pay.AddRequestData("vnp_CurrCode", config.Value.CurrCode);
