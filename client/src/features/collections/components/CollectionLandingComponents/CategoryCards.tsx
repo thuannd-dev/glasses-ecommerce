@@ -13,19 +13,19 @@ const CATEGORIES: Category[] = [
         title: "SUNGLASSES",
         to: "/collections/sunglasses",
         image:
-            "https://images.unsplash.com/photo-1511499767150-a48a237f0083?auto=format&fit=crop&w=1400&q=80",
+            "https://res.cloudinary.com/ds0b8jtbr/image/upload/v1773945384/z7638183073516_8f172ac67a72d1e6ba0665b642541143_rfenec.jpg",
     },
     {
         title: "EYEGLASSES",
         to: "/collections/eyeglasses",
         image:
-            "https://images.unsplash.com/photo-1646083774155-2a40b675641d?auto=format&fit=crop&w=1400&q=80",
+            "https://res.cloudinary.com/ds0b8jtbr/image/upload/v1773944649/amir-seilsepour-wdtRhmwDFig-unsplash_szkmur.jpg",
     },
     {
         title: "ALL MY SHOP PRODUCT",
         to: "/collections/all",
         image:
-            "https://images.unsplash.com/photo-1744939823654-23b357f842e0?auto=format&fit=crop&w=1400&q=80",
+            "https://res.cloudinary.com/ds0b8jtbr/image/upload/v1773944645/istockphoto-2183222014-2048x2048_okqo6z.jpg",
     },
 ];
 

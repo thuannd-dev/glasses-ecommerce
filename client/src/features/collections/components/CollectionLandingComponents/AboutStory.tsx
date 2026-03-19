@@ -12,7 +12,8 @@ type StorySlide = {
   stats?: Array<{ value: string; label: string }>;
 };
 
-const AUTOPLAY_MS = 6800;
+// Chuyển slide đúng nhịp: ~6s/lần
+const AUTOPLAY_MS = 6000;
 
 const ROOT_SX = {
   position: "relative",
@@ -28,7 +29,7 @@ const ROOT_SX = {
 const SLIDES: StorySlide[] = [
   {
     id: "01",
-    image: "/images/categoryImages/culture.jpg",
+    image: "https://res.cloudinary.com/ds0b8jtbr/image/upload/v1773944649/z7638177981253_1c235eb3269584c60bbf71e2a0dc452c_xrnejp.jpg",
     eyebrow: "ABOUT EYEWEAR STUDIO",
     title: "Glasses that frame your life,\nnot hide it.",
     description:
@@ -48,7 +49,7 @@ const SLIDES: StorySlide[] = [
   },
   {
     id: "03",
-    image: "https://images.unsplash.com/photo-1760337741510-1a4661e036fa?q=80&w=1074&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    image: "https://res.cloudinary.com/ds0b8jtbr/image/upload/v1773944656/vooglam-eyewear-QSb7IMnUoGo-unsplash_gs2eo6.jpg",
     eyebrow: "MATERIALS WITH INTENT",
     title: "Lightweight metals.\nPlant‑based acetate.",
     description:
@@ -67,6 +68,10 @@ export default function AboutStory() {
   const indexRef = useRef(0);
   const pausedRef = useRef(false);
   const interactedUntilRef = useRef<number>(0);
+  const sectionRef = useRef<HTMLElement | null>(null);
+  const [isInView, setIsInView] = useState(true);
+  // Throttle rapid user clicks to prevent heavy AnimatePresence re-mount stutter.
+  const transitionUntilRef = useRef<number>(0);
 
   const active = SLIDES[index];
 
@@ -74,30 +79,65 @@ export default function AboutStory() {
 
   const goTo = useCallback(
     (next: number, markInteract = true) => {
+      if (markInteract && Date.now() < transitionUntilRef.current) return;
       const clamped = clampIndex(next, total);
       indexRef.current = clamped;
       setIndex(clamped);
-      if (markInteract) interactedUntilRef.current = Date.now() + 3500;
+      if (markInteract) {
+        // Khi user tương tác: chờ đến nhịp autoplay tiếp theo (~6s) để không “nhảy gấp”.
+        interactedUntilRef.current = Date.now() + AUTOPLAY_MS;
+        transitionUntilRef.current = Date.now() + 1200;
+      }
     },
     [total],
   );
 
   const next = useCallback(() => goTo(indexRef.current + 1, false), [goTo]);
-  const prev = useCallback(() => goTo(indexRef.current - 1, false), [goTo]);
 
   useEffect(() => {
     indexRef.current = index;
   }, [index]);
 
+  // Preload slide images to reduce jank when switching.
+  useEffect(() => {
+    const imgs = SLIDES.map((s) => {
+      const img = new Image();
+      img.src = s.image;
+      return img;
+    });
+    return () => {
+      // Nothing to cleanup; keep for potential cache.
+      void imgs;
+    };
+  }, []);
+
+  // Pause autoplay when carousel is not visible (major perf win on long pages).
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        setIsInView(Boolean(entry?.isIntersecting));
+      },
+      { threshold: 0.25 },
+    );
+
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
   useEffect(() => {
     if (reduce) return;
+    if (!isInView) return;
     const id = window.setInterval(() => {
       if (pausedRef.current) return;
       if (Date.now() < interactedUntilRef.current) return;
       next();
     }, AUTOPLAY_MS);
     return () => window.clearInterval(id);
-  }, [next, reduce]);
+  }, [next, reduce, isInView]);
 
   const progress = useMemo(() => ((index + 1) / total) * 100, [index, total]);
 
@@ -150,6 +190,9 @@ export default function AboutStory() {
     <Box sx={ROOT_SX}>
       <Box
         component={motion.section}
+        ref={(node: HTMLElement | null) => {
+          sectionRef.current = node;
+        }}
         onMouseEnter={() => {
           pausedRef.current = true;
         }}
@@ -326,8 +369,7 @@ export default function AboutStory() {
         >
           <IconButton
             onClick={() => {
-              interactedUntilRef.current = Date.now() + 3500;
-              prev();
+              goTo(indexRef.current - 1, true);
             }}
             sx={{
               pointerEvents: "auto",
@@ -354,8 +396,7 @@ export default function AboutStory() {
           </IconButton>
           <IconButton
             onClick={() => {
-              interactedUntilRef.current = Date.now() + 3500;
-              next();
+              goTo(indexRef.current + 1, true);
             }}
             sx={{
               pointerEvents: "auto",

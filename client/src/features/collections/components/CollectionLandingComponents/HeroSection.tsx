@@ -39,7 +39,7 @@ const HERO_SLIDES: HeroSlide[] = [
   {
     id: "03",
     image:
-      "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?q=80&w=1920&auto=format&fit=crop",
+      "https://res.cloudinary.com/ds0b8jtbr/image/upload/v1773944651/viktor-hesse-Wib4Rp4UJNE-unsplash_qge1rr.jpg",
     subtitle: "Fit and style guarantee",
     title: "Prescription glasses at\nremarkable prices",
     description: "Find your perfect pair.",
