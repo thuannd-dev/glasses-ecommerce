@@ -7,4 +7,5 @@ public interface IVnPayService
 {
     string CreatePaymentUrl(PaymentInformationDto model, string ipAddress);
     PaymentResponseDto PaymentExecute(IQueryCollection collections);
+    decimal UsdToVndRate { get; }
 }

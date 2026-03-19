@@ -10,6 +10,7 @@ namespace Infrastructure.Payments;
 
 public sealed class VnPayService(IOptions<VnpaySettings> config) : IVnPayService
 {
+    public decimal UsdToVndRate => config.Value.UsdToVndRate;
     public string CreatePaymentUrl(PaymentInformationDto model, string ipAddress)
     {
         TimeZoneInfo timeZoneById = GetPaymentTimeZone();
@@ -20,7 +21,8 @@ public sealed class VnPayService(IOptions<VnpaySettings> config) : IVnPayService
         pay.AddRequestData("vnp_Version", config.Value.Version);
         pay.AddRequestData("vnp_Command", config.Value.Command);
         pay.AddRequestData("vnp_TmnCode", config.Value.TmnCode);
-        pay.AddRequestData("vnp_Amount", Math.Round(model.Amount * 100, 0, MidpointRounding.AwayFromZero).ToString("0", CultureInfo.InvariantCulture));
+        decimal amountInVnd = model.Amount * config.Value.UsdToVndRate;
+        pay.AddRequestData("vnp_Amount", Math.Round(amountInVnd * 100, 0, MidpointRounding.AwayFromZero).ToString("0", CultureInfo.InvariantCulture));
         pay.AddRequestData("vnp_CreateDate", timeNow.ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture));
         pay.AddRequestData("vnp_CurrCode", config.Value.CurrCode);
         pay.AddRequestData("vnp_IpAddr", ipAddress);
