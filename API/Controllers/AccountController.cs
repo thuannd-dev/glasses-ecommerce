@@ -4,6 +4,7 @@ using API.DTOs;
 using Application.Accounts.Commands;
 using Application.Accounts.DTOs;
 using Application.Core;
+using Application.Interfaces;
 using Domain;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -14,7 +15,7 @@ namespace API.Controllers;
 
 [Route("api/account")]
 //UserManager have been injected in SignInManager
-public class AccountController(SignInManager<User> signInManager, IMediator mediator) : BaseApiController
+public class AccountController(SignInManager<User> signInManager, IMediator mediator, IEmailService emailService) : BaseApiController
 {
     [AllowAnonymous]
     [HttpPost("register")]
@@ -54,6 +55,10 @@ public class AccountController(SignInManager<User> signInManager, IMediator medi
             }
             return ValidationProblem();
         }
+
+        // Send welcome email to the new user
+        string userDisplayName = user.DisplayName ?? user.Email ?? user.UserName ?? "User";
+        await emailService.SendWelcomeEmailAsync(user.Email!, userDisplayName);
 
         return Ok();
     }

@@ -50,4 +50,16 @@ public interface IEmailService
         string userName,
         string resetLink,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Sends a welcome email to a newly registered user.
+    /// </summary>
+    /// <param name="toEmail">User email address</param>
+    /// <param name="userName">User name</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Whether the email was sent successfully</returns>
+    Task<bool> SendWelcomeEmailAsync(
+        string toEmail,
+        string userName,
+        CancellationToken cancellationToken = default);
 }

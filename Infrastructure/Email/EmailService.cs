@@ -43,7 +43,8 @@ public sealed class EmailService(
             using SmtpClient smtpClient = new(_settings.SmtpServer, _settings.SmtpPort)
             {
                 Credentials = new NetworkCredential(_settings.SmtpUsername, _settings.SmtpPassword),
-                EnableSsl = _settings.EnableSsl
+                EnableSsl = _settings.EnableSsl,
+                Timeout = 10000
             };
 
             await smtpClient.SendMailAsync(mail, cancellationToken);
@@ -238,6 +239,109 @@ public sealed class EmailService(
                             <li>Use a strong password combining uppercase, lowercase, numbers, and special characters</li>
                             <li>If you didn't request this, change your password immediately</li>
                         </ul>
+                    </div>
+                    
+                    <div class='footer'>
+                        <p>This is an automated email. Please do not reply directly to this email.</p>
+                        <p>&copy; 2026 Glasses E-commerce. All rights reserved.</p>
+                    </div>
+                </div>
+            </body>
+            </html>";
+    }
+
+    public async Task<bool> SendWelcomeEmailAsync(
+        string toEmail,
+        string userName,
+        CancellationToken cancellationToken = default)
+    {
+        string htmlContent = GenerateWelcomeTemplate(userName);
+        return await SendEmailAsync(toEmail, "Welcome to Glasses E-commerce!", htmlContent, cancellationToken);
+    }
+
+    private static string GenerateWelcomeTemplate(string userName)
+    {
+        return $@"
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset='UTF-8'>
+                <style>
+                    body {{ font-family: Arial, sans-serif; color: #333; }}
+                    .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                    .header {{ background-color: #2196F3; color: white; padding: 20px; text-align: center; border-radius: 5px; }}
+                    .header h1 {{ margin: 0; font-size: 28px; }}
+                    .content {{ margin: 20px 0; }}
+                    .welcome-box {{ background-color: #E3F2FD; border-left: 4px solid #2196F3; padding: 15px; margin: 20px 0; }}
+                    .features {{ margin: 20px 0; }}
+                    .features ul {{ list-style-type: none; padding: 0; }}
+                    .features li {{ 
+                        padding: 10px 0; 
+                        border-bottom: 1px solid #ddd;
+                        display: flex;
+                        align-items: center;
+                    }}
+                    .features li:before {{ 
+                        content: '✓';
+                        display: inline-block;
+                        color: #4CAF50;
+                        font-weight: bold;
+                        font-size: 18px;
+                        margin-right: 10px;
+                    }}
+                    .cta-button {{ text-align: center; margin: 30px 0; }}
+                    .cta-button a {{ 
+                        display: inline-block;
+                        background-color: #2196F3;
+                        color: white;
+                        padding: 12px 30px;
+                        text-decoration: none;
+                        border-radius: 5px;
+                        font-weight: bold;
+                    }}
+                    .cta-button a:hover {{ background-color: #1976D2; }}
+                    .footer {{ margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666; text-align: center; }}
+                </style>
+            </head>
+            <body>
+                <div class='container'>
+                    <div class='header'>
+                        <h1>Welcome!</h1>
+                    </div>
+                    
+                    <div class='content'>
+                        <p>Hello <strong>{userName}</strong>,</p>
+                        
+                        <div class='welcome-box'>
+                            <p>Thank you for registering with Glasses E-commerce! Your account has been successfully created and you're ready to start shopping.</p>
+                        </div>
+                        
+                        <h3>What You Can Do Now:</h3>
+                        <div class='features'>
+                            <ul>
+                                <li>Browse our collection of premium eyeglasses and frames</li>
+                                <li>Create and save your addresses for faster checkout</li>
+                                <li>View your order history and track shipments in real-time</li>
+                                <li>Save your favorite items for later</li>
+                                <li>Enjoy exclusive member benefits and promotions</li>
+                                <li>Get personalized recommendations based on your preferences</li>
+                            </ul>
+                        </div>
+                        
+                        <div class='cta-button'>
+                            <a href='https://localhost:3000'>Start Shopping Now</a>
+                        </div>
+                        
+                        <h3>Quick Tips:</h3>
+                        <p>
+                            <strong>• Complete Your Profile:</strong> Add your display name and profile image to personalize your account.<br>
+                            <strong>• Secure Your Account:</strong> Use a strong password and enable two-factor authentication for added security.<br>
+                            <strong>• Subscribe to Updates:</strong> Stay informed about new arrivals, exclusive sales, and special offers.
+                        </p>
+                        
+                        <p>If you have any questions or need assistance, our support team is here to help. Feel free to reach out anytime.</p>
+                        
+                        <p>Happy shopping!<br><strong>Glasses E-commerce Team</strong></p>
                     </div>
                     
                     <div class='footer'>
