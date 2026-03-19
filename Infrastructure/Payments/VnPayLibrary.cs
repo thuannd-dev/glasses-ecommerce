@@ -30,7 +30,10 @@ internal sealed class VnPayLibrary
         string orderId = vnPay.GetResponseData("vnp_TxnRef");
         string vnPayTranId = vnPay.GetResponseData("vnp_TransactionNo");
         string vnpResponseCode = vnPay.GetResponseData("vnp_ResponseCode");
-        string vnpSecureHash = collection.FirstOrDefault(k => k.Key == "vnp_SecureHash").Value.ToString() ?? string.Empty;
+        string vnpTransactionStatus = vnPay.GetResponseData("vnp_TransactionStatus");
+        string vnpSecureHash = collection.TryGetValue("vnp_SecureHash", out StringValues secureHashValues)
+            ? secureHashValues.ToString()
+            : string.Empty;
         string orderInfo = vnPay.GetResponseData("vnp_OrderInfo");
 
         string vnpAmountRaw = vnPay.GetResponseData("vnp_Amount");
@@ -47,7 +50,7 @@ internal sealed class VnPayLibrary
 
         return new PaymentResponseDto()
         {
-            Success = vnpResponseCode.Equals("00"),
+            Success = vnpResponseCode.Equals("00") && vnpTransactionStatus.Equals("00"),
             PaymentMethod = "VnPay",
             OrderDescription = orderInfo,
             OrderId = string.IsNullOrEmpty(orderId) ? null : orderId,
@@ -55,6 +58,7 @@ internal sealed class VnPayLibrary
             TransactionId = string.IsNullOrEmpty(vnPayTranId) ? null : vnPayTranId,
             Token = vnpSecureHash,
             VnPayResponseCode = vnpResponseCode,
+            VnPayTransactionStatus = vnpTransactionStatus,
             Amount = vnpAmount
         };
     }

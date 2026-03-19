@@ -1,4 +1,5 @@
 using Application.Core;
+using Application.Interfaces;
 using Application.Payments.DTOs;
 using Domain;
 using MediatR;
@@ -14,7 +15,7 @@ public sealed class HandleVnPayIpn
         public required PaymentResponseDto Response { get; set; }
     }
 
-    internal sealed class Handler(AppDbContext context) : IRequestHandler<Command, Result<Unit>>
+    internal sealed class Handler(AppDbContext context, IVnPayService vnPayService) : IRequestHandler<Command, Result<Unit>>
     {
         public async Task<Result<Unit>> Handle(Command request, CancellationToken ct)
         {
@@ -38,9 +39,11 @@ public sealed class HandleVnPayIpn
             if (payment.PaymentStatus != PaymentStatus.Pending)
                 return Result<Unit>.Failure("Payment already processed.", 409);
 
-            //The expression Math.Round(payment.Amount * 100, 0, MidpointRounding.AwayFromZero) / 100m rounds payment.Amount to 2 decimal places.
-            decimal expectedAmount = Math.Round(payment.Amount * 100, 0, MidpointRounding.AwayFromZero) / 100m;
-            if (response.Amount != expectedAmount)
+            // payment.Amount là USD, response.Amount từ VNPay là VNĐ (vnp_Amount / 100)
+            // Cần quy đổi sang VNĐ để so sánh, dùng cùng cách làm tròn như khi gửi đi
+            decimal usdToVndRate = vnPayService.UsdToVndRate;
+            decimal expectedAmountVnd = Math.Round(payment.Amount * usdToVndRate * 100, 0, MidpointRounding.AwayFromZero) / 100m;
+            if (response.Amount != expectedAmountVnd)
                 return Result<Unit>.Failure("Invalid payment amount.", 400);
 
             if (response.Success)
