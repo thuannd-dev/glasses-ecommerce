@@ -58,7 +58,16 @@ public class AccountController(SignInManager<User> signInManager, IMediator medi
 
         // Send welcome email to the new user
         string userDisplayName = user.DisplayName ?? user.Email ?? user.UserName ?? "User";
-        await emailService.SendWelcomeEmailAsync(user.Email!, userDisplayName);
+        try
+        {
+            await emailService.SendWelcomeEmailAsync(user.Email!, userDisplayName);
+        }
+        catch (Exception ex)
+        {
+            // Log the error but don't fail registration
+            // Consider: queue for retry via background service
+            // logger.LogWarning(ex, "Failed to send welcome email to {Email}", user.Email);
+        }
 
         return Ok();
     }

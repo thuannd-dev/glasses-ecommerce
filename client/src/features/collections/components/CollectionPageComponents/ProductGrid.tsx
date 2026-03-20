@@ -7,7 +7,7 @@ export function ProductGrid({ products }: { products: Product[] }) {
         <Box>
             <Grid container spacing={3.5}>
                 {products.map((p) => (
-                    <Grid key={p.id} item xs={12} sm={6} md={4} lg={3}>
+                    <Grid key={p.id} item xs={12} sm={6} md={3} lg={3}>
                         <ProductCard p={p} />
                     </Grid>
                 ))}

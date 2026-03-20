@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Mail;
+using System.Web;
 using Application.Interfaces;
 using Application.Orders.DTOs;
 using Microsoft.Extensions.Logging;
@@ -70,14 +71,14 @@ public sealed class EmailService(
             return $@"
                 <tr>
                     <td style='border: 1px solid #ddd; padding: 12px;'>{index + 1}</td>
-                    <td style='border: 1px solid #ddd; padding: 12px;'>{System.Net.WebUtility.HtmlEncode(item.ProductName)}</td>
+                    <td style='border: 1px solid #ddd; padding: 12px;'>{HttpUtility.HtmlEncode(item.ProductName)}</td>
                     <td style='border: 1px solid #ddd; padding: 12px; text-align: center;'>{item.Quantity}</td>
                     <td style='border: 1px solid #ddd; padding: 12px; text-align: right;'>${item.Price:F2}</td>
                     <td style='border: 1px solid #ddd; padding: 12px; text-align: right;'>${subtotal:F2}</td>
                 </tr>";
         }));
 
-        return $@"
+        return $@"  
             <table style='width: 100%; border-collapse: collapse; margin: 20px 0;'>
                 <thead>
                     <tr style='background-color: #f2f2f2;'>

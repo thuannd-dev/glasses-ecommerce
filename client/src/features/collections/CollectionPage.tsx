@@ -1,9 +1,8 @@
-import { Box, CircularProgress, Drawer, Button, Typography } from "@mui/material";
-
 import { useCollectionPage } from "./hooks/useCollectionPage";
 
+import { Box, CircularProgress, Typography } from "@mui/material";
+
 import { CollectionTopBar } from "./components/CollectionPageComponents/CollectionTopBar";
-import { FiltersSidebar } from "./components/CollectionPageComponents/FiltersSidebar";
 import { ProductGrid } from "./components/CollectionPageComponents/ProductGrid";
 import { EmptyState } from "./components/CollectionPageComponents/EmptyState";
 import { PaginationBar } from "./components/CollectionPageComponents/PaginationBar";
@@ -21,8 +20,6 @@ export default function CollectionPage() {
     filters,
     setFilters,
     page,
-    openFilter,
-    setOpenFilter,
     productsToShow,
     categoriesList,
     brandsList,
@@ -31,10 +28,7 @@ export default function CollectionPage() {
     effectiveTotal,
     showPagination,
     PAGE_SIZE,
-    activeFilterCount,
     handleChangePage,
-    defaultFilters,
-    initialKeyword,
   } = useCollectionPage();
 
   return (
@@ -81,52 +75,17 @@ export default function CollectionPage() {
           sx={{
             display: "flex",
             alignItems: "center",
-            gap: 1.5,
-            flexWrap: "wrap",
+            justifyContent: "flex-end",
           }}
         >
-          <CollectionTopBar sort={sort} setSort={setSort} />
-
-          {/* Mobile filter toggle */}
-          <Button
-            variant="outlined"
-            sx={{
-              display: { xs: "flex", md: "none" },
-              height: 38,
-              borderRadius: 999,
-              px: 2,
-              borderColor: "rgba(0,0,0,0.08)",
-              color: "#121212",
-              textTransform: "none",
-              fontSize: 14,
-              fontWeight: 500,
-              bgcolor: "#FFFFFF",
-              alignItems: "center",
-              gap: 1,
-              "&:hover": {
-                borderColor: "#B68C5A",
-                bgcolor: "#FAFAFA",
-              },
-            }}
-            onClick={() => setOpenFilter(true)}
-          >
-            <Box component="span">Filter</Box>
-            {activeFilterCount > 0 && (
-              <Box
-                component="span"
-                sx={{
-                  px: 1,
-                  py: 0.25,
-                  borderRadius: 999,
-                  bgcolor: "#F7F7F7",
-                  fontSize: 12,
-                  color: "#5B5B5B",
-                }}
-              >
-                {activeFilterCount}
-              </Box>
-            )}
-          </Button>
+          <CollectionTopBar
+            sort={sort}
+            setSort={setSort}
+            filters={filters}
+            setFilters={setFilters}
+            categories={categoriesList}
+            brands={brandsList}
+          />
         </Box>
       </Box>
 
@@ -135,25 +94,11 @@ export default function CollectionPage() {
         sx={{
           mt: 3,
           display: "grid",
-          gridTemplateColumns: { xs: "1fr", md: "320px minmax(0,1fr)" },
+          gridTemplateColumns: "1fr",
           gap: { xs: 3, md: 4 },
           alignItems: "flex-start",
         }}
       >
-        {/* Left: filters sidebar (desktop) */}
-        <Box sx={{ display: { xs: "none", md: "block" }, alignSelf: "flex-start" }}>
-          <FiltersSidebar
-            filters={filters}
-            setFilters={setFilters}
-            onReset={() => {
-              setFilters(defaultFilters(initialKeyword));
-            }}
-            categories={categoriesList}
-            brands={brandsList}
-            stickyTop={NAV_H + GAP_TOP + 16}
-          />
-        </Box>
-
         {/* Right: grid + pagination */}
         <Box>
           <Box>
@@ -181,41 +126,6 @@ export default function CollectionPage() {
         </Box>
       </Box>
 
-      {/* Filters drawer (mobile) */}
-      <Drawer
-        variant="temporary"
-        anchor="left"
-        open={openFilter}
-        onClose={() => setOpenFilter(false)}
-        ModalProps={{ disableScrollLock: true }}
-        sx={{
-          display: { xs: "block", md: "none" },
-          "& .MuiDrawer-paper": {
-            top: `${NAV_H}px`,
-            height: `calc(100vh - ${NAV_H}px)`,
-            width: { xs: "90vw", sm: 360 },
-            pt: 2,
-            boxSizing: "border-box",
-          },
-          "& .MuiBackdrop-root": {
-            top: `${NAV_H}px`,
-            height: `calc(100vh - ${NAV_H}px)`,
-          },
-        }}
-      >
-        <FiltersSidebar
-          filters={filters}
-          setFilters={setFilters}
-          onReset={() => {
-            setFilters(defaultFilters(initialKeyword));
-            setOpenFilter(false);
-          }}
-          onApply={() => setOpenFilter(false)}
-          categories={categoriesList}
-          brands={brandsList}
-          stickyTop={0}
-        />
-      </Drawer>
     </Box>
   );
 }

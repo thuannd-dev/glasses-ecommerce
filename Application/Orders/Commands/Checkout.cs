@@ -440,11 +440,9 @@ public sealed class Checkout
                 return Result<CustomerOrderDto>.Failure(transactionResult.Error!, transactionResult.Code);
 
             // 15. Get customer email for email sending (before final query)
+            // Only User is needed for the email — everything else comes from `result` (already fetched above).
             Order? orderForEmail = await context.Orders
                 .Include(o => o.User)
-                .Include(o => o.OrderItems)
-                  .ThenInclude(oi => oi.ProductVariant)
-                  .ThenInclude(pv => pv.Product)
                 .FirstOrDefaultAsync(o => o.Id == transactionResult.Value, ct);
 
             // 16. Re-query with ProjectTo (outside retry delegate).
@@ -472,6 +470,7 @@ public sealed class Checkout
             {
                 _ = Task.Run(async () =>
                 {
+                    // Build item list from `result` — already projected, no extra DB round-trip needed.
                     List<(string ProductName, int Quantity, decimal Price)> items = result.Items
                         .Select(oi => (
                             ProductName: oi.ProductName ?? "Unknown Product",
@@ -491,6 +490,7 @@ public sealed class Checkout
                         orderForEmail.User.Email,
                         result.Id.ToString(),
                         orderForEmail.User.DisplayName ?? orderForEmail.User.Email,
+                        result.FinalAmount,
                         items,
                         breakdown,
                         CancellationToken.None);

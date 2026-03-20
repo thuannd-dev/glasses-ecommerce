@@ -25,7 +25,7 @@ public sealed class ForgotPassword
         {
             // Find user by email
             User? user = await userManager.FindByEmailAsync(request.Email);
-            
+
             if (user == null)
             {
                 // For security: don't expose whether email exists or not
@@ -43,10 +43,15 @@ public sealed class ForgotPassword
             // Frontend will construct: https://glasses-ecommerce.azurewebsites.net/reset-password?email={email}&token={token}
             string resetLinkParams = $"email={System.Web.HttpUtility.UrlEncode(user.Email ?? "")}&token={encodedToken}";
 
+            if (string.IsNullOrWhiteSpace(user.Email))
+            {
+                return Result<Unit>.Success(Unit.Value); // Can't send email without address
+            }
+
             // Send password recovery email
             string userName = user.DisplayName ?? user.Email ?? user.UserName ?? "User";
             bool emailSent = await emailService.SendPasswordRecoveryEmailAsync(
-                user.Email!,
+                user.Email,
                 userName,
                 resetLinkParams,
                 cancellationToken);

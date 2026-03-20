@@ -2,7 +2,6 @@ import { createBrowserRouter, Navigate, Outlet } from "react-router";
 import App from "../layout/App";
 import AuthLayout from "../layout/AuthLayout";
 
-import HomePage from "../../features/home/HomePage";
 import Counter from "../../features/counter/Counter";
 
 import CollectionLandingPage from "../../features/collections/CollectionLandingPage";
@@ -65,17 +64,12 @@ import AdminDashboard from "../../features/Admin/AdminDashboard";
 import AdminLayout from "../../features/Admin/AdminLayout";
 import RoleManagement from "../../features/Admin/RoleManagement";
 import AdminPolicies from "../../features/Admin/AdminPolicies";
+import {
+  PoliciesGuaranteePage,
+  PoliciesLensReplacementPage,
+} from "../../features/policies/PoliciesListPage";
 import AdminFeatureToggles from "../../features/Admin/AdminFeatureToggles";
-import ChatbotWidget from "../../features/chatbot/ChatbotWidget";
 export const router = createBrowserRouter([
-  // ======================
-  // HOME (NO NAVBAR)
-  // ======================
-  {
-    path: "/",
-    element: <><HomePage /><ChatbotWidget /></>,
-  },
-
   // ======================
   // AUTH (NO NAVBAR)
   // ======================
@@ -105,6 +99,9 @@ export const router = createBrowserRouter([
     path: "/",
     element: <App />,
     children: [
+      // Landing page (was /collections)
+      { index: true, element: <CollectionLandingPage /> },
+
       // ======================
       // ROLE-BASED AREAS
       // ======================
@@ -188,10 +185,15 @@ export const router = createBrowserRouter([
       {
         path: "collections",
         children: [
-          { index: true, element: <CollectionLandingPage /> }, // /collections
+          // Keep /collections working, but redirect index to /
+          { index: true, element: <Navigate replace to="/" /> }, // /collections
           { path: ":category", element: <CollectionPage /> }, // /collections/glasses
         ],
       },
+
+      // Policies (customer-facing pages)
+      { path: "policies/guarantee", element: <PoliciesGuaranteePage /> },
+      { path: "policies/lens-replacement", element: <PoliciesLensReplacementPage /> },
 
       // ✅ Product detail
       { path: "product/:id", element: <ProductDetailPage /> }, // /product/g1
