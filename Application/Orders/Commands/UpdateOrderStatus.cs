@@ -222,6 +222,66 @@ public sealed class UpdateOrderStatus
                     }
                 }
 
+                // Validate pre-order item stock availability when transitioning to Shipped
+                if (newStatus == OrderStatus.Shipped && order.OrderType == OrderType.PreOrder)
+                {
+                    List<OrderItem> itemsToShip = await context.OrderItems
+                        .Where(oi => oi.OrderId == order.Id)
+                        .ToListAsync(ct);
+
+                    if (itemsToShip.Count == 0)
+                        return Result<Unit>.Failure("Order has no items.", 400);
+
+                    // Load variants to check IsPreOrder flag and get product names
+                    List<Guid> variantIds = itemsToShip
+                        .Select(oi => oi.ProductVariantId)
+                        .Distinct()
+                        .ToList();
+                    List<ProductVariant> variants = await context.ProductVariants
+                        .AsNoTracking()
+                        .Include(pv => pv.Product)
+                        .Where(pv => variantIds.Contains(pv.Id))
+                        .ToListAsync(ct);
+                    Dictionary<Guid, ProductVariant> variantMap = variants.ToDictionary(v => v.Id);
+
+                    // Load stocks for these variants
+                    List<Stock> stocks = await context.Stocks
+                        .AsNoTracking()
+                        .Where(s => variantIds.Contains(s.ProductVariantId))
+                        .ToListAsync(ct);
+                    Dictionary<Guid, Stock> stockMap = stocks.ToDictionary(s => s.ProductVariantId);
+
+                    // Check stock availability for pre-order items
+                    List<string> insufficientStockItems = [];
+                    foreach (OrderItem item in itemsToShip)
+                    {
+                        if (!variantMap.TryGetValue(item.ProductVariantId, out ProductVariant? variant))
+                            continue;
+
+                        // Only check pre-order items (IsPreOrder = true)
+                        if (!variant.IsPreOrder)
+                            continue;
+
+                        if (!stockMap.TryGetValue(item.ProductVariantId, out Stock? stock))
+                            continue;
+
+                        // For pre-orders, check QuantityOnHand (available stock to deduct from inventory)
+                        if (stock.QuantityOnHand < item.Quantity)
+                        {
+                            string itemName = $"{variant.Product.ProductName} (SKU: {variant.SKU})";
+                            insufficientStockItems.Add(itemName);
+                        }
+                    }
+
+                    if (insufficientStockItems.Count > 0)
+                    {
+                        string itemList = string.Join(", ", insufficientStockItems);
+                        return Result<Unit>.Failure(
+                            $"Pre-order item(s) ({itemList}) is not fullfilled, cannot create shipment",
+                            400);
+                    }
+                }
+
                 // If shipping, require and create shipment info
                 if (newStatus == OrderStatus.Shipped)
                 {

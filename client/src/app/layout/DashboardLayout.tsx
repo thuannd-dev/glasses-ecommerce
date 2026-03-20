@@ -70,7 +70,6 @@ export default function DashboardLayout() {
   const [salesOrdersOpen, setSalesOrdersOpen] = useState(true);
   const [salesTicketsOpen, setSalesTicketsOpen] = useState(true);
   const [operationsOpen, setOperationsOpen] = useState(true);
-  const [operationsTicketsOpen, setOperationsTicketsOpen] = useState(true);
   const [adminOpen, setAdminOpen] = useState(true);
   const { currentUser, logoutUser } = useAccount();
   const roles = Array.isArray(currentUser?.roles) ? currentUser.roles : [];
@@ -526,102 +525,75 @@ export default function DashboardLayout() {
                         After-sales
                       </Typography>
 
-                      {/* Tickets parent dropdown */}
-                      <ListItemButton
-                        onClick={() => setOperationsTicketsOpen((open) => !open)}
-                        sx={{
+                      {(() => {
+                        const searchParams = new URLSearchParams(location.search);
+                        const currentTicketType =
+                          location.pathname.startsWith("/operations/tickets")
+                            ? searchParams.get("type") ?? null
+                            : null;
+
+                        const baseStyles = {
                           borderRadius: 2,
                           mb: 0.25,
-                          color: "rgba(0,0,0,0.7)",
+                          color: "#8A8A8A",
+                          borderLeft: "3px solid transparent",
+                          pl: 1.5,
                           "&:hover": {
                             bgcolor: "rgba(0,0,0,0.04)",
-                            color: "rgba(0,0,0,0.9)",
+                            color: "#171717",
                           },
-                        }}
-                      >
-                        <ListItemIcon sx={{ minWidth: 40, color: "inherit" }}>
-                          <HistoryOutlined />
-                        </ListItemIcon>
-                        <ListItemText
-                          primary="Tickets"
-                          primaryTypographyProps={{ fontWeight: 600 }}
-                        />
-                        {operationsTicketsOpen ? <ExpandLess /> : <ExpandMore />}
-                      </ListItemButton>
+                        } as const;
 
-                      <Collapse in={operationsTicketsOpen} timeout="auto" unmountOnExit>
-                        <List component="div" disablePadding sx={{ pl: 4 }}>
-                          {(() => {
-                            const searchParams = new URLSearchParams(location.search);
-                            const currentTicketType =
-                              location.pathname.startsWith("/operations/tickets")
-                                ? searchParams.get("type") ?? null
-                                : null;
+                        const activeStyles = {
+                          bgcolor: "rgba(182,140,90,0.12)",
+                          color: "#171717",
+                          borderLeftColor: "#B68C5A",
+                        } as const;
 
-                            const baseStyles = {
-                              borderRadius: 2,
-                              mb: 0.25,
-                              color: "#8A8A8A",
-                              borderLeft: "3px solid transparent",
-                              pl: 1.5,
-                              "&:hover": {
-                                bgcolor: "rgba(0,0,0,0.04)",
-                                color: "#171717",
-                              },
-                            } as const;
+                        const isTicketsRoute = location.pathname.startsWith("/operations/tickets");
 
-                            const activeStyles = {
-                              bgcolor: "rgba(182,140,90,0.12)",
-                              color: "#171717",
-                              borderLeftColor: "#B68C5A",
-                            } as const;
+                        return (
+                          <>
+                            <ListItemButton
+                              component={NavLink}
+                              to="/operations/tickets?type=Return&status=Awaiting"
+                              sx={{
+                                ...baseStyles,
+                                ...(isTicketsRoute && currentTicketType === "Return"
+                                  ? activeStyles
+                                  : {}),
+                              }}
+                            >
+                              <ListItemIcon sx={{ minWidth: 32, color: "inherit" }}>
+                                <AssignmentReturnIcon />
+                              </ListItemIcon>
+                              <ListItemText
+                                primary="Return"
+                                primaryTypographyProps={{ fontWeight: 500 }}
+                              />
+                            </ListItemButton>
 
-                            const isTicketsRoute = location.pathname.startsWith("/operations/tickets");
-
-                            return (
-                              <>
-                                <ListItemButton
-                                  component={NavLink}
-                                  to="/operations/tickets?type=Return&status=Awaiting"
-                                  sx={{
-                                    ...baseStyles,
-                                    ...(isTicketsRoute && currentTicketType === "Return"
-                                      ? activeStyles
-                                      : {}),
-                                  }}
-                                >
-                                  <ListItemIcon sx={{ minWidth: 32, color: "inherit" }}>
-                                    <AssignmentReturnIcon />
-                                  </ListItemIcon>
-                                  <ListItemText
-                                    primary="Return"
-                                    primaryTypographyProps={{ fontWeight: 500 }}
-                                  />
-                                </ListItemButton>
-
-                                <ListItemButton
-                                  component={NavLink}
-                                  to="/operations/tickets?type=Warranty&status=Awaiting"
-                                  sx={{
-                                    ...baseStyles,
-                                    ...(isTicketsRoute && currentTicketType === "Warranty"
-                                      ? activeStyles
-                                      : {}),
-                                  }}
-                                >
-                                  <ListItemIcon sx={{ minWidth: 32, color: "inherit" }}>
-                                    <ShieldIcon />
-                                  </ListItemIcon>
-                                  <ListItemText
-                                    primary="Warranty"
-                                    primaryTypographyProps={{ fontWeight: 500 }}
-                                  />
-                                </ListItemButton>
-                              </>
-                            );
-                          })()}
-                        </List>
-                      </Collapse>
+                            <ListItemButton
+                              component={NavLink}
+                              to="/operations/tickets?type=Warranty&status=Awaiting"
+                              sx={{
+                                ...baseStyles,
+                                ...(isTicketsRoute && currentTicketType === "Warranty"
+                                  ? activeStyles
+                                  : {}),
+                              }}
+                            >
+                              <ListItemIcon sx={{ minWidth: 32, color: "inherit" }}>
+                                <ShieldIcon />
+                              </ListItemIcon>
+                              <ListItemText
+                                primary="Warranty"
+                                primaryTypographyProps={{ fontWeight: 500 }}
+                              />
+                            </ListItemButton>
+                          </>
+                        );
+                      })()}
 
                       {/* Inventory group */}
                       <Typography
