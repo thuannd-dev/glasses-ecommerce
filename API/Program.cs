@@ -5,6 +5,7 @@ using Application.Core;
 using Application.Interfaces;
 using Domain;
 using FluentValidation;
+using Infrastructure.Email;
 using Infrastructure.Payments;
 using Infrastructure.Photos;
 using Infrastructure.Security;
@@ -85,7 +86,7 @@ builder.Services.AddMediatR(x =>
 builder.Services.AddScoped<IUserAccessor, UserAccessor>();
 builder.Services.AddScoped<IPhotoService, PhotoService>();
 builder.Services.AddScoped<IVnPayService, VnPayService>();
-builder.Services.AddScoped<IEmailService, Infrastructure.Email.EmailService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.Configure<VnpaySettings>(builder.Configuration.GetSection("VnPay"));
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
