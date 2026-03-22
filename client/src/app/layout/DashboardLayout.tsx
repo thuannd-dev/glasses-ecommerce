@@ -322,7 +322,7 @@ export default function DashboardLayout() {
                                 <>
                                   <ListItemButton
                                     component={NavLink}
-                                    to="/sales/tickets?type=Return&status=Pending"
+                                    to="/sales/tickets?type=Return"
                                     sx={{
                                       ...baseStyles,
                                       ...(isTicketsRoute && currentTicketType === "Return" ? activeStyles : {}),
@@ -339,7 +339,7 @@ export default function DashboardLayout() {
 
                                   <ListItemButton
                                     component={NavLink}
-                                    to="/sales/tickets?type=Refund&status=Pending"
+                                    to="/sales/tickets?type=Refund"
                                     sx={{
                                       ...baseStyles,
                                       ...(isTicketsRoute && currentTicketType === "Refund" ? activeStyles : {}),
@@ -356,7 +356,7 @@ export default function DashboardLayout() {
 
                                   <ListItemButton
                                     component={NavLink}
-                                    to="/sales/tickets?type=Warranty&status=Pending"
+                                    to="/sales/tickets?type=Warranty"
                                     sx={{
                                       ...baseStyles,
                                       ...(isTicketsRoute && currentTicketType === "Warranty" ? activeStyles : {}),
