@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Box, Button, Chip, Dialog, IconButton, TextField, Typography } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
@@ -23,6 +23,7 @@ type CreateShipmentDialogProps = {
   carriers: string[];
   onSubmit: () => void;
   isPending: boolean;
+  error?: string | null;
 };
 
 export function CreateShipmentDialog({
@@ -42,10 +43,12 @@ export function CreateShipmentDialog({
   carriers,
   onSubmit,
   isPending,
+  error,
 }: CreateShipmentDialogProps) {
   const items = order?.items || [];
   const visibleItems = items.slice(0, 2);
   const remainingItemsCount = Math.max(0, items.length - visibleItems.length);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const inputBaseSx = {
     "& .MuiOutlinedInput-root": {
@@ -76,6 +79,13 @@ export function CreateShipmentDialog({
       setTrackingUrl(carrierUrls[carrier]);
     }
   }, [carrier, setTrackingUrl]);
+
+  // Auto-scroll to top when error appears
+  useEffect(() => {
+    if (error && scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0;
+    }
+  }, [error]);
 
   return (
     <Dialog
@@ -137,6 +147,7 @@ export function CreateShipmentDialog({
 
         {/* Scrollable body */}
         <Box
+          ref={scrollContainerRef}
           sx={{
             flex: 1,
             overflowY: "auto",
@@ -152,6 +163,34 @@ export function CreateShipmentDialog({
         >
           {order ? (
             <>
+              {/* Error banner */}
+              {error && (
+                <Box
+                  sx={{
+                    borderRadius: 1.5,
+                    border: "1px solid rgba(220, 38, 38, 0.3)",
+                    bgcolor: "rgba(254, 242, 242, 1)",
+                    p: 1.5,
+                    mb: 2,
+                    display: "flex",
+                    gap: 1,
+                    alignItems: "flex-start",
+                  }}
+                >
+                  <Typography
+                    sx={{
+                      fontSize: 12,
+                      fontWeight: 500,
+                      color: "#B91C1C",
+                      lineHeight: 1.5,
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    ❌ {error}
+                  </Typography>
+                </Box>
+              )}
+
               {/* PreOrder warning banner */}
               {order.orderType === "PreOrder" && (
                 <Box

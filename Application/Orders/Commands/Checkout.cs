@@ -478,12 +478,20 @@ public sealed class Checkout
                             Price: oi.UnitPrice))
                         .ToList();
 
+                    OrderEmailBreakdownDto breakdown = new()
+                    {
+                        SubtotalAmount = result.TotalAmount,
+                        DiscountAmount = result.DiscountApplied ?? 0m,
+                        ShippingFee = result.ShippingFee,
+                        FinalAmount = result.FinalAmount
+                    };
+
                     await emailService.SendOrderConfirmationEmailAsync(
                         orderForEmail.User.Email,
                         result.Id.ToString(),
                         orderForEmail.User.DisplayName ?? orderForEmail.User.Email,
-                        result.FinalAmount,
                         items,
+                        breakdown,
                         CancellationToken.None);
                 }, ct);
             }

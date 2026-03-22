@@ -25,16 +25,16 @@ public interface IEmailService
     /// <param name="toEmail">Customer email address</param>
     /// <param name="orderNumber">Order ID</param>
     /// <param name="customerName">Customer name</param>
-    /// <param name="totalAmount">Order total amount</param>
     /// <param name="items">List of items ordered</param>
+    /// <param name="breakdown">Price breakdown including subtotal, discount, shipping, and final amount</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Whether the email was sent successfully</returns>
     Task<bool> SendOrderConfirmationEmailAsync(
         string toEmail,
         string orderNumber,
         string customerName,
-        decimal totalAmount,
         List<(string ProductName, int Quantity, decimal Price)> items,
+        Application.Orders.DTOs.OrderEmailBreakdownDto breakdown,
         CancellationToken cancellationToken = default);
 
     /// <summary>

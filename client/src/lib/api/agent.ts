@@ -42,6 +42,9 @@ agent.interceptors.response.use(
         } else if (data.message) {
           // Handle Result<T>.Failure with message (e.g., policy violations)
           throw new Error(data.message);
+        } else if (typeof data === 'string') {
+          // Handle direct string error responses
+          throw new Error(data);
         } else {
           toast.error(data);
         }
@@ -79,6 +82,9 @@ agent.interceptors.response.use(
         // Conflict — duplicate request, validation error, etc.
         if (data.message) {
           throw new Error(data.message);
+        } else if (typeof data === 'string') {
+          // Handle direct string error responses (e.g., from Conflict(errorString))
+          throw new Error(data);
         }
         break;
       case 500:

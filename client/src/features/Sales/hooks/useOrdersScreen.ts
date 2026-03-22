@@ -8,6 +8,7 @@ import type { StaffOrdersResponse } from "../../../lib/types/staffOrders";
 
 // Map filter tabs to backend order statuses
 const STATUS_FILTER_MAP: Record<string, string[]> = {
+  "All": ["Pending", "Confirmed", "Processing", "Shipped", "Delivered", "Completed", "Cancelled", "Rejected"],
   "Pending": ["Pending"],
   "Confirmed": ["Confirmed", "Processing", "Shipped"],
   "Completed": ["Delivered", "Completed"],
@@ -32,9 +33,9 @@ export function useOrdersScreen() {
   const [pageNumber, setPageNumber] = useState(1);
   const pageSize = 10;
 
-  const rawStatus = searchParams.get("status") ?? "Pending";
+  const rawStatus = searchParams.get("status") ?? "All";
   const allowedStatuses = Object.keys(STATUS_FILTER_MAP);
-  const statusFilter = allowedStatuses.includes(rawStatus) ? rawStatus : "Pending";
+  const statusFilter = allowedStatuses.includes(rawStatus) ? rawStatus : "All";
 
   const rawType = searchParams.get("type") ?? "All";
   const allowedTypes = ["All", "ReadyStock", "PreOrder", "Prescription"];
@@ -91,6 +92,7 @@ export function useOrdersScreen() {
     : null;
 
   const statusTabs = [
+    { label: "All", value: "All" },
     { label: "Pending", value: "Pending" },
     { label: "Confirmed", value: "Confirmed" },
     { label: "Completed", value: "Completed" },
