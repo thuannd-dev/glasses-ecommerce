@@ -237,7 +237,7 @@ export function OperationsProvider({ children }: { children: React.ReactNode }) 
         setShippingNotes={setCreateShipShippingNotes}
         carriers={carriers}
         onSubmit={handleCreateShipment}
-        isPending={updateStatus.isPending}
+        isPending={updateStatus.isPending || createOutbound.isPending}
         error={createShipError}
       />
     </OperationsContext.Provider>
