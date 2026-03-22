@@ -14,8 +14,11 @@ function hasAuthenticatedUser(
 export type CartAuthGateApi = {
     signInForCartDialogProps: SignInForCartDialogProps;
     runWithAuth: (fn: () => void) => void;
-    /** `true` if `fn` ran; `false` if blocked (session resolving or sign-in dialog shown). */
-    runWithAuthAsync: (fn: () => Promise<void>) => Promise<boolean>;
+    /**
+     * Runs `fn` when signed in. Returns `false` if blocked (session / sign-in) or if `fn` returns `false`.
+     * If `fn` returns `void` / `undefined`, treated as success (`true`).
+     */
+    runWithAuthAsync: (fn: () => Promise<boolean | void>) => Promise<boolean>;
 };
 
 /**
@@ -74,7 +77,7 @@ export function useRequireAuthForCart(): CartAuthGateApi {
     );
 
     const runWithAuthAsync = useCallback(
-        async (fn: () => Promise<void>): Promise<boolean> => {
+        async (fn: () => Promise<boolean | void>): Promise<boolean> => {
             if (sessionStillResolving) {
                 toast.info("Checking your session…");
                 return false;
@@ -83,8 +86,8 @@ export function useRequireAuthForCart(): CartAuthGateApi {
                 setOpen(true);
                 return false;
             }
-            await fn();
-            return true;
+            const result = await fn();
+            return result !== false;
         },
         [currentUser, sessionStillResolving]
     );

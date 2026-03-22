@@ -3,16 +3,44 @@ import type { CartLensMode } from "../../lib/types/lensSelection";
 
 /** Cache prescription by cart item id (set after adding to cart with prescription). */
 const STORAGE_KEY = "cartItemPrescriptions";
-/** Fallback: prescription by productVariantId (same tab/session). */
+/** Fallback: prescription by productVariantId. */
 const STORAGE_KEY_BY_VARIANT = "cartPrescriptionByVariantId";
 const STORAGE_KEY_LENS_MODE = "cartItemLensMode";
+
+/**
+ * Dùng localStorage (không phải sessionStorage) để cùng origin chia sẻ giữa các tab.
+ * sessionStorage tách theo tab nên mở /cart tab mới sẽ mất prescription đã lưu ở tab khác.
+ */
+function getItem(key: string): string | null {
+  try {
+    const fromLocal = localStorage.getItem(key);
+    if (fromLocal != null) return fromLocal;
+    const legacy = sessionStorage.getItem(key);
+    if (legacy != null) {
+      localStorage.setItem(key, legacy);
+      sessionStorage.removeItem(key);
+    }
+    return legacy;
+  } catch {
+    return null;
+  }
+}
+
+function setItem(key: string, value: string) {
+  try {
+    localStorage.setItem(key, value);
+    sessionStorage.removeItem(key);
+  } catch {
+    // ignore
+  }
+}
 
 type Cache = Record<string, PrescriptionData>;
 type LensModeCache = Record<string, CartLensMode>;
 
 function read(key: string): Cache {
   try {
-    const raw = sessionStorage.getItem(key);
+    const raw = getItem(key);
     return raw ? (JSON.parse(raw) as Cache) : {};
   } catch {
     return {};
@@ -20,16 +48,12 @@ function read(key: string): Cache {
 }
 
 function write(key: string, data: Cache) {
-  try {
-    sessionStorage.setItem(key, JSON.stringify(data));
-  } catch {
-    // ignore
-  }
+  setItem(key, JSON.stringify(data));
 }
 
 function readLensModes(): LensModeCache {
   try {
-    const raw = sessionStorage.getItem(STORAGE_KEY_LENS_MODE);
+    const raw = getItem(STORAGE_KEY_LENS_MODE);
     return raw ? (JSON.parse(raw) as LensModeCache) : {};
   } catch {
     return {};
@@ -37,11 +61,7 @@ function readLensModes(): LensModeCache {
 }
 
 function writeLensModes(data: LensModeCache) {
-  try {
-    sessionStorage.setItem(STORAGE_KEY_LENS_MODE, JSON.stringify(data));
-  } catch {
-    // ignore
-  }
+  setItem(STORAGE_KEY_LENS_MODE, JSON.stringify(data));
 }
 
 function removeCartItemPrescriptionEntry(cartItemId: string) {

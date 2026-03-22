@@ -90,6 +90,7 @@ export function SelectLensesDialog({
     const [selectedOption, setSelectedOption] = useState<LensSelectionOption | null>(null);
     const [hasEnteredPrescriptionFlow, setHasEnteredPrescriptionFlow] = useState(false);
     const [nonRxSubmitting, setNonRxSubmitting] = useState(false);
+    const [rxConfirming, setRxConfirming] = useState(false);
 
     const [step, setStep] = useState<Step>("form");
     const [details, setDetails] = useState<PrescriptionDetailRow[]>(() =>
@@ -121,6 +122,7 @@ export function SelectLensesDialog({
             setSelectedOption(null);
             setHasEnteredPrescriptionFlow(false);
             setNonRxSubmitting(false);
+            setRxConfirming(false);
             setStep("form");
             setDetails(INITIAL_DETAILS.map((d) => ({ ...d })));
             setPdSingle("");
@@ -150,8 +152,14 @@ export function SelectLensesDialog({
     const handleFormContinue = () => setStep("confirm");
     const handleEdit = () => setStep("form");
     const handleYes = async () => {
-        const ok = await onPrescriptionConfirm(prescription);
-        if (ok) onClose();
+        if (rxConfirming) return;
+        setRxConfirming(true);
+        try {
+            const ok = await onPrescriptionConfirm(prescription);
+            if (ok) onClose();
+        } finally {
+            setRxConfirming(false);
+        }
     };
 
     const handleNonPrescriptionAdd = useCallback(async () => {
@@ -560,18 +568,26 @@ export function SelectLensesDialog({
                                                     </TextField>
                                                 </Box>
                                             )}
-                                            <Typography
-                                                component="a"
-                                                href="#"
+                                            <Button
+                                                type="button"
+                                                variant="text"
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                }}
                                                 sx={{
                                                     color: "primary.main",
                                                     fontSize: 14,
                                                     display: "block",
                                                     mt: 1,
+                                                    px: 0,
+                                                    minWidth: 0,
+                                                    textTransform: "none",
+                                                    fontWeight: 600,
                                                 }}
                                             >
                                                 Help me find my PD
-                                            </Typography>
+                                            </Button>
                                             <Button
                                                 variant="contained"
                                                 fullWidth
@@ -665,6 +681,7 @@ export function SelectLensesDialog({
                                                 <Button
                                                     variant="contained"
                                                     fullWidth
+                                                    disabled={rxConfirming}
                                                     sx={{
                                                         fontWeight: 700,
                                                         bgcolor: "#111827",
@@ -672,7 +689,7 @@ export function SelectLensesDialog({
                                                     }}
                                                     onClick={handleYes}
                                                 >
-                                                    YES
+                                                    {rxConfirming ? "Adding…" : "YES"}
                                                 </Button>
                                             </Box>
                                         </Box>
