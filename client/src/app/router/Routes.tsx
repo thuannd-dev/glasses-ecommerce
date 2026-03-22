@@ -192,7 +192,8 @@ export const router = createBrowserRouter([
       },
 
       // Policies (customer-facing pages)
-      { path: "policies/guarantee", element: <PoliciesGuaranteePage /> },
+      { path: "policies", element: <PoliciesGuaranteePage /> },
+      { path: "policies/guarantee", element: <Navigate replace to="/policies" /> },
       { path: "policies/lens-replacement", element: <PoliciesLensReplacementPage /> },
 
       // ✅ Product detail

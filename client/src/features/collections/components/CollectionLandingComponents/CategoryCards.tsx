@@ -2,6 +2,8 @@ import { Box, Button, Typography } from "@mui/material";
 import { NavLink, useNavigate } from "react-router-dom";
 import { motion, useReducedMotion } from "motion/react";
 
+import { COLLECTION_PRODUCT_FONT } from "../../collectionFonts";
+
 type Category = {
     title: string;
     to: string;
@@ -13,13 +15,13 @@ const CATEGORIES: Category[] = [
         title: "SUNGLASSES",
         to: "/collections/sunglasses",
         image:
-            "https://res.cloudinary.com/ds0b8jtbr/image/upload/v1773945384/z7638183073516_8f172ac67a72d1e6ba0665b642541143_rfenec.jpg",
+            "https://res.cloudinary.com/ds0b8jtbr/image/upload/v1774191682/photo-1760446032400-506ec8963e6a_zacy9w.jpg",
     },
     {
         title: "EYEGLASSES",
         to: "/collections/eyeglasses",
         image:
-            "https://res.cloudinary.com/ds0b8jtbr/image/upload/v1773944649/amir-seilsepour-wdtRhmwDFig-unsplash_szkmur.jpg",
+            "https://res.cloudinary.com/ds0b8jtbr/image/upload/v1774191679/photo-1760446031723-e03702a3386d_dignyg.jpg",
     },
     {
         title: "ALL MY SHOP PRODUCT",
@@ -286,8 +288,7 @@ export default function CategoryCards() {
                                                 lineHeight: 1.04,
                                                 mb: 1.5,
                                                 textShadow: "0 2px 10px rgba(0,0,0,0.35)",
-                                                fontFamily:
-                                                    '"Playfair Display","Times New Roman",Times,serif',
+                                                fontFamily: COLLECTION_PRODUCT_FONT,
                                             }}
                                         >
                                             {bigCard.title}
@@ -446,11 +447,12 @@ export default function CategoryCards() {
                                                 component={motion.div}
                                                 variants={labelV}
                                                 sx={{
-                                                    fontWeight: 900,
-                                                    letterSpacing: "0.26em",
+                                                    fontFamily: COLLECTION_PRODUCT_FONT,
+                                                    fontWeight: 700,
+                                                    letterSpacing: "0.2em",
                                                     textTransform: "uppercase",
                                                     color: "rgba(255,255,255,0.92)",
-                                                    fontSize: 12,
+                                                    fontSize: { xs: 13, sm: 14 },
                                                     textShadow: "0 2px 10px rgba(0,0,0,0.35)",
                                                 }}
                                             >

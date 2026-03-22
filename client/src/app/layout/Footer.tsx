@@ -32,7 +32,7 @@ const COLS = [
     {
         title: "PURCHASE",
         links: [
-            { label: "Customer Guarantees", to: "/policies/guarantee" },
+            { label: "Customer Guarantees", to: "/policies" },
             { label: "Lens Replacement", to: "/policies/lens-replacement" },
         ],
     },

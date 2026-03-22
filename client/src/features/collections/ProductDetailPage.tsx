@@ -11,7 +11,6 @@ import {
     Typography,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CameraAltIcon from "@mui/icons-material/CameraAlt";
 import ViewInArIcon from "@mui/icons-material/ViewInAr";
@@ -20,6 +19,8 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { useProductDetailPage } from "./hooks/useProductDetailPage";
 import { RelatedProductsCarousel } from "./components/ProductDetailPageComponents/RelatedProductsCarousel";
 import { usePreOrderButton } from "./components/ProductDetailPageComponents/PreOrderDialog";
+import { SignInRequiredForCartDialog } from "../../app/shared/components/SignInRequiredForCartDialog";
+import { useRequireAuthForCart } from "../../lib/hooks/useRequireAuthForCart";
 import agent from "../../lib/api/agent";
 
 const VirtualTryOn = lazy(() => import("../Manager/components/VirtualTryOn"));
@@ -33,7 +34,8 @@ const ACCENT = "#B68C5A";
 
 export default function ProductDetailPage() {
     const nav = useNavigate();
-    const { handlePreOrder } = usePreOrderButton();
+    const cartAuth = useRequireAuthForCart();
+    const { handlePreOrder } = usePreOrderButton(cartAuth);
     const {
         product,
         isLoading,
@@ -44,7 +46,7 @@ export default function ProductDetailPage() {
         handleAddToCart,
         handleVariantSelect,
         isEyeglasses,
-    } = useProductDetailPage();
+    } = useProductDetailPage(undefined, cartAuth);
     const [tryOnOpen, setTryOnOpen] = useState(false);
     const [viewer3DOpen, setViewer3DOpen] = useState(false);
     const [enable3DModels, setEnable3DModels] = useState(true);
@@ -152,22 +154,24 @@ export default function ProductDetailPage() {
     }
 
     return (
-        <Box
-            component="main"
-            sx={{
-                position: "relative",
-                left: "50%",
-                right: "50%",
-                ml: "-50vw",
-                mr: "-50vw",
-                width: "100vw",
-                background: "linear-gradient(180deg,#FFFFFF 0%,#FAFAF5 100%)",
-                pt: `calc(${NAV_H}px + ${GAP_TOP}px)`,
-                pb: `calc(${FOOT_H}px + ${GAP_BOTTOM}px)`,
-                minHeight: `calc(100vh - ${NAV_H}px - ${FOOT_H}px)`,
-                px: { xs: 2, md: 3 },
-            }}
-        >
+        <>
+            <SignInRequiredForCartDialog {...cartAuth.signInForCartDialogProps} />
+            <Box
+                component="main"
+                sx={{
+                    position: "relative",
+                    left: "50%",
+                    right: "50%",
+                    ml: "-50vw",
+                    mr: "-50vw",
+                    width: "100vw",
+                    background: "linear-gradient(180deg,#FFFFFF 0%,#FAFAF5 100%)",
+                    pt: `calc(${NAV_H}px + ${GAP_TOP}px)`,
+                    pb: `calc(${FOOT_H}px + ${GAP_BOTTOM}px)`,
+                    minHeight: `calc(100vh - ${NAV_H}px - ${FOOT_H}px)`,
+                    px: { xs: 2, md: 3 },
+                }}
+            >
             {/* Back + breadcrumb */}
             <Box
                 sx={{
@@ -543,26 +547,27 @@ export default function ProductDetailPage() {
                         {(currentVariant?.quantityAvailable ?? 0) > 0 && (
                             <>
                                 {isEyeglasses ? (
-                                    <>
-                                        <Button
-                                            variant="contained"
-                                            onClick={() =>
-                                                nav(`/product/${product.id}/lenses`, {
-                                                    state: { variantId: currentVariant?.id ?? null },
-                                                })
-                                            }
-                                            sx={{
-                                                bgcolor: "#111827",
-                                                borderRadius: 1.75,
-                                                height: 46,
-                                                px: 3,
-                                                fontWeight: 900,
-                                                "&:hover": { bgcolor: "#0b1220", boxShadow: "0 14px 36px rgba(0,0,0,0.2)" },
-                                            }}
-                                        >
-                                            Select lenses
-                                        </Button>
-                                    </>
+                                    <Button
+                                        variant="contained"
+                                        onClick={() =>
+                                            nav(`/product/${product.id}/lenses`, {
+                                                state: { variantId: currentVariant?.id ?? null },
+                                            })
+                                        }
+                                        sx={{
+                                            bgcolor: "#111827",
+                                            borderRadius: 1.75,
+                                            height: 46,
+                                            px: 3,
+                                            fontWeight: 900,
+                                            "&:hover": {
+                                                bgcolor: "#0b1220",
+                                                boxShadow: "0 14px 36px rgba(0,0,0,0.2)",
+                                            },
+                                        }}
+                                    >
+                                        Select lenses
+                                    </Button>
                                 ) : (
                                     <Button
                                         variant="contained"
@@ -595,10 +600,13 @@ export default function ProductDetailPage() {
                                                 isPreOrder: true 
                                             },
                                         });
-                                    } else {
-                                        // For sunglasses: direct pre-order
+                                    } else if (product && currentVariant) {
                                         handlePreOrder({
-                                            variant: currentVariant,
+                                            productVariantId: currentVariant.id,
+                                            productId: product.id,
+                                            name: product.name,
+                                            image: images[0]?.url ?? "",
+                                            price: currentVariant.price ?? product.price,
                                         });
                                     }
                                 }}
@@ -620,26 +628,7 @@ export default function ProductDetailPage() {
                             </Button>
                         )}
 
-                        <Button
-                            variant="outlined"
-                            startIcon={<FavoriteBorderIcon />}
-                            sx={{
-                                borderRadius: 1.75,
-                                height: 46,
-                                px: 2.2,
-                                fontWeight: 600,
-                                textTransform: "none",
-                                borderColor: "rgba(0,0,0,0.16)",
-                                color: "#121212",
-                                bgcolor: "#FFFFFF",
-                                "&:hover": {
-                                    bgcolor: "#FAFAFA",
-                                    borderColor: ACCENT,
-                                },
-                            }}
-                        >
-                            Wishlist
-                        </Button>
+                        {/* Wishlist button removed (not used). */}
                         </Box>
                         <Typography sx={{ mt: 1.5, fontSize: 12, color: "#8A8A8A" }}>
                             Free returns • Secure checkout • 2-year warranty
@@ -812,5 +801,6 @@ export default function ProductDetailPage() {
                 </Suspense>
             )}
         </Box>
+        </>
     );
 }

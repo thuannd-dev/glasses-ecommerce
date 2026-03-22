@@ -180,7 +180,7 @@ const EYEBROW_SX = {
 
 const HEADING_SX = {
   // Editorial headline scale (match AboutStory emphasis).
-  fontSize: { xs: 38, md: 62 },
+  fontSize: { xs: 35, md: 50 },
   lineHeight: 1.03,
   fontWeight: 500,
   letterSpacing: "-0.02em",
@@ -488,11 +488,11 @@ export default function PolicySection() {
         <Box sx={WALL_SX}>
           {/* Intro tile */}
           <Box sx={INTRO_SX}>
-            <Typography sx={{ ...EYEBROW_SX, mb: 1.2 }}>Customer guarantees</Typography>
+            <Typography sx={{ ...EYEBROW_SX, mb: 1.2 }}>Service & Support Policy</Typography>
             <Typography component="h2" sx={HEADING_SX}>
-              Clear terms
+              Reliable eyewear support
               <br />
-              for eyewear support.
+              guided by refined policies.
             </Typography>
             <Typography sx={BODY_SX}>
               Easy-to-read return, warranty, and refund terms—so you can buy with confidence. Straightforward rules,
@@ -521,7 +521,7 @@ export default function PolicySection() {
               </Box>
             )}
 
-            <Button onClick={() => navigate("/policies/guarantee")} variant="outlined" sx={CTA_SX}>
+            <Button onClick={() => navigate("/policies")} variant="outlined" sx={CTA_SX}>
               View more policy
             </Button>
           </Box>

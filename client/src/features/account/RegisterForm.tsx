@@ -1,11 +1,12 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useNavigate, Link } from "react-router";
+import { useNavigate, Link, useSearchParams } from "react-router";
 
 import { Box, Button, Typography, Divider } from "@mui/material";
 import { ArrowBack } from "@mui/icons-material";
 
 import { useAccount } from "../../lib/hooks/useAccount";
+import { sanitizeReturnUrl } from "../../lib/utils/sanitizeReturnUrl";
 import TextInput from "../../app/shared/components/TextInput";
 import {
   registerSchema,
@@ -15,6 +16,8 @@ import {
 export default function RegisterForm() {
   const { registerUser } = useAccount();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const returnUrl = searchParams.get("returnUrl");
 
   const {
     control,
@@ -79,7 +82,10 @@ export default function RegisterForm() {
         >
           {/* 🔙 Back */}
           <Button
-            onClick={() => navigate("/collections")}
+            onClick={() => {
+              const safe = sanitizeReturnUrl(returnUrl);
+              navigate(safe ?? "/collections");
+            }}
             startIcon={<ArrowBack />}
             variant="text"
             sx={{
@@ -220,7 +226,11 @@ export default function RegisterForm() {
               Already have an account?
               <Typography
                 component={Link}
-                to="/login"
+                to={
+                  returnUrl
+                    ? `/login?returnUrl=${encodeURIComponent(returnUrl)}`
+                    : "/login"
+                }
                 sx={{ ml: 1, fontWeight: 900, textDecoration: "none" }}
                 color="primary"
               >

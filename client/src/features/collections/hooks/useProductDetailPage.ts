@@ -6,11 +6,15 @@ import { toast } from "react-toastify";
 import { useProductDetail } from "../../../lib/hooks/useProducts";
 import { cartStore } from "../../../lib/stores/cartStore";
 import { useCart } from "../../../lib/hooks/useCart";
-import { setCartItemPrescription } from "../../cart/prescriptionCache";
+import type { CartAuthGateApi } from "../../../lib/hooks/useRequireAuthForCart";
+import { setCartItemLensMode, setCartItemPrescription } from "../../cart/prescriptionCache";
 import type { PrescriptionData } from "../../../lib/types/prescription";
-import type { CartDto } from "../../../lib/types/cart";
+import type { CartDto, CartItemDto } from "../../../lib/types/cart";
 
-export function useProductDetailPage(initialVariantId?: string | null) {
+export function useProductDetailPage(
+  initialVariantId: string | null | undefined,
+  cartAuth: CartAuthGateApi
+) {
   const { id } = useParams<{ id: string }>();
   const queryClient = useQueryClient();
   const { product, isLoading } = useProductDetail(id);
@@ -50,58 +54,85 @@ export function useProductDetailPage(initialVariantId?: string | null) {
   }, [product, currentVariant, images]);
 
   const handleAddToCart = () => {
-    if (!addToCartPayload) return;
-    cartStore.addItem({
-      productId: addToCartPayload.productId,
-      name: addToCartPayload.name,
-      image: addToCartPayload.image,
-      price: addToCartPayload.price,
-    });
-    addItem({
-      productVariantId: addToCartPayload.variantId,
-      quantity: 1,
+    cartAuth.runWithAuth(() => {
+      if (!addToCartPayload) return;
+      cartStore.addItem({
+        productId: addToCartPayload.productId,
+        name: addToCartPayload.name,
+        image: addToCartPayload.image,
+        price: addToCartPayload.price,
+      });
+      addItem({
+        productVariantId: addToCartPayload.variantId,
+        quantity: 1,
+      });
     });
   };
 
-  const handleAddWithPrescription = async (prescription: PrescriptionData) => {
-    if (!addToCartPayload) return;
-    cartStore.addItem({
-      productId: addToCartPayload.productId,
-      name: addToCartPayload.name,
-      image: addToCartPayload.image,
-      price: addToCartPayload.price,
-    });
-    const variantId = addToCartPayload.variantId;
-    const cart = await addItemAsync({
-      productVariantId: variantId,
-      quantity: 1,
-    });
-    
-    // Get the LAST item with this variant (newly added), not first
-    // Important: when same variant added multiple times with different prescriptions,
-    // we need to link the prescription to the specific new cart item, not an old one
-    let item = cart?.items?.filter((i) => i.productVariantId === variantId).at(-1);
-    
-    // If immediate response doesn't have the item, wait briefly and refetch
-    // This handles race conditions where backend is still processing
-    if (!item && cart) {
-      // Small delay to allow backend to process
+  const resolveLastCartItemForVariant = async (
+    variantId: string,
+    cartFromAdd: CartDto | undefined
+  ): Promise<CartItemDto | null> => {
+    let item = cartFromAdd?.items?.filter((i) => i.productVariantId === variantId).at(-1);
+    if (!item && cartFromAdd) {
       await new Promise((resolve) => setTimeout(resolve, 300));
       const fresh = await queryClient.fetchQuery<CartDto>({
         queryKey: ["cart"],
-        staleTime: 0,  // Force fresh fetch
+        staleTime: 0,
       });
       item = fresh?.items?.filter((i) => i.productVariantId === variantId).at(-1);
     }
-    
-    // Fail-fast: If still can't find item after retries, report error and stop
-    if (!item) {
-      toast.error("Failed to save prescription to cart. Please refresh and try again.");
-      return;
-    }
-    
-    // Item found - save prescription to cache
-    setCartItemPrescription(item.id, prescription);
+    return item ?? null;
+  };
+
+  const handleAddWithPrescription = async (prescription: PrescriptionData): Promise<boolean> => {
+    return cartAuth.runWithAuthAsync(async () => {
+      if (!addToCartPayload) return;
+      cartStore.addItem({
+        productId: addToCartPayload.productId,
+        name: addToCartPayload.name,
+        image: addToCartPayload.image,
+        price: addToCartPayload.price,
+      });
+      const variantId = addToCartPayload.variantId;
+      const cart = await addItemAsync({
+        productVariantId: variantId,
+        quantity: 1,
+      });
+
+      const item = await resolveLastCartItemForVariant(variantId, cart);
+      if (!item) {
+        toast.error("Failed to save prescription to cart. Please refresh and try again.");
+        return;
+      }
+
+      setCartItemPrescription(item.id, prescription);
+    });
+  };
+
+  const handleAddNonPrescriptionLenses = async (): Promise<boolean> => {
+    return cartAuth.runWithAuthAsync(async () => {
+      if (!addToCartPayload) return;
+      cartStore.addItem({
+        productId: addToCartPayload.productId,
+        name: addToCartPayload.name,
+        image: addToCartPayload.image,
+        price: addToCartPayload.price,
+      });
+      const variantId = addToCartPayload.variantId;
+      const cart = await addItemAsync({
+        productVariantId: variantId,
+        quantity: 1,
+      });
+
+      const item = await resolveLastCartItemForVariant(variantId, cart);
+      if (!item) {
+        toast.error("Failed to add item to cart. Please refresh and try again.");
+        return;
+      }
+
+      setCartItemLensMode(item.id, "non-prescription");
+    });
   };
 
   const handleVariantSelect = (variantId: string) => {
@@ -124,6 +155,7 @@ export function useProductDetailPage(initialVariantId?: string | null) {
     handleVariantSelect,
     isEyeglasses,
     handleAddWithPrescription,
+    handleAddNonPrescriptionLenses,
     addToCartPayload,
   };
 }

@@ -2,6 +2,8 @@ import { useCollectionPage } from "./hooks/useCollectionPage";
 
 import { Box, CircularProgress, Typography } from "@mui/material";
 
+import { COLLECTION_PRODUCT_FONT } from "./collectionFonts";
+
 import { CollectionTopBar } from "./components/CollectionPageComponents/CollectionTopBar";
 import { ProductGrid } from "./components/CollectionPageComponents/ProductGrid";
 import { EmptyState } from "./components/CollectionPageComponents/EmptyState";
@@ -46,6 +48,12 @@ export default function CollectionPage() {
         pb: `calc(${FOOT_H}px + ${GAP_BOTTOM}px)`,
         minHeight: `calc(100vh - ${NAV_H}px - ${FOOT_H}px)`,
         px: { xs: 2, md: 3 },
+        "& .MuiTypography-root": {
+          fontFamily: COLLECTION_PRODUCT_FONT,
+        },
+        "& .MuiSelect-select": {
+          fontFamily: `${COLLECTION_PRODUCT_FONT} !important`,
+        },
       }}
     >
       <Box ref={topRef} />
