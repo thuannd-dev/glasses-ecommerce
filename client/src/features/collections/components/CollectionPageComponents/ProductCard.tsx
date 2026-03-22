@@ -1,7 +1,10 @@
-import { Box, Button, Card, CardActionArea, Typography } from "@mui/material";
+import { Box, Card, CardActionArea, Typography } from "@mui/material";
 import { NavLink } from "react-router-dom";
 import type { Product } from "../../../../lib/types";
 import { formatMoney } from "../../../../lib/utils/format";
+
+const cardInfoFont =
+    '"Segoe UI", Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif';
 
 export function ProductCard({ p }: { p: Product }) {
     return (
@@ -79,24 +82,27 @@ export function ProductCard({ p }: { p: Product }) {
                     ) : null}
                 </Box>
 
-                {/* Text: brand, tên sản phẩm, giá */}
+                {/* Text: brand, name, price, description — even vertical rhythm */}
                 <Box
                     sx={{
                         px: 2,
-                        pt: 1.3,
+                        pt: 2,
                         pb: 2,
                         display: "flex",
                         flexDirection: "column",
+                        gap: 1.25,
+                        fontFamily: cardInfoFont,
                     }}
                 >
                     <Typography
+                        component="span"
                         sx={{
-                            color: "#8A8A8A",
-                            fontSize: 12.5,
-                            fontWeight: 800,
+                            color: "#6B7280",
+                            fontSize: 11,
+                            fontWeight: 600,
                             textTransform: "uppercase",
-                            letterSpacing: "0.06em",
-                            lineHeight: 1.1,
+                            letterSpacing: "0.1em",
+                            lineHeight: 1.2,
                         }}
                     >
                         {p.brand}
@@ -105,54 +111,50 @@ export function ProductCard({ p }: { p: Product }) {
                     <Typography
                         className="ProductCard-name"
                         sx={{
-                            color: "#171717",
-                        fontSize: 13.5,
-                        mt: 0.5,
-                        fontWeight: 800,
-                        lineHeight: 1.25,
-                        display: "-webkit-box",
-                        WebkitLineClamp: 1,
+                            color: "#111827",
+                            fontSize: 14,
+                            fontWeight: 700,
+                            lineHeight: 1.35,
+                            letterSpacing: "-0.01em",
+                            display: "-webkit-box",
+                            WebkitLineClamp: 1,
                             WebkitBoxOrient: "vertical",
                             overflow: "hidden",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.08em",
                         }}
                     >
                         {p.name}
                     </Typography>
 
                     <Typography
+                        component="span"
                         sx={{
-                            mt: 1.0,
                             fontWeight: 700,
-                            fontSize: 16,
-                            color: "#171717",
+                            fontSize: 15,
+                            lineHeight: 1.3,
+                            color: "#111827",
                         }}
                     >
                         {formatMoney(p.price)}
                     </Typography>
 
-                    <Button
-                        fullWidth
-                        variant="outlined"
-                        disableElevation
-                        sx={{
-                            mt: "auto",
-                            height: 38,
-                            borderRadius: 1,
-                            borderColor: "rgba(0,0,0,0.15)",
-                            color: "#171717",
-                            fontWeight: 900,
-                            letterSpacing: "0.06em",
-                            textTransform: "uppercase",
-                            "&:hover": {
-                                borderColor: "rgba(182,140,90,0.7)",
-                                bgcolor: "rgba(182,140,90,0.08)",
-                            },
-                        }}
-                    >
-                        ADD TO CART
-                    </Button>
+                    {p.description ? (
+                        <Typography
+                            component="p"
+                            sx={{
+                                m: 0,
+                                fontSize: 12,
+                                lineHeight: 1.4,
+                                fontWeight: 400,
+                                color: "rgba(17,24,39,0.62)",
+                                display: "-webkit-box",
+                                WebkitLineClamp: 1,
+                                WebkitBoxOrient: "vertical",
+                                overflow: "hidden",
+                            }}
+                        >
+                            {p.description}
+                        </Typography>
+                    ) : null}
                 </Box>
             </CardActionArea>
         </Card>

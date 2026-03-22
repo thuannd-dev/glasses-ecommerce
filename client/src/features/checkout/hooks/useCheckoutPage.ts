@@ -167,7 +167,7 @@ export function useCheckoutPage() {
     }
   }, [isEmptyCart]);
 
-  const handlePlaceOrder = async () => {
+  const handlePlaceOrder = async (shippingFee: number = 0) => {
     if (isEmptyCart) {
       setSnackbar({ open: true, message: "Your cart is empty.", severity: "error" });
       return;
@@ -298,6 +298,13 @@ export function useCheckoutPage() {
         imageUrl: variantToImage[oItem.productVariantId] ?? undefined,
       }));
 
+      const orderForUi = {
+        ...orderForState,
+        shippingFee,
+        finalAmount: Math.max(0, orderForState.finalAmount + shippingFee),
+        items: orderItemsWithImage,
+      };
+
       if (paymentMethod === "BANK") {
         const urlReq = await createPaymentUrl.mutateAsync({
           orderId: orderForState.id,
@@ -321,7 +328,7 @@ export function useCheckoutPage() {
       }
 
       navigate("/order-success", {
-        state: { order: { ...orderForState, items: orderItemsWithImage }, address: shippingAddr },
+        state: { order: orderForUi, address: shippingAddr },
       });
     } catch (err) {
       setSnackbar({

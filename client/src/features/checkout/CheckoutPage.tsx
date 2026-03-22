@@ -1118,7 +1118,7 @@ export default function CheckoutPage() {
                                                         outlineOffset: 3,
                                                     },
                                                 }}
-                                                onClick={handlePlaceOrder}
+                                                onClick={() => handlePlaceOrder(shippingFee)}
                                             >
                                                 {submitting ? "Placing order..." : "Place order"}
                                             </Button>

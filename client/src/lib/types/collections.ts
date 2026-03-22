@@ -22,6 +22,8 @@ export type Product = {
   gender?: Gender;
   frameSize?: FrameSize;
   colors?: string[];
+  /** Short copy from list API; full text on PDP */
+  description?: string | null;
 };
 
 export type FiltersState = {

@@ -1,44 +1,44 @@
 import { toast } from "react-toastify";
-import { useNavigate } from "react-router-dom";
+import type { CartAuthGateApi } from "../../../../lib/hooks/useRequireAuthForCart";
 import { useCart } from "../../../../lib/hooks/useCart";
+import { cartStore } from "../../../../lib/stores/cartStore";
 
-interface PreOrderButtonProps {
-  variant: any;
-}
+export type PreOrderLinePayload = {
+  productVariantId: string;
+  productId: string;
+  name: string;
+  image: string;
+  price: number;
+};
 
-export function usePreOrderButton() {
-  const navigate = useNavigate();
-  const { addItem } = useCart();
+export function usePreOrderButton(cartAuth: CartAuthGateApi) {
+  const { addItemAsync } = useCart();
 
-  const handlePreOrder = async ({
-    variant,
-  }: PreOrderButtonProps) => {
-    if (!variant?.id) {
+  const handlePreOrder = async (line: PreOrderLinePayload) => {
+    if (!line.productVariantId) {
       toast.error("Please select a variant");
       return;
     }
 
-    try {
-      // Attempt to add item to cart
-      // For pre-order items (out of stock), this may fail
-      // but the backend Checkout.cs handles pre-order detection based on Variant.IsPreOrder flag
-      await addItem({
-        productVariantId: variant.id,
-        quantity: 1,
-      });
+    await cartAuth.runWithAuthAsync(async () => {
+      try {
+        cartStore.addItem({
+          productId: line.productId,
+          name: line.name,
+          image: line.image,
+          price: line.price,
+        });
 
-      // Navigate to checkout - backend will auto-detect as PreOrder
-      navigate("/checkout", {
-        state: { isPreOrder: true },
-      });
+        await addItemAsync({
+          productVariantId: line.productVariantId,
+          quantity: 1,
+        });
 
-      toast.success("Added to checkout! Proceeding to pre-order...");
-    } catch (error: any) {
-      // If cart rejected the item (stock validation), show message
-      const errorMsg = error?.response?.data?.error || error?.message || "Unable to add item";
-      toast.error(`Failed to prepare pre-order: ${errorMsg}`);
-      console.error("Pre-order error", error);
-    }
+        toast.success("Pre-order added to your cart.");
+      } catch {
+        // addItemAsync / useCart mutation already shows an error toast
+      }
+    });
   };
 
   return { handlePreOrder };

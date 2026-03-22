@@ -1,17 +1,118 @@
+import { useMemo, useRef, useState, type ChangeEvent, type MouseEvent } from "react";
+import EditIcon from "@mui/icons-material/Edit";
 import {
   Avatar,
   Box,
   CircularProgress,
   Divider,
+  IconButton,
+  Menu,
+  MenuItem,
   Typography,
 } from "@mui/material";
+import { toast } from "react-toastify";
+
 import { useAccount } from "../../../lib/hooks/useAccount";
 import { useProfile } from "../../../lib/hooks/useProfile";
+import {
+  avatarImageSrcFromPhotos,
+  resolveMainPhotoFromList,
+} from "../../../lib/utils/profileAvatarFromPhotos";
 
 export default function ProfilePage() {
   const { currentUser } = useAccount();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
+  const menuOpen = Boolean(menuAnchor);
 
-  const { data: profile, isLoading, isError, error } = useProfile(currentUser?.id);
+  const {
+    data: profile,
+    isLoading,
+    isError,
+    error,
+    photos,
+    uploadPhotoAsync,
+    isUploadingPhoto,
+    deletePhotoAsync,
+    isDeletingPhoto,
+    setMainPhotoAsync,
+    isSettingMainPhoto,
+    refetchPhotos,
+  } = useProfile(currentUser?.id);
+
+  const photoList = Array.isArray(photos) ? photos : [];
+  const galleryBusy = isUploadingPhoto || isDeletingPhoto || isSettingMainPhoto;
+
+  /** Có bản ghi photo trên server mới gọi DELETE được */
+  const canAttemptRemoveAvatar = photoList.length > 0;
+
+  /** Có ảnh trong list → hiển thị URL từ list; list rỗng → mặc định (chữ). */
+  const displayAvatarSrc = useMemo(
+    () =>
+      profile ? avatarImageSrcFromPhotos(photoList, profile.imageUrl) : undefined,
+    [profile, photoList],
+  );
+
+  const closeMenu = () => setMenuAnchor(null);
+
+  const handleOpenMenu = (e: MouseEvent<HTMLElement>) => {
+    if (galleryBusy) return;
+    setMenuAnchor(e.currentTarget);
+  };
+
+  const handleChooseAvatar = () => {
+    closeMenu();
+    window.requestAnimationFrame(() => {
+      if (galleryBusy) return;
+      fileInputRef.current?.click();
+    });
+  };
+
+  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    try {
+      const newPhoto = await uploadPhotoAsync({ file });
+      if (newPhoto?.id) {
+        await setMainPhotoAsync(newPhoto.id);
+      }
+      toast.success("Profile photo updated.");
+    } catch {
+      /* axios / mutation usually already surfaced a toast */
+    }
+  };
+
+  const handleRemoveAvatar = async () => {
+    closeMenu();
+    if (!canAttemptRemoveAvatar) {
+      toast.info("No profile photo to remove.");
+      return;
+    }
+    if (!window.confirm("Remove your profile photo?")) return;
+    try {
+      const { data: fresh } = await refetchPhotos();
+      const list = Array.isArray(fresh) ? fresh : photoList;
+      const target = profile ? resolveMainPhotoFromList(list, profile.imageUrl) : null;
+
+      if (target) {
+        await deletePhotoAsync(target.id);
+        toast.success("Profile photo removed.");
+        return;
+      }
+
+      if (list.length === 0) {
+        toast.info("There is no photo in your gallery to remove.");
+        return;
+      }
+
+      toast.error(
+        "Could not find this photo on the server (list out of sync). Refresh the page and try again.",
+      );
+    } catch {
+      /* axios / mutation usually already surfaced a toast */
+    }
+  };
 
   if (!currentUser?.id) {
     return (
@@ -87,12 +188,99 @@ export default function ProfilePage() {
       }}
     >
       <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
-        <Avatar
-          src={profile.imageUrl ?? undefined}
-          sx={{ width: 72, height: 72, bgcolor: "#111827", fontSize: 28 }}
+        <Box
+          sx={{
+            position: "relative",
+            width: 72,
+            height: 72,
+            flexShrink: 0,
+          }}
         >
-          {profile.displayName[0]?.toUpperCase()}
-        </Avatar>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleFileChange}
+            tabIndex={-1}
+            style={{
+              position: "absolute",
+              width: 1,
+              height: 1,
+              padding: 0,
+              margin: -1,
+              overflow: "hidden",
+              clip: "rect(0,0,0,0)",
+              clipPath: "inset(50%)",
+              whiteSpace: "nowrap",
+              border: 0,
+              opacity: 0,
+            }}
+          />
+          <Avatar
+            src={displayAvatarSrc}
+            sx={{ width: 72, height: 72, bgcolor: "#111827", fontSize: 28 }}
+          >
+            {profile.displayName[0]?.toUpperCase()}
+          </Avatar>
+          <IconButton
+            id="profile-photo-menu-button"
+            type="button"
+            size="small"
+            onClick={handleOpenMenu}
+            disabled={galleryBusy}
+            aria-label="Profile photo options"
+            aria-controls={menuOpen ? "profile-photo-menu" : undefined}
+            aria-haspopup="true"
+            aria-expanded={menuOpen ? "true" : undefined}
+            sx={{
+              position: "absolute",
+              right: -2,
+              bottom: -2,
+              zIndex: 1,
+              width: 30,
+              height: 30,
+              p: 0,
+              bgcolor: "#FFFFFF",
+              border: "1px solid rgba(15,23,42,0.14)",
+              boxShadow: "0 2px 8px rgba(15,23,42,0.12)",
+              color: "#111827",
+              "&:hover": { bgcolor: "#F8FAFC" },
+              "&.Mui-disabled": { bgcolor: "#F1F5F9" },
+            }}
+          >
+            {isUploadingPhoto || isSettingMainPhoto ? (
+              <CircularProgress size={16} thickness={5} sx={{ color: "#111827" }} />
+            ) : (
+              <EditIcon sx={{ fontSize: 17 }} />
+            )}
+          </IconButton>
+          <Menu
+            id="profile-photo-menu"
+            anchorEl={menuAnchor}
+            open={menuOpen}
+            onClose={closeMenu}
+            anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+            transformOrigin={{ vertical: "top", horizontal: "right" }}
+            slotProps={{
+              list: { "aria-labelledby": "profile-photo-menu-button" },
+            }}
+          >
+            <MenuItem
+              onClick={() => void handleChooseAvatar()}
+              disabled={galleryBusy}
+              sx={{ fontWeight: 600, fontSize: 14 }}
+            >
+              Choose avatar
+            </MenuItem>
+            <MenuItem
+              onClick={() => void handleRemoveAvatar()}
+              disabled={galleryBusy || !canAttemptRemoveAvatar}
+              sx={{ fontWeight: 600, fontSize: 14, color: "error.main" }}
+            >
+              Remove avatar
+            </MenuItem>
+          </Menu>
+        </Box>
         <Box>
           <Typography fontWeight={900} fontSize={24}>
             {profile.displayName}
@@ -130,4 +318,3 @@ export default function ProfilePage() {
     </Box>
   );
 }
-

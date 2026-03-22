@@ -10,6 +10,9 @@ export class UiStore {
   // ===== USER MENU (avatar) — đóng khi mở cart, cart đóng khi mở avatar =====
   userMenuAnchor: HTMLElement | null = null;
 
+  /** Cookie/session hết hạn — hiện banner trên navbar kèm toast. */
+  sessionExpiredBanner = false;
+
   constructor() {
     makeAutoObservable(this);
   }
@@ -42,5 +45,13 @@ export class UiStore {
 
   closeUserMenu() {
     this.userMenuAnchor = null;
+  }
+
+  setSessionExpiredBanner(value: boolean) {
+    this.sessionExpiredBanner = value;
+  }
+
+  clearSessionExpiredBanner() {
+    this.sessionExpiredBanner = false;
   }
 }

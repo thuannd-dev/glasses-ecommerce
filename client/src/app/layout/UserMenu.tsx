@@ -10,13 +10,21 @@ import {
 } from "@mui/material";
 import { observer } from "mobx-react-lite";
 import { useAccount } from "../../lib/hooks/useAccount";
+import { useProfile } from "../../lib/hooks/useProfile";
 import { useStore } from "../../lib/hooks/useStore";
+import { avatarImageSrcFromPhotos } from "../../lib/utils/profileAvatarFromPhotos";
 import { Link } from "react-router";
 import { Logout, Person, ShoppingBag } from "@mui/icons-material";
 
 const UserMenu = observer(function UserMenu() {
   const { uiStore } = useStore();
   const { currentUser, logoutUser } = useAccount();
+  const { photos } = useProfile(currentUser?.id);
+
+  const navAvatarSrc = React.useMemo(
+    () => avatarImageSrcFromPhotos(photos, currentUser?.imageUrl),
+    [photos, currentUser?.imageUrl],
+  );
   const anchorEl = uiStore.userMenuAnchor;
   const open = Boolean(anchorEl);
 
@@ -51,7 +59,7 @@ const UserMenu = observer(function UserMenu() {
             bgcolor: "#111827",
             fontSize: 14,
           }}
-          src={currentUser?.imageUrl || "/images/user.png"}
+          src={navAvatarSrc}
           imgProps={{ referrerPolicy: "no-referrer" }}
         >
           {currentUser?.displayName?.[0]?.toUpperCase() ?? "?"}

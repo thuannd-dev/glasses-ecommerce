@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { observer, Observer } from "mobx-react-lite";
 import {
   LocalMallOutlined,
   PersonOutline,
 } from "@mui/icons-material";
 import {
+  Alert,
   AppBar,
   Badge,
   Box,
@@ -135,10 +136,12 @@ const NavBar = observer(function NavBar({
   appearance?: NavAppearance;
 }) {
   const { uiStore } = useStore();
+  const navigate = useNavigate();
   const { currentUser } = useAccount();
   const { cart } = useCart();
   const { categories } = useCategories();
   const location = useLocation();
+  const isLoggedIn = Boolean(currentUser?.id);
   const isHeroPage = location.pathname === "/";
   const [isPastHero, setIsPastHero] = useState(!isHeroPage);
 
@@ -155,6 +158,12 @@ const NavBar = observer(function NavBar({
   // Visual mode: single navbar, style switches by isPastHero (or forced appearance)
   const computedAppearance: NavAppearance =
     appearance ?? (isHeroPage ? (isPastHero ? "scrolled" : "hero") : "scrolled");
+
+  useEffect(() => {
+    if (location.pathname === "/login" || location.pathname === "/register") {
+      uiStore.clearSessionExpiredBanner();
+    }
+  }, [location.pathname, uiStore]);
 
   // Home-only: observe hero to switch appearance. Other pages: always scrolled.
   useEffect(() => {
@@ -255,7 +264,7 @@ const NavBar = observer(function NavBar({
 
             {/* Right icons */}
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              {currentUser ? (
+              {isLoggedIn ? (
                 <UserMenu />
               ) : (
                 <IconButton component={NavLink} to="/login" sx={ICON_BUTTON_SX}>
@@ -318,6 +327,48 @@ const NavBar = observer(function NavBar({
           }
         </Observer>
       </AppBar>
+
+      {uiStore.sessionExpiredBanner && (
+        <Alert
+          severity="warning"
+          variant="filled"
+          sx={{
+            position: "fixed",
+            top: NAV_HEIGHT,
+            left: 0,
+            right: 0,
+            zIndex: 2999,
+            borderRadius: 0,
+            py: 0.75,
+            px: 2,
+            alignItems: "center",
+            "& .MuiAlert-message": { width: "100%" },
+          }}
+          action={
+            <Button
+              color="inherit"
+              size="small"
+              variant="outlined"
+              sx={{
+                fontWeight: 700,
+                borderColor: "rgba(0,0,0,0.35)",
+                color: "inherit",
+                flexShrink: 0,
+              }}
+              onClick={() => {
+                uiStore.clearSessionExpiredBanner();
+                navigate("/login");
+              }}
+            >
+              Đăng nhập lại
+            </Button>
+          }
+        >
+          <Typography component="span" sx={{ fontSize: 14, fontWeight: 600 }}>
+            Phiên đăng nhập đã hết hạn — bạn đã được đăng xuất. Đăng nhập lại để dùng giỏ hàng và tài khoản.
+          </Typography>
+        </Alert>
+      )}
     </Box>
   );
 });

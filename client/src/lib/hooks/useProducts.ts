@@ -30,6 +30,7 @@ function mapApiItemToProduct(item: ApiProductItem): Product {
     price: item.minPrice,
     image: item.firstImage?.imageUrl ?? "",
     code: item.productName,
+    description: item.description ?? undefined,
     category,
     glassesType:
       categorySlug === "eyeglasses"

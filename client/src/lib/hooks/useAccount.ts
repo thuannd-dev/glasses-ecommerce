@@ -77,7 +77,12 @@ export const useAccount = () => {
   //  it will re run hook (re run useQuery) every time component re renders, every time useAccount is called
   //And this may be go to api and fetch user info again and again if state of query is stale
   // we don't want that because we just want to fetch user info once when app loads
-  const { data: currentUser, isLoading: loadingUserInfo } = useQuery({
+  const {
+    data: currentUser,
+    isLoading: loadingUserInfo,
+    isPending: userSessionPending,
+    isFetching: userSessionFetching,
+  } = useQuery({
     queryKey: ["user"],
     queryFn: fetchUser,
     //it mean that if we already have user data in cache we don't need to run this query again and the path is not /register
@@ -98,5 +103,13 @@ export const useAccount = () => {
       location.pathname !== "/login",
   });
 
-  return { loginUser, registerUser, currentUser, logoutUser, loadingUserInfo };
+  return {
+    loginUser,
+    registerUser,
+    currentUser,
+    logoutUser,
+    loadingUserInfo,
+    userSessionPending,
+    userSessionFetching,
+  };
 };
