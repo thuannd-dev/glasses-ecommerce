@@ -13,7 +13,7 @@ function App() {
   const location = useLocation();
   const [isChatbotEnabled, setIsChatbotEnabled] = useState(true);
 
-  // Check feature toggle for chatbot on mount
+  // Check feature toggle for chatbot on mount and when returning to app
   useEffect(() => {
     const checkChatbotToggle = async () => {
       try {
@@ -27,6 +27,22 @@ function App() {
     };
 
     checkChatbotToggle();
+
+    // Re-check feature toggle every 30 seconds while app is active
+    const interval = setInterval(checkChatbotToggle, 30000);
+
+    // Also check when window regains focus (user returns from other app/tab)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        checkChatbotToggle();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, []);
 
   const isHome = location.pathname === "/";
@@ -97,7 +113,7 @@ function App() {
             <Footer />
           </Box>
           <ScrollToTopButton />
-          <ChatbotWidget />
+          {isChatbotEnabled && <ChatbotWidget />}
         </>
       ) : isDashboard ? (
         <DashboardLayout />

@@ -23,7 +23,6 @@ import VisibilityOutlined from "@mui/icons-material/VisibilityOutlined";
 import MoveToInboxOutlinedIcon from "@mui/icons-material/MoveToInboxOutlined";
 import OutboxOutlined from "@mui/icons-material/OutboxOutlined";
 import HistoryOutlined from "@mui/icons-material/HistoryOutlined";
-import SecurityIcon from "@mui/icons-material/Security";
 import DashboardOutlined from "@mui/icons-material/DashboardOutlined";
 import StorefrontOutlined from "@mui/icons-material/StorefrontOutlined";
 import MoveToInboxOutlined from "@mui/icons-material/MoveToInboxOutlined";
@@ -33,6 +32,9 @@ import ExpandMore from "@mui/icons-material/ExpandMore";
 import AssignmentReturnIcon from "@mui/icons-material/AssignmentReturn";
 import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
 import ShieldIcon from "@mui/icons-material/Shield";
+import PeopleIcon from "@mui/icons-material/People";
+import AssignmentIcon from "@mui/icons-material/Assignment";
+import ToggleOnIcon from "@mui/icons-material/ToggleOn";
 import { useAccount } from "../../lib/hooks/useAccount";
 
 const SIDEBAR_WIDTH = 272;
@@ -60,9 +62,9 @@ const MANAGER_SUB_LINKS: { path: string; label: string; icon: React.ReactNode }[
 
 const ADMIN_SUB_LINKS: { path: string; label: string; icon: React.ReactNode }[] = [
   { path: "/admin", label: "Dashboard", icon: <AdminPanelSettingsIcon /> },
-  { path: "/admin/roles", label: "Role Management", icon: <SecurityIcon /> },
-  { path: "/admin/policies", label: "Policies", icon: <SecurityIcon /> },
-  { path: "/admin/feature-toggles", label: "Feature Toggles", icon: <SecurityIcon /> },
+  { path: "/admin/roles", label: "Role Management", icon: <PeopleIcon /> },
+  { path: "/admin/policies", label: "Policies", icon: <AssignmentIcon /> },
+  { path: "/admin/feature-toggles", label: "Feature Toggles", icon: <ToggleOnIcon /> },
 ];
 
 export default function DashboardLayout() {
@@ -689,7 +691,7 @@ export default function DashboardLayout() {
                     Admin
                   </Typography>
 
-                  {/* Parent Settings group for Admin */}
+                  {/* Parent Administration group for Admin */}
                   <ListItemButton
                     onClick={() => setAdminOpen((open) => !open)}
                     sx={{
@@ -706,7 +708,7 @@ export default function DashboardLayout() {
                       <AdminPanelSettingsIcon />
                     </ListItemIcon>
                     <ListItemText
-                      primary="Settings"
+                      primary="Administration"
                       primaryTypographyProps={{ fontWeight: 600 }}
                     />
                     {adminOpen ? <ExpandLess /> : <ExpandMore />}

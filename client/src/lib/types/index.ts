@@ -16,7 +16,7 @@ export type {
   CategoryDto,
   ProductDetailView,
 } from "./product";
-export type { Profile, User, Activity } from "./user";
+export type { Profile, ProfilePhotoDto, User, Activity } from "./user";
 export type { LocationIQAddress, LocationIQSuggestion } from "./location";
 export type {
   Category,

@@ -1,5 +1,7 @@
-import { Box, CircularProgress, Typography } from "@mui/material";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import { Box, Button, CircularProgress, Typography } from "@mui/material";
 import { useMemo } from "react";
+import { Link } from "react-router";
 
 import { usePolicy } from "../../lib/hooks/usePolicy";
 import { getPolicyTypeLabel } from "../../lib/types";
@@ -149,6 +151,29 @@ function PoliciesListBase({ eyebrow, heading }: { eyebrow: string; heading: stri
           gap: { xs: 3, md: 3.5 },
         }}
       >
+        <Button
+          component={Link}
+          to="/"
+          startIcon={<ArrowBackIcon />}
+          variant="text"
+          sx={{
+            alignSelf: "flex-start",
+            p: 0,
+            minWidth: "auto",
+            textTransform: "none",
+            fontWeight: 600,
+            fontSize: 14,
+            color: "rgba(255,255,255,0.88)",
+            "&:hover": {
+              bgcolor: "transparent",
+              color: "#B68C5A",
+              textDecoration: "underline",
+            },
+          }}
+        >
+          Back to home
+        </Button>
+
         <Box>
           <Typography
             sx={{

@@ -1,10 +1,13 @@
 import { useEffect } from "react";
 import { Box, CircularProgress, Typography } from "@mui/material";
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import { useAccount } from "../../lib/hooks/useAccount";
+import { sanitizeReturnUrl } from "../../lib/utils/sanitizeReturnUrl";
 
 export default function PostLoginRedirect() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const rawReturnUrl = searchParams.get("returnUrl");
   const { currentUser, loadingUserInfo } = useAccount();
 
   useEffect(() => {
@@ -31,8 +34,9 @@ export default function PostLoginRedirect() {
       navigate("/sales", { replace: true });
       return;
     }
-    navigate("/collections", { replace: true });
-  }, [currentUser, loadingUserInfo, navigate]);
+    const back = sanitizeReturnUrl(rawReturnUrl);
+    navigate(back ?? "/collections", { replace: true });
+  }, [currentUser, loadingUserInfo, navigate, rawReturnUrl]);
 
   return (
     <Box

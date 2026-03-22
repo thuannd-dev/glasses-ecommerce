@@ -22,8 +22,8 @@ export function useCart() {
   const queryClient = useQueryClient();
   const { currentUser, loadingUserInfo } = useAccount();
 
-  // Chỉ gọi API cart khi đã đăng nhập và user-info đã load xong
-  const shouldLoadCart = !!currentUser && !loadingUserInfo;
+  // Chỉ gọi API cart khi đã đăng nhập thật (có user id) và user-info đã load xong
+  const shouldLoadCart = Boolean(currentUser?.id) && !loadingUserInfo;
 
   // ===== GET /api/carts =====
   const {

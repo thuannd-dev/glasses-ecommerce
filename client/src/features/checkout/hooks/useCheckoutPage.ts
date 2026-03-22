@@ -125,7 +125,7 @@ export function useCheckoutPage() {
   };
 
   // Private promotion (user-entered code) — validate via API
-  const handleApplyPrivatePromo = async (code: string) => {
+  const handleApplyPrivatePromo = async (code: string, shippingFee: number = 0) => {
     if (!code.trim() || totalAmount <= 0) {
       setSnackbar({ open: true, message: "Your cart is empty.", severity: "info" });
       return;
@@ -134,7 +134,7 @@ export function useCheckoutPage() {
       const data = await validatePromotion.mutateAsync({
         promoCode: code.trim(),
         orderTotal: totalAmount,
-        shippingFee: 0,
+        shippingFee,
       });
       const discount = typeof data?.discountApplied === "number" ? data.discountApplied : 0;
       setAppliedPromo({ promoCode: code.trim(), discountAmount: discount });
@@ -167,7 +167,7 @@ export function useCheckoutPage() {
     }
   }, [isEmptyCart]);
 
-  const handlePlaceOrder = async () => {
+  const handlePlaceOrder = async (shippingFee: number = 0) => {
     if (isEmptyCart) {
       setSnackbar({ open: true, message: "Your cart is empty.", severity: "error" });
       return;
@@ -298,11 +298,18 @@ export function useCheckoutPage() {
         imageUrl: variantToImage[oItem.productVariantId] ?? undefined,
       }));
 
+      const orderForUi = {
+        ...orderForState,
+        shippingFee,
+        finalAmount: Math.max(0, orderForState.finalAmount + shippingFee),
+        items: orderItemsWithImage,
+      };
+
       if (paymentMethod === "BANK") {
         const urlReq = await createPaymentUrl.mutateAsync({
           orderId: orderForState.id,
           orderType: orderForState.orderType,
-          amount: finalAmount, // backend uses exact amount from pending payment
+          amount: orderForState.finalAmount,
           name: address.recipientName,
         });
 
@@ -321,7 +328,7 @@ export function useCheckoutPage() {
       }
 
       navigate("/order-success", {
-        state: { order: { ...orderForState, items: orderItemsWithImage }, address: shippingAddr },
+        state: { order: orderForUi, address: shippingAddr },
       });
     } catch (err) {
       setSnackbar({

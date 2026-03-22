@@ -1,18 +1,21 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRef } from "react";
-import { useNavigate, Link } from "react-router";
+import { useNavigate, Link, useSearchParams } from "react-router";
 
 import { Box, Button, Typography, Divider } from "@mui/material";
 import { ArrowBack } from "@mui/icons-material";
 
 import { loginSchema, type LoginSchema } from "../../lib/schemas/loginSchema";
 import { useAccount } from "../../lib/hooks/useAccount";
+import { buildAuthRedirectPath, sanitizeReturnUrl } from "../../lib/utils/sanitizeReturnUrl";
 import TextInput from "../../app/shared/components/TextInput";
 
 export default function LoginForm() {
   const { loginUser } = useAccount();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const returnUrl = searchParams.get("returnUrl");
   const submittingRef = useRef(false);
 
   const {
@@ -29,9 +32,8 @@ export default function LoginForm() {
     submittingRef.current = true;
     loginUser.mutate(data, {
       onSuccess: () => {
-        // Chuyển sang trang redirect: khi có user-info sẽ redirect thẳng vào dashboard (staff) hoặc /collections (customer).
-        // Tránh nhá qua trang collections rồi mới vào dashboard.
-        navigate("/auth/redirect");
+        // Chuyển sang trang redirect: staff → dashboard; customer → returnUrl hoặc /collections.
+        navigate(buildAuthRedirectPath(returnUrl));
       },
       onSettled: () => {
         submittingRef.current = false;
@@ -125,7 +127,10 @@ export default function LoginForm() {
         >
           {/* 🔙 Back */}
           <Button
-            onClick={() => navigate("/collections")}
+            onClick={() => {
+              const safe = sanitizeReturnUrl(returnUrl);
+              navigate(safe ?? "/collections");
+            }}
             startIcon={<ArrowBack />}
             variant="text"
             sx={{
@@ -259,7 +264,11 @@ export default function LoginForm() {
               Don&apos;t have an account?
               <Typography
                 component={Link}
-                to="/register"
+                to={
+                  returnUrl
+                    ? `/register?returnUrl=${encodeURIComponent(returnUrl)}`
+                    : "/register"
+                }
                 sx={{ ml: 1, fontWeight: 900, textDecoration: "none" }}
                 color="primary"
               >

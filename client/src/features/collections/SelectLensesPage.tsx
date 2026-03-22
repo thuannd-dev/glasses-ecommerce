@@ -1,5 +1,7 @@
 import { Box, Typography } from "@mui/material";
 import { useLocation, useNavigate } from "react-router-dom";
+import { SignInRequiredForCartDialog } from "../../app/shared/components/SignInRequiredForCartDialog";
+import { useRequireAuthForCart } from "../../lib/hooks/useRequireAuthForCart";
 import { SelectLensesDialog } from "./components/ProductDetailPageComponents/SelectLensesDialog";
 import { useProductDetailPage } from "./hooks/useProductDetailPage";
 
@@ -9,8 +11,16 @@ export default function SelectLensesPage() {
     const state = location.state as { variantId?: string | null; isPreOrder?: boolean } | null;
     const initialVariantId = state?.variantId ?? null;
     const isPreOrder = state?.isPreOrder ?? false;
-    const { product, isLoading, currentVariant, images, handleAddWithPrescription } =
-        useProductDetailPage(initialVariantId);
+    const cartAuth = useRequireAuthForCart();
+    const {
+        product,
+        isLoading,
+        currentVariant,
+        images,
+        handleAddWithPrescription,
+        handleAddNonPrescriptionLenses,
+        addToCartPayload,
+    } = useProductDetailPage(initialVariantId, cartAuth);
 
     if (isLoading) {
         return (
@@ -39,18 +49,23 @@ export default function SelectLensesPage() {
     };
 
     return (
-        <SelectLensesDialog
-            open
-            fullPage
-            isPreOrder={isPreOrder}
-            onClose={handleDialogClose}
-            onLogoClick={() => navigate("/collections")}
-            productName={product.name}
-            variantLabel={currentVariant?.variantName ?? currentVariant?.color ?? product.sku ?? ""}
-            productImageUrl={images[0]?.url ?? ""}
-            price={currentVariant?.price ?? product.price}
-            onPrescriptionConfirm={handleAddWithPrescription}
-        />
+        <>
+            <SelectLensesDialog
+                open
+                fullPage
+                isPreOrder={isPreOrder}
+                onClose={handleDialogClose}
+                onLogoClick={() => navigate("/collections")}
+                productName={product.name}
+                variantLabel={currentVariant?.variantName ?? currentVariant?.color ?? product.sku ?? ""}
+                productImageUrl={images[0]?.url ?? ""}
+                price={currentVariant?.price ?? product.price}
+                onNonPrescriptionAddToCart={handleAddNonPrescriptionLenses}
+                canAddToCart={Boolean(addToCartPayload)}
+                onPrescriptionConfirm={handleAddWithPrescription}
+            />
+            <SignInRequiredForCartDialog {...cartAuth.signInForCartDialogProps} />
+        </>
     );
 }
 

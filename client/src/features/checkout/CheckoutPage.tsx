@@ -11,16 +11,41 @@ import {
     Button,
     Snackbar,
     Alert,
+    MenuItem,
 } from "@mui/material";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AddressAutocomplete from "../../app/shared/components/AddressAutocomplete";
 import { formatMoney } from "../../lib/utils/format";
+import {
+    fetchGhnDistricts,
+    fetchGhnAvailableServices,
+    fetchGhnProvinces,
+    fetchGhnShippingFee,
+    fetchGhnWards,
+    findDistrictByName,
+    findProvinceByName,
+    findWardByName,
+    type GhnDistrict,
+    type GhnProvince,
+    type GhnWard,
+} from "../../lib/utils/ghnAddress";
 import { useCheckoutPage } from "./hooks/useCheckoutPage";
 import { isValidVietnamPhone } from "./utils";
 import { SavedAddressPicker } from "./components/SavedAddressPicker";
 
 export default function CheckoutPage() {
     const navigate = useNavigate();
+    const [provinces, setProvinces] = useState<GhnProvince[]>([]);
+    const [districts, setDistricts] = useState<GhnDistrict[]>([]);
+    const [wards, setWards] = useState<GhnWard[]>([]);
+    const [selectedProvinceId, setSelectedProvinceId] = useState<number | null>(null);
+    const [selectedDistrictId, setSelectedDistrictId] = useState<number | null>(null);
+    const [loadingProvinces, setLoadingProvinces] = useState(false);
+    const [loadingDistricts, setLoadingDistricts] = useState(false);
+    const [loadingWards, setLoadingWards] = useState(false);
+    const [shippingFee, setShippingFee] = useState(0);
+    const [shippingFeeLoading, setShippingFeeLoading] = useState(false);
     const {
         items,
         totalAmount,
@@ -32,8 +57,6 @@ export default function CheckoutPage() {
         cartLoading,
         address,
         setAddress,
-        addressSearch,
-        setAddressSearch,
         paymentMethod,
         setPaymentMethod,
         activePromotions,
@@ -50,6 +73,124 @@ export default function CheckoutPage() {
         savedAddresses,
         defaultAddress,
     } = useCheckoutPage();
+    const checkoutTotal = Math.max(0, finalAmount) + shippingFee;
+
+    useEffect(() => {
+        let active = true;
+        const loadProvinces = async () => {
+            try {
+                setLoadingProvinces(true);
+                const data = await fetchGhnProvinces();
+                if (!active) return;
+                setProvinces(data);
+            } catch {
+                if (!active) return;
+                setProvinces([]);
+            } finally {
+                if (active) setLoadingProvinces(false);
+            }
+        };
+        loadProvinces();
+        return () => {
+            active = false;
+        };
+    }, []);
+
+    useEffect(() => {
+        const province = findProvinceByName(provinces, address.city);
+        const nextId = province?.ProvinceID ?? null;
+        setSelectedProvinceId((prev) => (prev === nextId ? prev : nextId));
+    }, [provinces, address.city]);
+
+    useEffect(() => {
+        let active = true;
+        if (!selectedProvinceId) {
+            setDistricts([]);
+            setWards([]);
+            setSelectedDistrictId(null);
+            return;
+        }
+        const loadDistricts = async () => {
+            try {
+                setLoadingDistricts(true);
+                const data = await fetchGhnDistricts(selectedProvinceId);
+                if (!active) return;
+                setDistricts(data);
+            } catch {
+                if (!active) return;
+                setDistricts([]);
+            } finally {
+                if (active) setLoadingDistricts(false);
+            }
+        };
+        loadDistricts();
+        return () => {
+            active = false;
+        };
+    }, [selectedProvinceId]);
+
+    useEffect(() => {
+        const district = findDistrictByName(districts, address.district);
+        const nextId = district?.DistrictID ?? null;
+        setSelectedDistrictId((prev) => (prev === nextId ? prev : nextId));
+    }, [districts, address.district]);
+
+    useEffect(() => {
+        let active = true;
+        if (!selectedDistrictId) {
+            setWards([]);
+            return;
+        }
+        const loadWards = async () => {
+            try {
+                setLoadingWards(true);
+                const data = await fetchGhnWards(selectedDistrictId);
+                if (!active) return;
+                setWards(data);
+            } catch {
+                if (!active) return;
+                setWards([]);
+            } finally {
+                if (active) setLoadingWards(false);
+            }
+        };
+        loadWards();
+        return () => {
+            active = false;
+        };
+    }, [selectedDistrictId]);
+
+    useEffect(() => {
+        let active = true;
+        const ward = findWardByName(wards, address.ward);
+        if (!selectedDistrictId || !ward?.WardCode) {
+            setShippingFee(0);
+            return;
+        }
+        const loadFee = async () => {
+            try {
+                setShippingFeeLoading(true);
+                const services = await fetchGhnAvailableServices(selectedDistrictId);
+                const serviceId = services[0]?.service_id;
+                const fee = await fetchGhnShippingFee({
+                    toDistrictId: selectedDistrictId,
+                    toWardCode: ward.WardCode,
+                    serviceId,
+                });
+                if (!active) return;
+                setShippingFee(fee);
+            } catch {
+                if (!active) return;
+                setShippingFee(0);
+            } finally {
+                if (active) setShippingFeeLoading(false);
+            }
+        };
+        loadFee();
+        return () => {
+            active = false;
+        };
+    }, [selectedDistrictId, wards, address.ward]);
 
     return (
         <Box
@@ -190,25 +331,6 @@ export default function CheckoutPage() {
 
                                 <Grid container spacing={1.5}>
                                     <Grid item xs={12}>
-                                        <AddressAutocomplete
-                                            value={addressSearch}
-                                            onChange={setAddressSearch}
-                                            onSelectAddress={(a) => {
-                                                setAddress((prev) => ({
-                                                    ...prev,
-                                                    venue: a.venue,
-                                                    ward: a.ward,
-                                                    district: a.district,
-                                                    city: a.city,
-                                                    postalCode: a.postalCode ?? "",
-                                                }));
-                                            }}
-                                            label="Search shipping address"
-                                            placeholder="Enter house number, street, district, city..."
-                                        />
-                                    </Grid>
-
-                                    <Grid item xs={12}>
                                         <TextField
                                             label="Recipient name"
                                             fullWidth
@@ -291,44 +413,11 @@ export default function CheckoutPage() {
                                         />
                                     </Grid>
 
-                                    <Grid item xs={12}>
-                                        <TextField
-                                            label="Street / Venue"
-                                            fullWidth
-                                            required
-                                            value={address.venue}
-                                            onChange={(e) =>
-                                                setAddress((prev) => ({
-                                                    ...prev,
-                                                    venue: e.target.value,
-                                                }))
-                                            }
-                                            InputProps={{
-                                                sx: {
-                                                    height: 48,
-                                                    borderRadius: 2,
-                                                },
-                                            }}
-                                            sx={{
-                                                "& .MuiOutlinedInput-root": {
-                                                    "& fieldset": { borderColor: "#E6E6E6" },
-                                                    "&:hover fieldset": {
-                                                        borderColor: "#B68C5A",
-                                                    },
-                                                    "&.Mui-focused fieldset": {
-                                                        borderColor: "#B68C5A",
-                                                        boxShadow:
-                                                            "0 0 0 3px rgba(182,140,90,0.16)",
-                                                    },
-                                                },
-                                            }}
-                                        />
-                                    </Grid>
-
                                     <Grid item xs={12} md={4}>
                                         <TextField
                                             label="Ward"
                                             fullWidth
+                                            select
                                             value={address.ward}
                                             onChange={(e) =>
                                                 setAddress((prev) => ({
@@ -342,6 +431,7 @@ export default function CheckoutPage() {
                                                     borderRadius: 2,
                                                 },
                                             }}
+                                            disabled={!selectedDistrictId || loadingWards}
                                             sx={{
                                                 "& .MuiOutlinedInput-root": {
                                                     "& fieldset": { borderColor: "#E6E6E6" },
@@ -355,18 +445,29 @@ export default function CheckoutPage() {
                                                     },
                                                 },
                                             }}
-                                        />
+                                        >
+                                            <MenuItem value="">
+                                                {loadingWards ? "Loading wards..." : "Select ward"}
+                                            </MenuItem>
+                                            {wards.map((w) => (
+                                                <MenuItem key={w.WardCode} value={w.WardName}>
+                                                    {w.WardName}
+                                                </MenuItem>
+                                            ))}
+                                        </TextField>
                                     </Grid>
 
                                     <Grid item xs={12} md={4}>
                                         <TextField
                                             label="District"
                                             fullWidth
+                                            select
                                             value={address.district}
                                             onChange={(e) =>
                                                 setAddress((prev) => ({
                                                     ...prev,
                                                     district: e.target.value,
+                                                    ward: "",
                                                 }))
                                             }
                                             InputProps={{
@@ -375,6 +476,7 @@ export default function CheckoutPage() {
                                                     borderRadius: 2,
                                                 },
                                             }}
+                                            disabled={!selectedProvinceId || loadingDistricts}
                                             sx={{
                                                 "& .MuiOutlinedInput-root": {
                                                     "& fieldset": { borderColor: "#E6E6E6" },
@@ -388,18 +490,30 @@ export default function CheckoutPage() {
                                                     },
                                                 },
                                             }}
-                                        />
+                                        >
+                                            <MenuItem value="">
+                                                {loadingDistricts ? "Loading districts..." : "Select district"}
+                                            </MenuItem>
+                                            {districts.map((d) => (
+                                                <MenuItem key={d.DistrictID} value={d.DistrictName}>
+                                                    {d.DistrictName}
+                                                </MenuItem>
+                                            ))}
+                                        </TextField>
                                     </Grid>
 
                                     <Grid item xs={12} md={4}>
                                         <TextField
                                             label="City"
                                             fullWidth
+                                            select
                                             value={address.city}
                                             onChange={(e) =>
                                                 setAddress((prev) => ({
                                                     ...prev,
                                                     city: e.target.value,
+                                                    district: "",
+                                                    ward: "",
                                                 }))
                                             }
                                             InputProps={{
@@ -408,6 +522,7 @@ export default function CheckoutPage() {
                                                     borderRadius: 2,
                                                 },
                                             }}
+                                            disabled={loadingProvinces}
                                             sx={{
                                                 "& .MuiOutlinedInput-root": {
                                                     "& fieldset": { borderColor: "#E6E6E6" },
@@ -421,6 +536,39 @@ export default function CheckoutPage() {
                                                     },
                                                 },
                                             }}
+                                        >
+                                            <MenuItem value="">
+                                                {loadingProvinces ? "Loading cities..." : "Select city"}
+                                            </MenuItem>
+                                            {provinces.map((p) => (
+                                                <MenuItem key={p.ProvinceID} value={p.ProvinceName}>
+                                                    {p.ProvinceName}
+                                                </MenuItem>
+                                            ))}
+                                        </TextField>
+                                    </Grid>
+
+                                    <Grid item xs={12}>
+                                        <AddressAutocomplete
+                                            value={address.venue}
+                                            onChange={(value) =>
+                                                setAddress((prev) => ({
+                                                    ...prev,
+                                                    venue: value,
+                                                }))
+                                            }
+                                            onSelectAddress={(a) => {
+                                                setAddress((prev) => ({
+                                                    ...prev,
+                                                    venue: a.venue,
+                                                    ward: a.ward,
+                                                    district: a.district,
+                                                    city: a.city,
+                                                    postalCode: a.postalCode ?? "",
+                                                }));
+                                            }}
+                                            label="Street / Venue"
+                                            placeholder="Enter house number, street, district, city..."
                                         />
                                     </Grid>
 
@@ -844,7 +992,12 @@ export default function CheckoutPage() {
                                                     <Button
                                                         variant="outlined"
                                                         size="small"
-                                                        onClick={() => handleApplyPrivatePromo(privatePromoInput)}
+                                                        onClick={() =>
+                                                            handleApplyPrivatePromo(
+                                                                privatePromoInput,
+                                                                shippingFee,
+                                                            )
+                                                        }
                                                         disabled={isApplyingPromo || !privatePromoInput.trim() || totalAmount <= 0}
                                                         sx={{
                                                             borderRadius: 1.5,
@@ -882,6 +1035,28 @@ export default function CheckoutPage() {
                                                     display: "flex",
                                                     justifyContent: "space-between",
                                                     alignItems: "center",
+                                                    mb: 1,
+                                                }}
+                                            >
+                                                <Typography
+                                                    sx={{ fontSize: 13, color: "#6B6B6B" }}
+                                                >
+                                                    Shipping fee
+                                                </Typography>
+                                                <Typography
+                                                    sx={{ fontSize: 14, fontWeight: 600 }}
+                                                >
+                                                    {shippingFeeLoading
+                                                        ? "Calculating..."
+                                                        : formatMoney(shippingFee)}
+                                                </Typography>
+                                            </Box>
+
+                                            <Box
+                                                sx={{
+                                                    display: "flex",
+                                                    justifyContent: "space-between",
+                                                    alignItems: "center",
                                                     mb: 2,
                                                 }}
                                             >
@@ -913,7 +1088,7 @@ export default function CheckoutPage() {
                                                         color: "#171717",
                                                     }}
                                                 >
-                                                    {formatMoney(finalAmount)}
+                                                    {formatMoney(checkoutTotal)}
                                                 </Typography>
                                             </Box>
 
@@ -943,7 +1118,7 @@ export default function CheckoutPage() {
                                                         outlineOffset: 3,
                                                     },
                                                 }}
-                                                onClick={handlePlaceOrder}
+                                                onClick={() => handlePlaceOrder(shippingFee)}
                                             >
                                                 {submitting ? "Placing order..." : "Place order"}
                                             </Button>

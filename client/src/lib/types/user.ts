@@ -5,6 +5,17 @@ export type Profile = {
   imageUrl?: string;
 };
 
+/** Item from GET /api/profiles/{userId}/photos (matches Domain.Photo JSON) */
+export type ProfilePhotoDto = {
+  id: string;
+  url?: string;
+  imageUrl?: string;
+  publicId?: string;
+  userId?: string;
+  /** Backend may add later; Domain.Photo currently has no main flag */
+  isMain?: boolean;
+};
+
 export type User = {
   id: string;
   email: string;
