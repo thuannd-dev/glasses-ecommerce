@@ -30,7 +30,41 @@ public class GHNService : IGHNService
         _httpClient.DefaultRequestHeaders.Remove("ShopId");
         _httpClient.DefaultRequestHeaders.Add("ShopId", _settings.ShopId);
 
-        var response = await _httpClient.PostAsJsonAsync("v2/shipping-order/create", request);
+        var codAmountVnd = (int)Math.Round(request.CodAmount * _vnpaySettings.UsdToVndRate, 0, MidpointRounding.AwayFromZero);
+        var insuranceValueVnd = request.InsuranceValue.HasValue 
+            ? (int)Math.Round(request.InsuranceValue.Value * _vnpaySettings.UsdToVndRate, 0, MidpointRounding.AwayFromZero)
+            : 0;
+
+        var itemsVnd = request.Items.Select(i => new
+        {
+            name = i.Name,
+            code = i.Code,
+            quantity = i.Quantity,
+            price = (int)Math.Round(i.Price * _vnpaySettings.UsdToVndRate, 0, MidpointRounding.AwayFromZero),
+            weight = i.Weight
+        }).ToList();
+
+        var payload = new
+        {
+            to_name = request.ToName,
+            to_phone = request.ToPhone,
+            to_address = request.ToAddress,
+            to_ward_code = request.ToWardCode,
+            to_district_id = request.ToDistrictId,
+            weight = request.Weight,
+            length = request.Length,
+            width = request.Width,
+            height = request.Height,
+            service_type_id = request.ServiceTypeId,
+            payment_type_id = request.PaymentTypeId,
+            required_note = request.RequiredNote,
+            items = itemsVnd,
+            client_order_code = request.ClientOrderCode,
+            cod_amount = codAmountVnd,
+            insurance_value = Math.Min(insuranceValueVnd, 50000000)
+        };
+
+        var response = await _httpClient.PostAsJsonAsync("v2/shipping-order/create", payload);
 
         if (!response.IsSuccessStatusCode)
         {

@@ -8,7 +8,7 @@ using Persistence;
 
 namespace Application.Orders.Commands;
 
-public class CreateGHNOrder
+public sealed class CreateGHNOrder
 {
     public class Command : IRequest<Result<string>>
     {
@@ -41,10 +41,10 @@ public class CreateGHNOrder
                 return Result<string>.Failure("Order already has a shipment and tracking code.", 400);
 
             // Tự tính COD nếu chưa thu đủ
-            int codAmount = 0;
+            decimal codAmount = 0;
             if (order.RemainingAmount > 0)
             {
-                codAmount = (int)order.RemainingAmount.Value;
+                codAmount = order.RemainingAmount.Value;
             }
 
             // Map Order Items
@@ -53,7 +53,7 @@ public class CreateGHNOrder
                 Name = oi.ProductVariant.Product.ProductName,
                 Code = oi.ProductVariant.SKU,
                 Quantity = oi.Quantity,
-                Price = (int)oi.UnitPrice,
+                Price = oi.UnitPrice,
                 Weight = request.Dto.Weight / order.OrderItems.Count // Chia đều trọng lượng giả định
             }).ToList();
 
@@ -73,7 +73,8 @@ public class CreateGHNOrder
                 RequiredNote = request.Dto.RequiredNote,
                 Items = ghnItems,
                 ClientOrderCode = order.Id.ToString(),
-                CodAmount = codAmount
+                CodAmount = codAmount,
+                InsuranceValue = order.TotalAmount
             };
 
             GHNCreateOrderResponseDto ghnResponse;

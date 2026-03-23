@@ -16,7 +16,8 @@ public class GHNCreateOrderRequestDto
     public string RequiredNote { get; set; } = "CHOXEMHANGKHONGTHU"; // Cho xem hàng không cho thử
     public List<GHNItemDto> Items { get; set; } = new();
     public string ClientOrderCode { get; set; } = string.Empty;
-    public int CodAmount { get; set; }
+    public decimal CodAmount { get; set; }
+    public decimal? InsuranceValue { get; set; }
 }
 
 public class GHNItemDto
@@ -24,7 +25,7 @@ public class GHNItemDto
     public string Name { get; set; } = string.Empty;
     public string Code { get; set; } = string.Empty;
     public int Quantity { get; set; }
-    public int Price { get; set; }
+    public decimal Price { get; set; }
     public int Weight { get; set; } = 50;
 }
 

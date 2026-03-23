@@ -7,7 +7,7 @@ using Persistence;
 
 namespace Application.Orders.Commands;
 
-public class ProcessGHNWebhook
+public sealed class ProcessGHNWebhook
 {
     public class Command : IRequest<Result<Unit>>
     {

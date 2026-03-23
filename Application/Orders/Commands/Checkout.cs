@@ -213,7 +213,7 @@ public sealed class Checkout
 
                 try
                 {
-                    shippingFee = await ghnService.CalculateShippingFeeAsync(dto.DistrictId, dto.WardCode, 200, (int)totalAmount);
+                    shippingFee = await ghnService.CalculateShippingFeeAsync(dto.DistrictId, dto.WardCode, 200, totalAmount);
                 }
                 catch (Exception ex)
                 {
