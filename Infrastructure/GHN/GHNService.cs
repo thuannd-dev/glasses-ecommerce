@@ -3,6 +3,7 @@ using System.Text.Json;
 using Application.Core;
 using Application.Interfaces;
 using Application.Orders.DTOs;
+using Infrastructure.Payments;
 using Microsoft.Extensions.Options;
 
 namespace Infrastructure.GHN;
@@ -11,11 +12,13 @@ public class GHNService : IGHNService
 {
     private readonly HttpClient _httpClient;
     private readonly GHNSettings _settings;
+    private readonly VnpaySettings _vnpaySettings;
 
-    public GHNService(HttpClient httpClient, IOptions<GHNSettings> settings)
+    public GHNService(HttpClient httpClient, IOptions<GHNSettings> settings, IOptions<VnpaySettings> vnpaySettings)
     {
         _httpClient = httpClient;
         _settings = settings.Value;
+        _vnpaySettings = vnpaySettings.Value;
 
         _httpClient.BaseAddress = new Uri(_settings.BaseUrl);
         _httpClient.DefaultRequestHeaders.Add("Token", _settings.Token);
@@ -52,6 +55,45 @@ public class GHNService : IGHNService
                 ? expectedTime.GetString() ?? ""
                 : ""
         };
+    }
+
+    public async Task<decimal> CalculateShippingFeeAsync(int toDistrictId, string toWardCode, int weight = 200, decimal insuranceValue = 0)
+    {
+        _httpClient.DefaultRequestHeaders.Remove("ShopId");
+        _httpClient.DefaultRequestHeaders.Add("ShopId", _settings.ShopId);
+
+        var insuranceValueVnd = (int)Math.Round(insuranceValue * _vnpaySettings.UsdToVndRate, 0, MidpointRounding.AwayFromZero);
+
+        var request = new
+        {
+            service_type_id = 2,
+            to_district_id = toDistrictId,
+            to_ward_code = toWardCode,
+            weight = weight,
+            insurance_value = Math.Min(insuranceValueVnd, 50000000) // Max allowed by GHN is 50,000,000 VND
+        };
+
+        var response = await _httpClient.PostAsJsonAsync("v2/shipping-order/fee", request);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorContent = await response.Content.ReadAsStringAsync();
+            throw new Exception($"GHN Shipping Fee Error: {response.StatusCode} - {errorContent}");
+        }
+
+        var jsonResponse = await response.Content.ReadFromJsonAsync<JsonElement>();
+
+        if (jsonResponse.GetProperty("code").GetInt32() != 200)
+        {
+            throw new Exception($"GHN API Business Error: {jsonResponse.GetProperty("message").GetString()}");
+        }
+
+        var totalTotalVnd = jsonResponse.GetProperty("data").GetProperty("total").GetInt32();
+        
+        // Convert VND back to USD for the application to use
+        var totalUsd = Math.Round((decimal)totalTotalVnd / _vnpaySettings.UsdToVndRate, 2);
+        
+        return totalUsd;
     }
 
     public async Task<string> GetOrderPrintUrlAsync(string orderCode)

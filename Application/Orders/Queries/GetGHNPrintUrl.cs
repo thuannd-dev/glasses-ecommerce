@@ -1,5 +1,6 @@
 using Application.Core;
 using Application.Interfaces;
+using Domain;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Persistence;
@@ -17,7 +18,7 @@ public class GetGHNPrintUrl
     {
         public async Task<Result<string>> Handle(Query request, CancellationToken cancellationToken)
         {
-            var shipment = await context.Set<Domain.ShipmentInfo>()
+            var shipment = await context.Set<ShipmentInfo>()
                 .FirstOrDefaultAsync(s => s.OrderId == request.OrderId, cancellationToken);
 
             if (shipment == null || string.IsNullOrEmpty(shipment.TrackingCode))

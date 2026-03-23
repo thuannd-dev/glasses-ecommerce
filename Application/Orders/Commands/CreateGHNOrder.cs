@@ -107,7 +107,7 @@ public class CreateGHNOrder
                 order.ShipmentInfo.UpdatedAt = DateTime.UtcNow;
             }
 
-            // (Optional) Update order status here?
+            // (Optional) Update order status here? - Current status is Processing
             // Usually we leave order status update to explicit actions or webhook
 
             var success = await context.SaveChangesAsync(cancellationToken) > 0;

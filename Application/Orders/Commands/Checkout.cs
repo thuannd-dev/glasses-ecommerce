@@ -24,7 +24,8 @@ public sealed class Checkout
         AppDbContext context,
         IMapper mapper,
         IUserAccessor userAccessor,
-        IEmailService emailService) : IRequestHandler<Command, Result<CustomerOrderDto>>
+        IEmailService emailService,
+        IGHNService ghnService) : IRequestHandler<Command, Result<CustomerOrderDto>>
     {
         public async Task<Result<CustomerOrderDto>> Handle(Command request, CancellationToken ct)
         {
@@ -204,7 +205,20 @@ public sealed class Checkout
                     cartItemOrderItemMap[cartItem.Id] = orderItem;
                 }
 
-                decimal shippingFee = 0; // TODO: Calculate shipping fee
+                decimal shippingFee = 0;
+                
+                // Calculate real shipping fee from GHN for online delivered orders (assume all here are shipped)
+                if (dto.DistrictId <= 0 || string.IsNullOrWhiteSpace(dto.WardCode))
+                    return Result<Guid>.Failure("DistrictId and WardCode are required to calculate shipping fee.", 400);
+
+                try
+                {
+                    shippingFee = await ghnService.CalculateShippingFeeAsync(dto.DistrictId, dto.WardCode, 200, (int)totalAmount);
+                }
+                catch (Exception ex)
+                {
+                    return Result<Guid>.Failure(ex.Message, 400);
+                }
 
                 // 5. Handle promotion
                 Promotion? promotion = null;
