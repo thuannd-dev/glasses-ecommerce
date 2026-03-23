@@ -33,10 +33,10 @@ public sealed class ProcessGHNWebhook
             // Xác định trạng thái mới dựa trên GHN status
             OrderStatus? newStatus = request.Payload.Status switch
             {
-                "ready_to_pick" or "picking" => null, // Giữ nguyên trạng thái (thường là Processing)
-                "delivering" => OrderStatus.Shipped,
-                "delivered" => OrderStatus.Delivered,
-                "cancel" or "returned" => OrderStatus.Cancelled,
+                "ready_to_pick" or "picking" => null, // Chưa lấy hàng (Vẫn Processing)
+                "picked" or "storing" or "transporting" or "sorting" or "delivering" => OrderStatus.Shipped, // Đã giao cho GHN (Bắt đầu tính là Shipped)
+                "delivered" => OrderStatus.Delivered, // Giao thành công
+                "cancel" or "returned" => OrderStatus.Cancelled, // Giao thất bại / Huỷ
                 _ => null
             };
 
