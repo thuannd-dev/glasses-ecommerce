@@ -47,12 +47,14 @@ public class BaseAddressValidator<T, TDto> : AbstractValidator<T> where TDto : B
             .WithMessage("Province cannot exceed 100 characters.");
 
         RuleFor(x => selector(x).ProvinceId)
+            .Cascade(CascadeMode.Stop)
             .NotNull()
             .WithMessage("Province ID is required.")
             .GreaterThan(0)
             .WithMessage("Province ID must be greater than 0.");
 
         RuleFor(x => selector(x).DistrictId)
+            .Cascade(CascadeMode.Stop)
             .NotNull()
             .WithMessage("District ID is required.")
             .GreaterThan(0)

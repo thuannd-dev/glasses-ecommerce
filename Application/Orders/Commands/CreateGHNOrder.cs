@@ -34,7 +34,7 @@ public sealed class CreateGHNOrder
             if (order.Address == null)
                 return Result<string>.Failure("Order must have a shipping address.", 400);
 
-            if (!order.Address.DistrictId.HasValue || string.IsNullOrEmpty(order.Address.WardCode))
+            if (!order.Address.DistrictId.HasValue || string.IsNullOrWhiteSpace(order.Address.WardCode))
                 return Result<string>.Failure("Address must have District ID and Ward Code for GHN shipping. Please update the address with GHN location data.", 400);
 
             if (order.OrderStatus != OrderStatus.Processing)
