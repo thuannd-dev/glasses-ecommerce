@@ -37,6 +37,8 @@ export function useCreateOrder() {
         paymentMethod: payload.paymentMethod,
         customerNote: payload.orderNote ?? null,
         selectedCartItemIds: payload.selectedCartItemIds,
+        districtId: payload.districtId,
+        wardCode: payload.wardCode,
       };
       if (payload.promoCode != null && payload.promoCode.trim() !== "") {
         body.promoCode = payload.promoCode.trim();

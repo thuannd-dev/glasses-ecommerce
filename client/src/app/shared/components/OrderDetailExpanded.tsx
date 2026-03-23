@@ -210,6 +210,11 @@ export function OrderDetailExpanded({ detail, onProcessOrderClick, showProcessBu
                 detail.payment.amount.toLocaleString("en-US", { style: "currency", currency: "USD" }),
                 true
               )}
+              {labelValueRow(
+                "Shipping fee",
+                (detail.shippingFee ?? 0).toLocaleString("en-US", { style: "currency", currency: "USD" }),
+                false
+              )}
               {detail.payment.paymentAt &&
                 labelValueRow(
                   "Paid",

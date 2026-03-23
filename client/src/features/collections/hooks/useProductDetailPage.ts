@@ -87,7 +87,7 @@ export function useProductDetailPage(
 
   const handleAddWithPrescription = async (prescription: PrescriptionData): Promise<boolean> => {
     return cartAuth.runWithAuthAsync(async () => {
-      if (!addToCartPayload) return;
+      if (!addToCartPayload) return false;
       cartStore.addItem({
         productId: addToCartPayload.productId,
         name: addToCartPayload.name,
@@ -103,16 +103,17 @@ export function useProductDetailPage(
       const item = await resolveLastCartItemForVariant(variantId, cart);
       if (!item) {
         toast.error("Failed to save prescription to cart. Please refresh and try again.");
-        return;
+        return false;
       }
 
       setCartItemPrescription(item.id, prescription);
+      return true;
     });
   };
 
   const handleAddNonPrescriptionLenses = async (): Promise<boolean> => {
     return cartAuth.runWithAuthAsync(async () => {
-      if (!addToCartPayload) return;
+      if (!addToCartPayload) return false;
       cartStore.addItem({
         productId: addToCartPayload.productId,
         name: addToCartPayload.name,
@@ -128,10 +129,11 @@ export function useProductDetailPage(
       const item = await resolveLastCartItemForVariant(variantId, cart);
       if (!item) {
         toast.error("Failed to add item to cart. Please refresh and try again.");
-        return;
+        return false;
       }
 
       setCartItemLensMode(item.id, "non-prescription");
+      return true;
     });
   };
 

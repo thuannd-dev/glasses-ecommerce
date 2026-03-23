@@ -1,3 +1,5 @@
+import agent from "../api/agent";
+
 type GhnResponse<T> = {
   code: number;
   message: string;
@@ -111,11 +113,6 @@ type GhnService = {
   service_type_id: number;
 };
 
-type GhnFeeData = {
-  total: number;
-  service_fee: number;
-};
-
 export async function fetchGhnAvailableServices(toDistrictId: number): Promise<GhnService[]> {
   ensureShippingFeeConfig();
   return ghnRequest<GhnService[]>("/v2/shipping-order/available-services", {
@@ -136,20 +133,14 @@ export async function fetchGhnShippingFee(params: {
   height?: number;
   insuranceValue?: number;
 }): Promise<number> {
-  ensureShippingFeeConfig();
-  const data = await ghnRequest<GhnFeeData>("/v2/shipping-order/fee", {
-    from_district_id: GHN_FROM_DISTRICT_ID,
-    from_ward_code: GHN_FROM_WARD_CODE,
-    to_district_id: params.toDistrictId,
-    to_ward_code: params.toWardCode,
-    service_id: params.serviceId,
-    service_type_id: params.serviceTypeId ?? (params.serviceId ? undefined : 2),
-    weight: params.weight ?? 300,
-    length: params.length ?? 20,
-    width: params.width ?? 15,
-    height: params.height ?? 10,
-    insurance_value: params.insuranceValue ?? 0,
+  const response = await agent.get<number>("/shipping/fee", {
+    params: {
+      districtId: params.toDistrictId,
+      wardCode: params.toWardCode,
+      weight: params.weight ?? 200,
+      insuranceValue: params.insuranceValue ?? 0,
+    },
   });
-  return Number(data.total ?? 0);
+  return Number(response.data ?? 0);
 }
 

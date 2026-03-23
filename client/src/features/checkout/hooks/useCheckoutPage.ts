@@ -167,7 +167,14 @@ export function useCheckoutPage() {
     }
   }, [isEmptyCart]);
 
-  const handlePlaceOrder = async (shippingFee: number = 0) => {
+  const handlePlaceOrder = async (params?: {
+    shippingFee?: number;
+    districtId?: number | null;
+    wardCode?: string | null;
+  }) => {
+    const shippingFee = params?.shippingFee ?? 0;
+    const districtId = params?.districtId ?? null;
+    const wardCode = params?.wardCode?.trim() ?? "";
     if (isEmptyCart) {
       setSnackbar({ open: true, message: "Your cart is empty.", severity: "error" });
       return;
@@ -184,6 +191,14 @@ export function useCheckoutPage() {
       setSnackbar({
         open: true,
         message: "Please enter a valid Vietnam phone number (10 digits).",
+        severity: "error",
+      });
+      return;
+    }
+    if (!districtId || districtId <= 0 || !wardCode) {
+      setSnackbar({
+        open: true,
+        message: "Please select a valid district and ward before placing order.",
         severity: "error",
       });
       return;
@@ -230,6 +245,8 @@ export function useCheckoutPage() {
         orderNote: address.orderNote || null,
         orderType: isPreOrder ? "PreOrder" : hasPrescriptionItems ? "Prescription" : "ReadyStock",
         selectedCartItemIds: items.map((item) => item.id),
+        districtId,
+        wardCode,
         promoCode: appliedPromo?.promoCode ?? undefined,
         prescription: undefined, // Don't use old single-prescription payload
         prescriptions: prescriptionsArray.length > 0 ? prescriptionsArray : undefined,
