@@ -14,12 +14,14 @@ import { useProfile } from "../../lib/hooks/useProfile";
 import { useStore } from "../../lib/hooks/useStore";
 import { avatarImageSrcFromPhotos } from "../../lib/utils/profileAvatarFromPhotos";
 import { Link } from "react-router";
-import { Logout, Person, ShoppingBag } from "@mui/icons-material";
+import { Dashboard, Logout, Person, ShoppingBag } from "@mui/icons-material";
+import { useLocation } from "react-router-dom";
 
 const UserMenu = observer(function UserMenu() {
   const { uiStore } = useStore();
   const { currentUser, logoutUser } = useAccount();
   const { photos } = useProfile(currentUser?.id);
+  const location = useLocation();
 
   const navAvatarSrc = React.useMemo(
     () => avatarImageSrcFromPhotos(photos, currentUser?.imageUrl),
@@ -27,6 +29,25 @@ const UserMenu = observer(function UserMenu() {
   );
   const anchorEl = uiStore.userMenuAnchor;
   const open = Boolean(anchorEl);
+  const userRoles = Array.isArray(currentUser?.roles) ? currentUser.roles : [];
+  const isCustomerOnly = userRoles.includes("Customer");
+
+  const dashboardTarget = React.useMemo(() => {
+    if (userRoles.includes("Admin")) return { label: "Admin dashboard", to: "/admin" };
+    if (userRoles.includes("Manager")) return { label: "Manager dashboard", to: "/manager" };
+    if (userRoles.includes("Operations")) return { label: "Operations dashboard", to: "/operations" };
+    if (userRoles.includes("Sales")) return { label: "Sales dashboard", to: "/sales" };
+    return null;
+  }, [userRoles]);
+
+  const isOnDashboardArea =
+    location.pathname.startsWith("/sales") ||
+    location.pathname.startsWith("/operations") ||
+    location.pathname.startsWith("/manager") ||
+    location.pathname.startsWith("/admin");
+
+  const showDashboardMenuItem =
+    !!dashboardTarget && !userRoles.includes("Customer") && !isOnDashboardArea;
 
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     if (open) {
@@ -106,12 +127,22 @@ const UserMenu = observer(function UserMenu() {
           </ListItemIcon>
           <ListItemText>My profile</ListItemText>
         </MenuItem>
-        <MenuItem component={Link} to="/orders" onClick={handleClose}>
-          <ListItemIcon>
-            <ShoppingBag />
-          </ListItemIcon>
-          <ListItemText>View my orders</ListItemText>
-        </MenuItem>
+        {isCustomerOnly && (
+          <MenuItem component={Link} to="/orders" onClick={handleClose}>
+            <ListItemIcon>
+              <ShoppingBag />
+            </ListItemIcon>
+            <ListItemText>View my orders</ListItemText>
+          </MenuItem>
+        )}
+        {showDashboardMenuItem && dashboardTarget && (
+          <MenuItem component={Link} to={dashboardTarget.to} onClick={handleClose}>
+            <ListItemIcon>
+              <Dashboard />
+            </ListItemIcon>
+            <ListItemText>{dashboardTarget.label}</ListItemText>
+          </MenuItem>
+        )}
         <Divider />
         <MenuItem
           onClick={() => {

@@ -1,11 +1,5 @@
 import agent from "../api/agent";
 
-type GhnResponse<T> = {
-  code: number;
-  message: string;
-  data: T;
-};
-
 export type GhnProvince = {
   ProvinceID: number;
   ProvinceName: string;
@@ -23,59 +17,54 @@ export type GhnWard = {
   DistrictID: number;
 };
 
-const GHN_API_URL =
-  import.meta.env.VITE_GHN_API_URL ?? "https://online-gateway.ghn.vn/shiip/public-api";
-const GHN_TOKEN = import.meta.env.VITE_GHN_TOKEN ?? "";
-const GHN_SHOP_ID = Number(import.meta.env.VITE_GHN_SHOP_ID ?? 0);
-const GHN_FROM_DISTRICT_ID = Number(import.meta.env.VITE_GHN_FROM_DISTRICT_ID ?? 0);
-const GHN_FROM_WARD_CODE = import.meta.env.VITE_GHN_FROM_WARD_CODE ?? "";
+type ShippingProvinceDto = {
+  provinceId: number;
+  provinceName: string;
+};
 
-function ensureToken() {
-  if (!GHN_TOKEN) {
-    throw new Error("Missing VITE_GHN_TOKEN in .env");
-  }
-}
+type ShippingDistrictDto = {
+  districtId: number;
+  districtName: string;
+  provinceId: number;
+};
 
-function ensureShippingFeeConfig() {
-  if (!GHN_SHOP_ID || !GHN_FROM_DISTRICT_ID || !GHN_FROM_WARD_CODE) {
-    throw new Error("Missing VITE_GHN_SHOP_ID / VITE_GHN_FROM_DISTRICT_ID / VITE_GHN_FROM_WARD_CODE");
-  }
-}
-
-async function ghnRequest<T>(path: string, body?: Record<string, unknown>): Promise<T> {
-  ensureToken();
-
-  const response = await fetch(`${GHN_API_URL}${path}`, {
-    method: body ? "POST" : "GET",
-    headers: {
-      "Content-Type": "application/json",
-      token: GHN_TOKEN,
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-
-  if (!response.ok) {
-    throw new Error(`GHN request failed: ${response.status} ${response.statusText}`);
-  }
-
-  const json = (await response.json()) as GhnResponse<T>;
-  if (json.code !== 200) {
-    throw new Error(json.message || "GHN request failed");
-  }
-
-  return json.data;
-}
+type ShippingWardDto = {
+  wardCode: string;
+  wardName: string;
+  districtId: number;
+};
 
 export async function fetchGhnProvinces(): Promise<GhnProvince[]> {
-  return ghnRequest<GhnProvince[]>("/master-data/province");
+  const res = await agent.get<ShippingProvinceDto[]>("/shipping/provinces");
+  const list = Array.isArray(res.data) ? res.data : [];
+  return list.map((p) => ({
+    ProvinceID: p.provinceId,
+    ProvinceName: p.provinceName,
+  }));
 }
 
 export async function fetchGhnDistricts(provinceId: number): Promise<GhnDistrict[]> {
-  return ghnRequest<GhnDistrict[]>("/master-data/district", { province_id: provinceId });
+  const res = await agent.get<ShippingDistrictDto[]>("/shipping/districts", {
+    params: { provinceId },
+  });
+  const list = Array.isArray(res.data) ? res.data : [];
+  return list.map((d) => ({
+    DistrictID: d.districtId,
+    DistrictName: d.districtName,
+    ProvinceID: d.provinceId,
+  }));
 }
 
 export async function fetchGhnWards(districtId: number): Promise<GhnWard[]> {
-  return ghnRequest<GhnWard[]>("/master-data/ward", { district_id: districtId });
+  const res = await agent.get<ShippingWardDto[]>("/shipping/wards", {
+    params: { districtId },
+  });
+  const list = Array.isArray(res.data) ? res.data : [];
+  return list.map((w) => ({
+    WardCode: w.wardCode,
+    WardName: w.wardName,
+    DistrictID: w.districtId,
+  }));
 }
 
 function normalizeText(value: string): string {
@@ -105,21 +94,6 @@ export function findDistrictByName(
 export function findWardByName(wards: GhnWard[], wardName: string): GhnWard | undefined {
   const key = normalizeText(wardName);
   return wards.find((w) => normalizeText(w.WardName) === key);
-}
-
-type GhnService = {
-  service_id: number;
-  short_name: string;
-  service_type_id: number;
-};
-
-export async function fetchGhnAvailableServices(toDistrictId: number): Promise<GhnService[]> {
-  ensureShippingFeeConfig();
-  return ghnRequest<GhnService[]>("/v2/shipping-order/available-services", {
-    shop_id: GHN_SHOP_ID,
-    from_district: GHN_FROM_DISTRICT_ID,
-    to_district: toDistrictId,
-  });
 }
 
 export async function fetchGhnShippingFee(params: {

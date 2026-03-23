@@ -19,7 +19,6 @@ import AddressAutocomplete from "../../app/shared/components/AddressAutocomplete
 import { formatMoney } from "../../lib/utils/format";
 import {
     fetchGhnDistricts,
-    fetchGhnAvailableServices,
     fetchGhnProvinces,
     fetchGhnShippingFee,
     fetchGhnWards,
@@ -187,12 +186,9 @@ export default function CheckoutPage() {
         const loadFee = async () => {
             try {
                 setShippingFeeLoading(true);
-                const services = await fetchGhnAvailableServices(selectedDistrictId);
-                const serviceId = services[0]?.service_id;
                 const fee = await fetchGhnShippingFee({
                     toDistrictId: selectedDistrictId,
                     toWardCode: ward.WardCode,
-                    serviceId,
                     // Keep preview consistent with backend checkout formula.
                     insuranceValue: totalAmount,
                 });
@@ -434,14 +430,16 @@ export default function CheckoutPage() {
 
                                     <Grid item xs={12} md={4}>
                                         <TextField
-                                            label="Ward"
+                                            label="Province"
                                             fullWidth
                                             select
-                                            value={address.ward}
+                                            value={address.province}
                                             onChange={(e) =>
                                                 setAddress((prev) => ({
                                                     ...prev,
-                                                    ward: e.target.value,
+                                                    province: e.target.value,
+                                                    district: "",
+                                                    ward: "",
                                                 }))
                                             }
                                             InputProps={{
@@ -450,7 +448,19 @@ export default function CheckoutPage() {
                                                     borderRadius: 2,
                                                 },
                                             }}
-                                            disabled={!selectedDistrictId || loadingWards}
+                                            SelectProps={{
+                                                MenuProps: {
+                                                    PaperProps: {
+                                                        sx: {
+                                                            maxHeight: 280,
+                                                            overflowY: "auto",
+                                                            scrollbarWidth: "none",
+                                                            "&::-webkit-scrollbar": { display: "none" },
+                                                        },
+                                                    },
+                                                },
+                                            }}
+                                            disabled={loadingProvinces}
                                             sx={{
                                                 "& .MuiOutlinedInput-root": {
                                                     "& fieldset": { borderColor: "#E6E6E6" },
@@ -466,11 +476,11 @@ export default function CheckoutPage() {
                                             }}
                                         >
                                             <MenuItem value="">
-                                                {loadingWards ? "Loading wards..." : "Select ward"}
+                                                {loadingProvinces ? "Loading provinces..." : "Select province"}
                                             </MenuItem>
-                                            {wards.map((w) => (
-                                                <MenuItem key={w.WardCode} value={w.WardName}>
-                                                    {w.WardName}
+                                            {provinces.map((p) => (
+                                                <MenuItem key={p.ProvinceID} value={p.ProvinceName}>
+                                                    {p.ProvinceName}
                                                 </MenuItem>
                                             ))}
                                         </TextField>
@@ -523,16 +533,14 @@ export default function CheckoutPage() {
 
                                     <Grid item xs={12} md={4}>
                                         <TextField
-                                            label="Province"
+                                            label="Ward"
                                             fullWidth
                                             select
-                                            value={address.province}
+                                            value={address.ward}
                                             onChange={(e) =>
                                                 setAddress((prev) => ({
                                                     ...prev,
-                                                    province: e.target.value,
-                                                    district: "",
-                                                    ward: "",
+                                                    ward: e.target.value,
                                                 }))
                                             }
                                             InputProps={{
@@ -541,19 +549,7 @@ export default function CheckoutPage() {
                                                     borderRadius: 2,
                                                 },
                                             }}
-                                            SelectProps={{
-                                                MenuProps: {
-                                                    PaperProps: {
-                                                        sx: {
-                                                            maxHeight: 280,
-                                                            overflowY: "auto",
-                                                            scrollbarWidth: "none",
-                                                            "&::-webkit-scrollbar": { display: "none" },
-                                                        },
-                                                    },
-                                                },
-                                            }}
-                                            disabled={loadingProvinces}
+                                            disabled={!selectedDistrictId || loadingWards}
                                             sx={{
                                                 "& .MuiOutlinedInput-root": {
                                                     "& fieldset": { borderColor: "#E6E6E6" },
@@ -569,11 +565,11 @@ export default function CheckoutPage() {
                                             }}
                                         >
                                             <MenuItem value="">
-                                                {loadingProvinces ? "Loading provinces..." : "Select province"}
+                                                {loadingWards ? "Loading wards..." : "Select ward"}
                                             </MenuItem>
-                                            {provinces.map((p) => (
-                                                <MenuItem key={p.ProvinceID} value={p.ProvinceName}>
-                                                    {p.ProvinceName}
+                                            {wards.map((w) => (
+                                                <MenuItem key={w.WardCode} value={w.WardName}>
+                                                    {w.WardName}
                                                 </MenuItem>
                                             ))}
                                         </TextField>

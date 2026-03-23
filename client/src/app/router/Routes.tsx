@@ -201,10 +201,7 @@ export const router = createBrowserRouter([
 
       // Other pages
       { path: "counter", element: <Counter /> },
-      {
-        element: <RequireRole allowedRoles={["Customer"]} />,
-        children: [{ path: "profile", element: <ProfilePage /> }],
-      },
+      { path: "profile", element: <ProfilePage /> },
 
       // Errors
       { path: "errors", element: <TestErrors /> },
