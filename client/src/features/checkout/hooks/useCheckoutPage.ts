@@ -173,7 +173,6 @@ export function useCheckoutPage() {
     districtId?: number | null;
     wardCode?: string | null;
   }) => {
-    const shippingFee = params?.shippingFee ?? 0;
     const provinceId = params?.provinceId ?? null;
     const districtId = params?.districtId ?? null;
     const wardCode = params?.wardCode?.trim() ?? "";
