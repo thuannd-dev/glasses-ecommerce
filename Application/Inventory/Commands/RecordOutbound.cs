@@ -77,12 +77,16 @@ public sealed class RecordOutbound
                 List<Guid> variantIds = order.OrderItems.Select(oi => oi.ProductVariantId).Distinct().ToList();
                 List<Stock> stocks = await context.GetStocksWithLockAsync(variantIds, ct);
                 List<ProductVariant> variants = await context.ProductVariants
+                    .AsNoTracking()
+                    .Include(pv => pv.Product)
                     .Where(pv => variantIds.Contains(pv.Id))
                     .ToListAsync(ct);
 
                 Dictionary<Guid, Stock> stockByVariant = stocks.ToDictionary(s => s.ProductVariantId);
                 Dictionary<Guid, ProductVariant> variantById = variants.ToDictionary(v => v.Id);
 
+                // Validate ALL items first to collect all failures before returning an error
+                List<string> insufficientStockItems = [];
                 foreach (OrderItem item in order.OrderItems)
                 {
                     if (!stockByVariant.TryGetValue(item.ProductVariantId, out Stock? stock))
@@ -97,16 +101,19 @@ public sealed class RecordOutbound
                     bool isPreOrderVariant = variant.IsPreOrder;
                     bool isPreOrderOrder = order.OrderType == OrderType.PreOrder;
 
-                    // For both pre-order and regular items: QuantityReserved must cover item.Quantity
-                    // Pre-order message wording is handled separately for clearer API feedback.
-                    if (stock.QuantityReserved < item.Quantity)
+                    // For pre-order items: QuantityReserved must cover item.Quantity
+                    if ((isPreOrderVariant || isPreOrderOrder) && stock.QuantityReserved < item.Quantity)
                     {
-                        string message = isPreOrderVariant || isPreOrderOrder
-                            ? $"Pre-order item not yet fulfilled from inbound for variant '{item.ProductVariantId}'. Expected {item.Quantity} units reserved, but only {stock.QuantityReserved} available."
-                            : $"Reserved quantity is insufficient for product variant '{item.ProductVariantId}'. Expected {item.Quantity} units reserved, but only {stock.QuantityReserved} available.";
-
-                        return Result<Unit>.Failure(message, 409);
+                        string itemName = $"{variant.Product.ProductName} (SKU: {variant.SKU})";
+                        insufficientStockItems.Add(itemName);
+                        continue;
                     }
+
+                    // For regular items: also check QuantityReserved
+                    if (stock.QuantityReserved < item.Quantity)
+                        return Result<Unit>.Failure(
+                            $"Reserved quantity is insufficient for product variant '{item.ProductVariantId}'. Expected {item.Quantity} units reserved, but only {stock.QuantityReserved} available.",
+                            409);
 
                     if (stock.QuantityOnHand < item.Quantity)
                         return Result<Unit>.Failure(
@@ -131,6 +138,15 @@ public sealed class RecordOutbound
                         ApprovedAt = DateTime.UtcNow,
                         ApprovedBy = staffUserId,
                     });
+                }
+
+                // If any pre-order items failed validation, return user-friendly error with product names
+                if (insufficientStockItems.Count > 0)
+                {
+                    string itemList = string.Join(", ", insufficientStockItems);
+                    return Result<Unit>.Failure(
+                        $"Pre-order item(s) ({itemList}) is not fulfilled, cannot create shipment",
+                        409);
                 }
 
                 bool success = await context.SaveChangesAsync(ct) > 0;

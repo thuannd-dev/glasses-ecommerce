@@ -46,6 +46,7 @@ export function OperationsProvider({ children }: { children: React.ReactNode }) 
   const [createShipTrackingUrl, setCreateShipTrackingUrl] = useState("");
   const [createShipEstimatedDeliveryDate, setCreateShipEstimatedDeliveryDate] = useState("");
   const [createShipShippingNotes, setCreateShipShippingNotes] = useState("");
+  const [createShipError, setCreateShipError] = useState<string | null>(null);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
 
   const { data: ordersData, isLoading: ordersLoading } = useOperationsOrders();
@@ -72,6 +73,9 @@ export function OperationsProvider({ children }: { children: React.ReactNode }) 
 
   const handleCreateShipment = useCallback(() => {
     if (!createShipOrderId || !createShipTracking.trim()) return;
+
+    // Clear previous error
+    setCreateShipError(null);
 
     // IMPORTANT: Record outbound FIRST to validate PreOrder fulfillment.
     // Only if outbound succeeds, then update order status to "Shipped".
@@ -103,28 +107,37 @@ export function OperationsProvider({ children }: { children: React.ReactNode }) 
                 setCreateShipEstimatedDeliveryDate("");
                 setCreateShipShippingNotes("");
                 setCreateShipCarrier("");
+                setCreateShipError(null);
               },
               onError: (error: unknown) => {
-                const apiError = error as { response?: { data?: { message?: string } } } | undefined;
-                const errorMessage = apiError?.response?.data?.message || "Failed to update order status";
-                toast.error(errorMessage);
+                // Extract error message from API response
+                let errorMessage = "Failed to update order status";
+                
+                if (error instanceof Error) {
+                  errorMessage = error.message;
+                } else if (error && typeof error === 'object') {
+                  const apiError = error as { response?: { data?: { message?: string } } };
+                  errorMessage = apiError?.response?.data?.message || errorMessage;
+                }
+                
+                setCreateShipError(errorMessage);
               },
             },
           );
         },
         onError: (error: unknown) => {
           // Extract error message from API response
-          const apiError = error as { response?: { data?: { message?: string } } } | undefined;
-          const errorMessage = apiError?.response?.data?.message || "Failed to create outbound record";
-
-          // Check if it's a PreOrder fulfillment issue
-          if (errorMessage.includes("Pre-order item not yet fulfilled")) {
-            toast.error(
-              "Pre-order items are not yet fulfilled. Please wait for inbound stock approval."
-            );
-          } else {
-            toast.error(errorMessage);
+          // The agent interceptor throws Error objects with message for 409 errors
+          let errorMessage = "Failed to create outbound record";
+          
+          if (error instanceof Error) {
+            errorMessage = error.message;
+          } else if (error && typeof error === 'object') {
+            const apiError = error as { response?: { data?: { message?: string } } };
+            errorMessage = apiError?.response?.data?.message || errorMessage;
           }
+          
+          setCreateShipError(errorMessage);
         },
       },
     );
@@ -209,6 +222,7 @@ export function OperationsProvider({ children }: { children: React.ReactNode }) 
           setCreateShipEstimatedDeliveryDate("");
           setCreateShipShippingNotes("");
           setCreateShipCarrier("");
+          setCreateShipError(null);
         }}
         order={selectedOrder}
         carrier={createShipCarrier}
@@ -223,7 +237,8 @@ export function OperationsProvider({ children }: { children: React.ReactNode }) 
         setShippingNotes={setCreateShipShippingNotes}
         carriers={carriers}
         onSubmit={handleCreateShipment}
-        isPending={updateStatus.isPending}
+        isPending={updateStatus.isPending || createOutbound.isPending}
+        error={createShipError}
       />
     </OperationsContext.Provider>
   );

@@ -12,6 +12,8 @@ import SelectLensesPage from "../../features/collections/SelectLensesPage";
 import LoginForm from "../../features/account/LoginForm";
 import RegisterForm from "../../features/account/RegisterForm";
 import PostLoginRedirect from "../../features/account/PostLoginRedirect";
+import ForgotPasswordForm from "../../features/account/ForgotPasswordForm";
+import ResetPasswordForm from "../../features/account/ResetPasswordForm";
 
 import TestErrors from "../../features/errors/TestErrors";
 import NotFound from "../../features/errors/NotFound";
@@ -76,6 +78,8 @@ export const router = createBrowserRouter([
     children: [
       { path: "login", element: <LoginForm /> },
       { path: "register", element: <RegisterForm /> },
+      { path: "forgot-password", element: <ForgotPasswordForm /> },
+      { path: "reset-password", element: <ResetPasswordForm /> },
       { path: "auth/redirect", element: <PostLoginRedirect /> },
     ],
   },

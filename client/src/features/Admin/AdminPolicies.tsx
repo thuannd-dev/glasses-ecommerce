@@ -314,35 +314,55 @@ export default function AdminPolicies() {
   return (
     <>
       {/* Header Section */}
-      <Box sx={{ mb: 5 }}>
+      <Box 
+        sx={{ 
+          mb: 6,
+          background: "linear-gradient(135deg, rgba(25, 118, 210, 0.05) 0%, rgba(25, 118, 210, 0.02) 100%)",
+          py: 3.5,
+          px: 3.5,
+          borderRadius: 2,
+          border: "1px solid",
+          borderColor: "rgba(25, 118, 210, 0.1)",
+        }}
+      >
         <Typography
           sx={{
-            fontSize: 12,
-            letterSpacing: 6,
+            fontSize: 11,
+            letterSpacing: 2,
             textTransform: "uppercase",
-            color: "text.secondary",
+            color: "primary.main",
+            fontWeight: 700,
+            opacity: 0.8,
           }}
         >
           Admin Console
         </Typography>
-        <Typography sx={{ mt: 1, fontSize: 30, fontWeight: 900, color: "text.primary" }}>
+        <Typography sx={{ mt: 1.5, fontSize: 32, fontWeight: 900, color: "text.primary", letterSpacing: -0.5 }}>
           Policies
         </Typography>
-        <Typography sx={{ mt: 1, color: "text.secondary", maxWidth: 700, fontSize: 14 }}>
+        <Typography sx={{ mt: 1.5, color: "text.secondary", maxWidth: 700, fontSize: 15, lineHeight: 1.6 }}>
           Create, edit, and manage return, warranty, and refund policies with detailed configuration.
         </Typography>
       </Box>
 
       {/* Filters Section */}
-      <Box sx={{ mb: 4, display: "flex", gap: 2, alignItems: "flex-end", flexWrap: "wrap" }}>
+      <Box 
+        sx={{ 
+          mb: 5, 
+          display: "flex", 
+          gap: 2, 
+          alignItems: "center", 
+          flexWrap: "wrap",
+        }}
+      >
         {/* Search */}
-        <Box sx={{ flex: 1, minWidth: 200 }}>
+        <Box sx={{ flex: 1, minWidth: 240 }}>
           <TextField
             fullWidth
             size="small"
-            placeholder="Search policies..."
+            placeholder="Search by policy name..."
             InputProps={{
-              startAdornment: <SearchIcon sx={{ mr: 1, color: "text.secondary", fontSize: 20 }} />,
+              startAdornment: <SearchIcon sx={{ mr: 1.5, color: "primary.main", fontSize: 20, opacity: 0.6 }} />,
             }}
             value={filters.search || ""}
             onChange={(e) =>
@@ -351,60 +371,104 @@ export default function AdminPolicies() {
             sx={{
               "& .MuiOutlinedInput-root": {
                 backgroundColor: "#ffffff",
+                borderRadius: 1.5,
+                transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+                border: "1.5px solid",
+                borderColor: "rgba(0, 0, 0, 0.08)",
+                "&:hover": {
+                  borderColor: "rgba(0, 0, 0, 0.12)",
+                  backgroundColor: "#ffffff",
+                },
+                "&.Mui-focused": {
+                  backgroundColor: "#ffffff",
+                  borderColor: "primary.main",
+                  boxShadow: "0 0 0 3px rgba(33, 150, 243, 0.08)",
+                },
+              },
+              "& .MuiOutlinedInput-input::placeholder": {
+                color: "rgba(0, 0, 0, 0.4)",
+                opacity: 1,
               },
             }}
           />
         </Box>
 
         {/* Policy Type Filter */}
-        <Box sx={{ minWidth: 160 }}>
-          <FormControl fullWidth size="small">
-            <InputLabel>Policy Type</InputLabel>
-            <Select
-              label="Policy Type"
-              value={filters.policyType ?? ""}
-              onChange={(e) =>
-                setFilters((prev) => ({
-                  ...prev,
-                  policyType: e.target.value ? (e.target.value as PolicyTypeEnum) : null,
-                  pageNumber: 1,
-                }))
-              }
-            >
-              <MenuItem value="">All Types</MenuItem>
-              {POLICY_TYPES.map((type) => (
-                <MenuItem key={type.value} value={type.value}>
-                  <Box sx={{ display: "flex", alignItems: "center" }}>
-                    <span style={{ marginRight: 8 }}>{type.icon}</span>
-                    {type.label}
-                  </Box>
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Box>
+        <TextField
+          select
+          size="small"
+          value={filters.policyType ?? ""}
+          onChange={(e) =>
+            setFilters((prev) => ({
+              ...prev,
+              policyType: e.target.value ? (parseInt(e.target.value) as PolicyTypeEnum) : null,
+              pageNumber: 1,
+            }))
+          }
+          SelectProps={{
+            native: true,
+          }}
+          sx={{
+            minWidth: 160,
+            "& .MuiOutlinedInput-root": {
+              backgroundColor: "#ffffff",
+              borderRadius: 1.5,
+              transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+              border: "1.5px solid",
+              borderColor: "rgba(0, 0, 0, 0.08)",
+              "&:hover": {
+                borderColor: "rgba(0, 0, 0, 0.12)",
+              },
+              "&.Mui-focused": {
+                borderColor: "primary.main",
+                boxShadow: "0 0 0 3px rgba(33, 150, 243, 0.08)",
+              },
+            },
+          }}
+        >
+          <option value="">All Types</option>
+          {POLICY_TYPES.map((type) => (
+            <option key={type.value} value={type.value}>{type.icon} {type.label}</option>
+          ))}
+        </TextField>
 
         {/* Status Filter */}
-        <Box sx={{ minWidth: 140 }}>
-          <FormControl fullWidth size="small">
-            <InputLabel>Status</InputLabel>
-            <Select
-              label="Status"
-              value={filters.isActive ?? ""}
-              onChange={(e) =>
-                setFilters((prev) => ({
-                  ...prev,
-                  isActive: e.target.value === "" ? null : e.target.value === "true",
-                  pageNumber: 1,
-                }))
-              }
-            >
-              <MenuItem value="">All</MenuItem>
-              <MenuItem value="true">Active</MenuItem>
-              <MenuItem value="false">Inactive</MenuItem>
-            </Select>
-          </FormControl>
-        </Box>
+        <TextField
+          select
+          size="small"
+          value={filters.isActive ?? ""}
+          onChange={(e) =>
+            setFilters((prev) => ({
+              ...prev,
+              isActive: e.target.value === "" ? null : e.target.value === "true",
+              pageNumber: 1,
+            }))
+          }
+          SelectProps={{
+            native: true,
+          }}
+          sx={{
+            minWidth: 140,
+            "& .MuiOutlinedInput-root": {
+              backgroundColor: "#ffffff",
+              borderRadius: 1.5,
+              transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+              border: "1.5px solid",
+              borderColor: "rgba(0, 0, 0, 0.08)",
+              "&:hover": {
+                borderColor: "rgba(0, 0, 0, 0.12)",
+              },
+              "&.Mui-focused": {
+                borderColor: "primary.main",
+                boxShadow: "0 0 0 3px rgba(33, 150, 243, 0.08)",
+              },
+            },
+          }}
+        >
+          <option value="">All Status</option>
+          <option value="true">✓ Active</option>
+          <option value="false">✕ Inactive</option>
+        </TextField>
 
         {/* Create Button */}
         <Button
@@ -413,60 +477,97 @@ export default function AdminPolicies() {
           onClick={handleOpenCreateDialog}
           sx={{
             textTransform: "none",
-            fontWeight: 600,
+            fontWeight: 700,
             py: 1,
-            fontSize: 13,
+            px: 2.5,
+            fontSize: 14,
+            borderRadius: 1.5,
+            boxShadow: "0 2px 8px rgba(33, 150, 243, 0.25)",
+            transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+            "&:hover": {
+              boxShadow: "0 4px 16px rgba(33, 150, 243, 0.35)",
+              transform: "translateY(-2px)",
+            },
+            "&:active": {
+              transform: "translateY(0px)",
+            },
           }}
         >
-          + Create Policy
+          Create Policy
         </Button>
       </Box>
 
-      {/* Policies Table - Cleaner Paper style */}
+      {/* Policies Table */}
       <Paper
         elevation={0}
         sx={{
-          border: "1px solid rgba(0,0,0,0.08)",
+          border: "1px solid",
+          borderColor: "rgba(0, 0, 0, 0.08)",
           borderRadius: 2,
           overflow: "hidden",
+          transition: "all 0.3s ease",
+          "&:hover": {
+            boxShadow: "0 4px 16px rgba(0, 0, 0, 0.06)",
+          },
         }}
       >
         {isPoliciesLoading ? (
-          <Box sx={{ p: 5, textAlign: "center" }}>
-            <Typography sx={{ color: "text.secondary", fontSize: 16 }}>Loading policies...</Typography>
+          <Box sx={{ p: 8, textAlign: "center" }}>
+            <Typography sx={{ color: "text.secondary", fontSize: 16, fontWeight: 500 }}>
+              ⏳ Loading policies...
+            </Typography>
           </Box>
         ) : policies.length === 0 ? (
-          <Box sx={{ p: 5, textAlign: "center" }}>
-            <Typography sx={{ color: "text.secondary", mb: 1.5, fontSize: 16 }}>No policies found</Typography>
-            <Typography sx={{ fontSize: 15, color: "text.secondary" }}>
+          <Box sx={{ p: 8, textAlign: "center" }}>
+            <Typography sx={{ color: "text.secondary", mb: 1.5, fontSize: 18, fontWeight: 600 }}>
+              📭 No policies found
+            </Typography>
+            <Typography sx={{ fontSize: 15, color: "text.secondary", mb: 3 }}>
               Create your first policy to get started
             </Typography>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={handleOpenCreateDialog}
+              sx={{
+                textTransform: "none",
+                fontWeight: 600,
+              }}
+            >
+              Create First Policy
+            </Button>
           </Box>
         ) : (
           <>
             <TableContainer>
-              <Table sx={{ minWidth: 700 }}>
+              <Table sx={{ minWidth: 900 }}>
                 <TableHead>
-                  <TableRow sx={{ bgcolor: "rgba(0, 0, 0, 0.02)" }}>
-                    <TableCell sx={{ fontWeight: 800, fontSize: 15, py: 2 }}>Policy Name</TableCell>
-                    <TableCell sx={{ fontWeight: 800, fontSize: 15, py: 2 }}>Type</TableCell>
-                    <TableCell sx={{ fontWeight: 800, fontSize: 15, py: 2 }}>Status</TableCell>
-                    <TableCell sx={{ fontWeight: 800, fontSize: 15, py: 2 }} align="right">
+                  <TableRow 
+                    sx={{ 
+                      bgcolor: "rgba(33, 150, 243, 0.04)",
+                      borderBottom: "2px solid",
+                      borderColor: "rgba(33, 150, 243, 0.15)",
+                    }}
+                  >
+                    <TableCell sx={{ fontWeight: 800, fontSize: 14, py: 2.5, color: "primary.main" }}>Policy Name</TableCell>
+                    <TableCell sx={{ fontWeight: 800, fontSize: 14, py: 2.5, color: "primary.main" }}>Type</TableCell>
+                    <TableCell sx={{ fontWeight: 800, fontSize: 14, py: 2.5, color: "primary.main" }}>Status</TableCell>
+                    <TableCell sx={{ fontWeight: 800, fontSize: 14, py: 2.5, color: "primary.main" }} align="right">
                       Return Days
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 800, fontSize: 15, py: 2 }} align="right">
+                    <TableCell sx={{ fontWeight: 800, fontSize: 14, py: 2.5, color: "primary.main" }} align="right">
                       Warranty Months
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 800, fontSize: 15, py: 2 }} align="center">
+                    <TableCell sx={{ fontWeight: 800, fontSize: 14, py: 2.5, color: "primary.main" }} align="center">
                       Edit
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 800, fontSize: 15, py: 2 }} align="center">
+                    <TableCell sx={{ fontWeight: 800, fontSize: 14, py: 2.5, color: "primary.main" }} align="center">
                       Delete
                     </TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {policies.map((policy) => {
+                  {policies.map((policy, index) => {
                     const typeLabel: string = getPolicyTypeLabel(policy.policyType);
                     const typeColor = POLICY_TYPE_COLORS[typeof policy.policyType === 'number' ? policy.policyType : 0];
                     return (
@@ -474,10 +575,14 @@ export default function AdminPolicies() {
                         key={policy.id}
                         hover
                         sx={{
+                          bgcolor: index % 2 === 0 ? "rgba(0, 0, 0, 0.01)" : "white",
+                          transition: "all 0.2s ease",
                           "&:hover": {
-                            bgcolor: "rgba(0, 0, 0, 0.02)",
+                            bgcolor: "rgba(33, 150, 243, 0.06)",
                           },
-                          "& td": { py: 1.75 },
+                          "& td": { py: 2, borderColor: "rgba(0, 0, 0, 0.05)" },
+                          borderBottom: "1px solid",
+                          borderColor: "rgba(0, 0, 0, 0.05)",
                         }}
                       >
                         <TableCell>

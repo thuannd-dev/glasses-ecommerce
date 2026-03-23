@@ -24,7 +24,7 @@ public sealed class UpdateOrderStatus
     {
         public async Task<Result<Unit>> Handle(Command request, CancellationToken ct)
         {
-            Guid staffUserId = userAccessor.GetUserId();
+            Guid? staffUserId = userAccessor.GetUserIdOrDefault();
 
             return await context.Database.CreateExecutionStrategy().ExecuteAsync(async () =>
             {
@@ -225,24 +225,30 @@ public sealed class UpdateOrderStatus
                 // If shipping, require and create shipment info
                 if (newStatus == OrderStatus.Shipped)
                 {
-                    if (request.Dto.Shipment == null)
-                        return Result<Unit>.Failure("Shipment info is required when shipping an order.", 400);
-
-                    if (order.ShipmentInfo != null)
-                        return Result<Unit>.Failure("Shipment info already exists for this order.", 409);
-
-                    context.Set<ShipmentInfo>().Add(new ShipmentInfo
+                    if (order.ShipmentInfo == null)
                     {
-                        OrderId = order.Id,
-                        CarrierName = request.Dto.Shipment.CarrierName,
-                        TrackingCode = request.Dto.Shipment.TrackingCode,
-                        TrackingUrl = request.Dto.Shipment.TrackingUrl,
-                        EstimatedDeliveryAt = request.Dto.Shipment.EstimatedDeliveryAt,
-                        ShippingNotes = request.Dto.Shipment.ShippingNotes,
-                        ShippedAt = DateTime.UtcNow,
-                        CreatedBy = staffUserId,
-                        UpdatedAt = DateTime.UtcNow,
-                    });
+                        if (request.Dto.Shipment == null)
+                            return Result<Unit>.Failure("Shipment info is required when shipping an order without an existing shipment.", 400);
+
+                        context.Set<ShipmentInfo>().Add(new ShipmentInfo
+                        {
+                            OrderId = order.Id,
+                            CarrierName = request.Dto.Shipment.CarrierName,
+                            TrackingCode = request.Dto.Shipment.TrackingCode,
+                            TrackingUrl = request.Dto.Shipment.TrackingUrl,
+                            EstimatedDeliveryAt = request.Dto.Shipment.EstimatedDeliveryAt,
+                            ShippingNotes = request.Dto.Shipment.ShippingNotes,
+                            ShippedAt = DateTime.UtcNow,
+                            CreatedBy = staffUserId,
+                            UpdatedAt = DateTime.UtcNow,
+                        });
+                    }
+                    else
+                    {
+                        // Order already has ShipmentInfo (Flow GHN). Just update ShippedAt timestamp.
+                        order.ShipmentInfo.ShippedAt = DateTime.UtcNow;
+                        order.ShipmentInfo.UpdatedAt = DateTime.UtcNow;
+                    }
                 }
 
                 order.OrderStatus = newStatus;
@@ -273,7 +279,7 @@ public sealed class UpdateOrderStatus
                                 Amount = payment.Amount,
                                 RefundStatus = RefundStatus.Completed,
                                 RefundAt = DateTime.UtcNow,
-                                RefundReason = $"Order Cancelled by System (Staff ID {staffUserId})"
+                                RefundReason = $"Order Cancelled by System (Staff ID {staffUserId?.ToString() ?? "System"})"
                             });
                         }
                     }
@@ -284,10 +290,15 @@ public sealed class UpdateOrderStatus
                 {
                     foreach (Payment payment in order.Payments)
                     {
-                        if (payment.PaymentStatus != PaymentStatus.Refunded)
+                        if (payment.PaymentStatus != PaymentStatus.Completed && payment.PaymentStatus != PaymentStatus.Refunded)
                         {
-                            payment.PaymentStatus = PaymentStatus.Completed;
-                            payment.PaymentAt = DateTime.UtcNow;
+                            // Chỉ tự động hoàn tất thanh toán cho COD và Tiền mặt.
+                            // Các hình thức chuyển khoản/QR code yêu cầu phải có TransactionId (được cập nhật qua webhook của cổng thanh toán).
+                            if (payment.PaymentMethod == PaymentMethod.Cod || payment.PaymentMethod == PaymentMethod.Cash)
+                            {
+                                payment.PaymentStatus = PaymentStatus.Completed;
+                                payment.PaymentAt = DateTime.UtcNow;
+                            }
                         }
                     }
                 }

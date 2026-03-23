@@ -1,8 +1,9 @@
-import { useState } from "react";
-import { Box, Button, Chip, Collapse, Divider, IconButton, LinearProgress, Paper, Typography } from "@mui/material";
+import { useMemo, useState, useEffect } from "react";
+import { Box, Button, Chip, Collapse, Divider, IconButton, LinearProgress, Paper, TextField, Typography, InputAdornment } from "@mui/material";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import SearchIcon from "@mui/icons-material/Search";
 import { Link as RouterLink } from "react-router-dom";
 import { useStaffOrder, useUpdateStaffOrderStatus } from "../../../lib/hooks/useStaffOrders";
 import type { StaffOrderDto, StaffOrderDetailDto } from "../../../lib/types/staffOrders";
@@ -274,6 +275,47 @@ function SalesOrderRow({ summary }: { summary: StaffOrderDto }) {
 export function OrdersScreen() {
   const { pageNumber, setPageNumber, statusFilter, typeFilter, filteredOrders, isLoading, meta, statusTabs } =
     useOrdersScreen();
+  
+  const [searchQuery, setSearchQuery] = useState("");
+  const [dateFilter, setDateFilter] = useState<string>("");
+
+  // Apply search and date filters client-side
+  const visibleOrders = useMemo(() => {
+    return filteredOrders.filter((o) => {
+      // Search by customer phone or order id
+      const q = searchQuery.trim().toLowerCase();
+      if (q) {
+        const phone = (
+          (o as any).customerPhone ??
+          (o as any).walkInCustomerPhone ??
+          ""
+        )
+          .toString()
+          .toLowerCase();
+        const orderId = (o.id ?? "").toString().toLowerCase();
+        if (!phone.includes(q) && !orderId.includes(q)) {
+          return false;
+        }
+      }
+
+      // Date filter by createdAt (yyyy-mm-dd)
+      if (dateFilter) {
+        const d = new Date(o.createdAt);
+        const yyyy = String(d.getFullYear()).padStart(4, "0");
+        const mm = String(d.getMonth() + 1).padStart(2, "0");
+        const dd = String(d.getDate()).padStart(2, "0");
+        const ymd = `${yyyy}-${mm}-${dd}`;
+        if (ymd !== dateFilter) return false;
+      }
+
+      return true;
+    });
+  }, [filteredOrders, searchQuery, dateFilter]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setPageNumber(1);
+  }, [searchQuery, dateFilter, setPageNumber]);
 
   return (
     <Box
@@ -308,7 +350,7 @@ export function OrdersScreen() {
               borderRadius: 999,
             }}
           >
-            {filteredOrders.length} orders
+            {visibleOrders.length} orders
           </Typography>
         </Box>
         <Typography sx={{ mt: 0.5, color: "#6B6B6B", fontSize: 14 }}>
@@ -331,11 +373,15 @@ export function OrdersScreen() {
         {statusTabs.map((tab) => {
           const active = statusFilter === tab.value;
           const typeParam = typeFilter === "All" ? "" : `&type=${typeFilter}`;
+          const statusParam = tab.value === "All" ? "" : `status=${tab.value}`;
+          const separator = statusParam && typeParam ? "&" : "";
+          const allParams = `${statusParam}${separator}${typeParam}`;
+          const href = allParams ? `/sales/orders?${allParams}` : "/sales/orders";
           return (
             <Button
               key={tab.value}
               component={RouterLink}
-              to={`/sales/orders?status=${tab.value}${typeParam}`}
+              to={href}
               sx={{
                 borderRadius: 999,
                 px: 2.5,
@@ -368,11 +414,87 @@ export function OrdersScreen() {
         })}
       </Box>
 
+      {/* Search and Date Filter */}
+      <Box
+        sx={{
+          display: "flex",
+          flexWrap: "wrap",
+          alignItems: "center",
+          gap: 2,
+          mb: 2,
+          justifyContent: "flex-start",
+        }}
+      >
+        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
+          <TextField
+            size="small"
+            placeholder="Search by phone or order ID"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            sx={{
+              minWidth: 220,
+              "& .MuiOutlinedInput-root": {
+                borderRadius: 999,
+                bgcolor: "#FAFAF8",
+                fontSize: 13,
+                px: 1,
+                "& fieldset": { borderColor: "rgba(0,0,0,0.06)" },
+                "&:hover fieldset": { borderColor: "rgba(0,0,0,0.18)" },
+                "&.Mui-focused fieldset": { borderColor: "#B68C5A", borderWidth: 1 },
+              },
+              "& .MuiInputBase-input": {
+                py: 0.75,
+              },
+            }}
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon fontSize="small" sx={{ color: "#9CA3AF" }} />
+                  </InputAdornment>
+                ),
+              },
+            }}
+          />
+          <TextField
+            size="small"
+            type="date"
+            label="Order date"
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value)}
+            slotProps={{
+              inputLabel: { shrink: true },
+            }}
+            sx={{
+              minWidth: 160,
+              "& .MuiOutlinedInput-root": {
+                borderRadius: 999,
+                bgcolor: "#FAFAF8",
+                fontSize: 13,
+                px: 1.25,
+                "& fieldset": { borderColor: "rgba(0,0,0,0.06)" },
+                "&:hover fieldset": { borderColor: "rgba(0,0,0,0.18)" },
+                "&.Mui-focused fieldset": { borderColor: "#B68C5A", borderWidth: 1 },
+              },
+              "& .MuiInputBase-input": {
+                py: 0.75,
+              },
+              "& .MuiInputLabel-root": {
+                fontSize: 12,
+                textTransform: "uppercase",
+                letterSpacing: 1,
+                color: "#9CA3AF",
+              },
+            }}
+          />
+        </Box>
+      </Box>
+
       {isLoading ? (
         <Box sx={{ mt: 2 }}>
           <LinearProgress sx={{ borderRadius: 1 }} />
         </Box>
-      ) : filteredOrders.length === 0 ? (
+      ) : visibleOrders.length === 0 ? (
         <Box sx={{ mt: 3 }}>
           <Paper
             elevation={0}
@@ -384,7 +506,7 @@ export function OrdersScreen() {
               textAlign: "center",
             }}
           >
-            <Typography color="text.secondary">No orders yet.</Typography>
+            <Typography color="text.secondary">{searchQuery || dateFilter ? "No matching orders found." : "No orders yet."}</Typography>
           </Paper>
         </Box>
       ) : (
@@ -403,7 +525,7 @@ export function OrdersScreen() {
               "&::-webkit-scrollbar": { display: "none" },
             }}
           >
-            {filteredOrders.map((o) => (
+            {visibleOrders.map((o) => (
               <SalesOrderRow key={o.id} summary={o} />
             ))}
           </Box>

@@ -1,7 +1,12 @@
 using System;
 using System.Security.Claims;
 using API.DTOs;
+using Application.Accounts.Commands;
+using Application.Accounts.DTOs;
+using Application.Core;
+using Application.Interfaces;
 using Domain;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -10,7 +15,7 @@ namespace API.Controllers;
 
 [Route("api/account")]
 //UserManager have been injected in SignInManager
-public class AccountController(SignInManager<User> signInManager) : BaseApiController
+public class AccountController(SignInManager<User> signInManager, IMediator mediator, IEmailService emailService) : BaseApiController
 {
     [AllowAnonymous]
     [HttpPost("register")]
@@ -49,6 +54,19 @@ public class AccountController(SignInManager<User> signInManager) : BaseApiContr
                 ModelState.AddModelError(error.Code, error.Description);
             }
             return ValidationProblem();
+        }
+
+        // Send welcome email to the new user
+        string userDisplayName = user.DisplayName ?? user.Email ?? user.UserName ?? "User";
+        try
+        {
+            await emailService.SendWelcomeEmailAsync(user.Email!, userDisplayName);
+        }
+        catch (Exception ex)
+        {
+            // Log the error but don't fail registration
+            // Consider: queue for retry via background service
+            // logger.LogWarning(ex, "Failed to send welcome email to {Email}", user.Email);
         }
 
         return Ok();
@@ -111,5 +129,49 @@ public class AccountController(SignInManager<User> signInManager) : BaseApiContr
     {
         await signInManager.SignOutAsync();
         return NoContent();
+    }
+
+    [AllowAnonymous]
+    [HttpPost("forgot-password")]
+    public async Task<ActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
+    {
+        ForgotPassword.Command command = new() { Email = dto.Email };
+        Result<Unit> result = await mediator.Send(command);
+
+        if (!result.IsSuccess)
+        {
+            return BadRequest(new { error = result.Error });
+        }
+
+        // Return success message without exposing whether email exists (security best practice)
+        return Ok(new { message = "If an account with that email exists, a password recovery link has been sent." });
+    }
+
+    [AllowAnonymous]
+    [HttpPost("reset-password")]
+    public async Task<ActionResult> ResetPassword([FromBody] ResetPasswordDto dto)
+    {
+        // Validate that passwords match
+        if (dto.NewPassword != dto.ConfirmPassword)
+        {
+            return BadRequest(new { error = "Passwords do not match." });
+        }
+
+        ResetPassword.Command command = new()
+        {
+            Email = dto.Email,
+            Token = dto.Token,
+            NewPassword = dto.NewPassword,
+            ConfirmPassword = dto.ConfirmPassword
+        };
+
+        Result<Unit> result = await mediator.Send(command);
+
+        if (!result.IsSuccess)
+        {
+            return BadRequest(new { error = result.Error });
+        }
+
+        return Ok(new { message = "Password has been reset successfully. You can now log in with your new password." });
     }
 }

@@ -36,6 +36,14 @@ public class UserAccessor(IHttpContextAccessor httpContextAccessor, AppDbContext
         return userId;
     }
 
+    public Guid? GetUserIdOrDefault()
+    {
+        var userIdValue = httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(userIdValue) || !Guid.TryParse(userIdValue, out var userId))
+            return null;
+        return userId;
+    }
+
     public async Task<User> GetUserWithPhotosAsync()
     {
         return await dbContext.Users

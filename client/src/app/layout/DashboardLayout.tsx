@@ -23,7 +23,6 @@ import VisibilityOutlined from "@mui/icons-material/VisibilityOutlined";
 import MoveToInboxOutlinedIcon from "@mui/icons-material/MoveToInboxOutlined";
 import OutboxOutlined from "@mui/icons-material/OutboxOutlined";
 import HistoryOutlined from "@mui/icons-material/HistoryOutlined";
-import SecurityIcon from "@mui/icons-material/Security";
 import DashboardOutlined from "@mui/icons-material/DashboardOutlined";
 import StorefrontOutlined from "@mui/icons-material/StorefrontOutlined";
 import MoveToInboxOutlined from "@mui/icons-material/MoveToInboxOutlined";
@@ -33,6 +32,9 @@ import ExpandMore from "@mui/icons-material/ExpandMore";
 import AssignmentReturnIcon from "@mui/icons-material/AssignmentReturn";
 import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
 import ShieldIcon from "@mui/icons-material/Shield";
+import PeopleIcon from "@mui/icons-material/People";
+import AssignmentIcon from "@mui/icons-material/Assignment";
+import ToggleOnIcon from "@mui/icons-material/ToggleOn";
 import { useAccount } from "../../lib/hooks/useAccount";
 
 const SIDEBAR_WIDTH = 272;
@@ -47,7 +49,7 @@ const DASHBOARD_LINKS: { path: string; label: string; role: string; icon: React.
 const SALES_SUB_LINKS: { path: string; label: string; icon: React.ReactNode }[] = [
   { path: "/sales", label: "Overview", icon: <PointOfSaleIcon /> },
   { path: "/sales/orders", label: "Orders", icon: <Inventory2Outlined /> },
-  { path: "/sales/tickets", label: "Tickets", icon: <HistoryOutlined /> },
+  { path: "/sales/tickets", label: "After-sales", icon: <HistoryOutlined /> },
 ];
 
 const MANAGER_SUB_LINKS: { path: string; label: string; icon: React.ReactNode }[] = [
@@ -60,17 +62,13 @@ const MANAGER_SUB_LINKS: { path: string; label: string; icon: React.ReactNode }[
 
 const ADMIN_SUB_LINKS: { path: string; label: string; icon: React.ReactNode }[] = [
   { path: "/admin", label: "Dashboard", icon: <AdminPanelSettingsIcon /> },
-  { path: "/admin/roles", label: "Role Management", icon: <SecurityIcon /> },
-  { path: "/admin/policies", label: "Policies", icon: <SecurityIcon /> },
-  { path: "/admin/feature-toggles", label: "Feature Toggles", icon: <SecurityIcon /> },
+  { path: "/admin/roles", label: "Role Management", icon: <PeopleIcon /> },
+  { path: "/admin/policies", label: "Policies", icon: <AssignmentIcon /> },
+  { path: "/admin/feature-toggles", label: "Feature Toggles", icon: <ToggleOnIcon /> },
 ];
 
 export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [salesOrdersOpen, setSalesOrdersOpen] = useState(true);
-  const [salesTicketsOpen, setSalesTicketsOpen] = useState(true);
-  const [operationsOpen, setOperationsOpen] = useState(true);
-  const [operationsTicketsOpen, setOperationsTicketsOpen] = useState(true);
   const [adminOpen, setAdminOpen] = useState(true);
   const { currentUser, logoutUser } = useAccount();
   const roles = Array.isArray(currentUser?.roles) ? currentUser.roles : [];
@@ -192,99 +190,88 @@ export default function DashboardLayout() {
                       );
                     }
 
-                    // Orders parent + dropdown children
+                    // Orders group without dropdown
                     if (sub.path === "/sales/orders") {
                       return (
                         <Fragment key="sales-orders-group">
-                          <ListItemButton
-                            onClick={() => setSalesOrdersOpen((open) => !open)}
-                            sx={{
-                              borderRadius: 2,
-                              mb: 0.25,
-                              color: "rgba(0,0,0,0.7)",
-                              "&:hover": {
-                                bgcolor: "rgba(0,0,0,0.04)",
-                                color: "rgba(0,0,0,0.9)",
-                              },
-                            }}
-                          >
-                            <ListItemIcon sx={{ minWidth: 40, color: "inherit" }}>
-                              {sub.icon}
-                            </ListItemIcon>
-                            <ListItemText
-                              primary="Orders"
-                              primaryTypographyProps={{ fontWeight: 600 }}
-                            />
-                            {salesOrdersOpen ? <ExpandLess /> : <ExpandMore />}
-                          </ListItemButton>
+                          <List component="div" disablePadding sx={{ pl: 2 }}>
+                            <Typography
+                              sx={{
+                                fontSize: 11,
+                                letterSpacing: 2,
+                                textTransform: "uppercase",
+                                color: "text.secondary",
+                                px: 1.5,
+                                pt: 1.5,
+                                pb: 0.5,
+                              }}
+                            >
+                              Orders
+                            </Typography>
+                            {(() => {
+                              const searchParams = new URLSearchParams(location.search);
+                              const currentType =
+                                location.pathname.startsWith("/sales/orders")
+                                  ? searchParams.get("type") ?? "All"
+                                  : null;
 
-                          <Collapse in={salesOrdersOpen} timeout="auto" unmountOnExit>
-                            <List component="div" disablePadding sx={{ pl: 4 }}>
-                              {(() => {
-                                const searchParams = new URLSearchParams(location.search);
-                                const currentType =
-                                  location.pathname.startsWith("/sales/orders")
-                                    ? searchParams.get("type") ?? "All"
-                                    : null;
+                              const orderTypeItems = [
+                                { type: "All", label: "All", icon: <DashboardOutlined /> },
+                                { type: "ReadyStock", label: "Standard", icon: <StorefrontOutlined /> },
+                                { type: "PreOrder", label: "Pre-order", icon: <ScheduleOutlined /> },
+                                { type: "Prescription", label: "Prescription", icon: <VisibilityOutlined /> },
+                              ];
 
-                                const orderTypeItems = [
-                                  { type: "All", label: "All", icon: <DashboardOutlined /> },
-                                  { type: "ReadyStock", label: "Standard", icon: <StorefrontOutlined /> },
-                                  { type: "PreOrder", label: "Pre-order", icon: <ScheduleOutlined /> },
-                                  { type: "Prescription", label: "Prescription", icon: <VisibilityOutlined /> },
-                                ];
-
-                                const baseTypeStyles = {
-                                  borderRadius: 2,
-                                  mb: 0.25,
-                                  pl: 1.5,
-                                  color: "#8A8A8A",
-                                  borderLeft: "3px solid transparent",
-                                  "&:hover": {
-                                    bgcolor: "rgba(0,0,0,0.04)",
-                                    color: "#171717",
-                                  },
-                                } as const;
-
-                                const activeTypeStyles = {
-                                  bgcolor: "rgba(182,140,90,0.12)",
+                              const baseTypeStyles = {
+                                borderRadius: 2,
+                                mb: 0.25,
+                                pl: 1.5,
+                                color: "#8A8A8A",
+                                borderLeft: "3px solid transparent",
+                                "&:hover": {
+                                  bgcolor: "rgba(0,0,0,0.04)",
                                   color: "#171717",
-                                  borderLeftColor: "#B68C5A",
-                                } as const;
+                                },
+                              } as const;
 
-                                const isOrdersRoute = location.pathname.startsWith("/sales/orders");
+                              const activeTypeStyles = {
+                                bgcolor: "rgba(182,140,90,0.12)",
+                                color: "#171717",
+                                borderLeftColor: "#B68C5A",
+                              } as const;
 
-                                return (
-                                  <>
-                                    {orderTypeItems.map((typeItem) => {
-                                      const typePath = typeItem.type === "All" ? "/sales/orders" : `/sales/orders?type=${typeItem.type}`;
-                                      const isActive = isOrdersRoute && currentType === typeItem.type;
+                              const isOrdersRoute = location.pathname.startsWith("/sales/orders");
 
-                                      return (
-                                        <ListItemButton
-                                          key={`sales-orders-type-${typeItem.type}`}
-                                          component={NavLink}
-                                          to={typePath}
-                                          sx={{
-                                            ...baseTypeStyles,
-                                            ...(isActive ? activeTypeStyles : {}),
-                                          }}
-                                        >
-                                          <ListItemIcon sx={{ minWidth: 32, color: "inherit" }}>
-                                            {typeItem.icon}
-                                          </ListItemIcon>
-                                          <ListItemText
-                                            primary={typeItem.label}
-                                            primaryTypographyProps={{ fontWeight: 500 }}
-                                          />
-                                        </ListItemButton>
-                                      );
-                                    })}
-                                  </>
-                                );
-                              })()}
-                            </List>
-                          </Collapse>
+                              return (
+                                <>
+                                  {orderTypeItems.map((typeItem) => {
+                                    const typePath = typeItem.type === "All" ? "/sales/orders" : `/sales/orders?type=${typeItem.type}`;
+                                    const isActive = isOrdersRoute && currentType === typeItem.type;
+
+                                    return (
+                                      <ListItemButton
+                                        key={`sales-orders-type-${typeItem.type}`}
+                                        component={NavLink}
+                                        to={typePath}
+                                        sx={{
+                                          ...baseTypeStyles,
+                                          ...(isActive ? activeTypeStyles : {}),
+                                        }}
+                                      >
+                                        <ListItemIcon sx={{ minWidth: 32, color: "inherit" }}>
+                                          {typeItem.icon}
+                                        </ListItemIcon>
+                                        <ListItemText
+                                          primary={typeItem.label}
+                                          primaryTypographyProps={{ fontWeight: 500 }}
+                                        />
+                                      </ListItemButton>
+                                    );
+                                  })}
+                                </>
+                              );
+                            })()}
+                          </List>
                         </Fragment>
                       );
                     }
@@ -292,114 +279,103 @@ export default function DashboardLayout() {
                     if (sub.path === "/sales/tickets") {
                       return (
                         <Fragment key="sales-tickets-group">
-                          <ListItemButton
-                            onClick={() => setSalesTicketsOpen((open) => !open)}
-                            sx={{
-                              borderRadius: 2,
-                              mb: 0.25,
-                              color: "rgba(0,0,0,0.7)",
-                              "&:hover": {
-                                bgcolor: "rgba(0,0,0,0.04)",
-                                color: "rgba(0,0,0,0.9)",
-                              },
-                            }}
-                          >
-                            <ListItemIcon sx={{ minWidth: 40, color: "inherit" }}>
-                              {sub.icon}
-                            </ListItemIcon>
-                            <ListItemText
-                              primary="Tickets"
-                              primaryTypographyProps={{ fontWeight: 600 }}
-                            />
-                            {salesTicketsOpen ? <ExpandLess /> : <ExpandMore />}
-                          </ListItemButton>
+                          <List component="div" disablePadding sx={{ pl: 2 }}>
+                            <Typography
+                              sx={{
+                                fontSize: 11,
+                                letterSpacing: 2,
+                                textTransform: "uppercase",
+                                color: "text.secondary",
+                                px: 1.5,
+                                pt: 1.5,
+                                pb: 0.5,
+                              }}
+                            >
+                              After-sales
+                            </Typography>
+                            {(() => {
+                              const searchParams = new URLSearchParams(location.search);
+                              const currentTicketType =
+                                location.pathname.startsWith("/sales/tickets")
+                                  ? searchParams.get("type") ?? null
+                                  : null;
 
-                          <Collapse in={salesTicketsOpen} timeout="auto" unmountOnExit>
-                            <List component="div" disablePadding sx={{ pl: 4 }}>
-                              {(() => {
-                                const searchParams = new URLSearchParams(location.search);
-                                const currentTicketType =
-                                  location.pathname.startsWith("/sales/tickets")
-                                    ? searchParams.get("type") ?? null
-                                    : null;
-
-                                const baseStyles = {
-                                  borderRadius: 2,
-                                  mb: 0.25,
-                                  color: "#8A8A8A",
-                                  borderLeft: "3px solid transparent",
-                                  pl: 1.5,
-                                  "&:hover": {
-                                    bgcolor: "rgba(0,0,0,0.04)",
-                                    color: "#171717",
-                                  },
-                                } as const;
-
-                                const activeStyles = {
-                                  bgcolor: "rgba(182,140,90,0.12)",
+                              const baseStyles = {
+                                borderRadius: 2,
+                                mb: 0.25,
+                                color: "#8A8A8A",
+                                borderLeft: "3px solid transparent",
+                                pl: 1.5,
+                                "&:hover": {
+                                  bgcolor: "rgba(0,0,0,0.04)",
                                   color: "#171717",
-                                  borderLeftColor: "#B68C5A",
-                                } as const;
+                                },
+                              } as const;
 
-                                const isTicketsRoute = location.pathname.startsWith("/sales/tickets");
+                              const activeStyles = {
+                                bgcolor: "rgba(182,140,90,0.12)",
+                                color: "#171717",
+                                borderLeftColor: "#B68C5A",
+                              } as const;
 
-                                return (
-                                  <>
-                                    <ListItemButton
-                                      component={NavLink}
-                                      to="/sales/tickets?type=Return&status=Pending"
-                                      sx={{
-                                        ...baseStyles,
-                                        ...(isTicketsRoute && currentTicketType === "Return" ? activeStyles : {}),
-                                      }}
-                                    >
-                                      <ListItemIcon sx={{ minWidth: 32, color: "inherit" }}>
-                                        <AssignmentReturnIcon />
-                                      </ListItemIcon>
-                                      <ListItemText
-                                        primary="Return"
-                                        primaryTypographyProps={{ fontWeight: 500 }}
-                                      />
-                                    </ListItemButton>
+                              const isTicketsRoute = location.pathname.startsWith("/sales/tickets");
 
-                                    <ListItemButton
-                                      component={NavLink}
-                                      to="/sales/tickets?type=Refund&status=Pending"
-                                      sx={{
-                                        ...baseStyles,
-                                        ...(isTicketsRoute && currentTicketType === "Refund" ? activeStyles : {}),
-                                      }}
-                                    >
-                                      <ListItemIcon sx={{ minWidth: 32, color: "inherit" }}>
-                                        <AttachMoneyIcon />
-                                      </ListItemIcon>
-                                      <ListItemText
-                                        primary="Refund"
-                                        primaryTypographyProps={{ fontWeight: 500 }}
-                                      />
-                                    </ListItemButton>
+                              return (
+                                <>
+                                  <ListItemButton
+                                    component={NavLink}
+                                    to="/sales/tickets?type=Return&status=Pending"
+                                    sx={{
+                                      ...baseStyles,
+                                      ...(isTicketsRoute && currentTicketType === "Return" ? activeStyles : {}),
+                                    }}
+                                  >
+                                    <ListItemIcon sx={{ minWidth: 32, color: "inherit" }}>
+                                      <AssignmentReturnIcon />
+                                    </ListItemIcon>
+                                    <ListItemText
+                                      primary="Return"
+                                      primaryTypographyProps={{ fontWeight: 500 }}
+                                    />
+                                  </ListItemButton>
 
-                                    <ListItemButton
-                                      component={NavLink}
-                                      to="/sales/tickets?type=Warranty&status=Pending"
-                                      sx={{
-                                        ...baseStyles,
-                                        ...(isTicketsRoute && currentTicketType === "Warranty" ? activeStyles : {}),
-                                      }}
-                                    >
-                                      <ListItemIcon sx={{ minWidth: 32, color: "inherit" }}>
-                                        <ShieldIcon />
-                                      </ListItemIcon>
-                                      <ListItemText
-                                        primary="Warranty"
-                                        primaryTypographyProps={{ fontWeight: 500 }}
-                                      />
-                                    </ListItemButton>
-                                  </>
-                                );
-                              })()}
-                            </List>
-                          </Collapse>
+                                  <ListItemButton
+                                    component={NavLink}
+                                    to="/sales/tickets?type=Refund&status=Pending"
+                                    sx={{
+                                      ...baseStyles,
+                                      ...(isTicketsRoute && currentTicketType === "Refund" ? activeStyles : {}),
+                                    }}
+                                  >
+                                    <ListItemIcon sx={{ minWidth: 32, color: "inherit" }}>
+                                      <AttachMoneyIcon />
+                                    </ListItemIcon>
+                                    <ListItemText
+                                      primary="Refund"
+                                      primaryTypographyProps={{ fontWeight: 500 }}
+                                    />
+                                  </ListItemButton>
+
+                                  <ListItemButton
+                                    component={NavLink}
+                                    to="/sales/tickets?type=Warranty&status=Pending"
+                                    sx={{
+                                      ...baseStyles,
+                                      ...(isTicketsRoute && currentTicketType === "Warranty" ? activeStyles : {}),
+                                    }}
+                                  >
+                                    <ListItemIcon sx={{ minWidth: 32, color: "inherit" }}>
+                                      <ShieldIcon />
+                                    </ListItemIcon>
+                                    <ListItemText
+                                      primary="Warranty"
+                                      primaryTypographyProps={{ fontWeight: 500 }}
+                                    />
+                                  </ListItemButton>
+                                </>
+                              );
+                            })()}
+                          </List>
                         </Fragment>
                       );
                     }
@@ -427,31 +403,8 @@ export default function DashboardLayout() {
                     Operations
                   </Typography>
 
-                  {/* Parent Orders group for Operations, giống Sales */}
-                  <ListItemButton
-                    onClick={() => setOperationsOpen((open) => !open)}
-                    sx={{
-                      borderRadius: 2,
-                      mb: 0.25,
-                      color: "rgba(0,0,0,0.7)",
-                      "&:hover": {
-                        bgcolor: "rgba(0,0,0,0.04)",
-                        color: "rgba(0,0,0,0.9)",
-                      },
-                    }}
-                  >
-                    <ListItemIcon sx={{ minWidth: 40, color: "inherit" }}>
-                      <LocalShippingIcon />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary="Orders"
-                      primaryTypographyProps={{ fontWeight: 600 }}
-                    />
-                    {operationsOpen ? <ExpandLess /> : <ExpandMore />}
-                  </ListItemButton>
-
-                  <Collapse in={operationsOpen} timeout="auto" unmountOnExit>
-                    <List component="div" disablePadding sx={{ pl: 4 }}>
+                  {/* Order type group */}
+                  <List component="div" disablePadding sx={{ pl: 2 }}>
                       {/* Order type group */}
                       <Typography
                         sx={{
@@ -464,7 +417,7 @@ export default function DashboardLayout() {
                           pb: 0.5,
                         }}
                       >
-                        Order type
+                        Orders
                       </Typography>
                       {[
                         { path: "/operations/order-types", label: "All", icon: <DashboardOutlined /> },
@@ -526,102 +479,75 @@ export default function DashboardLayout() {
                         After-sales
                       </Typography>
 
-                      {/* Tickets parent dropdown */}
-                      <ListItemButton
-                        onClick={() => setOperationsTicketsOpen((open) => !open)}
-                        sx={{
+                      {(() => {
+                        const searchParams = new URLSearchParams(location.search);
+                        const currentTicketType =
+                          location.pathname.startsWith("/operations/tickets")
+                            ? searchParams.get("type") ?? null
+                            : null;
+
+                        const baseStyles = {
                           borderRadius: 2,
                           mb: 0.25,
-                          color: "rgba(0,0,0,0.7)",
+                          color: "#8A8A8A",
+                          borderLeft: "3px solid transparent",
+                          pl: 1.5,
                           "&:hover": {
                             bgcolor: "rgba(0,0,0,0.04)",
-                            color: "rgba(0,0,0,0.9)",
+                            color: "#171717",
                           },
-                        }}
-                      >
-                        <ListItemIcon sx={{ minWidth: 40, color: "inherit" }}>
-                          <HistoryOutlined />
-                        </ListItemIcon>
-                        <ListItemText
-                          primary="Tickets"
-                          primaryTypographyProps={{ fontWeight: 600 }}
-                        />
-                        {operationsTicketsOpen ? <ExpandLess /> : <ExpandMore />}
-                      </ListItemButton>
+                        } as const;
 
-                      <Collapse in={operationsTicketsOpen} timeout="auto" unmountOnExit>
-                        <List component="div" disablePadding sx={{ pl: 4 }}>
-                          {(() => {
-                            const searchParams = new URLSearchParams(location.search);
-                            const currentTicketType =
-                              location.pathname.startsWith("/operations/tickets")
-                                ? searchParams.get("type") ?? null
-                                : null;
+                        const activeStyles = {
+                          bgcolor: "rgba(182,140,90,0.12)",
+                          color: "#171717",
+                          borderLeftColor: "#B68C5A",
+                        } as const;
 
-                            const baseStyles = {
-                              borderRadius: 2,
-                              mb: 0.25,
-                              color: "#8A8A8A",
-                              borderLeft: "3px solid transparent",
-                              pl: 1.5,
-                              "&:hover": {
-                                bgcolor: "rgba(0,0,0,0.04)",
-                                color: "#171717",
-                              },
-                            } as const;
+                        const isTicketsRoute = location.pathname.startsWith("/operations/tickets");
 
-                            const activeStyles = {
-                              bgcolor: "rgba(182,140,90,0.12)",
-                              color: "#171717",
-                              borderLeftColor: "#B68C5A",
-                            } as const;
+                        return (
+                          <>
+                            <ListItemButton
+                              component={NavLink}
+                              to="/operations/tickets?type=Return&status=All"
+                              sx={{
+                                ...baseStyles,
+                                ...(isTicketsRoute && currentTicketType === "Return"
+                                  ? activeStyles
+                                  : {}),
+                              }}
+                            >
+                              <ListItemIcon sx={{ minWidth: 32, color: "inherit" }}>
+                                <AssignmentReturnIcon />
+                              </ListItemIcon>
+                              <ListItemText
+                                primary="Return"
+                                primaryTypographyProps={{ fontWeight: 500 }}
+                              />
+                            </ListItemButton>
 
-                            const isTicketsRoute = location.pathname.startsWith("/operations/tickets");
-
-                            return (
-                              <>
-                                <ListItemButton
-                                  component={NavLink}
-                                  to="/operations/tickets?type=Return&status=Awaiting"
-                                  sx={{
-                                    ...baseStyles,
-                                    ...(isTicketsRoute && currentTicketType === "Return"
-                                      ? activeStyles
-                                      : {}),
-                                  }}
-                                >
-                                  <ListItemIcon sx={{ minWidth: 32, color: "inherit" }}>
-                                    <AssignmentReturnIcon />
-                                  </ListItemIcon>
-                                  <ListItemText
-                                    primary="Return"
-                                    primaryTypographyProps={{ fontWeight: 500 }}
-                                  />
-                                </ListItemButton>
-
-                                <ListItemButton
-                                  component={NavLink}
-                                  to="/operations/tickets?type=Warranty&status=Awaiting"
-                                  sx={{
-                                    ...baseStyles,
-                                    ...(isTicketsRoute && currentTicketType === "Warranty"
-                                      ? activeStyles
-                                      : {}),
-                                  }}
-                                >
-                                  <ListItemIcon sx={{ minWidth: 32, color: "inherit" }}>
-                                    <ShieldIcon />
-                                  </ListItemIcon>
-                                  <ListItemText
-                                    primary="Warranty"
-                                    primaryTypographyProps={{ fontWeight: 500 }}
-                                  />
-                                </ListItemButton>
-                              </>
-                            );
-                          })()}
-                        </List>
-                      </Collapse>
+                            <ListItemButton
+                              component={NavLink}
+                              to="/operations/tickets?type=Warranty&status=All"
+                              sx={{
+                                ...baseStyles,
+                                ...(isTicketsRoute && currentTicketType === "Warranty"
+                                  ? activeStyles
+                                  : {}),
+                              }}
+                            >
+                              <ListItemIcon sx={{ minWidth: 32, color: "inherit" }}>
+                                <ShieldIcon />
+                              </ListItemIcon>
+                              <ListItemText
+                                primary="Warranty"
+                                primaryTypographyProps={{ fontWeight: 500 }}
+                              />
+                            </ListItemButton>
+                          </>
+                        );
+                      })()}
 
                       {/* Inventory group */}
                       <Typography
@@ -682,7 +608,6 @@ export default function DashboardLayout() {
                         );
                       })}
                     </List>
-                  </Collapse>
                 </Fragment>
               );
             }
@@ -766,7 +691,7 @@ export default function DashboardLayout() {
                     Admin
                   </Typography>
 
-                  {/* Parent Settings group for Admin */}
+                  {/* Parent Administration group for Admin */}
                   <ListItemButton
                     onClick={() => setAdminOpen((open) => !open)}
                     sx={{
@@ -783,7 +708,7 @@ export default function DashboardLayout() {
                       <AdminPanelSettingsIcon />
                     </ListItemIcon>
                     <ListItemText
-                      primary="Settings"
+                      primary="Administration"
                       primaryTypographyProps={{ fontWeight: 600 }}
                     />
                     {adminOpen ? <ExpandLess /> : <ExpandMore />}

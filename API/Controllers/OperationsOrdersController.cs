@@ -57,4 +57,20 @@ public sealed class OperationsOrdersController : BaseApiController
         return HandleResult(await Mediator.Send(
             new UpdateOrderStatus.Command { OrderId = id, Dto = dto }, ct));
     }
+
+    //**Create GHN Order for Operations**
+    // Cấp phép cho Operations tạo đơn bên giao hàng nhanh (GHN)
+    [HttpPost("{id}/ghn/create")]
+    public async Task<IActionResult> CreateGHNOrder(Guid id, CreateGHNOrderDto dto, CancellationToken ct)
+    {
+        return HandleResult(await Mediator.Send(new CreateGHNOrder.Command { OrderId = id, Dto = dto }, ct));
+    }
+
+    //**Get GHN Print URL for Operations**
+    // Operations in phiếu A5 của GHN
+    [HttpGet("{id}/ghn/print")]
+    public async Task<IActionResult> GetGHNPrintUrl(Guid id, CancellationToken ct)
+    {
+        return HandleResult(await Mediator.Send(new GetGHNPrintUrl.Query { OrderId = id }, ct));
+    }
 }

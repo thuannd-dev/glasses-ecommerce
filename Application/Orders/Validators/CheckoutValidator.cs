@@ -23,6 +23,12 @@ public sealed class CheckoutValidator : AbstractValidator<Checkout.Command>
             RuleFor(x => x.Dto.AddressId)
                 .NotEmpty().WithMessage("Address is required.");
 
+            RuleFor(x => x.Dto.DistrictId)
+                .GreaterThan(0).WithMessage("DistrictId is required for shipping fee calculation.");
+
+            RuleFor(x => x.Dto.WardCode)
+                .NotEmpty().WithMessage("WardCode is required for shipping fee calculation.");
+
             RuleFor(x => x.Dto.OrderType)
                 .IsInEnum()
                 .Must(x => x != OrderType.Unknown)
