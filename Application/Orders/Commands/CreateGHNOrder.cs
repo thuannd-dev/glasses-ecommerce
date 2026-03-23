@@ -40,6 +40,9 @@ public sealed class CreateGHNOrder
             if (order.ShipmentInfo != null && !string.IsNullOrEmpty(order.ShipmentInfo.TrackingCode))
                 return Result<string>.Failure("Order already has a shipment and tracking code.", 400);
 
+            if (order.OrderItems.Count == 0)
+                return Result<string>.Failure("Cannot create a shipping order for an order with zero items.", 400);
+
             // Tự tính COD nếu chưa thu đủ
             decimal codAmount = 0;
             if (order.RemainingAmount > 0)

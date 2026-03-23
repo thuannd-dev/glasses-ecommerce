@@ -31,6 +31,12 @@ public sealed class ProcessGHNWebhook
             if (order == null)
                 return Result<Unit>.Failure("Order not found.", 404);
 
+            if (order.ShipmentInfo == null || order.ShipmentInfo.CarrierName != ShippingCarrier.GHN)
+                return Result<Unit>.Failure("Order is not currently shipped via GHN.", 400);
+
+            if (order.ShipmentInfo.TrackingCode != request.Payload.OrderCode)
+                return Result<Unit>.Failure($"Payload order code '{request.Payload.OrderCode}' does not match stored tracking code.", 409);
+
             // Xác định trạng thái mới dựa trên GHN status
             string normalizedStatus = request.Payload.Status?.Trim().ToLowerInvariant() ?? "";
             
