@@ -63,7 +63,7 @@ public sealed class GetOperationsOrders
                     AddressVenue = o.Address != null ? o.Address.Venue : null,
                     AddressWard = o.Address != null ? o.Address.Ward : null,
                     AddressDistrict = o.Address != null ? o.Address.District : null,
-                    AddressCity = o.Address != null ? o.Address.City : null,
+                    AddressProvince = o.Address != null ? o.Address.Province : null,
                     RecipientName = o.Address != null ? o.Address.RecipientName : null,
                     RecipientPhone = o.Address != null ? o.Address.RecipientPhone : null,
                     UserEmail = o.User != null ? o.User.Email : null,
@@ -123,7 +123,7 @@ public sealed class GetOperationsOrders
                 CustomerPhone = o.RecipientPhone ?? o.WalkInCustomerPhone,
                 CustomerEmail = o.UserEmail,
                 ShippingAddress = o.AddressVenue != null
-                    ? $"{o.AddressVenue}, {o.AddressWard}, {o.AddressDistrict}, {o.AddressCity}"
+                    ? $"{o.AddressVenue}, {o.AddressWard}, {o.AddressDistrict}, {o.AddressProvince}"
                     : null,
                 CreatedBySalesStaff = o.CreatedBySalesStaff,
                 SalesStaffName = o.SalesStaffName,

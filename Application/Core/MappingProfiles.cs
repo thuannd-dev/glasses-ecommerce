@@ -128,7 +128,7 @@ public sealed class MappingProfiles : Profile
             .ForMember(d => d.CustomerPhone, o => o.MapFrom(s => s.Address != null ? s.Address.RecipientPhone : s.WalkInCustomerPhone))
             .ForMember(d => d.CustomerEmail, o => o.MapFrom(s => s.User != null ? s.User.Email : null))
             .ForMember(d => d.ShippingAddress, o => o.MapFrom(s =>
-                s.Address != null ? $"{s.Address.Venue}, {s.Address.Ward}, {s.Address.District}, {s.Address.City}" : null))
+                s.Address != null ? $"{s.Address.Venue}, {s.Address.Ward}, {s.Address.District}, {s.Address.Province}" : null))
             .ForMember(d => d.SalesStaffName, o => o.MapFrom(s =>
                 s.SalesStaff != null ? s.SalesStaff.DisplayName : null))
             .ForMember(d => d.ItemCount, o => o.MapFrom(s => s.OrderItems.Count))

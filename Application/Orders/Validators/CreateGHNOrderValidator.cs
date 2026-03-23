@@ -15,12 +15,6 @@ public sealed class CreateGHNOrderValidator : AbstractValidator<CreateGHNOrder.C
 
         When(x => x.Dto != null, () =>
         {
-            RuleFor(x => x.Dto.DistrictId)
-                .GreaterThan(0).WithMessage("DistrictId is required.");
-
-            RuleFor(x => x.Dto.WardCode)
-                .NotEmpty().WithMessage("WardCode is required.");
-
             RuleFor(x => x.Dto.Weight)
                 .GreaterThan(0).WithMessage("Weight must be greater than 0.");
 

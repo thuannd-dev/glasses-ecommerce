@@ -40,11 +40,29 @@ public class BaseAddressValidator<T, TDto> : AbstractValidator<T> where TDto : B
             .MaximumLength(100)
             .WithMessage("District cannot exceed 100 characters.");
 
-        RuleFor(x => selector(x).City)
+        RuleFor(x => selector(x).Province)
             .NotEmpty()
-            .WithMessage("City is required.")
+            .WithMessage("Province is required.")
             .MaximumLength(100)
-            .WithMessage("City cannot exceed 100 characters.");
+            .WithMessage("Province cannot exceed 100 characters.");
+
+        RuleFor(x => selector(x).ProvinceId)
+            .NotNull()
+            .WithMessage("Province ID is required.")
+            .GreaterThan(0)
+            .WithMessage("Province ID must be greater than 0.");
+
+        RuleFor(x => selector(x).DistrictId)
+            .NotNull()
+            .WithMessage("District ID is required.")
+            .GreaterThan(0)
+            .WithMessage("District ID must be greater than 0.");
+
+        RuleFor(x => selector(x).WardCode)
+            .NotEmpty()
+            .WithMessage("Ward code is required.")
+            .MaximumLength(20)
+            .WithMessage("Ward code cannot exceed 20 characters.");
 
         RuleFor(x => selector(x).PostalCode)
             .MaximumLength(20)

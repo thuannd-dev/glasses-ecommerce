@@ -71,10 +71,11 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
             entity.Property(x => x.Venue).HasMaxLength(200);
             entity.Property(x => x.Ward).HasMaxLength(100);
             entity.Property(x => x.District).HasMaxLength(100);
-            entity.Property(x => x.City).HasMaxLength(100);
+            entity.Property(x => x.Province).HasMaxLength(100);
             entity.Property(x => x.PostalCode).HasMaxLength(20);
             entity.Property(x => x.Latitude).HasColumnType("decimal(9,6)");
             entity.Property(x => x.Longitude).HasColumnType("decimal(9,6)");
+            entity.Property(x => x.WardCode).HasMaxLength(20);
 
             //Indexes
             entity.HasIndex(e => e.UserId)
@@ -86,6 +87,9 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
             entity.HasIndex(e => new { e.UserId, e.IsDeleted })
                 .HasDatabaseName("IX_Address_UserId_IsDeleted")
                 .HasFilter("[IsDeleted] = 0");
+
+            entity.HasIndex(e => new { e.DistrictId, e.WardCode })
+                .HasDatabaseName("IX_Address_DistrictId_WardCode");
 
         });
 
