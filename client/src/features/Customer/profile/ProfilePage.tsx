@@ -8,7 +8,7 @@ import SecuritySection from "./sections/SecuritySection";
 import AddressesSection from "./sections/AddressesSection";
 
 export default function ProfilePage() {
-  const { currentUser, isLoading: isAuthLoading } = useAccount();
+  const { currentUser, loadingUserInfo: isAuthLoading } = useAccount();
   const [activeSection, setActiveSection] = useState<ProfileSectionType>("overview");
 
   if (isAuthLoading) {
