@@ -7,5 +7,12 @@ namespace Application.Addresses.Validators;
 public sealed class CreateAddressValidator
     : BaseAddressValidator<CreateAddress.Command, CreateAddressDto>
 {
-    public CreateAddressValidator() : base(x => x.CreateAddressDto) { }
+    public CreateAddressValidator() : base(x => x.CreateAddressDto)
+    {
+        RuleLevelCascadeMode = CascadeMode.Stop;
+        
+        RuleFor(x => x.CreateAddressDto)
+            .NotNull()
+            .WithMessage("Request body is required.");
+    }
 }

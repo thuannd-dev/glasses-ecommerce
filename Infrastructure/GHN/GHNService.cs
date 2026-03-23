@@ -259,6 +259,8 @@ public sealed class GHNService : IGHNService
 
         JsonElement jsonResponse = await response.Content.ReadFromJsonAsync<JsonElement>(ct);
 
+        if (jsonResponse.ValueKind == JsonValueKind.Undefined)
+            throw new Exception("GHN API returned empty response");
         if (jsonResponse.GetProperty("code").GetInt32() != 200)
             throw new Exception($"GHN API Business Error: {jsonResponse.GetProperty("message").GetString()}");
 

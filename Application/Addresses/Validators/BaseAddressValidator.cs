@@ -4,9 +4,9 @@ using FluentValidation;
 
 namespace Application.Addresses.Validators;
 
-public class BaseAddressValidator<T, TDto> : AbstractValidator<T> where TDto : BaseAddressDto
+public abstract class BaseAddressValidator<T, TDto> : AbstractValidator<T> where TDto : BaseAddressDto
 {
-    public BaseAddressValidator(Func<T, TDto> selector)
+    protected BaseAddressValidator(Func<T, TDto> selector)
     {
         RuleFor(x => selector(x).RecipientName)
             .NotEmpty()
@@ -47,24 +47,19 @@ public class BaseAddressValidator<T, TDto> : AbstractValidator<T> where TDto : B
             .WithMessage("Province cannot exceed 100 characters.");
 
         RuleFor(x => selector(x).ProvinceId)
-            .Cascade(CascadeMode.Stop)
-            .NotNull()
-            .WithMessage("Province ID is required.")
             .GreaterThan(0)
-            .WithMessage("Province ID must be greater than 0.");
+            .WithMessage("Province ID must be greater than 0.")
+            .When(x => selector(x).ProvinceId.HasValue);
 
         RuleFor(x => selector(x).DistrictId)
-            .Cascade(CascadeMode.Stop)
-            .NotNull()
-            .WithMessage("District ID is required.")
             .GreaterThan(0)
-            .WithMessage("District ID must be greater than 0.");
+            .WithMessage("District ID must be greater than 0.")
+            .When(x => selector(x).DistrictId.HasValue);
 
         RuleFor(x => selector(x).WardCode)
-            .NotEmpty()
-            .WithMessage("Ward code is required.")
             .MaximumLength(20)
-            .WithMessage("Ward code cannot exceed 20 characters.");
+            .WithMessage("Ward code cannot exceed 20 characters.")
+            .When(x => !string.IsNullOrWhiteSpace(selector(x).WardCode));
 
         RuleFor(x => selector(x).PostalCode)
             .MaximumLength(20)
