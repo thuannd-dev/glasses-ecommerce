@@ -21,7 +21,4 @@ public sealed class GHNWebhookPayloadDto
     
     [JsonPropertyName("Reason")]
     public string Reason { get; set; } = string.Empty;
-    
-    [JsonPropertyName("Time")]
-    public DateTime Time { get; set; }
 }
