@@ -18,8 +18,9 @@ public sealed class ProcessGHNWebhook
     {
         public async Task<Result<Unit>> Handle(Command request, CancellationToken cancellationToken)
         {
-            if (string.IsNullOrEmpty(request.Payload.ClientOrderCode) || !Guid.TryParse(request.Payload.ClientOrderCode, out Guid orderId))
+            if (!Guid.TryParse(request.Payload.ClientOrderCode, out Guid orderId))
             {
+                // This shouldn't normally happen due to FluentValidation, but kept as a hard fail-safe.
                 return Result<Unit>.Failure("Invalid ClientOrderCode in webhook payload.", 400);
             }
 
@@ -31,7 +32,9 @@ public sealed class ProcessGHNWebhook
                 return Result<Unit>.Failure("Order not found.", 404);
 
             // Xác định trạng thái mới dựa trên GHN status
-            OrderStatus? newStatus = request.Payload.Status switch
+            string normalizedStatus = request.Payload.Status?.Trim().ToLowerInvariant() ?? "";
+            
+            OrderStatus? newStatus = normalizedStatus switch
             {
                 "ready_to_pick" or "picking" => null, // Chưa lấy hàng (Vẫn Processing)
                 "picked" or "storing" or "transporting" or "sorting" or "delivering" => OrderStatus.Shipped, // Đã giao cho GHN (Bắt đầu tính là Shipped)

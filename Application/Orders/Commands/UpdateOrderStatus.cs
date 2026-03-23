@@ -290,10 +290,15 @@ public sealed class UpdateOrderStatus
                 {
                     foreach (Payment payment in order.Payments)
                     {
-                        if (payment.PaymentStatus != PaymentStatus.Refunded)
+                        if (payment.PaymentStatus != PaymentStatus.Completed && payment.PaymentStatus != PaymentStatus.Refunded)
                         {
-                            payment.PaymentStatus = PaymentStatus.Completed;
-                            payment.PaymentAt = DateTime.UtcNow;
+                            // Chỉ tự động hoàn tất thanh toán cho COD và Tiền mặt.
+                            // Các hình thức chuyển khoản/QR code yêu cầu phải có TransactionId (được cập nhật qua webhook của cổng thanh toán).
+                            if (payment.PaymentMethod == PaymentMethod.Cod || payment.PaymentMethod == PaymentMethod.Cash)
+                            {
+                                payment.PaymentStatus = PaymentStatus.Completed;
+                                payment.PaymentAt = DateTime.UtcNow;
+                            }
                         }
                     }
                 }
