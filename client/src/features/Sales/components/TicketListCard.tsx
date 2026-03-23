@@ -3,6 +3,7 @@ import { Box, Chip, Collapse, IconButton, Paper, Typography, Dialog, DialogTitle
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import { toast } from "react-toastify";
 
 import {
   useStaffAfterSalesTicket,
@@ -138,8 +139,17 @@ export function TicketListCard({ summary }: TicketListCardProps) {
       },
       {
         onSuccess: () => {
+          toast.success("Ticket approved successfully!");
           setShowApproveDialog(false);
           setApproveData({ resolutionType: "RefundOnly", staffNotes: "", refundAmount: "" });
+        },
+        onError: (error: unknown) => {
+          const message =
+            (error as any)?.response?.data?.message ||
+            (error as any)?.message ||
+            "Failed to approve ticket. Please check the console for details.";
+          toast.error(message);
+          console.error("Error approving ticket:", error);
         },
       }
     );
@@ -155,8 +165,17 @@ export function TicketListCard({ summary }: TicketListCardProps) {
       { ticketId: summary.id, reason: rejectReason },
       {
         onSuccess: () => {
+          toast.success("Ticket rejected successfully!");
           setShowRejectDialog(false);
           setRejectReason("");
+        },
+        onError: (error: unknown) => {
+          const message =
+            (error as any)?.response?.data?.message ||
+            (error as any)?.message ||
+            "Failed to reject ticket. Please check the console for details.";
+          toast.error(message);
+          console.error("Error rejecting ticket:", error);
         },
       }
     );
