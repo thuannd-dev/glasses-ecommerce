@@ -1118,7 +1118,14 @@ export default function CheckoutPage() {
                                                         outlineOffset: 3,
                                                     },
                                                 }}
-                                                onClick={() => handlePlaceOrder(shippingFee)}
+                                                onClick={() => {
+                                                    const ward = findWardByName(wards, address.ward);
+                                                    handlePlaceOrder({
+                                                        shippingFee,
+                                                        districtId: selectedDistrictId,
+                                                        wardCode: ward?.WardCode ?? "",
+                                                    });
+                                                }}
                                             >
                                                 {submitting ? "Placing order..." : "Place order"}
                                             </Button>

@@ -249,6 +249,13 @@ export function OrderDetailScreen() {
                 })}
               </Typography>
               <Typography>
+                <b>Shipping fee:</b>{" "}
+                {(order.shippingFee ?? 0).toLocaleString("en-US", {
+                  style: "currency",
+                  currency: "USD",
+                })}
+              </Typography>
+              <Typography>
                 <b>Paid at:</b>{" "}
                 {order.payment.paymentAt
                   ? new Date(order.payment.paymentAt).toLocaleString()

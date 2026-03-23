@@ -19,6 +19,10 @@ export interface CreateOrderPayload {
   orderType?: OrderTypeLookup;
   /** IDs of cart items to checkout (matches CartItemDto.id) */
   selectedCartItemIds: string[];
+  /** GHN district id for shipping fee/order creation */
+  districtId: number;
+  /** GHN ward code for shipping fee/order creation */
+  wardCode: string;
   /** Optional promo code (validated via POST /api/promotions/validate) */
   promoCode?: string | null;
   /** Deprecated: Use prescriptions array instead */
