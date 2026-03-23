@@ -439,7 +439,7 @@ export default function OrderSuccessPage() {
                     color: PALETTE.textSecondary,
                   }}
                 >
-                  {[address.ward, address.district, address.city].filter(Boolean).join(", ")}
+                  {[address.ward, address.district, address.province].filter(Boolean).join(", ")}
                 </Typography>
               </Box>
             </Paper>

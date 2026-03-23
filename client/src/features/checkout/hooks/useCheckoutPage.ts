@@ -295,9 +295,8 @@ export function useCheckoutPage() {
               venue: (createdOrder.shippingAddress as { venue?: string }).venue ?? address.venue,
               ward: (createdOrder.shippingAddress as { ward?: string }).ward ?? address.ward,
               district: (createdOrder.shippingAddress as { district?: string }).district ?? address.district,
-              city:
-                (createdOrder.shippingAddress as { city?: string; province?: string }).city ??
-                (createdOrder.shippingAddress as { city?: string; province?: string }).province ??
+              province:
+                (createdOrder.shippingAddress as { province?: string }).province ??
                 address.province,
               postalCode: (createdOrder.shippingAddress as { postalCode?: string }).postalCode ?? address.postalCode,
             }

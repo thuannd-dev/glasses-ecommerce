@@ -75,7 +75,7 @@ export interface StaffOrderShippingAddressDto {
   venue?: string;
   ward?: string;
   district?: string;
-  city?: string;
+  province?: string;
   postalCode?: string;
   latitude?: number | null;
   longitude?: number | null;

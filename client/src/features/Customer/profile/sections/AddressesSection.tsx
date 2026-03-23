@@ -27,7 +27,7 @@ interface AddressFormState {
   venue: string;
   ward: string;
   district: string;
-  city: string;
+  province: string;
   postalCode: string;
   latitude?: number;
   longitude?: number;
@@ -39,7 +39,7 @@ const INITIAL_FORM_STATE: AddressFormState = {
   venue: "",
   ward: "",
   district: "",
-  city: "",
+  province: "",
   postalCode: "",
 };
 
@@ -73,7 +73,7 @@ export default function AddressesSection() {
       venue: address.venue,
       ward: address.ward,
       district: address.district,
-      city: address.city,
+      province: address.province,
       postalCode: address.postalCode || "",
       latitude: address.latitude ?? undefined,
       longitude: address.longitude ?? undefined,
@@ -95,7 +95,7 @@ export default function AddressesSection() {
       !formData.venue.trim() ||
       !formData.ward.trim() ||
       !formData.district.trim() ||
-      !formData.city.trim()
+      !formData.province.trim()
     ) {
       toast.error("Please fill in all required fields.");
       return;
@@ -108,7 +108,7 @@ export default function AddressesSection() {
         venue: formData.venue,
         ward: formData.ward,
         district: formData.district,
-        city: formData.city,
+        province: formData.province,
         postalCode: formData.postalCode || null,
         latitude: formData.latitude,
         longitude: formData.longitude,
@@ -249,7 +249,7 @@ export default function AddressesSection() {
                 {address.recipientPhone}
               </Typography>
               <Typography fontSize={14} color="rgba(15,23,42,0.8)" mb={3}>
-                {address.venue}, {address.ward}, {address.district}, {address.city}
+                {address.venue}, {address.ward}, {address.district}, {address.province}
                 {address.postalCode ? `, ${address.postalCode}` : ""}
               </Typography>
 
@@ -330,9 +330,9 @@ export default function AddressesSection() {
                 disabled={isLoading_all}
               />
               <TextField
-                label="City"
-                value={formData.city}
-                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                label="Province"
+                value={formData.province}
+                onChange={(e) => setFormData({ ...formData, province: e.target.value })}
                 fullWidth
                 disabled={isLoading_all}
               />
@@ -356,7 +356,7 @@ export default function AddressesSection() {
                     venue: address.venue,
                     ward: address.ward,
                     district: address.district,
-                    city: address.city,
+                    province: address.city,
                     postalCode: address.postalCode || "",
                   }))
                 }

@@ -193,7 +193,7 @@ export function OperationsProvider({ children }: { children: React.ReactNode }) 
               "",
             customerEmail: "",
             shippingAddress: selectedOrderDetail.shippingAddress
-              ? `${selectedOrderDetail.shippingAddress.venue ?? ""} ${selectedOrderDetail.shippingAddress.ward ?? ""} ${selectedOrderDetail.shippingAddress.district ?? ""} ${selectedOrderDetail.shippingAddress.city ?? ""}`.trim()
+              ? `${selectedOrderDetail.shippingAddress.venue ?? ""} ${selectedOrderDetail.shippingAddress.ward ?? ""} ${selectedOrderDetail.shippingAddress.district ?? ""} ${selectedOrderDetail.shippingAddress.province ?? ""}`.trim()
               : "",
             items: selectedOrderDetail.items.map(
               (item): OrderItemDto => ({
