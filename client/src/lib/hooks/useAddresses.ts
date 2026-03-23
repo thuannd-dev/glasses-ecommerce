@@ -66,3 +66,57 @@ export function useCreateAddress() {
     },
   });
 }
+
+/** PUT /api/me/addresses/{id} — update address */
+export function useUpdateAddress() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...payload }: CreateAddressPayload & { id: string }) => {
+      const res = await agent.put<AddressDto>(`/me/addresses/${id}`, {
+        recipientName: payload.recipientName,
+        recipientPhone: payload.recipientPhone,
+        venue: payload.venue,
+        ward: payload.ward,
+        district: payload.district,
+        city: payload.city,
+        postalCode: payload.postalCode ?? null,
+        latitude: payload.latitude ?? null,
+        longitude: payload.longitude ?? null,
+      });
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY_ADDRESSES });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY_DEFAULT_ADDRESS });
+    },
+  });
+}
+
+/** DELETE /api/me/addresses/{id} — delete address */
+export function useDeleteAddress() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await agent.delete(`/me/addresses/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY_ADDRESSES });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY_DEFAULT_ADDRESS });
+    },
+  });
+}
+
+/** PUT /api/me/addresses/{id}/default — set as default address */
+export function useSetDefaultAddress() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await agent.put<AddressDto>(`/me/addresses/${id}/default`);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY_ADDRESSES });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY_DEFAULT_ADDRESS });
+    },
+  });
+}

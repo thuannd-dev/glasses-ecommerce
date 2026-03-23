@@ -174,4 +174,49 @@ public class AccountController(SignInManager<User> signInManager, IMediator medi
 
         return Ok(new { message = "Password has been reset successfully. You can now log in with your new password." });
     }
+
+    [Authorize]
+    [HttpPost("change-password")]
+    public async Task<ActionResult> ChangePassword([FromBody] ChangePasswordDto dto)
+    {
+        // Get current authenticated user
+        string? userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized();
+        }
+
+        // Validate that passwords match
+        if (dto.NewPassword != dto.ConfirmPassword)
+        {
+            return BadRequest(new { error = "New passwords do not match." });
+        }
+
+        ChangePassword.Command command = new()
+        {
+            UserId = userId,
+            CurrentPassword = dto.CurrentPassword,
+            NewPassword = dto.NewPassword,
+            ConfirmPassword = dto.ConfirmPassword
+        };
+
+        Result<Unit> result = await mediator.Send(command);
+
+        return HandleResult(result);
+    }
+
+    [Authorize]
+    [HttpPut("update-display-name")]
+    public async Task<ActionResult> UpdateDisplayName([FromBody] UpdateDisplayNameDto dto)
+    {
+        UpdateDisplayName.Command command = new()
+        {
+            DisplayName = dto.DisplayName
+        };
+
+        Result<Unit> result = await mediator.Send(command);
+
+        return HandleResult(result);
+    }
 }

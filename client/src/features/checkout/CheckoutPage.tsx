@@ -57,6 +57,8 @@ export default function CheckoutPage() {
         cartLoading,
         address,
         setAddress,
+        selectedAddressId,
+        setSelectedAddressId,
         paymentMethod,
         setPaymentMethod,
         activePromotions,
@@ -301,15 +303,9 @@ export default function CheckoutPage() {
                                 {savedAddresses.length > 0 && (
                                     <SavedAddressPicker
                                         addresses={savedAddresses}
-                                        selectedId={
-                                            savedAddresses.find(
-                                                (a) =>
-                                                    a.recipientName === address.recipientName &&
-                                                    a.recipientPhone === address.recipientPhone &&
-                                                    a.venue === address.venue,
-                                            )?.id ?? null
-                                        }
-                                        onSelect={(addr) =>
+                                        selectedId={selectedAddressId}
+                                        onSelect={(addr) => {
+                                            setSelectedAddressId(addr.id);
                                             setAddress((prev) => ({
                                                 ...prev,
                                                 recipientName: addr.recipientName,
@@ -319,8 +315,8 @@ export default function CheckoutPage() {
                                                 district: addr.district,
                                                 city: addr.city,
                                                 postalCode: addr.postalCode ?? "",
-                                            }))
-                                        }
+                                            }));
+                                        }}
                                     />
                                 )}
 

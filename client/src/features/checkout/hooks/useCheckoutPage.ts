@@ -45,6 +45,7 @@ export function useCheckoutPage() {
   const { data: activePromotions = [] } = useActivePromotions();
 
   const [address, setAddress] = useState<CheckoutShippingForm>(initialAddress);
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [addressSearch, setAddressSearch] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodUI>("COD");
   const [appliedPromo, setAppliedPromo] = useState<{ promoCode: string; discountAmount: number } | null>(null);
@@ -97,6 +98,7 @@ export function useCheckoutPage() {
         orderNote: prev.orderNote ?? "",
       };
     });
+    setSelectedAddressId(defaultAddress.id);
   }, [defaultAddress]);
 
   // Public promotion (from /promotions/active) — client-side calculation only
@@ -191,16 +193,43 @@ export function useCheckoutPage() {
 
     setSubmitting(true);
     try {
-      const createdAddress = await createAddress.mutateAsync({
-        recipientName: address.recipientName,
-        recipientPhone: address.recipientPhone,
-        venue: address.venue,
-        ward: address.ward,
-        district: address.district,
-        city: address.city,
-        postalCode: address.postalCode || null,
-        isDefault: setAsDefault,
-      });
+      // Check if user selected a saved address and didn't modify it
+      let addressIdToUse: string | null = null;
+      
+      if (selectedAddressId) {
+        const savedAddr = savedAddresses.find((a) => a.id === selectedAddressId);
+        if (savedAddr) {
+          // Check if form fields match the saved address exactly (not modified)
+          const formMatchesSavedAddress =
+            address.recipientName === savedAddr.recipientName &&
+            address.recipientPhone === savedAddr.recipientPhone &&
+            address.venue === savedAddr.venue &&
+            address.ward === savedAddr.ward &&
+            address.district === savedAddr.district &&
+            address.city === savedAddr.city &&
+            (address.postalCode || "") === (savedAddr.postalCode || "");
+
+          if (formMatchesSavedAddress) {
+            // Reuse the existing address ID (avoid creating duplicate)
+            addressIdToUse = selectedAddressId;
+          }
+        }
+      }
+
+      // If no existing address can be reused, create a new one
+      if (!addressIdToUse) {
+        const createdAddress = await createAddress.mutateAsync({
+          recipientName: address.recipientName,
+          recipientPhone: address.recipientPhone,
+          venue: address.venue,
+          ward: address.ward,
+          district: address.district,
+          city: address.city,
+          postalCode: address.postalCode || null,
+          isDefault: setAsDefault,
+        });
+        addressIdToUse = createdAddress.id;
+      }
 
       const hasPrescriptionItems = Object.keys(itemPrescriptions).length > 0;
       
@@ -225,7 +254,7 @@ export function useCheckoutPage() {
       }
 
       const createdOrder = await createOrder.mutateAsync({
-        addressId: createdAddress.id,
+        addressId: addressIdToUse,
         paymentMethod: toApiPaymentMethod(paymentMethod),
         orderNote: address.orderNote || null,
         orderType: isPreOrder ? "PreOrder" : hasPrescriptionItems ? "Prescription" : "ReadyStock",
@@ -354,6 +383,8 @@ export function useCheckoutPage() {
     defaultAddress,
     address,
     setAddress,
+    selectedAddressId,
+    setSelectedAddressId,
     addressSearch,
     setAddressSearch,
     paymentMethod,
