@@ -3,7 +3,6 @@ import { Box, Chip, Collapse, IconButton, Paper, Typography, Dialog, DialogTitle
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import { toast } from "react-toastify";
 
 import {
   useStaffAfterSalesTicket,
@@ -89,7 +88,6 @@ export function TicketListCard({ summary }: TicketListCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [showApproveDialog, setShowApproveDialog] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
-  const [approveError, setApproveError] = useState<string | null>(null);
   const [approveData, setApproveData] = useState({
     resolutionType: "RefundOnly",
     staffNotes: "",
@@ -126,37 +124,11 @@ export function TicketListCard({ summary }: TicketListCardProps) {
       staffNotes: "",
       refundAmount: "",
     });
-    setApproveError(null);
-    // Expand to load ticket details (including items for validation)
-    setExpanded(true);
     setShowApproveDialog(true);
   };
 
   const handleApproveSubmit = () => {
     const refundAmount = approveData.refundAmount ? Number.parseFloat(approveData.refundAmount) : undefined;
-
-    // Validate that detail is loaded
-    if (!detail || !detail.Items || detail.Items.length === 0) {
-      setApproveError("Unable to load ticket items. Please try again.");
-      return;
-    }
-
-    // Client-side validation for RefundOnly: check if refund amount exceeds items total
-    if (approveData.resolutionType === "RefundOnly" && refundAmount) {
-      const itemsTotal = detail.Items.reduce(
-        (sum, item) => sum + (item.Quantity || 0) * (item.UnitPrice || 0),
-        0
-      );
-
-      if (refundAmount > itemsTotal) {
-        setApproveError(
-          `Refund amount ($${refundAmount.toFixed(2)}) cannot exceed the total amount of items ($${itemsTotal.toFixed(2)}). Please enter a valid refund amount.`
-        );
-        return;
-      }
-    }
-
-    setApproveError(null);
     approveMutation.mutate(
       {
         ticketId: summary.id,
@@ -168,12 +140,6 @@ export function TicketListCard({ summary }: TicketListCardProps) {
         onSuccess: () => {
           setShowApproveDialog(false);
           setApproveData({ resolutionType: "RefundOnly", staffNotes: "", refundAmount: "" });
-          setApproveError(null);
-        },
-        onError: (error: unknown) => {
-          // Handle backend validation errors
-          const errorMessage = error instanceof Error ? error.message : "Failed to approve ticket";
-          setApproveError(errorMessage);
         },
       }
     );
@@ -418,35 +384,15 @@ export function TicketListCard({ summary }: TicketListCardProps) {
 
           {/* Refund Amount - Only for RefundOnly */}
           {approveData.resolutionType === "RefundOnly" && (
-            <>
-              {/* Items Total Display */}
-              {detail && (detail.Items || []).length > 0 && (
-                <Box sx={{ p: 1.5, bgcolor: "#F0F9FF", borderRadius: 1, border: "1px solid #E0F2FE" }}>
-                  <Typography sx={{ fontSize: 12, color: "#0369A1", fontWeight: 600 }}>
-                    Items Total
-                  </Typography>
-                  <Typography sx={{ fontSize: 18, fontWeight: 700, color: "#0369A1" }}>
-                    ${(
-                      (detail.Items || []).reduce(
-                        (sum, item) => sum + (item.Quantity || 0) * (item.UnitPrice || 0),
-                        0
-                      )
-                    ).toFixed(2)}
-                  </Typography>
-                </Box>
-              )}
-
-              <TextField
-                label="Refund Amount"
-                type="number"
-                slotProps={{ htmlInput: { step: "0.01", min: "0" } }}
-                value={approveData.refundAmount}
-                onChange={(e) => setApproveData({ ...approveData, refundAmount: e.target.value })}
-                fullWidth
-                required
-                helperText="Enter the refund amount (cannot exceed items total)"
-              />
-            </>
+            <TextField
+              label="Refund Amount"
+              type="number"
+              slotProps={{ htmlInput: { step: "0.01", min: "0" } }}
+              value={approveData.refundAmount}
+              onChange={(e) => setApproveData({ ...approveData, refundAmount: e.target.value })}
+              fullWidth
+              required
+            />
           )}
 
           {/* Staff Notes - Always Optional */}
@@ -466,11 +412,10 @@ export function TicketListCard({ summary }: TicketListCardProps) {
             variant="contained"
             disabled={
               approveMutation.isPending ||
-              isLoading ||
               (approveData.resolutionType === "RefundOnly" && !approveData.refundAmount)
             }
           >
-            {isLoading ? "Loading..." : "Confirm"}
+            Confirm
           </MuiButton>
         </DialogActions>
       </Dialog>
