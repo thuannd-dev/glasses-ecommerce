@@ -56,7 +56,7 @@ function formatAddressLine(addr: StaffOrderShippingAddressDto): string {
     addr.venue,
     addr.ward,
     addr.district ? `District ${addr.district}` : null,
-    addr.city,
+    addr.province,
   ].filter(Boolean);
   const line = parts.join(", ");
   return addr.postalCode ? `${line} · ${addr.postalCode}` : line;

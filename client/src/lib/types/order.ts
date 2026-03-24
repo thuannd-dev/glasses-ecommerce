@@ -87,7 +87,7 @@ export interface MeOrderShippingAddress {
   venue: string;
   ward?: string;
   district?: string;
-  city?: string;
+  province?: string;
   postalCode?: string;
 }
 
@@ -157,7 +157,7 @@ export interface OrderShippingAddressShape {
   venue?: string;
   ward?: string;
   district?: string;
-  city?: string;
+  province?: string;
   postalCode?: string;
 }
 

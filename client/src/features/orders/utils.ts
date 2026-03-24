@@ -12,7 +12,7 @@ export function formatOrderAddress(
   const a = addr;
   const parts = [
     [a.recipientName, a.recipientPhone].filter(Boolean).join(" – "),
-    [a.venue, a.ward, a.district, a.city].filter(Boolean).join(", "),
+    [a.venue, a.ward, a.district, a.province].filter(Boolean).join(", "),
     a.postalCode,
   ].filter(Boolean);
   return parts.join("\n");
