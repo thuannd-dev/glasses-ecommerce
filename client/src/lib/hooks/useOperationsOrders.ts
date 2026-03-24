@@ -9,6 +9,7 @@ import type {
   UpdateOrderStatusPayload,
   OperationsOrdersQueryParams,
   OperationsOrdersResponse,
+  CreateGHNOrderPayload,
 } from "../types/operations";
 import type { StaffOrderDetailDto } from "../types/staffOrders";
 
@@ -119,6 +120,18 @@ async function fetchShipments(): Promise<ShipmentDto[]> {
   return [];
 }
 
+// -------- GHN Integration API calls --------
+
+async function apiCreateGHNOrder(orderId: string, payload: CreateGHNOrderPayload): Promise<string> {
+  const res = await agent.post<string>(`/operations/orders/${orderId}/ghn/create`, payload);
+  return res.data;
+}
+
+async function apiGetGHNPrintUrl(orderId: string): Promise<string> {
+  const res = await agent.get<string>(`/operations/orders/${orderId}/ghn/print`);
+  return res.data;
+}
+
 export function useOperationsOrders(params?: OperationsOrdersQueryParams) {
   return useQuery({
     queryKey: [...QUERY_KEY_ORDERS, params],
@@ -168,6 +181,50 @@ export function useUpdateTracking() {
     mutationFn: (payload: UpdateTrackingPayload) => apiUpdateTracking(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY_SHIPMENTS });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY_ORDERS });
+    },
+  });
+}
+
+// -------- GHN Integration Hooks --------
+
+export function useCreateGHNOrder() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (params: { orderId: string; payload: CreateGHNOrderPayload }) =>
+      apiCreateGHNOrder(params.orderId, params.payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY_ORDERS });
+    },
+  });
+}
+
+export function useGetGHNPrintUrl() {
+  return useMutation({
+    mutationFn: (orderId: string) => apiGetGHNPrintUrl(orderId),
+  });
+}
+
+// -------- GHN Webhook Simulator --------
+
+export interface GHNWebhookPayload {
+  OrderCode: string;
+  ClientOrderCode: string;
+  Status: string;
+  ReasonCode: string;
+  Reason: string;
+}
+
+async function apiSendGHNWebhook(payload: GHNWebhookPayload): Promise<{ success: boolean; message?: string }> {
+  const res = await agent.post<{ success: boolean; message?: string }>("/webhooks/ghn", payload);
+  return res.data;
+}
+
+export function useSendGHNWebhook() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: GHNWebhookPayload) => apiSendGHNWebhook(payload),
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY_ORDERS });
     },
   });

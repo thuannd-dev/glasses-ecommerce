@@ -48,6 +48,7 @@ import {
   InventoryTransactionsScreen,
   StockInventoryScreen,
   OperationsTicketsScreen,
+  GHNWebhookSimulatorScreen,
 } from "../../features/Operations/screens";
 import ManagerLayout from "../../features/Manager/ManagerLayout";
 import ManagerDashboard from "../../features/Manager/ManagerDashboard";
@@ -141,6 +142,7 @@ export const router = createBrowserRouter([
               { path: "inbound", element: <InboundInventoryScreen /> },
               { path: "outbound", element: <OutboundInventoryScreen /> },
               { path: "inventory-transactions", element: <InventoryTransactionsScreen /> },
+              { path: "ghn-webhook-simulator", element: <GHNWebhookSimulatorScreen /> },
             ],
           },
         ],

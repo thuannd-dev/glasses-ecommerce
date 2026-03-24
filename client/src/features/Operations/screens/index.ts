@@ -13,3 +13,4 @@ export { OutboundInventoryScreen } from "./OutboundInventoryScreen";
 export { InventoryTransactionsScreen } from "./InventoryTransactionsScreen";
 export { StockInventoryScreen } from "./StockInventoryScreen";
 export { OperationsTicketsScreen } from "./OperationsTicketsScreen";
+export { GHNWebhookSimulatorScreen } from "./GHNWebhookSimulatorScreen";

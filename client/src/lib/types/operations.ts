@@ -87,6 +87,26 @@ export interface UpdateOrderStatusPayload {
   shipmentNotes?: string | null;
 }
 
+// -------- GHN Integration --------
+
+/** Payload for POST /api/operations/orders/{id}/ghn/create */
+export interface CreateGHNOrderPayload {
+  districtId?: number;
+  wardCode?: string;
+  weight: number;
+  length: number;
+  width: number;
+  height: number;
+  requiredNote: string;
+}
+
+/** Available required note options for GHN */
+export const GHN_REQUIRED_NOTES = [
+  { value: "CHOXEMHANGKHONGTHU", label: "Allow inspection, no try-on" },
+  { value: "CHOTHUHANG", label: "Allow try-on" },
+  { value: "KHONGCHOXEMHANG", label: "No inspection allowed" },
+] as const;
+
 // -------- Operations orders list (paginated) --------
 
 /** Query params for Operations orders listing endpoint `/api/operations/orders` */

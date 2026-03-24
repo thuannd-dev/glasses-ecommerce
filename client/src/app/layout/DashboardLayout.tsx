@@ -603,6 +603,62 @@ export default function DashboardLayout() {
                           </ListItemButton>
                         );
                       })}
+
+                      {/* Developer Tools group */}
+                      <Typography
+                        sx={{
+                          fontSize: 11,
+                          letterSpacing: 2,
+                          textTransform: "uppercase",
+                          color: "text.secondary",
+                          px: 1.5,
+                          pt: 1.5,
+                          pb: 0.5,
+                        }}
+                      >
+                        Developer Tools
+                      </Typography>
+                      {[
+                        { path: "/operations/ghn-webhook-simulator", label: "GHN Webhook Sim", icon: <LocalShippingIcon /> },
+                      ].map((sub) => {
+                        const isActive = location.pathname === sub.path;
+                        return (
+                          <ListItemButton
+                            key={sub.path}
+                            component={NavLink}
+                            to={sub.path}
+                            sx={{
+                              borderRadius: 2,
+                              mb: 0.25,
+                              color: isActive ? "#171717" : "#8A8A8A",
+                              borderLeft: "3px solid transparent",
+                              pl: 1.5,
+                              "&.active": {
+                                bgcolor: "rgba(182,140,90,0.12)",
+                                color: "#171717",
+                                borderLeftColor: "#B68C5A",
+                              },
+                              "&:hover": {
+                                bgcolor: "rgba(0,0,0,0.04)",
+                                color: "#171717",
+                              },
+                            }}
+                          >
+                            <ListItemIcon
+                              sx={{
+                                minWidth: 32,
+                                color: isActive ? "#B68C5A" : "inherit",
+                              }}
+                            >
+                              {sub.icon}
+                            </ListItemIcon>
+                            <ListItemText
+                              primary={sub.label}
+                              primaryTypographyProps={{ fontWeight: 600 }}
+                            />
+                          </ListItemButton>
+                        );
+                      })}
                     </List>
                 </Fragment>
               );

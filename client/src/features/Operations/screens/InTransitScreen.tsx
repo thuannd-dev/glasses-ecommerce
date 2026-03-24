@@ -9,10 +9,9 @@ import {
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 
-import { useOperationsOrders, useUpdateOrderStatus } from "../../../lib/hooks/useOperationsOrders";
+import { useOperationsOrders } from "../../../lib/hooks/useOperationsOrders";
 import { AppPagination } from "../../../app/shared/components/AppPagination";
 import type { StaffOrderDto } from "../../../lib/types/staffOrders";
-import type { OrderStatus } from "../../../lib/types/operations";
 import { OperationsPageHeader } from "../components/OperationsPageHeader";
 import { OrdersTabs } from "../components/OrdersTabs";
 import { OrderListCard } from "../components/OrderListCard";
@@ -27,8 +26,6 @@ export function InTransitScreen() {
     pageSize,
     status: "Shipped",
   });
-
-  const updateStatus = useUpdateOrderStatus();
 
   const safeOrders: StaffOrderDto[] = Array.isArray(data?.items)
     ? (data!.items as unknown as StaffOrderDto[])
@@ -140,12 +137,6 @@ export function InTransitScreen() {
                     key={o.id} 
                     mode="in-transit" 
                     summary={o}
-                    onMarkDeliveredClick={(orderId) =>
-                      updateStatus.mutate({
-                        orderId,
-                        status: "Delivered" as OrderStatus,
-                      })
-                    }
                   />
                 ))}
                 {filteredOrders.length === 0 && orderIdFilter.trim() && (

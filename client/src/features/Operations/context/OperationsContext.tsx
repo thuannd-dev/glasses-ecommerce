@@ -1,5 +1,4 @@
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
-import { toast } from "react-toastify";
+import { createContext, useCallback, useContext, useState } from "react";
 import {
   useOperationsOrders,
   useOperationsOrderDetail,
@@ -7,9 +6,7 @@ import {
   useUpdateOrderStatus,
   useUpdateTracking,
 } from "../../../lib/hooks/useOperationsOrders";
-import { useLookups } from "../../../lib/hooks/useLookups";
-import { useCreateInventoryOutbound } from "../../../lib/hooks/useOperationsInventory";
-import { CreateShipmentDialog } from "../components";
+import { CreateGHNShipmentDialog } from "../components";
 import type {
   OrderDto,
   OrderItemDto,
@@ -41,12 +38,6 @@ export function useOperations() {
 
 export function OperationsProvider({ children }: { children: React.ReactNode }) {
   const [createShipOrderId, setCreateShipOrderId] = useState<string | null>(null);
-  const [createShipCarrier, setCreateShipCarrier] = useState("");
-  const [createShipTracking, setCreateShipTracking] = useState("");
-  const [createShipTrackingUrl, setCreateShipTrackingUrl] = useState("");
-  const [createShipEstimatedDeliveryDate, setCreateShipEstimatedDeliveryDate] = useState("");
-  const [createShipShippingNotes, setCreateShipShippingNotes] = useState("");
-  const [createShipError, setCreateShipError] = useState<string | null>(null);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
 
   const { data: ordersData, isLoading: ordersLoading } = useOperationsOrders();
@@ -54,103 +45,12 @@ export function OperationsProvider({ children }: { children: React.ReactNode }) 
     createShipOrderId || undefined
   );
   const { data: shipmentsData, isLoading: shipmentsLoading } = useOperationsShipments();
-  const { data: lookupsData } = useLookups();
   const updateStatus = useUpdateOrderStatus();
   const updateTracking = useUpdateTracking();
-  const createOutbound = useCreateInventoryOutbound();
 
-  const carriers = useMemo(() => lookupsData?.shippingCarrier || [], [lookupsData]);
-  
-  // Set default carrier to first available carrier when carriers are loaded
-  const handleOpenCreateShipment = useCallback((orderId: string) => {
+  const openCreateShipment = useCallback((orderId: string) => {
     setCreateShipOrderId(orderId);
-    if (carriers.length > 0 && !createShipCarrier) {
-      setCreateShipCarrier(carriers[0]);
-    }
-  }, [carriers, createShipCarrier]);
-
-  const openCreateShipment = handleOpenCreateShipment;
-
-  const handleCreateShipment = useCallback(() => {
-    if (!createShipOrderId || !createShipTracking.trim()) return;
-
-    // Clear previous error
-    setCreateShipError(null);
-
-    // IMPORTANT: Record outbound FIRST to validate PreOrder fulfillment.
-    // Only if outbound succeeds, then update order status to "Shipped".
-    // This prevents status change if validation fails.
-    createOutbound.mutate(
-      {
-        orderId: createShipOrderId,
-      },
-      {
-        onSuccess: () => {
-          // Outbound validation passed. Now update order status to "Shipped" with shipment details.
-          updateStatus.mutate(
-            {
-              orderId: createShipOrderId,
-              status: "Shipped" as const,
-              shipmentCarrierName: createShipCarrier,
-              shipmentTrackingCode: createShipTracking.trim(),
-              shipmentTrackingUrl: createShipTrackingUrl || null,
-              shipmentEstimatedDeliveryAt: createShipEstimatedDeliveryDate || null,
-              shipmentNotes: createShipShippingNotes || null,
-            },
-            {
-              onSuccess: () => {
-                toast.success("Order shipped successfully with outbound record created");
-
-                setCreateShipOrderId(null);
-                setCreateShipTracking("");
-                setCreateShipTrackingUrl("");
-                setCreateShipEstimatedDeliveryDate("");
-                setCreateShipShippingNotes("");
-                setCreateShipCarrier("");
-                setCreateShipError(null);
-              },
-              onError: (error: unknown) => {
-                // Extract error message from API response
-                let errorMessage = "Failed to update order status";
-                
-                if (error instanceof Error) {
-                  errorMessage = error.message;
-                } else if (error && typeof error === 'object') {
-                  const apiError = error as { response?: { data?: { message?: string } } };
-                  errorMessage = apiError?.response?.data?.message || errorMessage;
-                }
-                
-                setCreateShipError(errorMessage);
-              },
-            },
-          );
-        },
-        onError: (error: unknown) => {
-          // Extract error message from API response
-          // The agent interceptor throws Error objects with message for 409 errors
-          let errorMessage = "Failed to create outbound record";
-          
-          if (error instanceof Error) {
-            errorMessage = error.message;
-          } else if (error && typeof error === 'object') {
-            const apiError = error as { response?: { data?: { message?: string } } };
-            errorMessage = apiError?.response?.data?.message || errorMessage;
-          }
-          
-          setCreateShipError(errorMessage);
-        },
-      },
-    );
-  }, [
-    createShipOrderId,
-    createShipCarrier,
-    createShipTracking,
-    createShipTrackingUrl,
-    createShipEstimatedDeliveryDate,
-    createShipShippingNotes,
-    updateStatus,
-    createOutbound,
-  ]);
+  }, []);
 
   type PaginatedResult<T> = { items?: T[] };
 
@@ -213,32 +113,10 @@ export function OperationsProvider({ children }: { children: React.ReactNode }) 
   return (
     <OperationsContext.Provider value={value}>
       {children}
-      <CreateShipmentDialog
+      <CreateGHNShipmentDialog
         open={!!createShipOrderId}
-        onClose={() => {
-          setCreateShipOrderId(null);
-          setCreateShipTracking("");
-          setCreateShipTrackingUrl("");
-          setCreateShipEstimatedDeliveryDate("");
-          setCreateShipShippingNotes("");
-          setCreateShipCarrier("");
-          setCreateShipError(null);
-        }}
+        onClose={() => setCreateShipOrderId(null)}
         order={selectedOrder}
-        carrier={createShipCarrier}
-        setCarrier={setCreateShipCarrier}
-        trackingNumber={createShipTracking}
-        setTrackingNumber={setCreateShipTracking}
-        trackingUrl={createShipTrackingUrl}
-        setTrackingUrl={setCreateShipTrackingUrl}
-        estimatedDeliveryDate={createShipEstimatedDeliveryDate}
-        setEstimatedDeliveryDate={setCreateShipEstimatedDeliveryDate}
-        shippingNotes={createShipShippingNotes}
-        setShippingNotes={setCreateShipShippingNotes}
-        carriers={carriers}
-        onSubmit={handleCreateShipment}
-        isPending={updateStatus.isPending || createOutbound.isPending}
-        error={createShipError}
       />
     </OperationsContext.Provider>
   );
