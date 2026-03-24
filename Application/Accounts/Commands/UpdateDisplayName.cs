@@ -34,9 +34,14 @@ public sealed class UpdateDisplayName
                 return Result<Unit>.Failure("User not found.", 404);
 
             // Update display name
-            user.DisplayName = request.DisplayName.Trim();
+            string newDisplayName = request.DisplayName.Trim();
+            if (user.DisplayName == newDisplayName)
+            {
+                return Result<Unit>.Success(Unit.Value);
+            }
 
-            context.Users.Update(user);
+            user.DisplayName = newDisplayName;
+
             bool saved = await context.SaveChangesAsync(ct) > 0;
 
             if (!saved)

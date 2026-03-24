@@ -1,6 +1,8 @@
-//DTO Request để đổi mật khẩu
 namespace Application.Accounts.DTOs;
 
+/// <summary>
+/// DTO Request để đổi mật khẩu
+/// </summary>
 public sealed class ChangePasswordDto
 {
     public required string CurrentPassword { get; set; }
