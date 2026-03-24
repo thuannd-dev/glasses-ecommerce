@@ -25,6 +25,7 @@ namespace API.Controllers
             {
                 return result.Code switch
                 {
+                    401 => Unauthorized(result.Error),
                     404 => NotFound(result.Error),
                     409 => Conflict(result.Error),
                     500 => StatusCode(StatusCodes.Status500InternalServerError, result.Error),
