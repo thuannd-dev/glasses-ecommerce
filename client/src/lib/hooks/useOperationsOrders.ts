@@ -193,8 +193,9 @@ export function useCreateGHNOrder() {
   return useMutation({
     mutationFn: (params: { orderId: string; payload: CreateGHNOrderPayload }) =>
       apiCreateGHNOrder(params.orderId, params.payload),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY_ORDERS });
+      queryClient.invalidateQueries({ queryKey: ["operations", "order", variables.orderId] });
     },
   });
 }
@@ -224,8 +225,12 @@ export function useSendGHNWebhook() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: GHNWebhookPayload) => apiSendGHNWebhook(payload),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY_ORDERS });
+      // Invalidate per-order detail if ClientOrderCode (orderId) was provided
+      if (variables.ClientOrderCode) {
+        queryClient.invalidateQueries({ queryKey: ["operations", "order", variables.ClientOrderCode] });
+      }
     },
   });
 }

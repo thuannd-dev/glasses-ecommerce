@@ -57,6 +57,7 @@ export function CreateGHNShipmentDialog({
   const [step, setStep] = useState<DialogStep>("form");
   const [trackingCode, setTrackingCode] = useState<string | null>(null);
   const [printUrl, setPrintUrl] = useState<string | null>(null);
+  const [outboundCreated, setOutboundCreated] = useState(false);
 
   // Hooks
   const createGHNOrder = useCreateGHNOrder();
@@ -75,6 +76,7 @@ export function CreateGHNShipmentDialog({
       setError(null);
       setTrackingCode(null);
       setPrintUrl(null);
+      setOutboundCreated(false);
     }
   }, [open]);
 
@@ -84,6 +86,41 @@ export function CreateGHNShipmentDialog({
       scrollContainerRef.current.scrollTop = 0;
     }
   }, [error]);
+
+  const proceedToCreateGHNOrder = useCallback(
+    (orderId: string, payload: CreateGHNOrderPayload) => {
+      createGHNOrder.mutate(
+        { orderId, payload },
+        {
+          onSuccess: (code: string) => {
+            setTrackingCode(code);
+            setStep("success");
+            toast.success(`GHN order created! Tracking: ${code}`);
+
+            // Fetch print URL (non-blocking)
+            getGHNPrintUrl.mutate(orderId, {
+              onSuccess: (url: string) => setPrintUrl(url),
+              onError: () => {
+                // Print URL fetch failure is non-critical
+              },
+            });
+          },
+          onError: (err: unknown) => {
+            let msg = "Failed to create GHN shipping order";
+            if (err instanceof Error) msg = err.message;
+            else if (err && typeof err === "object") {
+              const apiErr = err as { response?: { data?: string } };
+              if (typeof apiErr.response?.data === "string")
+                msg = apiErr.response.data;
+            }
+            setError(msg);
+            setStep("form");
+          },
+        }
+      );
+    },
+    [createGHNOrder, getGHNPrintUrl]
+  );
 
   const handleSubmit = useCallback(() => {
     if (!order) return;
@@ -98,43 +135,20 @@ export function CreateGHNShipmentDialog({
       requiredNote,
     };
 
+    // If outbound was already created (retry scenario), skip straight to GHN order
+    if (outboundCreated) {
+      proceedToCreateGHNOrder(order.id, payload);
+      return;
+    }
+
     // Step 1: Record outbound inventory first
     createOutbound.mutate(
       { orderId: order.id },
       {
         onSuccess: () => {
+          setOutboundCreated(true);
           // Step 2: Create GHN order
-          createGHNOrder.mutate(
-            { orderId: order.id, payload },
-            {
-              onSuccess: (code: string) => {
-                setTrackingCode(code);
-                setStep("success");
-                toast.success(`GHN order created! Tracking: ${code}`);
-
-                // Step 3: Fetch print URL (non-blocking)
-                getGHNPrintUrl.mutate(order.id, {
-                  onSuccess: (url: string) => {
-                    setPrintUrl(url);
-                  },
-                  onError: () => {
-                    // Print URL fetch failure is non-critical
-                  },
-                });
-              },
-              onError: (err: unknown) => {
-                let msg = "Failed to create GHN shipping order";
-                if (err instanceof Error) msg = err.message;
-                else if (err && typeof err === "object") {
-                  const apiErr = err as { response?: { data?: string } };
-                  if (typeof apiErr.response?.data === "string")
-                    msg = apiErr.response.data;
-                }
-                setError(msg);
-                setStep("form");
-              },
-            }
-          );
+          proceedToCreateGHNOrder(order.id, payload);
         },
         onError: (err: unknown) => {
           let msg = "Failed to create outbound record";
@@ -149,7 +163,7 @@ export function CreateGHNShipmentDialog({
         },
       }
     );
-  }, [order, weight, length, width, height, requiredNote, createOutbound, createGHNOrder, getGHNPrintUrl]);
+  }, [order, weight, length, width, height, requiredNote, outboundCreated, createOutbound, proceedToCreateGHNOrder]);
 
   const inputBaseSx = {
     "& .MuiOutlinedInput-root": {
