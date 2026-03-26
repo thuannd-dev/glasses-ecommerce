@@ -49,6 +49,17 @@ interface AddressFormState {
   longitude?: number;
 }
 
+const HIDDEN_PROVINCE_EXACT = new Set(["Hà Nội 02"]);
+const HIDDEN_PROVINCE_KEYWORDS = ["testalerttinh001"];
+
+function normalizeProvinceName(name: string): string {
+  return String(name ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]/g, "");
+}
+
 const INITIAL_FORM_STATE: AddressFormState = {
   recipientName: "",
   recipientPhone: "",
@@ -79,6 +90,15 @@ export default function AddressesSection() {
   const [loadingWards, setLoadingWards] = useState(false);
 
   const addressList = useMemo(() => (Array.isArray(addresses) ? addresses : []), [addresses]);
+  const visibleProvinces = useMemo(
+    () =>
+      provinces.filter((p) => {
+        if (HIDDEN_PROVINCE_EXACT.has(p.ProvinceName)) return false;
+        const normalized = normalizeProvinceName(p.ProvinceName);
+        return !HIDDEN_PROVINCE_KEYWORDS.some((k) => normalized.includes(k));
+      }),
+    [provinces],
+  );
   const isLoading_all = isLoading || isCreating || isUpdating || isDeleting || isSetting;
   const actionBtnSx = {
     textTransform: "none",
@@ -503,8 +523,19 @@ export default function AddressesSection() {
                 fullWidth
                 disabled={isLoading_all || loadingProvinces}
                 placeholder="Select province"
+                SelectProps={{
+                  MenuProps: {
+                    PaperProps: {
+                      sx: {
+                        maxHeight: 360,
+                        scrollbarWidth: "none",
+                        "&::-webkit-scrollbar": { display: "none" },
+                      },
+                    },
+                  },
+                }}
               >
-                {provinces.map((p) => (
+                {visibleProvinces.map((p) => (
                   <MenuItem key={`province-${p.ProvinceID}`} value={p.ProvinceID}>
                     {p.ProvinceName}
                   </MenuItem>
@@ -528,6 +559,17 @@ export default function AddressesSection() {
                 fullWidth
                 disabled={isLoading_all || !formData.provinceId || loadingDistricts}
                 placeholder="Select district"
+                SelectProps={{
+                  MenuProps: {
+                    PaperProps: {
+                      sx: {
+                        maxHeight: 360,
+                        scrollbarWidth: "none",
+                        "&::-webkit-scrollbar": { display: "none" },
+                      },
+                    },
+                  },
+                }}
               >
                 {districts.map((d) => (
                   <MenuItem key={`district-${d.DistrictID}`} value={d.DistrictID}>
@@ -551,6 +593,17 @@ export default function AddressesSection() {
                 fullWidth
                 disabled={isLoading_all || !formData.districtId || loadingWards}
                 placeholder="Select ward"
+                SelectProps={{
+                  MenuProps: {
+                    PaperProps: {
+                      sx: {
+                        maxHeight: 360,
+                        scrollbarWidth: "none",
+                        "&::-webkit-scrollbar": { display: "none" },
+                      },
+                    },
+                  },
+                }}
               >
                 {wards.map((w) => (
                   <MenuItem key={`ward-${w.WardCode}`} value={w.WardCode}>
