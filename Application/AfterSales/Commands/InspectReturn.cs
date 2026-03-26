@@ -92,6 +92,13 @@ public sealed class InspectReturn
                 {
                     List<Guid> variantIds = [.. scopedItems.Select(i => i.ProductVariantId)];
                     List<Stock> stocks = await context.GetStocksWithLockAsync(variantIds, ct);
+                    
+                    // Load ProductVariants for pre-order auto-disable check
+                    List<ProductVariant> variants = await context.ProductVariants
+                        .Where(v => variantIds.Contains(v.Id))
+                        .ToListAsync(ct);
+                    Dictionary<Guid, ProductVariant> variantById = variants.ToDictionary(v => v.Id);
+                    
                     Dictionary<Guid, Stock> stockByVariant = stocks.ToDictionary(s => s.ProductVariantId);
 
                     foreach (OrderItem item in scopedItems)
@@ -106,6 +113,13 @@ public sealed class InspectReturn
                             stock.QuantityOnHand += item.Quantity;
                             stock.UpdatedAt = DateTime.UtcNow;
                             stock.UpdatedBy = staffId;
+
+                            // Auto-disable pre-order if stock is now available (QuantityOnHand > 0)
+                            if (variantById.TryGetValue(item.ProductVariantId, out ProductVariant? variant) &&
+                                variant.IsPreOrder && stock.QuantityOnHand > 0)
+                            {
+                                variant.IsPreOrder = false;
+                            }
 
                             context.InventoryTransactions.Add(new InventoryTransaction
                             {
