@@ -89,7 +89,7 @@ export default function SecuritySection() {
   };
 
   return (
-    <Box sx={{ mt: -6 }}>
+    <Box sx={{ mt: 1 }}>
       <Typography fontWeight={900} fontSize={22} mb={2}>
         Security
       </Typography>

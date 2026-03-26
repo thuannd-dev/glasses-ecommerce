@@ -193,7 +193,7 @@ export default function ProfileOverview({ userId }: ProfileOverviewProps) {
   }
 
   return (
-    <Box sx={{ mt: -26 }}>
+    <Box sx={{ mt: 0 }}>
       <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
         <Box
           sx={{
