@@ -72,6 +72,10 @@ export default function ItemTopSeller() {
   const items: (Product | undefined)[] = isLoading ? Array.from({ length: 10 }) : visible;
   const beforeHero = items.slice(0, leadingTileCount);
   const afterHero = items.slice(leadingTileCount);
+  const navigateWithScrollTop = (to: string) => {
+    window.scrollTo({ top: 0, behavior: "auto" });
+    navigate(to);
+  };
 
   const renderProductTile = (p: Product | undefined, idx: number, keyPrefix: string) => {
     if (!p) {
@@ -115,11 +119,11 @@ export default function ItemTopSeller() {
         }}
       >
         <Box
-          onClick={() => navigate(`/product/${product.id}`)}
+          onClick={() => navigateWithScrollTop(`/product/${product.id}`)}
           role="button"
           tabIndex={0}
           onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") navigate(`/product/${product.id}`);
+            if (e.key === "Enter" || e.key === " ") navigateWithScrollTop(`/product/${product.id}`);
           }}
           sx={{
             flex: 1,
@@ -372,11 +376,11 @@ export default function ItemTopSeller() {
 
           <Typography
             component="div"
-            onClick={() => navigate("/collections/all")}
+            onClick={() => navigateWithScrollTop("/collections/all")}
             role="button"
             tabIndex={0}
             onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") navigate("/collections/all");
+              if (e.key === "Enter" || e.key === " ") navigateWithScrollTop("/collections/all");
             }}
             sx={{
               position: "absolute",

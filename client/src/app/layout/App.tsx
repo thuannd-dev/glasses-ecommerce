@@ -1,12 +1,12 @@
 import { Box, Container, CssBaseline } from "@mui/material";
 import NavBar from "./NavBar";
 import DashboardLayout from "./DashboardLayout";
-import { Outlet, ScrollRestoration, useLocation } from "react-router";
+import { Outlet, useLocation } from "react-router";
 import CollectionLandingPage from "../../features/collections/CollectionLandingPage";
 import Footer from "./Footer";
 import ScrollToTopButton from "../components/ScrollToTopButton";
 import ChatbotWidget from "../../features/chatbot/ChatbotWidget";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import agent from "../../lib/api/agent";
 
 function App() {
@@ -55,6 +55,28 @@ function App() {
   const lastScrollYRef = useRef(0);
 
   useEffect(() => {
+    if ("scrollRestoration" in window.history) {
+      window.history.scrollRestoration = "manual";
+    }
+  }, []);
+
+  useLayoutEffect(() => {
+    const forceScrollTop = () => {
+      window.scrollTo({ top: 0, behavior: "auto" });
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    };
+
+    forceScrollTop();
+    const raf = window.requestAnimationFrame(forceScrollTop);
+    const timer = window.setTimeout(forceScrollTop, 60);
+    return () => {
+      window.cancelAnimationFrame(raf);
+      window.clearTimeout(timer);
+    };
+  }, [location.pathname]);
+
+  useEffect(() => {
     if (isDashboard) {
       setNavCollapsed(false);
       return;
@@ -100,7 +122,6 @@ function App() {
         background: "linear-gradient(180deg,#FFFFFF 0%,#FAFAF5 100%)",
       }}
     >
-      <ScrollRestoration />
       <CssBaseline /> {/*Reset Css*/}
 
       {isHome ? (
