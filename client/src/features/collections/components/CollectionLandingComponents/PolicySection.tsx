@@ -428,7 +428,7 @@ export default function PolicySection() {
       [...policies].sort((a, b) => {
         const la = getPolicyTypeLabel(a.policyType);
         const lb = getPolicyTypeLabel(b.policyType);
-        const order = ["Return", "Warranty", "Refund"];
+        const order = ["Return", "Refund","Warranty"];
         return order.indexOf(la) - order.indexOf(lb);
       }),
     [policies],
@@ -492,10 +492,10 @@ export default function PolicySection() {
             <Typography component="h2" sx={HEADING_SX}>
               Reliable eyewear support
               <br />
-              guided by refined policies.
+              Guided by refined policies.
             </Typography>
             <Typography sx={BODY_SX}>
-              Easy-to-read return, warranty, and refund terms—so you can buy with confidence. Straightforward rules,
+              Hassle-free return, refund, and warranty terms—so you can buy with confidence. Straightforward rules,
               no surprises—just clarity.
             </Typography>
             {ordered.length > 1 && (

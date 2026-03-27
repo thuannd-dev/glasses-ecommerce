@@ -55,8 +55,8 @@ export default function ProfileLayout({
           width: { xs: "100%", md: 240 },
           flexShrink: 0,
           height: "fit-content",
-          mt: activeSection === "overview" ? { xs: 0, md: -27 }
-          : activeSection === "security" ? { xs: 0, md: -6 }
+          mt: activeSection === "overview" ? { xs: 0, md: 0 }
+          : activeSection === "security" ? { xs: 0, md: 1 }
           : { xs: 0, md: 1 }, // addresses
         }}
       >

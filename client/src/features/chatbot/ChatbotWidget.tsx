@@ -13,6 +13,7 @@ import {
   type RecommendedProduct,
   type ChatbotResponse,
 } from "./services/openaiService";
+import { useChatbot } from "./ChatbotContext";
 
 // ── Messenger-style typing dots ──
 function TypingDots() {
@@ -62,7 +63,7 @@ const GREETING_MESSAGE: Message = {
 
 export default function ChatbotWidget() {
   const navigate = useNavigate();
-  const [isOpen, setIsOpen] = useState(false);
+  const { isOpen, setIsOpen } = useChatbot();
   const [messages, setMessages] = useState<Message[]>([GREETING_MESSAGE]);
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);

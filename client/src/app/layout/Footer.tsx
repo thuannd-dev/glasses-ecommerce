@@ -14,6 +14,7 @@ import MailOutlineIcon from "@mui/icons-material/MailOutline";
 import MusicNoteIcon from "@mui/icons-material/MusicNote";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import { COLORS } from "../theme/colors";
+import { useChatbot } from "../../features/chatbot/ChatbotContext";
 
 /**
  * Footer fashion: sạch, nhiều khoảng trắng, chữ nhỏ, tối giản.
@@ -71,6 +72,7 @@ const linkSx = {
 
 export default function Footer() {
     const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
+    const { setIsOpen: setChatbotOpen } = useChatbot();
 
     return (
         <Box
@@ -128,6 +130,7 @@ export default function Footer() {
                         <Button
                             variant="outlined"
                             endIcon={<ArrowForwardIcon sx={{ fontSize: 18 }} />}
+                            onClick={() => setChatbotOpen(true)}
                             sx={{
                                 borderRadius: 999,
                                 border: "1px solid rgba(255,255,255,0.55)",
@@ -145,50 +148,14 @@ export default function Footer() {
                                 },
                             }}
                         >
-                            Book Consultation
+                            Support Request
                         </Button>
 
                         <Stack direction="row" spacing={1.5} justifyContent="center" sx={{ mt: 2.5 }}>
                             <MuiLink
-                                href="#"
-                                aria-label="Instagram"
-                                sx={{
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    width: 40,
-                                    height: 40,
-                                    borderRadius: "999px",
-                                    border: "1px solid rgba(255,255,255,0.18)",
-                                    color: "rgba(255,255,255,0.90)",
-                                    transition: "all 160ms ease",
-                                    "&:hover": { borderColor: COLORS.accentGold, color: COLORS.accentGold },
-                                }}
-                            >
-                                <InstagramIcon fontSize="small" />
-                            </MuiLink>
-
-                            <MuiLink
-                                href="#"
-                                aria-label="Email"
-                                sx={{
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    width: 40,
-                                    height: 40,
-                                    borderRadius: "999px",
-                                    border: "1px solid rgba(255,255,255,0.18)",
-                                    color: "rgba(255,255,255,0.90)",
-                                    transition: "all 160ms ease",
-                                    "&:hover": { borderColor: COLORS.accentGold, color: COLORS.accentGold },
-                                }}
-                            >
-                                <MailOutlineIcon fontSize="small" />
-                            </MuiLink>
-
-                            <MuiLink
-                                href="#"
+                                href="https://www.facebook.com/FPTU.HCM/"
+                                target="_blank"
+                                rel="noopener noreferrer"
                                 aria-label="Facebook"
                                 sx={{
                                     display: "inline-flex",
@@ -207,7 +174,30 @@ export default function Footer() {
                             </MuiLink>
 
                             <MuiLink
-                                href="#"
+                                href="https://www.instagram.com/fptuniversityhcm/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                aria-label="Instagram"
+                                sx={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    width: 40,
+                                    height: 40,
+                                    borderRadius: "999px",
+                                    border: "1px solid rgba(255,255,255,0.18)",
+                                    color: "rgba(255,255,255,0.90)",
+                                    transition: "all 160ms ease",
+                                    "&:hover": { borderColor: COLORS.accentGold, color: COLORS.accentGold },
+                                }}
+                            >
+                                <InstagramIcon fontSize="small" />
+                            </MuiLink>
+
+                            <MuiLink
+                                href="https://www.tiktok.com/@fptuniversityhcm"
+                                target="_blank"
+                                rel="noopener noreferrer"
                                 aria-label="TikTok"
                                 sx={{
                                     display: "inline-flex",
@@ -224,6 +214,25 @@ export default function Footer() {
                             >
                                 <MusicNoteIcon fontSize="small" />
                             </MuiLink>
+                            
+                            <MuiLink
+                                href="mailto:thinhtonyphan@gmail.com"
+                                aria-label="Email"
+                                sx={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    width: 40,
+                                    height: 40,
+                                    borderRadius: "999px",
+                                    border: "1px solid rgba(255,255,255,0.18)",
+                                    color: "rgba(255,255,255,0.90)",
+                                    transition: "all 160ms ease",
+                                    "&:hover": { borderColor: COLORS.accentGold, color: COLORS.accentGold },
+                                }}
+                            >
+                                <MailOutlineIcon fontSize="small" />
+                            </MuiLink>
                         </Stack>
 
                         <Typography
@@ -237,7 +246,7 @@ export default function Footer() {
                                 px: { xs: 1, md: 0 },
                             }}
                         >
-                            LINE ERASER MD, 79 W MT PLEASANT AVE, LIVINGSTON, NJ 07039, USA
+                            Block E2a-7, D1 Street, Saigon Hi-Tech Park, Tăng Nhơn Phú Ward, Hồ Chí Minh City
                         </Typography>
                     </Box>
                 </Box>
@@ -274,7 +283,9 @@ export default function Footer() {
                             {/* Social icons */}
                             <Stack direction="row" spacing={1.5}>
                                 <MuiLink
-                                    href="#"
+                                    href="https://www.facebook.com/FPTU.HCM/"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
                                     aria-label="Facebook"
                                     sx={{
                                         display: "inline-flex",
@@ -297,7 +308,9 @@ export default function Footer() {
                                     <FacebookIcon fontSize="small" />
                                 </MuiLink>
                                 <MuiLink
-                                    href="#"
+                                    href="https://www.instagram.com/fptuniversityhcm/"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
                                     aria-label="Instagram"
                                     sx={{
                                         display: "inline-flex",

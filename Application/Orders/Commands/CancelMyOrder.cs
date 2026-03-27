@@ -71,16 +71,12 @@ public sealed class CancelMyOrder
                         List<Stock> stocks = await context.GetStocksWithLockAsync(variantIds, ct);
                         Dictionary<Guid, Stock> stockByVariant = stocks.ToDictionary(s => s.ProductVariantId);
 
-                        // Load variants chỉ khi là PreOrder order — cần biết IsPreOrder của từng item
-                        Dictionary<Guid, bool> isPreOrderByVariant = [];
-                        if (order.OrderType == OrderType.PreOrder)
-                        {
-                            List<ProductVariant> variants = await context.ProductVariants
-                                .AsNoTracking()
-                                .Where(pv => variantIds.Contains(pv.Id))
-                                .ToListAsync(ct);
-                            isPreOrderByVariant = variants.ToDictionary(pv => pv.Id, pv => pv.IsPreOrder);
-                        }
+                        // Load all variants for IsPreOrder check (needed for auto-disable logic)
+                        List<ProductVariant> allVariants = await context.ProductVariants
+                            .Where(pv => variantIds.Contains(pv.Id))
+                            .ToListAsync(ct);
+                        Dictionary<Guid, ProductVariant> variantById = allVariants.ToDictionary(pv => pv.Id);
+                        Dictionary<Guid, bool> isPreOrderByVariant = allVariants.ToDictionary(pv => pv.Id, pv => pv.IsPreOrder);
 
                         foreach (OrderItem item in items)
                         {
@@ -116,6 +112,13 @@ public sealed class CancelMyOrder
 
                             stock.UpdatedAt = DateTime.UtcNow;
                             stock.UpdatedBy = userId;
+
+                            // Auto-disable pre-order if stock is now available (QuantityOnHand > 0)
+                            if (variantById.TryGetValue(item.ProductVariantId, out ProductVariant? variant) &&
+                                variant.IsPreOrder && stock.QuantityOnHand > 0)
+                            {
+                                variant.IsPreOrder = false;
+                            }
                         }
                     }
                 }

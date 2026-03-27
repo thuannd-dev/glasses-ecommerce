@@ -82,6 +82,12 @@ public sealed class ApproveInbound
                 List<Guid> variantIds = [.. record.Items.Select(i => i.ProductVariantId)];
                 List<Stock> stocks = await context.GetStocksWithLockAsync(variantIds, ct);
 
+                // 5b. Load ProductVariants for pre-order auto-disable check
+                List<ProductVariant> variants = await context.ProductVariants
+                    .Where(v => variantIds.Contains(v.Id))
+                    .ToListAsync(ct);
+                Dictionary<Guid, ProductVariant> variantById = variants.ToDictionary(v => v.Id);
+
                 // 6. Update stock for each item
                 Dictionary<Guid, Stock> stockByVariant = stocks.ToDictionary(s => s.ProductVariantId);
 
@@ -107,6 +113,13 @@ public sealed class ApproveInbound
                         int fulfillable = Math.Min(item.Quantity, stock.QuantityPreOrdered);
                         stock.QuantityPreOrdered -= fulfillable;
                         stock.QuantityReserved += fulfillable;
+                    }
+
+                    // Auto-disable pre-order if stock is now available (QuantityOnHand > 0)
+                    if (variantById.TryGetValue(item.ProductVariantId, out ProductVariant? variant) &&
+                        variant.IsPreOrder && stock.QuantityOnHand > 0)
+                    {
+                        variant.IsPreOrder = false;
                     }
 
                     // Create inventory transaction for audit

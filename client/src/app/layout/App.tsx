@@ -8,6 +8,7 @@ import ScrollToTopButton from "../components/ScrollToTopButton";
 import ChatbotWidget from "../../features/chatbot/ChatbotWidget";
 import { useEffect, useRef, useState } from "react";
 import agent from "../../lib/api/agent";
+import { ChatbotProvider } from "../../features/chatbot/ChatbotContext";
 
 function App() {
   const location = useLocation();
@@ -92,16 +93,17 @@ function App() {
   }, [isDashboard]);
 
   return (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        background: "linear-gradient(180deg,#FFFFFF 0%,#FAFAF5 100%)",
-      }}
-    >
-      <ScrollRestoration />
-      <CssBaseline /> {/*Reset Css*/}
+    <ChatbotProvider>
+      <Box
+        sx={{
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          background: "linear-gradient(180deg,#FFFFFF 0%,#FAFAF5 100%)",
+        }}
+      >
+        <ScrollRestoration />
+        <CssBaseline /> {/*Reset Css*/}
 
       {isHome ? (
         <>
@@ -133,6 +135,7 @@ function App() {
         </>
       )}
     </Box>
+    </ChatbotProvider>
   );
 }
 

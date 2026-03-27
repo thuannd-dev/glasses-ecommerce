@@ -712,7 +712,13 @@ export default function ProductDetail() {
                         size="small"
                         variant="text"
                         disabled={
-                          isUpdatingVariantPreorder && preorderUpdatingVariantId === variant.id
+                          (isUpdatingVariantPreorder && preorderUpdatingVariantId === variant.id) ||
+                          (variant.quantityAvailable > 0 && !variant.isPreOrder)
+                        }
+                        title={
+                          variant.quantityAvailable > 0 && !variant.isPreOrder
+                            ? "Can only enable pre-order when stock is 0"
+                            : ""
                         }
                         onClick={async () => {
                           if (!id) return;
@@ -2582,7 +2588,18 @@ function VariantEditDialog({
                 label="Active"
               />
               <FormControlLabel
-                control={<Checkbox checked={isPreOrder} onChange={(e) => setIsPreOrder(e.target.checked)} />}
+                control={
+                  <Checkbox
+                    checked={isPreOrder}
+                    disabled={variant?.quantityAvailable > 0 && !isPreOrder}
+                    onChange={(e) => setIsPreOrder(e.target.checked)}
+                    title={
+                      variant?.quantityAvailable > 0 && !isPreOrder
+                        ? "Can only enable pre-order when stock is 0"
+                        : ""
+                    }
+                  />
+                }
                 label="Pre-order"
               />
             </Box>
