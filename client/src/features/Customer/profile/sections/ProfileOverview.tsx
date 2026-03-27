@@ -420,7 +420,12 @@ export default function ProfileOverview({ userId }: ProfileOverviewProps) {
           />
         </DialogContent>
         <DialogActions sx={{ p: 2.25, gap: 1 }}>
-          <Button onClick={handleCloseEditDisplayNameDialog} variant="outlined" sx={{ textTransform: "none", borderRadius: 1 }}>
+          <Button
+            onClick={handleCloseEditDisplayNameDialog}
+            variant="outlined"
+            disabled={isUpdatingDisplayName}
+            sx={{ textTransform: "none", borderRadius: 1 }}
+          >
             Cancel
           </Button>
           <Button onClick={() => void handleSaveDisplayName()} variant="contained" disabled={isUpdatingDisplayName} sx={{ textTransform: "none", borderRadius: 1, bgcolor: "#111111" }}>
