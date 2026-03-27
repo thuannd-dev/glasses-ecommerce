@@ -24,6 +24,15 @@ import { useProfile } from "../../../../lib/hooks/useProfile";
 import { useUpdateDisplayName } from "../../../../lib/hooks/useUpdateDisplayName";
 import { avatarImageSrcFromPhotos, resolveMainPhotoFromList } from "../../../../lib/utils/profileAvatarFromPhotos";
 
+const PROFILE_COLORS = {
+  textPrimary: "#111111",
+  textMuted: "rgba(17,17,17,0.6)",
+  borderSoft: "rgba(0,0,0,0.08)",
+  white: "#FFFFFF",
+} as const;
+const FALLBACK_DISPLAY_NAME = "Unnamed user";
+const FALLBACK_AVATAR_INITIAL = "U";
+
 interface ProfileOverviewProps {
   readonly userId?: string;
 }
@@ -43,16 +52,17 @@ function EditableInfoRow({ label, value, onEdit }: EditableInfoRowProps) {
         borderBottom: "1px solid rgba(0,0,0,0.06)",
         display: "grid",
         gap: 1,
-        gridTemplateColumns: { xs: "1fr", sm: "170px minmax(0, 1fr)" },
+        gridTemplateColumns: { xs: "1fr", sm: "220px minmax(0, 1fr)" },
       }}
     >
       <Typography
         sx={{
-          fontSize: 11,
+          fontSize: 13.5,
           textTransform: "uppercase",
-          letterSpacing: "0.14em",
-          fontWeight: 700,
-          color: "rgba(17,17,17,0.5)",
+          letterSpacing: "0.04em",
+          fontWeight: 800,
+          color: "rgba(17,17,17,0.72)",
+          lineHeight: 1.6,
         }}
       >
         {label}
@@ -113,6 +123,8 @@ export default function ProfileOverview({ userId }: ProfileOverviewProps) {
   const canAttemptRemoveAvatar = photoList.length > 0;
   const isSelfProfileView = !userId || userId === currentUser?.id;
   const emailValue = isSelfProfileView ? (currentUser?.email ?? "Not available") : "Not available";
+  const safeDisplayName = (profile?.displayName ?? "").trim() || FALLBACK_DISPLAY_NAME;
+  const avatarInitial = safeDisplayName[0]?.toUpperCase() ?? FALLBACK_AVATAR_INITIAL;
   const displayAvatarSrc = useMemo(
     () => (profile ? avatarImageSrcFromPhotos(photoList, profile.imageUrl) : undefined),
     [profile, photoList],
@@ -252,8 +264,8 @@ export default function ProfileOverview({ userId }: ProfileOverviewProps) {
         sx={{
           p: { xs: 2.25, md: 3 },
           borderRadius: 1.5,
-          borderColor: "rgba(0,0,0,0.08)",
-          bgcolor: "#FFFFFF",
+          borderColor: PROFILE_COLORS.borderSoft,
+          bgcolor: PROFILE_COLORS.white,
           boxShadow: "0 10px 35px rgba(0,0,0,0.04)",
         }}
       >
@@ -279,8 +291,8 @@ export default function ProfileOverview({ userId }: ProfileOverviewProps) {
                 opacity: 0,
               }}
             />
-            <Avatar src={displayAvatarSrc} sx={{ width: 96, height: 96, bgcolor: "#111111", fontSize: 34 }}>
-              {profile.displayName[0]?.toUpperCase()}
+            <Avatar src={displayAvatarSrc} sx={{ width: 96, height: 96, bgcolor: PROFILE_COLORS.textPrimary, fontSize: 34 }}>
+              {avatarInitial}
             </Avatar>
             <IconButton
               id="profile-photo-menu-button"
@@ -298,15 +310,15 @@ export default function ProfileOverview({ userId }: ProfileOverviewProps) {
                 bottom: 0,
                 width: 30,
                 height: 30,
-                bgcolor: "#FFFFFF",
+                bgcolor: PROFILE_COLORS.white,
                 border: "1px solid rgba(0,0,0,0.16)",
                 borderRadius: 1,
-                color: "#111111",
+                color: PROFILE_COLORS.textPrimary,
                 boxShadow: "0 6px 16px rgba(0,0,0,0.12)",
                 "&:hover": { bgcolor: "#F7F7F5" },
               }}
             >
-              {galleryBusy ? <CircularProgress size={14} sx={{ color: "#111111" }} /> : <EditIcon sx={{ fontSize: 15 }} />}
+              {galleryBusy ? <CircularProgress size={14} sx={{ color: PROFILE_COLORS.textPrimary }} /> : <EditIcon sx={{ fontSize: 15 }} />}
             </IconButton>
             <Menu
               id="profile-photo-menu"
@@ -325,8 +337,8 @@ export default function ProfileOverview({ userId }: ProfileOverviewProps) {
           </Box>
 
           <Box sx={{ minWidth: 0 }}>
-            <Typography sx={{ fontSize: { xs: 26, md: 30 }, fontWeight: 700, letterSpacing: "-0.01em", color: "#111111" }}>
-              {profile.displayName}
+            <Typography sx={{ fontSize: { xs: 26, md: 30 }, fontWeight: 700, letterSpacing: "-0.01em", color: PROFILE_COLORS.textPrimary }}>
+              {safeDisplayName}
             </Typography>
             <Typography sx={{ mt: 0.5, fontSize: 13, letterSpacing: "0.06em", textTransform: "uppercase", color: "rgba(17,17,17,0.56)" }}>
               Personal account
@@ -339,23 +351,23 @@ export default function ProfileOverview({ userId }: ProfileOverviewProps) {
         variant="outlined"
         sx={{
           borderRadius: 1.5,
-          borderColor: "rgba(0,0,0,0.08)",
-          bgcolor: "#FFFFFF",
+          borderColor: PROFILE_COLORS.borderSoft,
+          bgcolor: PROFILE_COLORS.white,
           overflow: "hidden",
           boxShadow: "0 10px 35px rgba(0,0,0,0.03)",
         }}
       >
         <Box sx={{ px: { xs: 1.5, md: 2 }, pt: 2 }}>
-          <Typography sx={{ fontSize: 17, fontWeight: 700, letterSpacing: "-0.01em", color: "#111111" }}>
+          <Typography sx={{ fontSize: 17, fontWeight: 700, letterSpacing: "-0.01em", color: PROFILE_COLORS.textPrimary }}>
             Account Information
           </Typography>
-          <Typography sx={{ mt: 0.5, mb: 1.5, fontSize: 13.5, color: "rgba(17,17,17,0.6)" }}>
+          <Typography sx={{ mt: 0.5, mb: 1.5, fontSize: 13.5, color: PROFILE_COLORS.textMuted }}>
             Keep your personal details up to date.
           </Typography>
         </Box>
         <Divider />
         <EditableInfoRow label="User ID" value={profile.id} />
-        <EditableInfoRow label="Display Name" value={profile.displayName} onEdit={handleOpenEditDisplayNameDialog} />
+        <EditableInfoRow label="Display Name" value={safeDisplayName} onEdit={handleOpenEditDisplayNameDialog} />
         <EditableInfoRow label="Email" value={emailValue} />
         <Box sx={{ py: 2.2, px: { xs: 1.5, md: 2 } }}>
           <Typography
@@ -382,7 +394,7 @@ export default function ProfileOverview({ userId }: ProfileOverviewProps) {
           if (!isRemovingAvatar) setRemoveAvatarDialogOpen(false);
         }}
       >
-        <DialogTitle sx={{ fontWeight: 700, color: "#111111" }}>Remove profile photo?</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 700, color: PROFILE_COLORS.textPrimary }}>Remove profile photo?</DialogTitle>
         <DialogContent>
           <Typography sx={{ color: "rgba(17,17,17,0.68)" }}>
             This removes your current avatar from your gallery.
@@ -404,7 +416,7 @@ export default function ProfileOverview({ userId }: ProfileOverviewProps) {
             disabled={isRemovingAvatar}
             sx={{ textTransform: "none", borderRadius: 1 }}
           >
-            {isRemovingAvatar ? <CircularProgress size={18} sx={{ color: "#FFFFFF" }} /> : "Remove"}
+            {isRemovingAvatar ? <CircularProgress size={18} sx={{ color: PROFILE_COLORS.white }} /> : "Remove"}
           </Button>
         </DialogActions>
       </Dialog>
@@ -417,7 +429,7 @@ export default function ProfileOverview({ userId }: ProfileOverviewProps) {
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle sx={{ fontWeight: 700, color: "#111111" }}>Edit display name</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 700, color: PROFILE_COLORS.textPrimary }}>Edit display name</DialogTitle>
         <DialogContent sx={{ pt: 1.5 }}>
           <TextField
             fullWidth
@@ -437,8 +449,8 @@ export default function ProfileOverview({ userId }: ProfileOverviewProps) {
           >
             Cancel
           </Button>
-          <Button onClick={() => void handleSaveDisplayName()} variant="contained" disabled={isUpdatingDisplayName} sx={{ textTransform: "none", borderRadius: 1, bgcolor: "#111111" }}>
-            {isUpdatingDisplayName ? <CircularProgress size={20} sx={{ color: "#FFFFFF" }} /> : "Save changes"}
+          <Button onClick={() => void handleSaveDisplayName()} variant="contained" disabled={isUpdatingDisplayName} sx={{ textTransform: "none", borderRadius: 1, bgcolor: PROFILE_COLORS.textPrimary }}>
+            {isUpdatingDisplayName ? <CircularProgress size={20} sx={{ color: PROFILE_COLORS.white }} /> : "Save changes"}
           </Button>
         </DialogActions>
       </Dialog>
