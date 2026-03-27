@@ -114,13 +114,15 @@ public sealed class CancelMyOrder
                             stock.UpdatedBy = userId;
 
                             // Auto-disable pre-order if stock is now available (QuantityOnHand > 0)
+                            // Defensive: disable pre-order if variant is marked as such but physical stock exists.
+                            // This catches inconsistent state where Inbound should have already flipped the flag.
                             if (variantById.TryGetValue(item.ProductVariantId, out ProductVariant? variant) &&
                                 variant.IsPreOrder && stock.QuantityOnHand > 0)
                             {
                                 variant.IsPreOrder = false;
                             }
                         }
-                    }
+                    }   
                 }
 
                 order.OrderStatus = OrderStatus.Cancelled;

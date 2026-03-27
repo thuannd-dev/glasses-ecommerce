@@ -31,7 +31,7 @@ public sealed class GetStaffTicketDetail
                 .ThenInclude(oi => oi.ProductVariant)
                 .ThenInclude(pv => pv.Product)
                 .ThenInclude(p => p.Images)
-                .Include(t => t.OrderItem)
+                .Include(t => t.OrderItem!)
                 .ThenInclude(oi => oi.ProductVariant)
                 .ThenInclude(pv => pv.Product)
                 .ThenInclude(p => p.Images)

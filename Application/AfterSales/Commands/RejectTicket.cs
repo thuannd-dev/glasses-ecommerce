@@ -57,7 +57,7 @@ public sealed class RejectTicket
                 .ThenInclude(oi => oi.ProductVariant)
                 .ThenInclude(pv => pv.Product)
                 .ThenInclude(p => p.Images)
-                .Include(t => t.OrderItem)
+                .Include(t => t.OrderItem!)
                 .ThenInclude(oi => oi.ProductVariant)
                 .ThenInclude(pv => pv.Product)
                 .ThenInclude(p => p.Images)
