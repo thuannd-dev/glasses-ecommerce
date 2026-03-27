@@ -23,6 +23,9 @@ export function ProductCard({ p }: { p: Product }) {
             <CardActionArea
                 component={NavLink}
                 to={`/product/${p.id}`}
+                onClick={() => {
+                    window.scrollTo({ top: 0, behavior: "auto" });
+                }}
                 sx={{
                     display: "flex",
                     flexDirection: "column",

@@ -3,6 +3,7 @@ import {
   Box,
   Button,
   CircularProgress,
+  Paper,
   TextField,
   Typography,
   Alert,
@@ -89,11 +90,20 @@ export default function SecuritySection() {
   };
 
   return (
-    <Box sx={{ mt: 1 }}>
-      <Typography fontWeight={900} fontSize={22} mb={2}>
+    <Paper
+      variant="outlined"
+      sx={{
+        p: { xs: 2.25, md: 3 },
+        borderRadius: 1.5,
+        borderColor: "rgba(0,0,0,0.08)",
+        bgcolor: "#FFFFFF",
+        boxShadow: "0 10px 35px rgba(0,0,0,0.03)",
+      }}
+    >
+      <Typography sx={{ fontWeight: 700, fontSize: 26, color: "#111111", letterSpacing: "-0.01em" }}>
         Security
       </Typography>
-      <Typography color="rgba(15,23,42,0.65)" mb={3}>
+      <Typography sx={{ color: "rgba(17,17,17,0.62)", mt: 0.75, mb: 3 }}>
         Change your password to keep your account secure.
       </Typography>
 
@@ -109,7 +119,7 @@ export default function SecuritySection() {
         </Alert>
       )}
 
-      <Box sx={{ display: "grid", gap: 2, maxWidth: 500 }}>
+      <Box sx={{ display: "grid", gap: 2, maxWidth: 560 }}>
         <TextField
           label="Current Password"
           type={showCurrentPassword ? "text" : "password"}
@@ -190,14 +200,20 @@ export default function SecuritySection() {
           sx={{
             mt: 1,
             textTransform: "none",
-            fontWeight: 700,
+            fontWeight: 600,
             alignSelf: "flex-start",
+            bgcolor: "#111111",
+            borderRadius: 1,
+            px: 2.2,
+            "&:hover": {
+              bgcolor: "#000000",
+            },
           }}
         >
           {isLoading ? <CircularProgress size={20} sx={{ mr: 1 }} /> : null}
           {isLoading ? "Changing Password..." : "Change Password"}
         </Button>
       </Box>
-    </Box>
+    </Paper>
   );
 }

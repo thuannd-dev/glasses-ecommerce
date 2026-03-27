@@ -1,4 +1,4 @@
-import { Box, List, ListItem, ListItemButton, ListItemText } from "@mui/material";
+import { Box, List, ListItemButton, ListItemText, Paper, Stack, Typography } from "@mui/material";
 
 export type ProfileSectionType = "overview" | "security" | "addresses";
 
@@ -31,7 +31,6 @@ export default function ProfileLayout({
   onSectionChange,
   children,
 }: ProfileLayoutProps) {
-
   const handleMenuItemClick = (section: ProfileSectionType) => {
     onSectionChange(section);
   };
@@ -39,59 +38,66 @@ export default function ProfileLayout({
   return (
     <Box
       sx={{
-        maxWidth: 1200,
+        maxWidth: 1240,
         mx: "auto",
-        mt: 10,
-        px: { xs: 2, md: 3 },
-        pb: 8,
-        display: "flex",
-        gap: 3,
-        flexDirection: { xs: "column", md: "row" },
+        mt: { xs: 9, md: 11 },
+        px: { xs: 2, md: 4 },
+        pb: { xs: 7, md: 10 },
       }}
     >
-      {/* Sidebar Menu */}
-      <Box
+      <Stack
         sx={{
-          width: { xs: "100%", md: 240 },
-          flexShrink: 0,
-          height: "fit-content",
-          mt: activeSection === "overview" ? { xs: 0, md: 0 }
-          : activeSection === "security" ? { xs: 0, md: 1 }
-          : { xs: 0, md: 1 }, // addresses
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", md: "248px minmax(0, 1fr)" },
+          gap: { xs: 2, md: 3 },
         }}
       >
-        <List
+        <Paper
+          variant="outlined"
           sx={{
-            bgcolor: "background.paper",
-            borderRadius: 1,
-            border: "1px solid rgba(15,23,42,0.08)",
+            p: { xs: 1, md: 1.25 },
+            borderRadius: 1.5,
+            borderColor: "rgba(0,0,0,0.08)",
+            bgcolor: "#FCFCFB",
             overflow: "hidden",
+            height: "fit-content",
+            position: { md: "sticky" },
+            top: { md: 88 },
           }}
         >
-          {MENU_ITEMS.map((item) => (
-            <ListItem
-              key={item.id}
-              disablePadding
-              sx={{
-                borderBottom: "1px solid rgba(15,23,42,0.08)",
-                "&:last-child": {
-                  borderBottom: "none",
-                },
-              }}
-            >
+          <Typography
+            sx={{
+              px: 1.5,
+              pt: 0.75,
+              pb: 1.25,
+              fontSize: 11,
+              letterSpacing: "0.18em",
+              textTransform: "uppercase",
+              color: "rgba(17,17,17,0.52)",
+              fontWeight: 700,
+            }}
+          >
+            Account
+          </Typography>
+          <List disablePadding sx={{ display: "grid", gap: 0.5 }}>
+            {MENU_ITEMS.map((item) => (
               <ListItemButton
+                key={item.id}
                 onClick={() => handleMenuItemClick(item.value)}
                 selected={activeSection === item.value}
                 sx={{
-                  py: 1.5,
-                  px: 2,
+                  minHeight: 46,
+                  borderRadius: 1,
+                  px: 1.75,
+                  borderLeft: "1px solid transparent",
+                  transition: "background-color 180ms ease, border-color 180ms ease",
                   "&.Mui-selected": {
-                    bgcolor: "rgba(79, 70, 229, 0.08)",
-                    borderLeft: "3px solid #4F46E5",
-                    pl: "calc(2 - 3px)",
+                    bgcolor: "rgba(17,17,17,0.06)",
+                    borderLeftColor: "#111111",
                   },
+                  "&.Mui-selected:hover": { bgcolor: "rgba(17,17,17,0.08)" },
                   "&:hover": {
-                    bgcolor: "rgba(15,23,42,0.04)",
+                    bgcolor: "rgba(17,17,17,0.04)",
                   },
                 }}
               >
@@ -101,28 +107,20 @@ export default function ProfileLayout({
                     primary: {
                       sx: {
                         fontWeight: activeSection === item.value ? 700 : 600,
-                        fontSize: 14,
-                        color:
-                          activeSection === item.value ? "#4F46E5" : "rgba(15,23,42,0.8)",
+                        fontSize: 14.2,
+                        letterSpacing: "0.01em",
+                        color: activeSection === item.value ? "#111111" : "rgba(17,17,17,0.74)",
                       },
                     },
                   }}
                 />
               </ListItemButton>
-            </ListItem>
-          ))}
-        </List>
-      </Box>
+            ))}
+          </List>
+        </Paper>
 
-      {/* Content Area */}
-      <Box
-        sx={{
-          flex: 1,
-          minWidth: 0,
-        }}
-      >
-        {children}
-      </Box>
+        <Box sx={{ minWidth: 0 }}>{children}</Box>
+      </Stack>
     </Box>
   );
 }

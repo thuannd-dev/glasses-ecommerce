@@ -1,22 +1,34 @@
 import { Box, Container, CssBaseline } from "@mui/material";
 import NavBar from "./NavBar";
 import DashboardLayout from "./DashboardLayout";
-import { Outlet, ScrollRestoration, useLocation } from "react-router";
+import { Outlet, useLocation, useNavigationType } from "react-router";
 import CollectionLandingPage from "../../features/collections/CollectionLandingPage";
 import Footer from "./Footer";
 import ScrollToTopButton from "../components/ScrollToTopButton";
 import ChatbotWidget from "../../features/chatbot/ChatbotWidget";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import agent from "../../lib/api/agent";
 import { ChatbotProvider } from "../../features/chatbot/ChatbotContext";
 
+const CHATBOT_TOGGLE_COOLDOWN_MS = 10 * 60 * 1000;
+
 function App() {
   const location = useLocation();
+  const navigationType = useNavigationType();
   const [isChatbotEnabled, setIsChatbotEnabled] = useState(true);
+  const lastChatbotToggleCheckRef = useRef(0);
+  const checkingChatbotToggleRef = useRef(false);
 
-  // Check feature toggle for chatbot on mount and when returning to app
+  // Check chatbot toggle on mount + when tab becomes visible (with cooldown).
   useEffect(() => {
-    const checkChatbotToggle = async () => {
+    const checkChatbotToggle = async (force = false) => {
+      if (checkingChatbotToggleRef.current) return;
+      const now = Date.now();
+      if (!force && now - lastChatbotToggleCheckRef.current < CHATBOT_TOGGLE_COOLDOWN_MS) {
+        return;
+      }
+
+      checkingChatbotToggleRef.current = true;
       try {
         const response = await agent.get<boolean>(
           "/feature-toggles/check/Chatbot"
@@ -24,24 +36,23 @@ function App() {
         setIsChatbotEnabled(response.data);
       } catch {
         setIsChatbotEnabled(true); // Fail-open: show feature by default
+      } finally {
+        lastChatbotToggleCheckRef.current = now;
+        checkingChatbotToggleRef.current = false;
       }
     };
 
-    checkChatbotToggle();
-
-    // Re-check feature toggle every 30 seconds while app is active
-    const interval = setInterval(checkChatbotToggle, 30000);
+    void checkChatbotToggle(true);
 
     // Also check when window regains focus (user returns from other app/tab)
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        checkChatbotToggle();
+        void checkChatbotToggle();
       }
     };
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
-      clearInterval(interval);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, []);
@@ -54,6 +65,24 @@ function App() {
 
   const [navCollapsed, setNavCollapsed] = useState(false);
   const lastScrollYRef = useRef(0);
+
+  useLayoutEffect(() => {
+    // Preserve browser/native history restoration for Back/Forward.
+    if (navigationType === "POP") return;
+    const forceScrollTop = () => {
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    };
+
+    forceScrollTop();
+    const raf = window.requestAnimationFrame(forceScrollTop);
+    const timer = window.setTimeout(forceScrollTop, 60);
+    return () => {
+      window.cancelAnimationFrame(raf);
+      window.clearTimeout(timer);
+    };
+  }, [location.pathname, navigationType]);
 
   useEffect(() => {
     if (isDashboard) {
@@ -102,39 +131,38 @@ function App() {
           background: "linear-gradient(180deg,#FFFFFF 0%,#FAFAF5 100%)",
         }}
       >
-        <ScrollRestoration />
         <CssBaseline /> {/*Reset Css*/}
 
-      {isHome ? (
-        <>
-          <NavBar appearance="hero" collapsed={navCollapsed} />
-          <Box component="main" sx={{ flex: 1 }}>
-            <CollectionLandingPage />
-          </Box>
-          <Box sx={{ mt: "auto" }}>
-            <Footer />
-          </Box>
-          <ScrollToTopButton />
-          {isChatbotEnabled && <ChatbotWidget />}
-        </>
-      ) : isDashboard ? (
-        <DashboardLayout />
-      ) : (
-        <>
-          <NavBar collapsed={navCollapsed} />
-          <Box component="main" sx={{ flex: 1 }}>
-            <Container maxWidth="xl" sx={{ mt: isCollectionsPage ? 0 : 3 }}>
-              <Outlet />
-            </Container>
-          </Box>
-          <Box sx={{ mt: "auto" }}>
-            <Footer />
-          </Box>
-          <ScrollToTopButton />
-          {isChatbotEnabled && <ChatbotWidget />}
-        </>
-      )}
-    </Box>
+        {isHome ? (
+          <>
+            <NavBar appearance="hero" collapsed={navCollapsed} />
+            <Box component="main" sx={{ flex: 1 }}>
+              <CollectionLandingPage />
+            </Box>
+            <Box sx={{ mt: "auto" }}>
+              <Footer />
+            </Box>
+            <ScrollToTopButton />
+            {isChatbotEnabled && <ChatbotWidget />}
+          </>
+        ) : isDashboard ? (
+          <DashboardLayout />
+        ) : (
+          <>
+            <NavBar collapsed={navCollapsed} />
+            <Box component="main" sx={{ flex: 1 }}>
+              <Container maxWidth="xl" sx={{ mt: isCollectionsPage ? 0 : 3 }}>
+                <Outlet />
+              </Container>
+            </Box>
+            <Box sx={{ mt: "auto" }}>
+              <Footer />
+            </Box>
+            <ScrollToTopButton />
+            {isChatbotEnabled && <ChatbotWidget />}
+          </>
+        )}
+      </Box>
     </ChatbotProvider>
   );
 }

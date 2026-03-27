@@ -119,7 +119,10 @@ export default function ItemTopSeller() {
           role="button"
           tabIndex={0}
           onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") navigate(`/product/${product.id}`);
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              navigate(`/product/${product.id}`);
+            }
           }}
           sx={{
             flex: 1,
@@ -376,7 +379,10 @@ export default function ItemTopSeller() {
             role="button"
             tabIndex={0}
             onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") navigate("/collections/all");
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                navigate("/collections/all");
+              }
             }}
             sx={{
               position: "absolute",

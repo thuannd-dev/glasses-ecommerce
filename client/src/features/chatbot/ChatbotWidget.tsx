@@ -68,6 +68,12 @@ export default function ChatbotWidget() {
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messageSeqRef = useRef(0);
+
+  const nextMessageId = useCallback((prefix: "u" | "a") => {
+    messageSeqRef.current += 1;
+    return `${prefix}-${Date.now()}-${messageSeqRef.current}`;
+  }, []);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -81,7 +87,7 @@ export default function ChatbotWidget() {
     if (!text.trim() || isTyping) return;
 
     const newUserMsg: Message = {
-      id: Date.now().toString(),
+      id: nextMessageId("u"),
       text,
       sender: "user",
     };
@@ -94,7 +100,7 @@ export default function ChatbotWidget() {
       const aiResponse: ChatbotResponse = await getAIResponse(text);
 
       const newAiMsg: Message = {
-        id: (Date.now() + 1).toString(),
+        id: nextMessageId("a"),
         text: aiResponse.message,
         sender: "ai",
         products:
@@ -104,7 +110,7 @@ export default function ChatbotWidget() {
     } catch (error) {
       console.error("AI response error:", error);
       const errorMsg: Message = {
-        id: (Date.now() + 1).toString(),
+        id: nextMessageId("a"),
         text: "I'm sorry, something went wrong. Please try again in a moment.",
         sender: "ai",
       };

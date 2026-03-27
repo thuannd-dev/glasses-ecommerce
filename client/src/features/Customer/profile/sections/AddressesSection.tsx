@@ -1,10 +1,11 @@
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Box,
   Button,
   Card,
   CardContent,
   CircularProgress,
+  Paper,
   Dialog,
   DialogActions,
   DialogContent,
@@ -12,6 +13,7 @@ import {
   Typography,
   Alert,
   TextField,
+  MenuItem,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
@@ -20,6 +22,17 @@ import { toast } from "react-toastify";
 import { useAddresses, useCreateAddress, useUpdateAddress, useDeleteAddress, useSetDefaultAddress } from "../../../../lib/hooks/useAddresses";
 import type { AddressDto, CreateAddressPayload } from "../../../../lib/types/address";
 import AddressAutocomplete from "../../../../app/shared/components/AddressAutocomplete";
+import {
+  fetchGhnDistricts,
+  fetchGhnProvinces,
+  fetchGhnWards,
+  findDistrictByName,
+  findProvinceByName,
+  findWardByName,
+  type GhnDistrict,
+  type GhnProvince,
+  type GhnWard,
+} from "../../../../lib/utils/ghnAddress";
 
 interface AddressFormState {
   recipientName: string;
@@ -28,9 +41,23 @@ interface AddressFormState {
   ward: string;
   district: string;
   province: string;
+  provinceId?: number | null;
+  districtId?: number | null;
+  wardCode?: string | null;
   postalCode: string;
   latitude?: number;
   longitude?: number;
+}
+
+const HIDDEN_PROVINCE_EXACT = new Set(["Hà Nội 02"]);
+const HIDDEN_PROVINCE_KEYWORDS = ["testalerttinh001"];
+
+function normalizeProvinceName(name: string): string {
+  return String(name ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]/g, "");
 }
 
 const INITIAL_FORM_STATE: AddressFormState = {
@@ -55,9 +82,44 @@ export default function AddressesSection() {
   const [formData, setFormData] = useState<AddressFormState>(INITIAL_FORM_STATE);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [provinces, setProvinces] = useState<GhnProvince[]>([]);
+  const [districts, setDistricts] = useState<GhnDistrict[]>([]);
+  const [wards, setWards] = useState<GhnWard[]>([]);
+  const [loadingProvinces, setLoadingProvinces] = useState(false);
+  const [loadingDistricts, setLoadingDistricts] = useState(false);
+  const [loadingWards, setLoadingWards] = useState(false);
+  const [provinceLoadError, setProvinceLoadError] = useState<string | null>(null);
+  const [districtLoadError, setDistrictLoadError] = useState<string | null>(null);
+  const [wardLoadError, setWardLoadError] = useState<string | null>(null);
 
   const addressList = useMemo(() => (Array.isArray(addresses) ? addresses : []), [addresses]);
+  const visibleProvinces = useMemo(
+    () =>
+      provinces.filter((p) => {
+        if (HIDDEN_PROVINCE_EXACT.has(p.ProvinceName)) return false;
+        const normalized = normalizeProvinceName(p.ProvinceName);
+        return !HIDDEN_PROVINCE_KEYWORDS.some((k) => normalized.includes(k));
+      }),
+    [provinces],
+  );
+  const hasUnresolvedGhnSelection = useMemo(() => {
+    const hasProvinceText = formData.province.trim().length > 0;
+    const hasDistrictText = formData.district.trim().length > 0;
+    const hasWardText = formData.ward.trim().length > 0;
+    if (!hasProvinceText && !hasDistrictText && !hasWardText) return false;
+    return (
+      (!formData.provinceId && hasProvinceText) ||
+      (!formData.districtId && hasDistrictText) ||
+      (!formData.wardCode && hasWardText)
+    );
+  }, [formData.province, formData.provinceId, formData.district, formData.districtId, formData.ward, formData.wardCode]);
   const isLoading_all = isLoading || isCreating || isUpdating || isDeleting || isSetting;
+  const actionBtnSx = {
+    textTransform: "none",
+    fontWeight: 600,
+    borderRadius: 1,
+    minWidth: 88,
+  } as const;
 
   const handleOpenCreateForm = () => {
     setEditingId(null);
@@ -74,6 +136,9 @@ export default function AddressesSection() {
       ward: address.ward,
       district: address.district,
       province: address.province,
+      provinceId: address.provinceId ?? null,
+      districtId: address.districtId ?? null,
+      wardCode: address.wardCode ?? null,
       postalCode: address.postalCode || "",
       latitude: address.latitude ?? undefined,
       longitude: address.longitude ?? undefined,
@@ -100,6 +165,10 @@ export default function AddressesSection() {
       toast.error("Please fill in all required fields.");
       return;
     }
+    if (!formData.provinceId || !formData.districtId || !formData.wardCode) {
+      toast.error("Please select province, district, and ward from the dropdowns to confirm shipping area.");
+      return;
+    }
 
     try {
       const payload: CreateAddressPayload = {
@@ -109,6 +178,9 @@ export default function AddressesSection() {
         ward: formData.ward,
         district: formData.district,
         province: formData.province,
+        provinceId: formData.provinceId ?? null,
+        districtId: formData.districtId ?? null,
+        wardCode: formData.wardCode ?? null,
         postalCode: formData.postalCode || null,
         latitude: formData.latitude,
         longitude: formData.longitude,
@@ -158,6 +230,127 @@ export default function AddressesSection() {
     }
   };
 
+  useEffect(() => {
+    let active = true;
+    const loadProvinces = async () => {
+      try {
+        setLoadingProvinces(true);
+        setProvinceLoadError(null);
+        const data = await fetchGhnProvinces();
+        if (!active) return;
+        setProvinces(data);
+      } catch (err) {
+        if (!active) return;
+        setProvinces([]);
+        setProvinceLoadError(
+          err instanceof Error ? err.message : "Failed to load provinces. Please try again.",
+        );
+      } finally {
+        if (active) setLoadingProvinces(false);
+      }
+    };
+    void loadProvinces();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const province = findProvinceByName(provinces, formData.province);
+    const nextProvinceId = province?.ProvinceID ?? null;
+    setFormData((prev) =>
+      nextProvinceId === (prev.provinceId ?? null) ? prev : { ...prev, provinceId: nextProvinceId },
+    );
+  }, [provinces, formData.province]);
+
+  useEffect(() => {
+    let active = true;
+    const provinceId = formData.provinceId ?? null;
+    if (!provinceId) {
+      setDistricts([]);
+      setWards([]);
+      setDistrictLoadError(null);
+      setWardLoadError(null);
+      setFormData((prev) => ({
+        ...prev,
+        district: "",
+        ward: "",
+        districtId: null,
+        wardCode: null,
+      }));
+      return;
+    }
+    const loadDistricts = async () => {
+      try {
+        setLoadingDistricts(true);
+        setDistrictLoadError(null);
+        const data = await fetchGhnDistricts(provinceId);
+        if (!active) return;
+        setDistricts(data);
+      } catch (err) {
+        if (!active) return;
+        setDistricts([]);
+        setDistrictLoadError(
+          err instanceof Error ? err.message : "Failed to load districts. Please try again.",
+        );
+      } finally {
+        if (active) setLoadingDistricts(false);
+      }
+    };
+    void loadDistricts();
+    return () => {
+      active = false;
+    };
+  }, [formData.provinceId]);
+
+  useEffect(() => {
+    const district = findDistrictByName(districts, formData.district);
+    const nextDistrictId = district?.DistrictID ?? null;
+    setFormData((prev) =>
+      nextDistrictId === (prev.districtId ?? null) ? prev : { ...prev, districtId: nextDistrictId },
+    );
+  }, [districts, formData.district]);
+
+  useEffect(() => {
+    let active = true;
+    const districtId = formData.districtId ?? null;
+    if (!districtId) {
+      setWards([]);
+      setWardLoadError(null);
+      setFormData((prev) => ({ ...prev, ward: "", wardCode: null }));
+      return;
+    }
+    const loadWards = async () => {
+      try {
+        setLoadingWards(true);
+        setWardLoadError(null);
+        const data = await fetchGhnWards(districtId);
+        if (!active) return;
+        setWards(data);
+      } catch (err) {
+        if (!active) return;
+        setWards([]);
+        setWardLoadError(
+          err instanceof Error ? err.message : "Failed to load wards. Please try again.",
+        );
+      } finally {
+        if (active) setLoadingWards(false);
+      }
+    };
+    void loadWards();
+    return () => {
+      active = false;
+    };
+  }, [formData.districtId]);
+
+  useEffect(() => {
+    const ward = findWardByName(wards, formData.ward);
+    const nextWardCode = ward?.WardCode ?? null;
+    setFormData((prev) =>
+      nextWardCode === (prev.wardCode ?? null) ? prev : { ...prev, wardCode: nextWardCode },
+    );
+  }, [wards, formData.ward]);
+
   if (isError) {
     return (
       <Box>
@@ -172,7 +365,16 @@ export default function AddressesSection() {
   }
 
   return (
-    <Box sx={{ mt: 1 }}>
+    <Paper
+      variant="outlined"
+      sx={{
+        p: { xs: 2.25, md: 3 },
+        borderRadius: 1.5,
+        borderColor: "rgba(0,0,0,0.08)",
+        bgcolor: "#FFFFFF",
+        boxShadow: "0 10px 35px rgba(0,0,0,0.03)",
+      }}
+    >
       <Box
         sx={{
           display: "flex",
@@ -183,10 +385,10 @@ export default function AddressesSection() {
         }}
       >
         <Box>
-          <Typography fontWeight={900} fontSize={22}>
+          <Typography sx={{ fontWeight: 700, fontSize: 26, color: "#111111", letterSpacing: "-0.01em" }}>
             Your Address
           </Typography>
-          <Typography color="rgba(15,23,42,0.65)" fontSize={14}>
+          <Typography sx={{ color: "rgba(17,17,17,0.62)", fontSize: 14 }}>
             Manage your delivery addresses
           </Typography>
         </Box>
@@ -194,7 +396,15 @@ export default function AddressesSection() {
           variant="contained"
           onClick={handleOpenCreateForm}
           disabled={isLoading_all}
-          sx={{ whiteSpace: "nowrap", flexShrink: 0 }}
+          sx={{
+            whiteSpace: "nowrap",
+            flexShrink: 0,
+            textTransform: "none",
+            borderRadius: 1,
+            fontWeight: 600,
+            bgcolor: "#111111",
+            "&:hover": { bgcolor: "#000000" },
+          }}
         >
           Add Address
         </Button>
@@ -216,8 +426,10 @@ export default function AddressesSection() {
             <Card
               key={address.id}
               sx={{
-                border: address.isDefault ? "2px solid #4F46E5" : "1px solid rgba(15,23,42,0.08)",
+                border: address.isDefault ? "1px solid rgba(17,17,17,0.4)" : "1px solid rgba(0,0,0,0.08)",
                 position: "relative",
+                borderRadius: 1.25,
+                boxShadow: "none",
               }}
             >
             {address.isDefault && (
@@ -229,14 +441,14 @@ export default function AddressesSection() {
                   display: "flex",
                   alignItems: "center",
                   gap: 0.5,
-                  bgcolor: "rgba(79, 70, 229, 0.08)",
+                  bgcolor: "rgba(17,17,17,0.08)",
                   px: 1,
                   py: 0.5,
                   borderRadius: 1,
                 }}
               >
-                <CheckCircleIcon sx={{ fontSize: 16, color: "#4F46E5" }} />
-                <Typography fontSize={12} fontWeight={700} color="#4F46E5">
+                <CheckCircleIcon sx={{ fontSize: 16, color: "#111111" }} />
+                <Typography fontSize={12} fontWeight={700} color="#111111">
                   Default
                 </Typography>
               </Box>
@@ -260,6 +472,7 @@ export default function AddressesSection() {
                   startIcon={<EditIcon />}
                   onClick={() => handleOpenEditForm(address)}
                   disabled={isLoading_all}
+                  sx={actionBtnSx}
                 >
                   Edit
                 </Button>
@@ -269,7 +482,15 @@ export default function AddressesSection() {
                   onClick={() => handleDeleteClick(address.id)}
                   disabled={isLoading_all}
                   startIcon={<DeleteIcon />}
-                  sx={{ color: "error.main", borderColor: "error.main" }}
+                  sx={{
+                    ...actionBtnSx,
+                    color: "error.main",
+                    borderColor: "rgba(211,47,47,0.6)",
+                    "&:hover": {
+                      borderColor: "error.main",
+                      bgcolor: "rgba(211,47,47,0.04)",
+                    },
+                  }}
                 >
                   Delete
                 </Button>
@@ -313,58 +534,145 @@ export default function AddressesSection() {
               disabled={isLoading_all}
             />
 
-            {/* Ward, District, City - 3 column layout */}
-            <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 2 }}>
+            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr 1fr" }, gap: 2 }}>
               <TextField
-                label="Ward"
-                value={formData.ward}
-                onChange={(e) => setFormData({ ...formData, ward: e.target.value })}
-                fullWidth
-                disabled={isLoading_all}
-              />
-              <TextField
-                label="District"
-                value={formData.district}
-                onChange={(e) => setFormData({ ...formData, district: e.target.value })}
-                fullWidth
-                disabled={isLoading_all}
-              />
-              <TextField
+                select
                 label="Province"
-                value={formData.province}
-                onChange={(e) => setFormData({ ...formData, province: e.target.value })}
-                fullWidth
-                disabled={isLoading_all}
-              />
-            </Box>
-
-            <TextField
-              label="Street / Venue"
-              value={formData.venue}
-              onChange={(e) => setFormData({ ...formData, venue: e.target.value })}
-              fullWidth
-              disabled={isLoading_all}
-            />
-
-            <Box sx={{ mt: -1, mb: 1 }}>
-              <AddressAutocomplete
-                value={formData.venue}
-                onChange={(value: string) => setFormData({ ...formData, venue: value })}
-                onSelectAddress={(address) =>
+                value={formData.provinceId ?? ""}
+                onChange={(e) => {
+                  const provinceId = Number(e.target.value);
+                  const province = provinces.find((p) => p.ProvinceID === provinceId);
                   setFormData((prev) => ({
                     ...prev,
-                    venue: address.venue,
-                    ward: address.ward,
-                    district: address.district,
-                    province: address.city,
-                    postalCode: address.postalCode || "",
-                  }))
-                }
-                label="Search for address"
-                placeholder="Search address..."
+                    province: province?.ProvinceName ?? "",
+                    provinceId: provinceId || null,
+                    district: "",
+                    ward: "",
+                    districtId: null,
+                    wardCode: null,
+                  }));
+                }}
                 fullWidth
-              />
+                disabled={isLoading_all || loadingProvinces}
+                placeholder="Select province"
+                error={Boolean(provinceLoadError)}
+                helperText={provinceLoadError ?? undefined}
+                SelectProps={{
+                  MenuProps: {
+                    PaperProps: {
+                      sx: {
+                        maxHeight: 360,
+                        scrollbarWidth: "none",
+                        "&::-webkit-scrollbar": { display: "none" },
+                      },
+                    },
+                  },
+                }}
+              >
+                {visibleProvinces.map((p) => (
+                  <MenuItem key={`province-${p.ProvinceID}`} value={p.ProvinceID}>
+                    {p.ProvinceName}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <TextField
+                select
+                label="District"
+                value={formData.districtId ?? ""}
+                onChange={(e) => {
+                  const districtId = Number(e.target.value);
+                  const district = districts.find((d) => d.DistrictID === districtId);
+                  setFormData((prev) => ({
+                    ...prev,
+                    district: district?.DistrictName ?? "",
+                    districtId: districtId || null,
+                    ward: "",
+                    wardCode: null,
+                  }));
+                }}
+                fullWidth
+                disabled={isLoading_all || !formData.provinceId || loadingDistricts}
+                placeholder="Select district"
+                error={Boolean(districtLoadError)}
+                helperText={districtLoadError ?? undefined}
+                SelectProps={{
+                  MenuProps: {
+                    PaperProps: {
+                      sx: {
+                        maxHeight: 360,
+                        scrollbarWidth: "none",
+                        "&::-webkit-scrollbar": { display: "none" },
+                      },
+                    },
+                  },
+                }}
+              >
+                {districts.map((d) => (
+                  <MenuItem key={`district-${d.DistrictID}`} value={d.DistrictID}>
+                    {d.DistrictName}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <TextField
+                select
+                label="Ward"
+                value={formData.wardCode ?? ""}
+                onChange={(e) => {
+                  const wardCode = String(e.target.value);
+                  const ward = wards.find((w) => w.WardCode === wardCode);
+                  setFormData((prev) => ({
+                    ...prev,
+                    ward: ward?.WardName ?? "",
+                    wardCode: wardCode || null,
+                  }));
+                }}
+                fullWidth
+                disabled={isLoading_all || !formData.districtId || loadingWards}
+                placeholder="Select ward"
+                error={Boolean(wardLoadError)}
+                helperText={wardLoadError ?? undefined}
+                SelectProps={{
+                  MenuProps: {
+                    PaperProps: {
+                      sx: {
+                        maxHeight: 360,
+                        scrollbarWidth: "none",
+                        "&::-webkit-scrollbar": { display: "none" },
+                      },
+                    },
+                  },
+                }}
+              >
+                {wards.map((w) => (
+                  <MenuItem key={`ward-${w.WardCode}`} value={w.WardCode}>
+                    {w.WardName}
+                  </MenuItem>
+                ))}
+              </TextField>
             </Box>
+
+            <AddressAutocomplete
+              value={formData.venue}
+              onChange={(value: string) => setFormData({ ...formData, venue: value })}
+              onSelectAddress={(address) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  venue: address.venue,
+                  ward: address.ward,
+                  district: address.district,
+                  province: address.city,
+                  postalCode: address.postalCode || "",
+                }))
+              }
+              label="Street / Venue"
+              placeholder="Search address or enter street / venue"
+              fullWidth
+            />
+            {hasUnresolvedGhnSelection && (
+              <Alert severity="warning">
+                We could not fully match this address with GHN data. Please confirm Province, District, and Ward from the dropdowns.
+              </Alert>
+            )}
 
             <TextField
               label="Postal Code"
@@ -393,7 +701,10 @@ export default function AddressesSection() {
             disabled={isLoading_all}
             sx={{
               textTransform: "none",
-              fontWeight: 700,
+              fontWeight: 600,
+              borderRadius: 1,
+              bgcolor: "#111111",
+              "&:hover": { bgcolor: "#000000" },
             }}
           >
             {isLoading_all ? <CircularProgress size={20} sx={{ mr: 1 }} /> : null}
@@ -431,12 +742,13 @@ export default function AddressesSection() {
               textTransform: "none",
               fontWeight: 700,
               boxShadow: "none",
+              borderRadius: 1,
             }}
           >
             Delete
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </Paper>
   );
 }

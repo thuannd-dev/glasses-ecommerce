@@ -1,4 +1,4 @@
-import { Suspense, lazy, useMemo, useState, useEffect } from "react";
+import { Suspense, lazy, useMemo, useState, useEffect, useLayoutEffect } from "react";
 import {
     Accordion,
     AccordionDetails,
@@ -14,7 +14,7 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CameraAltIcon from "@mui/icons-material/CameraAlt";
 import ViewInArIcon from "@mui/icons-material/ViewInAr";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate, useParams } from "react-router-dom";
 
 import { useProductDetailPage } from "./hooks/useProductDetailPage";
 import { RelatedProductsCarousel } from "./components/ProductDetailPageComponents/RelatedProductsCarousel";
@@ -34,6 +34,7 @@ const ACCENT = "#B68C5A";
 
 export default function ProductDetailPage() {
     const nav = useNavigate();
+    const { id: productId } = useParams<{ id: string }>();
     const cartAuth = useRequireAuthForCart();
     const { handlePreOrder } = usePreOrderButton(cartAuth);
     const {
@@ -78,6 +79,15 @@ export default function ProductDetailPage() {
 
         checkToggles();
     }, []);
+
+    useLayoutEffect(() => {
+        // Ensure same-route navigation (/product/:id -> /product/:id) always lands at top.
+        window.scrollTo({ top: 0, behavior: "auto" });
+        const raf = window.requestAnimationFrame(() => {
+            window.scrollTo({ top: 0, behavior: "auto" });
+        });
+        return () => window.cancelAnimationFrame(raf);
+    }, [productId]);
 
     // Find the first available modelUrl from all product + variant images
     const modelUrl = useMemo(() => {
