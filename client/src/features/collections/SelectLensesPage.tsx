@@ -40,8 +40,9 @@ export default function SelectLensesPage() {
         );
     }
 
+    // Luôn về đúng PDP — không dùng navigate(-1) (dễ sai sau login/returnUrl hoặc mở tab trực tiếp /lenses).
     const handleDialogClose = () => {
-        navigate(-1);
+        navigate(`/product/${product.id}`, { replace: true });
     };
 
     return (
