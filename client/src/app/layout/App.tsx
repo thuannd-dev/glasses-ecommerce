@@ -2,7 +2,6 @@ import { Box, Container, CssBaseline } from "@mui/material";
 import NavBar from "./NavBar";
 import DashboardLayout from "./DashboardLayout";
 import { Outlet, useLocation, useNavigationType } from "react-router";
-import CollectionLandingPage from "../../features/collections/CollectionLandingPage";
 import Footer from "./Footer";
 import ScrollToTopButton from "../components/ScrollToTopButton";
 import ChatbotWidget from "../../features/chatbot/ChatbotWidget";
@@ -24,14 +23,17 @@ function App() {
     const checkChatbotToggle = async (force = false) => {
       if (checkingChatbotToggleRef.current) return;
       const now = Date.now();
-      if (!force && now - lastChatbotToggleCheckRef.current < CHATBOT_TOGGLE_COOLDOWN_MS) {
+      if (
+        !force &&
+        now - lastChatbotToggleCheckRef.current < CHATBOT_TOGGLE_COOLDOWN_MS
+      ) {
         return;
       }
 
       checkingChatbotToggleRef.current = true;
       try {
         const response = await agent.get<boolean>(
-          "/feature-toggles/check/Chatbot"
+          "/feature-toggles/check/Chatbot",
         );
         setIsChatbotEnabled(response.data);
       } catch {
@@ -59,8 +61,8 @@ function App() {
 
   const isHome = location.pathname === "/";
   const isCollectionsPage = location.pathname.startsWith("/collections");
-  const isDashboard = ["/sales", "/operations", "/manager", "/admin"].some((p) =>
-    location.pathname.startsWith(p),
+  const isDashboard = ["/sales", "/operations", "/manager", "/admin"].some(
+    (p) => location.pathname.startsWith(p),
   );
 
   const [navCollapsed, setNavCollapsed] = useState(false);
@@ -132,12 +134,11 @@ function App() {
         }}
       >
         <CssBaseline /> {/*Reset Css*/}
-
         {isHome ? (
           <>
             <NavBar appearance="hero" collapsed={navCollapsed} />
             <Box component="main" sx={{ flex: 1 }}>
-              <CollectionLandingPage />
+              <Outlet />
             </Box>
             <Box sx={{ mt: "auto" }}>
               <Footer />
