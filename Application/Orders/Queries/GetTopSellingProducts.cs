@@ -43,8 +43,8 @@ public sealed class GetTopSellingProducts
                 .Select(g => new 
                 {
                     VariantId = g.Key,
-                    TotalQuantitySold = g.Sum(oi => oi.Quantity),
-                    TotalRevenue = g.Sum(oi => oi.UnitPrice * oi.Quantity),
+                    TotalQuantitySold = g.Select(oi => (int?)oi.Quantity).Sum() ?? 0,
+                    TotalRevenue = g.Select(oi => (decimal?)(oi.UnitPrice * oi.Quantity)).Sum() ?? 0m,
                     OrderCount = g.Select(oi => oi.OrderId).Distinct().Count()
                 })
                 .OrderByDescending(x => x.TotalQuantitySold)

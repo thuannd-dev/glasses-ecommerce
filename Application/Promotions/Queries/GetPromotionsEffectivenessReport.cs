@@ -46,7 +46,7 @@ public sealed class GetPromotionsEffectivenessReport
                 ValidFrom = s.Promo.ValidFrom,
                 ValidTo = s.Promo.ValidTo,
                 UsageCount = s.UsageLogs.Count(),
-                TotalDiscountApplied = s.UsageLogs.Sum(u => u.DiscountApplied)
+                TotalDiscountApplied = s.UsageLogs.Select(u => (decimal?)u.DiscountApplied).Sum() ?? 0m
             })
             .OrderByDescending(x => x.UsageCount)
             .ToList();

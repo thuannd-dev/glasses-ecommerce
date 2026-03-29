@@ -46,7 +46,7 @@ public sealed class GetAfterSalesReport
                 {
                     TicketType = g.Key,
                     Count = g.Count(),
-                    TotalRefundAmount = g.Sum(t => t.RefundAmount ?? 0)
+                    TotalRefundAmount = g.Select(t => t.RefundAmount ?? 0m).Sum()
                 })
                 .ToListAsync(ct);
 
