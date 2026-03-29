@@ -376,9 +376,10 @@ export const router = createBrowserRouter([
       {
         path: "collections",
         children: [
-          // Keep /collections working, but redirect index to /
-          { index: true, element: <Navigate replace to="/" /> }, // /collections
-          { path: ":category", element: lazyElement(<CollectionPage />) }, // /collections/glasses
+          // /collections = xem tất cả (category param undefined → useCollectionPage coi như "all")
+          { index: true, element: lazyElement(<CollectionPage />) },
+          { path: "all", element: <Navigate replace to="/collections" /> },
+          { path: ":category", element: lazyElement(<CollectionPage />) },
         ],
       },
 
