@@ -69,11 +69,21 @@ export function useProductDetailPage(
     });
   };
 
+  /**
+   * POST /me/cart/items returns the newly created line (CartItemDto), not { items: [...] }.
+   * Using .at(-1) on a refetched cart is unsafe when two lines share the same variant (order not guaranteed),
+   * which overwrote the wrong line's prescription and left the new line without one (shown as standard).
+   */
   const resolveLastCartItemForVariant = async (
     variantId: string,
-    cartFromAdd: CartDto | undefined
+    cartFromAdd: CartDto | CartItemDto | undefined
   ): Promise<CartItemDto | null> => {
-    let item = cartFromAdd?.items?.filter((i) => i.productVariantId === variantId).at(-1);
+    if (cartFromAdd && !("items" in cartFromAdd) && cartFromAdd.productVariantId === variantId) {
+      return cartFromAdd;
+    }
+    let item = (cartFromAdd as CartDto | undefined)?.items
+      ?.filter((i) => i.productVariantId === variantId)
+      .at(-1);
     if (!item && cartFromAdd) {
       await new Promise((resolve) => setTimeout(resolve, 300));
       const fresh = await queryClient.fetchQuery<CartDto>({

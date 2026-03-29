@@ -67,7 +67,8 @@ export function useCart() {
         toast.error(msg);
         throw new Error(msg);
       }
-      const res = await agent.post<CartDto>("/me/cart/items", parsed.data);
+      // API returns the new line (CartItemDto), not a full cart.
+      const res = await agent.post<CartItemDto>("/me/cart/items", parsed.data);
       return res.data;
     },
     onSuccess: () => {
