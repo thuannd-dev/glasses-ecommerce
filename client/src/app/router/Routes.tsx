@@ -1,75 +1,207 @@
 import { createBrowserRouter, Navigate, Outlet } from "react-router";
+import { lazy, Suspense } from "react";
+import type { ReactElement } from "react";
 import App from "../layout/App";
 import AuthLayout from "../layout/AuthLayout";
+import RouteLoadingFallback from "./RouteLoadingFallback";
 
 import Counter from "../../features/counter/Counter";
-
-import CollectionLandingPage from "../../features/collections/CollectionLandingPage";
-import CollectionPage from "../../features/collections/CollectionPage";
-import ProductDetailPage from "../../features/collections/ProductDetailPage";
-import SelectLensesPage from "../../features/collections/SelectLensesPage";
-
-import LoginForm from "../../features/account/LoginForm";
-import RegisterForm from "../../features/account/RegisterForm";
-import PostLoginRedirect from "../../features/account/PostLoginRedirect";
-import ForgotPasswordForm from "../../features/account/ForgotPasswordForm";
-import ResetPasswordForm from "../../features/account/ResetPasswordForm";
-
-import TestErrors from "../../features/errors/TestErrors";
-import NotFound from "../../features/errors/NotFound";
-import ServerError from "../../features/errors/ServerError";
-
-import CartPage from "../../features/cart/CartPage";
-
-import CheckoutPage from "../../features/checkout/CheckoutPage";
-import OrderSuccessPage from "../../features/collections/OrderSuccessPage";
-import PaymentResultPage from "../../features/payment/PaymentResultPage";
-import OrdersPage from "../../features/orders/OrdersPage";
-import OrderDetailPage from "../../features/orders/OrderDetailPage";
-import ProfilePage from "../../features/Customer/profile/ProfilePage";
 import RequireRole from "./RequireRole";
-import SalesLayout from "../../features/Sales/SalesLayout";
-import { OverviewScreen as SalesOverviewScreen } from "../../features/Sales/screens/OverviewScreen";
-import { OrdersScreen as SalesOrdersScreen } from "../../features/Sales/screens/OrdersScreen";
-import { TicketsScreen as SalesTicketsScreen } from "../../features/Sales/screens/TicketsScreen";
-import OperationsLayout from "../../features/Operations/OperationsLayout";
-import {
-  PackScreen,
-  CreateShipmentScreen,
-  TrackingScreen,
-  InTransitScreen,
-  CompletedOrdersScreen,
-  PreOrderScreen,
-  PrescriptionScreen,
-  StandardScreen,
-  OrderTypeAllScreen,
-  InboundInventoryScreen,
-  OutboundInventoryScreen,
-  InventoryTransactionsScreen,
-  StockInventoryScreen,
-  OperationsTicketsScreen,
-  GHNWebhookSimulatorScreen,
-} from "../../features/Operations/screens";
-import ManagerLayout from "../../features/Manager/ManagerLayout";
-import ManagerDashboard from "../../features/Manager/ManagerDashboard";
-import ProductsList from "../../features/Manager/ProductsList";
-import ManagerProductEdit from "../../features/Manager/ProductDetail";
-import {
-  InboundRecordsScreen,
-  InboundRecordDetailScreen,
-  PromotionsScreen,
-  PreOrderSummaryScreen,
-} from "../../features/Manager/screens";
-import { ManagerProductCreateWizardScreen } from "../../features/Manager/screens";
-import AdminDashboard from "../../features/Admin/AdminDashboard";
-import AdminLayout from "../../features/Admin/AdminLayout";
-import RoleManagement from "../../features/Admin/RoleManagement";
-import AdminPolicies from "../../features/Admin/AdminPolicies";
-import {
-  PoliciesGuaranteePage,
-  PoliciesLensReplacementPage,
-} from "../../features/policies/PoliciesListPage";
-import AdminFeatureToggles from "../../features/Admin/AdminFeatureToggles";
+
+const CollectionLandingPage = lazy(
+  () => import("../../features/collections/CollectionLandingPage"),
+);
+const CollectionPage = lazy(
+  () => import("../../features/collections/CollectionPage"),
+);
+const ProductDetailPage = lazy(
+  () => import("../../features/collections/ProductDetailPage"),
+);
+const SelectLensesPage = lazy(
+  () => import("../../features/collections/SelectLensesPage"),
+);
+
+const LoginForm = lazy(() => import("../../features/account/LoginForm"));
+const RegisterForm = lazy(() => import("../../features/account/RegisterForm"));
+const PostLoginRedirect = lazy(
+  () => import("../../features/account/PostLoginRedirect"),
+);
+const ForgotPasswordForm = lazy(
+  () => import("../../features/account/ForgotPasswordForm"),
+);
+const ResetPasswordForm = lazy(
+  () => import("../../features/account/ResetPasswordForm"),
+);
+
+const TestErrors = lazy(() => import("../../features/errors/TestErrors"));
+const NotFound = lazy(() => import("../../features/errors/NotFound"));
+const ServerError = lazy(() => import("../../features/errors/ServerError"));
+
+const CartPage = lazy(() => import("../../features/cart/CartPage"));
+const CheckoutPage = lazy(() => import("../../features/checkout/CheckoutPage"));
+const OrderSuccessPage = lazy(
+  () => import("../../features/collections/OrderSuccessPage"),
+);
+const PaymentResultPage = lazy(
+  () => import("../../features/payment/PaymentResultPage"),
+);
+const OrdersPage = lazy(() => import("../../features/orders/OrdersPage"));
+const OrderDetailPage = lazy(
+  () => import("../../features/orders/OrderDetailPage"),
+);
+const ProfilePage = lazy(
+  () => import("../../features/Customer/profile/ProfilePage"),
+);
+
+const SalesLayout = lazy(() => import("../../features/Sales/SalesLayout"));
+const SalesOverviewScreen = lazy(() =>
+  import("../../features/Sales/screens/OverviewScreen").then((m) => ({
+    default: m.OverviewScreen,
+  })),
+);
+const SalesOrdersScreen = lazy(() =>
+  import("../../features/Sales/screens/OrdersScreen").then((m) => ({
+    default: m.OrdersScreen,
+  })),
+);
+const SalesTicketsScreen = lazy(() =>
+  import("../../features/Sales/screens/TicketsScreen").then((m) => ({
+    default: m.TicketsScreen,
+  })),
+);
+
+const AdminDashboard = lazy(
+  () => import("../../features/Admin/AdminDashboard"),
+);
+const AdminLayout = lazy(() => import("../../features/Admin/AdminLayout"));
+const RoleManagement = lazy(
+  () => import("../../features/Admin/RoleManagement"),
+);
+const AdminPolicies = lazy(() => import("../../features/Admin/AdminPolicies"));
+const PoliciesGuaranteePage = lazy(() =>
+  import("../../features/policies/PoliciesListPage").then((m) => ({
+    default: m.PoliciesGuaranteePage,
+  })),
+);
+const PoliciesLensReplacementPage = lazy(() =>
+  import("../../features/policies/PoliciesListPage").then((m) => ({
+    default: m.PoliciesLensReplacementPage,
+  })),
+);
+const AdminFeatureToggles = lazy(
+  () => import("../../features/Admin/AdminFeatureToggles"),
+);
+
+const OperationsLayout = lazy(
+  () => import("../../features/Operations/OperationsLayout"),
+);
+const PackScreen = lazy(() =>
+  import("../../features/Operations/screens/PackScreen").then((m) => ({
+    default: m.PackScreen,
+  })),
+);
+const CreateShipmentScreen = lazy(() =>
+  import("../../features/Operations/screens/CreateShipmentScreen").then(
+    (m) => ({ default: m.CreateShipmentScreen }),
+  ),
+);
+const TrackingScreen = lazy(() =>
+  import("../../features/Operations/screens/TrackingScreen").then((m) => ({
+    default: m.TrackingScreen,
+  })),
+);
+const InTransitScreen = lazy(() =>
+  import("../../features/Operations/screens/InTransitScreen").then((m) => ({
+    default: m.InTransitScreen,
+  })),
+);
+const CompletedOrdersScreen = lazy(() =>
+  import("../../features/Operations/screens/CompletedOrdersScreen").then(
+    (m) => ({ default: m.CompletedOrdersScreen }),
+  ),
+);
+const OrderTypeAllScreen = lazy(() =>
+  import("../../features/Operations/screens/OrderTypeAllScreen").then((m) => ({
+    default: m.OrderTypeAllScreen,
+  })),
+);
+const StandardScreen = lazy(() =>
+  import("../../features/Operations/screens/StandardScreen").then((m) => ({
+    default: m.StandardScreen,
+  })),
+);
+const PreOrderScreen = lazy(() =>
+  import("../../features/Operations/screens/PreOrderScreen").then((m) => ({
+    default: m.PreOrderScreen,
+  })),
+);
+const PrescriptionScreen = lazy(() =>
+  import("../../features/Operations/screens/PrescriptionScreen").then((m) => ({
+    default: m.PrescriptionScreen,
+  })),
+);
+const OperationsTicketsScreen = lazy(() =>
+  import("../../features/Operations/screens/OperationsTicketsScreen").then(
+    (m) => ({ default: m.OperationsTicketsScreen }),
+  ),
+);
+const StockInventoryScreen = lazy(() =>
+  import("../../features/Operations/screens/StockInventoryScreen").then(
+    (m) => ({ default: m.StockInventoryScreen }),
+  ),
+);
+const InboundInventoryScreen = lazy(() =>
+  import("../../features/Operations/screens/InboundInventoryScreen").then(
+    (m) => ({ default: m.InboundInventoryScreen }),
+  ),
+);
+const OutboundInventoryScreen = lazy(() =>
+  import("../../features/Operations/screens/OutboundInventoryScreen").then(
+    (m) => ({ default: m.OutboundInventoryScreen }),
+  ),
+);
+const InventoryTransactionsScreen = lazy(() =>
+  import("../../features/Operations/screens/InventoryTransactionsScreen").then(
+    (m) => ({ default: m.InventoryTransactionsScreen }),
+  ),
+);
+const GHNWebhookSimulatorScreen = lazy(() =>
+  import("../../features/Operations/screens/GHNWebhookSimulatorScreen").then(
+    (m) => ({ default: m.GHNWebhookSimulatorScreen }),
+  ),
+);
+
+const ManagerLayout = lazy(
+  () => import("../../features/Manager/ManagerLayout"),
+);
+const ManagerDashboard = lazy(
+  () => import("../../features/Manager/ManagerDashboard"),
+);
+const ProductsList = lazy(() => import("../../features/Manager/ProductsList"));
+const ManagerProductEdit = lazy(
+  () => import("../../features/Manager/ProductDetail"),
+);
+const ManagerProductCreateWizardScreen = lazy(
+  () =>
+    import("../../features/Manager/screens/ManagerProductCreateWizardScreen"),
+);
+const InboundRecordsScreen = lazy(
+  () => import("../../features/Manager/screens/InboundRecordsScreen"),
+);
+const InboundRecordDetailScreen = lazy(
+  () => import("../../features/Manager/screens/InboundRecordDetailScreen"),
+);
+const PromotionsScreen = lazy(
+  () => import("../../features/Manager/screens/PromotionsScreen"),
+);
+const PreOrderSummaryScreen = lazy(
+  () => import("../../features/Manager/screens/PreOrderSummaryScreen"),
+);
+
+function lazyElement(element: ReactElement): ReactElement {
+  return <Suspense fallback={<RouteLoadingFallback />}>{element}</Suspense>;
+}
+
 export const router = createBrowserRouter([
   // ======================
   // AUTH (NO NAVBAR)
@@ -77,11 +209,14 @@ export const router = createBrowserRouter([
   {
     element: <AuthLayout />,
     children: [
-      { path: "login", element: <LoginForm /> },
-      { path: "register", element: <RegisterForm /> },
-      { path: "forgot-password", element: <ForgotPasswordForm /> },
-      { path: "reset-password", element: <ResetPasswordForm /> },
-      { path: "auth/redirect", element: <PostLoginRedirect /> },
+      { path: "login", element: lazyElement(<LoginForm />) },
+      { path: "register", element: lazyElement(<RegisterForm />) },
+      {
+        path: "forgot-password",
+        element: lazyElement(<ForgotPasswordForm />),
+      },
+      { path: "reset-password", element: lazyElement(<ResetPasswordForm />) },
+      { path: "auth/redirect", element: lazyElement(<PostLoginRedirect />) },
     ],
   },
 
@@ -90,7 +225,7 @@ export const router = createBrowserRouter([
   // ======================
   {
     path: "/product/:id/lenses",
-    element: <SelectLensesPage />,
+    element: lazyElement(<SelectLensesPage />),
   },
 
   // ======================
@@ -101,7 +236,7 @@ export const router = createBrowserRouter([
     element: <App />,
     children: [
       // Landing page (was /collections)
-      { index: true, element: <CollectionLandingPage /> },
+      { index: true, element: lazyElement(<CollectionLandingPage />) },
 
       // ======================
       // ROLE-BASED AREAS
@@ -111,11 +246,11 @@ export const router = createBrowserRouter([
         children: [
           {
             path: "sales",
-            element: <SalesLayout />,
+            element: lazyElement(<SalesLayout />),
             children: [
-              { index: true, element: <SalesOverviewScreen /> },
-              { path: "orders", element: <SalesOrdersScreen /> },
-              { path: "tickets", element: <SalesTicketsScreen /> },
+              { index: true, element: lazyElement(<SalesOverviewScreen />) },
+              { path: "orders", element: lazyElement(<SalesOrdersScreen />) },
+              { path: "tickets", element: lazyElement(<SalesTicketsScreen />) },
             ],
           },
         ],
@@ -125,24 +260,54 @@ export const router = createBrowserRouter([
         children: [
           {
             path: "operations",
-            element: <OperationsLayout />,
+            element: lazyElement(<OperationsLayout />),
             children: [
-              { index: true, element: <Navigate to="/operations/pack" replace /> },
-              { path: "pack", element: <PackScreen /> },
-              { path: "create-shipment", element: <CreateShipmentScreen /> },
-              { path: "tracking", element: <TrackingScreen /> },
-              { path: "in-transit", element: <InTransitScreen /> },
-              { path: "completed", element: <CompletedOrdersScreen /> },
-              { path: "order-types", element: <OrderTypeAllScreen /> },
-              { path: "standard", element: <StandardScreen /> },
-              { path: "pre-order", element: <PreOrderScreen /> },
-              { path: "prescription", element: <PrescriptionScreen /> },
-              { path: "tickets", element: <OperationsTicketsScreen /> },
-              { path: "stock", element: <StockInventoryScreen /> },
-              { path: "inbound", element: <InboundInventoryScreen /> },
-              { path: "outbound", element: <OutboundInventoryScreen /> },
-              { path: "inventory-transactions", element: <InventoryTransactionsScreen /> },
-              { path: "ghn-webhook-simulator", element: <GHNWebhookSimulatorScreen /> },
+              {
+                index: true,
+                element: <Navigate to="/operations/pack" replace />,
+              },
+              { path: "pack", element: lazyElement(<PackScreen />) },
+              {
+                path: "create-shipment",
+                element: lazyElement(<CreateShipmentScreen />),
+              },
+              { path: "tracking", element: lazyElement(<TrackingScreen />) },
+              { path: "in-transit", element: lazyElement(<InTransitScreen />) },
+              {
+                path: "completed",
+                element: lazyElement(<CompletedOrdersScreen />),
+              },
+              {
+                path: "order-types",
+                element: lazyElement(<OrderTypeAllScreen />),
+              },
+              { path: "standard", element: lazyElement(<StandardScreen />) },
+              { path: "pre-order", element: lazyElement(<PreOrderScreen />) },
+              {
+                path: "prescription",
+                element: lazyElement(<PrescriptionScreen />),
+              },
+              {
+                path: "tickets",
+                element: lazyElement(<OperationsTicketsScreen />),
+              },
+              { path: "stock", element: lazyElement(<StockInventoryScreen />) },
+              {
+                path: "inbound",
+                element: lazyElement(<InboundInventoryScreen />),
+              },
+              {
+                path: "outbound",
+                element: lazyElement(<OutboundInventoryScreen />),
+              },
+              {
+                path: "inventory-transactions",
+                element: lazyElement(<InventoryTransactionsScreen />),
+              },
+              {
+                path: "ghn-webhook-simulator",
+                element: lazyElement(<GHNWebhookSimulatorScreen />),
+              },
             ],
           },
         ],
@@ -152,17 +317,38 @@ export const router = createBrowserRouter([
         children: [
           {
             path: "manager",
-            element: <ManagerLayout />,
+            element: lazyElement(<ManagerLayout />),
             children: [
-              { index: true, element: <ManagerDashboard /> },
-              { path: "products", element: <ProductsList /> },
-              { path: "products/create", element: <ManagerProductCreateWizardScreen /> },
-              { path: "products/:id", element: <ProductDetailPage /> },
-              { path: "products/:id/edit", element: <ManagerProductEdit /> },
-              { path: "inbound", element: <InboundRecordsScreen /> },
-              { path: "inbound/:id", element: <InboundRecordDetailScreen /> },
-              { path: "promotions", element: <PromotionsScreen /> },
-              { path: "preorder-summary", element: <PreOrderSummaryScreen /> },
+              { index: true, element: lazyElement(<ManagerDashboard />) },
+              { path: "products", element: lazyElement(<ProductsList />) },
+              {
+                path: "products/create",
+                element: lazyElement(<ManagerProductCreateWizardScreen />),
+              },
+              {
+                path: "products/:id",
+                element: lazyElement(<ProductDetailPage />),
+              },
+              {
+                path: "products/:id/edit",
+                element: lazyElement(<ManagerProductEdit />),
+              },
+              {
+                path: "inbound",
+                element: lazyElement(<InboundRecordsScreen />),
+              },
+              {
+                path: "inbound/:id",
+                element: lazyElement(<InboundRecordDetailScreen />),
+              },
+              {
+                path: "promotions",
+                element: lazyElement(<PromotionsScreen />),
+              },
+              {
+                path: "preorder-summary",
+                element: lazyElement(<PreOrderSummaryScreen />),
+              },
             ],
           },
         ],
@@ -172,12 +358,15 @@ export const router = createBrowserRouter([
         children: [
           {
             path: "admin",
-            element: <AdminLayout />,
+            element: lazyElement(<AdminLayout />),
             children: [
-              { index: true, element: <AdminDashboard /> },
-              { path: "roles", element: <RoleManagement /> },
-              { path: "policies", element: <AdminPolicies /> },
-              { path: "feature-toggles", element: <AdminFeatureToggles /> },
+              { index: true, element: lazyElement(<AdminDashboard />) },
+              { path: "roles", element: lazyElement(<RoleManagement />) },
+              { path: "policies", element: lazyElement(<AdminPolicies />) },
+              {
+                path: "feature-toggles",
+                element: lazyElement(<AdminFeatureToggles />),
+              },
             ],
           },
         ],
@@ -189,38 +378,44 @@ export const router = createBrowserRouter([
         children: [
           // Keep /collections working, but redirect index to /
           { index: true, element: <Navigate replace to="/" /> }, // /collections
-          { path: ":category", element: <CollectionPage /> }, // /collections/glasses
+          { path: ":category", element: lazyElement(<CollectionPage />) }, // /collections/glasses
         ],
       },
 
       // Policies (customer-facing pages)
-      { path: "policies", element: <PoliciesGuaranteePage /> },
-      { path: "policies/guarantee", element: <Navigate replace to="/policies" /> },
-      { path: "policies/lens-replacement", element: <PoliciesLensReplacementPage /> },
+      { path: "policies", element: lazyElement(<PoliciesGuaranteePage />) },
+      {
+        path: "policies/guarantee",
+        element: <Navigate replace to="/policies" />,
+      },
+      {
+        path: "policies/lens-replacement",
+        element: lazyElement(<PoliciesLensReplacementPage />),
+      },
 
       // ✅ Product detail
-      { path: "product/:id", element: <ProductDetailPage /> }, // /product/g1
+      { path: "product/:id", element: lazyElement(<ProductDetailPage />) }, // /product/g1
 
       // Other pages
       { path: "counter", element: <Counter /> },
-      { path: "profile", element: <ProfilePage /> },
+      { path: "profile", element: lazyElement(<ProfilePage />) },
 
       // Errors
-      { path: "errors", element: <TestErrors /> },
-      { path: "server-error", element: <ServerError /> },
-      { path: "not-found", element: <NotFound /> },
+      { path: "errors", element: lazyElement(<TestErrors />) },
+      { path: "server-error", element: lazyElement(<ServerError />) },
+      { path: "not-found", element: lazyElement(<NotFound />) },
 
       // Guest / customer
-      { path: "cart", element: <CartPage /> },
-      { path: "checkout", element: <CheckoutPage /> },
-      { path: "order-success", element: <OrderSuccessPage /> },
-      { path: "payment/result", element: <PaymentResultPage /> },
+      { path: "cart", element: lazyElement(<CartPage />) },
+      { path: "checkout", element: lazyElement(<CheckoutPage />) },
+      { path: "order-success", element: lazyElement(<OrderSuccessPage />) },
+      { path: "payment/result", element: lazyElement(<PaymentResultPage />) },
       {
         path: "orders",
         element: <Outlet />,
         children: [
-          { index: true, element: <OrdersPage /> },
-          { path: ":id", element: <OrderDetailPage /> },
+          { index: true, element: lazyElement(<OrdersPage />) },
+          { path: ":id", element: lazyElement(<OrderDetailPage />) },
         ],
       },
 
