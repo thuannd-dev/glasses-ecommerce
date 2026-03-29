@@ -10,7 +10,9 @@ import RequireRole from "./RequireRole";
 const CollectionLandingPage = lazy(
   () => import("../../features/collections/CollectionLandingPage"),
 );
-const CollectionPage = lazy(() => import("../../features/collections/CollectionPage"));
+const CollectionPage = lazy(
+  () => import("../../features/collections/CollectionPage"),
+);
 const ProductDetailPage = lazy(
   () => import("../../features/collections/ProductDetailPage"),
 );
@@ -43,8 +45,12 @@ const PaymentResultPage = lazy(
   () => import("../../features/payment/PaymentResultPage"),
 );
 const OrdersPage = lazy(() => import("../../features/orders/OrdersPage"));
-const OrderDetailPage = lazy(() => import("../../features/orders/OrderDetailPage"));
-const ProfilePage = lazy(() => import("../../features/Customer/profile/ProfilePage"));
+const OrderDetailPage = lazy(
+  () => import("../../features/orders/OrderDetailPage"),
+);
+const ProfilePage = lazy(
+  () => import("../../features/Customer/profile/ProfilePage"),
+);
 
 const SalesLayout = lazy(() => import("../../features/Sales/SalesLayout"));
 const SalesOverviewScreen = lazy(() =>
@@ -63,15 +69,23 @@ const SalesTicketsScreen = lazy(() =>
   })),
 );
 
-const AdminDashboard = lazy(() => import("../../features/Admin/AdminDashboard"));
-const AdminLayout = lazy(() => import("../../features/Admin/AdminLayout"));
-const RoleManagement = lazy(() => import("../../features/Admin/RoleManagement"));
-const AdminPolicies = lazy(() => import("../../features/Admin/AdminPolicies"));
-const PoliciesGuaranteePage = lazy(
-  () => import("../../features/policies/PoliciesListPage").then((m) => ({ default: m.PoliciesGuaranteePage })),
+const AdminDashboard = lazy(
+  () => import("../../features/Admin/AdminDashboard"),
 );
-const PoliciesLensReplacementPage = lazy(
-  () => import("../../features/policies/PoliciesListPage").then((m) => ({ default: m.PoliciesLensReplacementPage })),
+const AdminLayout = lazy(() => import("../../features/Admin/AdminLayout"));
+const RoleManagement = lazy(
+  () => import("../../features/Admin/RoleManagement"),
+);
+const AdminPolicies = lazy(() => import("../../features/Admin/AdminPolicies"));
+const PoliciesGuaranteePage = lazy(() =>
+  import("../../features/policies/PoliciesListPage").then((m) => ({
+    default: m.PoliciesGuaranteePage,
+  })),
+);
+const PoliciesLensReplacementPage = lazy(() =>
+  import("../../features/policies/PoliciesListPage").then((m) => ({
+    default: m.PoliciesLensReplacementPage,
+  })),
 );
 const AdminFeatureToggles = lazy(
   () => import("../../features/Admin/AdminFeatureToggles"),
@@ -183,8 +197,39 @@ const PreOrderSummaryScreen = lazy(
   () => import("../../features/Manager/screens/PreOrderSummaryScreen"),
 );
 
+function RouteLoadingFallback(): ReactElement {
+  return (
+    <div
+      style={{
+        minHeight: "40vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flexDirection: "column",
+        gap: "10px",
+        color: "#4b5563",
+      }}
+    >
+      <div
+        style={{
+          width: "28px",
+          height: "28px",
+          borderRadius: "9999px",
+          border: "3px solid #d1d5db",
+          borderTopColor: "#1f2937",
+          animation: "route-loading-spin 0.8s linear infinite",
+        }}
+      />
+      <span style={{ fontSize: "13px", fontWeight: 600 }}>Loading page...</span>
+      <style>
+        {"@keyframes route-loading-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }"}
+      </style>
+    </div>
+  );
+}
+
 function lazyElement(element: ReactElement): ReactElement {
-  return <Suspense fallback={null}>{element}</Suspense>;
+  return <Suspense fallback={<RouteLoadingFallback />}>{element}</Suspense>;
 }
 
 export const router = createBrowserRouter([
@@ -310,7 +355,10 @@ export const router = createBrowserRouter([
                 path: "products/create",
                 element: lazyElement(<ManagerProductCreateWizardScreen />),
               },
-              { path: "products/:id", element: lazyElement(<ProductDetailPage />) },
+              {
+                path: "products/:id",
+                element: lazyElement(<ProductDetailPage />),
+              },
               {
                 path: "products/:id/edit",
                 element: lazyElement(<ManagerProductEdit />),
