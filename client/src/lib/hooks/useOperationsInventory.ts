@@ -417,26 +417,50 @@ async function fetchInventoryOutboundDetail(
     `/operations/inventory/outbound/${orderId}`,
   );
   const data = res.data;
-  type RawOutboundDetailItem = InventoryOutboundRecordDetailItem & {
+  type RawOutboundDetailItem = {
+    id?: string;
     transactionId?: string;
+    productVariantId?: string;
+    productId?: string | null;
+    productName?: string | null;
+    variantName?: string | null;
+    sku?: string | null;
+    productImageUrl?: string | null;
+    productImageAlt?: string | null;
+    quantity?: number;
+    notes?: string | null;
   };
 
   const rawItems: RawOutboundDetailItem[] = Array.isArray(data?.items)
     ? (data.items as RawOutboundDetailItem[])
     : [];
 
-  const normalizedItems: InventoryOutboundRecordDetailItem[] = rawItems.map((item) => ({
-        id: item?.id ?? item?.transactionId ?? "",
-        productVariantId: item?.productVariantId ?? "",
-        productId: item?.productId ?? null,
-        productName: item?.productName ?? null,
-        variantName: item?.variantName ?? null,
-        sku: item?.sku ?? null,
-        productImageUrl: item?.productImageUrl ?? null,
-        productImageAlt: item?.productImageAlt ?? null,
-        quantity: item?.quantity ?? 0,
-        notes: item?.notes ?? null,
-      }));
+  const normalizedItems: InventoryOutboundRecordDetailItem[] = rawItems.reduce(
+    (acc: InventoryOutboundRecordDetailItem[], item: RawOutboundDetailItem) => {
+      const resolvedId = (item.id ?? item.transactionId ?? "").trim();
+      const resolvedProductVariantId = (item.productVariantId ?? "").trim();
+
+      if (!resolvedId || !resolvedProductVariantId) {
+        return acc;
+      }
+
+      acc.push({
+        id: resolvedId,
+        productVariantId: resolvedProductVariantId,
+        productId: item.productId ?? null,
+        productName: item.productName ?? null,
+        variantName: item.variantName ?? null,
+        sku: item.sku ?? null,
+        productImageUrl: item.productImageUrl ?? null,
+        productImageAlt: item.productImageAlt ?? null,
+        quantity: item.quantity ?? 0,
+        notes: item.notes ?? null,
+      });
+
+      return acc;
+    },
+    [],
+  );
 
   return {
     orderId: data?.orderId ?? orderId,

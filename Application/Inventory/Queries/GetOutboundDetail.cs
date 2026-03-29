@@ -58,33 +58,27 @@ public sealed class GetOutboundDetail
                         : null,
                     VariantName = t.ProductVariant.VariantName,
                     SKU = t.ProductVariant.SKU,
-                    ProductImageUrl = t.ProductVariant != null
+                    VariantFirstImage = t.ProductVariant != null
                         ? t.ProductVariant.Images
                             .Where(img => !img.IsDeleted)
                             .OrderBy(img => img.DisplayOrder)
-                            .Select(img => img.ImageUrl)
+                            .Select(img => new
+                            {
+                                img.ImageUrl,
+                                img.AltText
+                            })
                             .FirstOrDefault()
-                          ?? (t.ProductVariant.Product != null
-                              ? t.ProductVariant.Product.Images
-                                  .Where(img => !img.IsDeleted && img.ProductId != null)
-                                  .OrderBy(img => img.DisplayOrder)
-                                  .Select(img => img.ImageUrl)
-                                  .FirstOrDefault()
-                              : null)
                         : null,
-                    ProductImageAlt = t.ProductVariant != null
-                        ? t.ProductVariant.Images
-                            .Where(img => !img.IsDeleted)
+                    ProductFirstImage = t.ProductVariant != null && t.ProductVariant.Product != null
+                        ? t.ProductVariant.Product.Images
+                            .Where(img => !img.IsDeleted && img.ProductId != null)
                             .OrderBy(img => img.DisplayOrder)
-                            .Select(img => img.AltText)
+                            .Select(img => new
+                            {
+                                img.ImageUrl,
+                                img.AltText
+                            })
                             .FirstOrDefault()
-                          ?? (t.ProductVariant.Product != null
-                              ? t.ProductVariant.Product.Images
-                                  .Where(img => !img.IsDeleted && img.ProductId != null)
-                                  .OrderBy(img => img.DisplayOrder)
-                                  .Select(img => img.AltText)
-                                  .FirstOrDefault()
-                              : null)
                         : null,
                     Quantity = t.Quantity,
                     Notes = t.Notes,
@@ -126,8 +120,12 @@ public sealed class GetOutboundDetail
                     ProductName = t.ProductName,
                     VariantName = t.VariantName,
                     SKU = t.SKU,
-                    ProductImageUrl = t.ProductImageUrl,
-                    ProductImageAlt = t.ProductImageAlt,
+                    ProductImageUrl = t.VariantFirstImage != null
+                        ? t.VariantFirstImage.ImageUrl
+                        : (t.ProductFirstImage != null ? t.ProductFirstImage.ImageUrl : null),
+                    ProductImageAlt = t.VariantFirstImage != null
+                        ? t.VariantFirstImage.AltText
+                        : (t.ProductFirstImage != null ? t.ProductFirstImage.AltText : null),
                     Quantity = t.Quantity,
                     Notes = t.Notes
                 }).ToList()
