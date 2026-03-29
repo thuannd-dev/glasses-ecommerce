@@ -299,11 +299,13 @@ public sealed class MappingProfiles : Profile
             .ForMember(d => d.ProductImageUrl, o => o.MapFrom(s =>
                 s.ProductVariant != null
                     ? s.ProductVariant.Images
+                        .Where(img => !img.IsDeleted)
                         .OrderBy(img => img.DisplayOrder)
                         .Select(img => img.ImageUrl)
                         .FirstOrDefault()
                       ?? (s.ProductVariant.Product != null
                           ? s.ProductVariant.Product.Images
+                              .Where(img => !img.IsDeleted && img.ProductId != null)
                               .OrderBy(img => img.DisplayOrder)
                               .Select(img => img.ImageUrl)
                               .FirstOrDefault()
@@ -312,11 +314,13 @@ public sealed class MappingProfiles : Profile
             .ForMember(d => d.ProductImageAlt, o => o.MapFrom(s =>
                 s.ProductVariant != null
                     ? s.ProductVariant.Images
+                        .Where(img => !img.IsDeleted)
                         .OrderBy(img => img.DisplayOrder)
                         .Select(img => img.AltText)
                         .FirstOrDefault()
                       ?? (s.ProductVariant.Product != null
                           ? s.ProductVariant.Product.Images
+                              .Where(img => !img.IsDeleted && img.ProductId != null)
                               .OrderBy(img => img.DisplayOrder)
                               .Select(img => img.AltText)
                               .FirstOrDefault()
