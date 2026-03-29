@@ -239,9 +239,11 @@ function InboundRecordRow({ record }: { record: InventoryInboundRecordItem }) {
                       <Typography sx={{ fontSize: 13, color: "#6B6B6B" }}>
                         Status: {detail.status || "—"}
                       </Typography>
-                      <Typography sx={{ fontSize: 13, color: "#6B6B6B" }}>
-                        Reference: {detail.sourceReference || "—"}
-                      </Typography>
+                      {detail.sourceReference && (
+                        <Typography sx={{ fontSize: 13, color: "#6B6B6B" }}>
+                          Reference: {detail.sourceReference}
+                        </Typography>
+                      )}
                       {detail.approvedAt && (
                         <Typography sx={{ fontSize: 13, color: "#6B6B6B" }}>
                           Approved by: {detail.approvedByName || "—"}
