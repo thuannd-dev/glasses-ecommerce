@@ -39,12 +39,18 @@ public sealed class GetRevenueReport
                 {
                     Source = g.Key,
                     OrderCount = g.Count(),
-                    CompletedCount = g.Count(o => o.OrderStatus == OrderStatus.Completed),
+                    CompletedCount = g.Count(o =>
+                        o.OrderStatus == OrderStatus.Delivered ||
+                        o.OrderStatus == OrderStatus.Completed),
                     CancelledCount = g.Count(o => o.OrderStatus == OrderStatus.Cancelled),
-                    Revenue = g.Where(o => o.OrderStatus == OrderStatus.Completed)
+                    Revenue = g.Where(o =>
+                            o.OrderStatus == OrderStatus.Delivered ||
+                            o.OrderStatus == OrderStatus.Completed)
                         .Select(o => (decimal?)(o.TotalAmount + o.ShippingFee))
                         .Sum() ?? 0m,
-                    Discount = g.Where(o => o.OrderStatus == OrderStatus.Completed)
+                    Discount = g.Where(o =>
+                            o.OrderStatus == OrderStatus.Delivered ||
+                            o.OrderStatus == OrderStatus.Completed)
                         .SelectMany(o => o.PromoUsageLogs)
                         .Select(p => (decimal?)p.DiscountApplied)
                         .Sum() ?? 0m,
