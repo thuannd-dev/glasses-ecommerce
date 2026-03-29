@@ -270,17 +270,18 @@ export default function CartPage() {
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set(itemIds));
     useEffect(() => {
         setSelectedIds((prev) => {
-            const next = new Set(prev);
-            itemIds.forEach((id) => next.add(id));
-            itemIds.forEach((id) => {
-                if (!items.some((i) => i.id === id)) next.delete(id);
+            const validIds = new Set(itemIds);
+            const next = new Set<string>();
+            prev.forEach((id) => {
+                if (validIds.has(id)) next.add(id);
             });
+            itemIds.forEach((id) => next.add(id));
             if (prev.size === next.size && [...prev].every((id) => next.has(id))) {
                 return prev;
             }
             return next;
         });
-    }, [itemIds, items]);
+    }, [itemIds]);
 
     const selectedItems = useMemo(
         () => items.filter((i) => selectedIds.has(i.id)),
