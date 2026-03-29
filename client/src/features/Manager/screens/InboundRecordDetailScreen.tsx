@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   Avatar,
   Box,
@@ -34,6 +34,12 @@ import {
   useRejectInbound,
 } from "../../../lib/hooks/useManagerInboundActions";
 
+type ApiErrorPayload = {
+  detail?: string;
+  title?: string;
+  message?: string;
+};
+
 function getStatusColor(
   status: string,
 ): "default" | "success" | "error" | "warning" {
@@ -59,20 +65,13 @@ export default function InboundRecordDetailScreen() {
   const rejectMutation = useRejectInbound();
   const isActioning = approveMutation.isPending || rejectMutation.isPending;
 
-  if (!id) {
-    return (
-      <Box sx={{ px: 4, py: 4 }}>
-        <Typography color="error">Inbound record ID not provided</Typography>
-      </Box>
-    );
-  }
-
   const {
     data: record,
     isLoading,
     error,
   } = useQuery<InboundRecordDto>({
     queryKey: ["manager-inbound-detail", id],
+    enabled: !!id,
     queryFn: async () => {
       const res = await agent.get<InboundRecordDto>(
         `/manager/inventory/inbound/${id}`,
@@ -80,6 +79,14 @@ export default function InboundRecordDetailScreen() {
       return res.data;
     },
   });
+
+  if (!id) {
+    return (
+      <Box sx={{ px: 4, py: 4 }}>
+        <Typography color="error">Inbound record ID not provided</Typography>
+      </Box>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -129,12 +136,21 @@ export default function InboundRecordDetailScreen() {
       toast.success("Inbound record approved successfully");
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        const data = error.response?.data as any;
+        const data = error.response?.data as
+          | ApiErrorPayload
+          | string
+          | undefined;
         const message =
           (typeof data === "string" && data) ||
-          data?.detail ||
-          data?.title ||
-          data?.message ||
+          (typeof data === "object" && data !== null
+            ? data.detail
+            : undefined) ||
+          (typeof data === "object" && data !== null
+            ? data.title
+            : undefined) ||
+          (typeof data === "object" && data !== null
+            ? data.message
+            : undefined) ||
           "Failed to approve record";
         toast.error(message);
       } else {
@@ -163,12 +179,21 @@ export default function InboundRecordDetailScreen() {
       setRejectDialogOpen(false);
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        const data = error.response?.data as any;
+        const data = error.response?.data as
+          | ApiErrorPayload
+          | string
+          | undefined;
         const message =
           (typeof data === "string" && data) ||
-          data?.detail ||
-          data?.title ||
-          data?.message ||
+          (typeof data === "object" && data !== null
+            ? data.detail
+            : undefined) ||
+          (typeof data === "object" && data !== null
+            ? data.title
+            : undefined) ||
+          (typeof data === "object" && data !== null
+            ? data.message
+            : undefined) ||
           "Failed to reject record";
         toast.error(message);
       } else {
@@ -457,13 +482,33 @@ export default function InboundRecordDetailScreen() {
                         >
                           <Avatar
                             src={item.productImageUrl ?? undefined}
-                            alt={item.productImageAlt ?? item.productName ?? "Product image"}
+                            alt={
+                              item.productImageAlt ??
+                              item.productName ??
+                              "Product image"
+                            }
                             variant="rounded"
                             sx={{ width: 36, height: 36 }}
                           />
-                          <Typography fontSize={13} fontWeight={700}>
-                            {item.productName ?? "—"}
-                          </Typography>
+                          {item.productId ? (
+                            <Typography
+                              component={Link}
+                              to={`/manager/products/${item.productId}`}
+                              fontSize={13}
+                              fontWeight={700}
+                              sx={{
+                                textDecoration: "none",
+                                color: "primary.main",
+                                "&:hover": { textDecoration: "underline" },
+                              }}
+                            >
+                              {item.productName ?? "—"}
+                            </Typography>
+                          ) : (
+                            <Typography fontSize={13} fontWeight={700}>
+                              {item.productName ?? "—"}
+                            </Typography>
+                          )}
                         </Stack>
                       </TableCell>
                       <TableCell
