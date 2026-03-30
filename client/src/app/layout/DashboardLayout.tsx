@@ -112,6 +112,7 @@ export default function DashboardLayout() {
           flexShrink: 0,
           display: "flex",
           flexDirection: "column",
+          overflow: "hidden",
           height: "calc(100vh - 56px)",
           mt: 7,
           position: "sticky",
@@ -833,10 +834,13 @@ export default function DashboardLayout() {
               <LogoutIcon />
             </ListItemIcon>
             <ListItemText
-              primary={
-                logoutUser.isPending ? "Signing out…" : "Sign out"
-              }
+              primary={logoutUser.isPending ? "Signing out…" : "Sign out"}
               primaryTypographyProps={{ fontWeight: 600 }}
+              sx={{
+                opacity: sidebarOpen ? 1 : 0,
+                whiteSpace: "nowrap",
+                transition: "opacity 120ms ease",
+              }}
             />
           </ListItemButton>
         </List>
