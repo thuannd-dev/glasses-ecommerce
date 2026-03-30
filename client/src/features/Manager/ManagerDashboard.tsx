@@ -334,6 +334,7 @@ export default function ManagerDashboard() {
                 max={customToDate || format(new Date(), "yyyy-MM-dd")}
                 className="px-2 py-1 text-sm border-0 outline-none focus:ring-0 bg-transparent text-slate-700 font-medium"
                 placeholder="From"
+                aria-label="Start date for custom date range"
               />
               <span className="text-slate-400 text-sm">→</span>
               <input
@@ -344,6 +345,7 @@ export default function ManagerDashboard() {
                 max={format(new Date(), "yyyy-MM-dd")}
                 className="px-2 py-1 text-sm border-0 outline-none focus:ring-0 bg-transparent text-slate-700 font-medium"
                 placeholder="To"
+                aria-label="End date for custom date range"
               />
               <button
                 onClick={handleApplyCustomRange}
