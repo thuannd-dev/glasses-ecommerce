@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback } from "react";
 import { useAccount } from "../../lib/hooks/useAccount";
 import { useManagerDashboard } from "../../lib/hooks/useManagerDashboard";
 import type { PromotionItem, LowStockItem } from "../../lib/hooks/useManagerDashboard";
-import { format, subDays, parseISO } from "date-fns";
+import { format, subDays } from "date-fns";
 import * as XLSX from "xlsx";
 import {
   ShoppingBag,
