@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import {
     Box,
     Typography,
@@ -11,9 +12,12 @@ import { NavLink } from "react-router-dom";
 import { useCart } from "../../../lib/hooks/useCart";
 import { formatMoney } from "../../../lib/utils/format";
 import { COLORS } from "../../theme/colors";
+import { useStore } from "../../../lib/hooks/useStore";
 
 export default function CartDropdown() {
     const { cart, isLoading, updateItem, removeItem } = useCart();
+    const { uiStore } = useStore();
+    const dropdownRef = useRef<HTMLDivElement>(null);
 
     const items = cart?.items ?? [];
     const totalQuantity = cart?.totalQuantity ?? 0;
@@ -32,8 +36,22 @@ export default function CartDropdown() {
         }
     };
 
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                uiStore.closeCart();
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [uiStore]);
+
     return (
         <Box
+            ref={dropdownRef}
             sx={{
                 position: "absolute",
                 top: "100%",

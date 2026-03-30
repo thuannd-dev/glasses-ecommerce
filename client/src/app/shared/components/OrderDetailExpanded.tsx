@@ -479,7 +479,7 @@ export function OrderDetailExpanded({ detail, onProcessOrderClick, showProcessBu
       )}
 
       {/* 3.1) Add Tracking Detail Button — between Items and Status History */}
-      {showAddTrackingButton && onAddTrackingClick && (
+      {showAddTrackingButton && onAddTrackingClick && !detail.shipment?.trackingCode && (
         <Button
           fullWidth
           variant="outlined"
