@@ -94,7 +94,7 @@ export function FiltersSidebar({
 
     const handleAllType = () => {
         setFilters((prev) => ({ ...prev, glassesTypes: [] }));
-        navigate("/collections/all");
+        navigate("/collections");
     };
 
     const handleChipKeyDown = (e: React.KeyboardEvent, onClick: () => void) => {
