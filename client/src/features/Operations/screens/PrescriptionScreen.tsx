@@ -117,9 +117,9 @@ export function PrescriptionScreen() {
                                 })
                             : undefined
                         }
-                        onMarkShippedClick={
+                        onAddTrackingClick={
                           canMarkShipped
-                            ? (orderId) => openCreateShipment(orderId)
+                            ? (orderId: string) => openCreateShipment(orderId)
                             : undefined
                         }
                       />

@@ -6,6 +6,7 @@ import { OperationsPageHeader } from "../components/OperationsPageHeader";
 import { OrdersTabs } from "../components/OrdersTabs";
 import { OrderListCard } from "../components/OrderListCard";
 import { AppPagination } from "../../../app/shared/components/AppPagination";
+import { useOperations } from "../context/OperationsContext";
 
 export function CreateShipmentScreen() {
   const [pageNumber, setPageNumber] = useState(1);
@@ -21,6 +22,7 @@ export function CreateShipmentScreen() {
     ? (data!.items as unknown as StaffOrderDto[])
     : [];
   const totalPages = data?.totalPages ?? 1;
+  const { openCreateShipment } = useOperations();
 
   return (
     <>
@@ -80,6 +82,7 @@ export function CreateShipmentScreen() {
                     key={o.id}
                     mode="packing"
                     summary={o}
+                    onAddTrackingClick={(orderId) => openCreateShipment(orderId)}
                   />
                 ))}
               </Box>

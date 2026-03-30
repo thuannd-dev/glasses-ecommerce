@@ -101,7 +101,7 @@ export function StandardScreen() {
                     .map((o) => {
                       const s = String(o.orderStatus).toLowerCase();
                       const canProcessing = s === "confirmed";
-                      const canMarkShipped = s === "processing";
+                      const canAddTracking = s === "processing";
 
                       return (
                         <OrderListCard
@@ -117,8 +117,8 @@ export function StandardScreen() {
                                   })
                               : undefined
                           }
-                          onMarkShippedClick={
-                            canMarkShipped
+                          onAddTrackingClick={
+                            canAddTracking
                               ? (orderId) => openCreateShipment(orderId)
                               : undefined
                           }
