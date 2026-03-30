@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Box,
   Typography,
@@ -26,6 +26,8 @@ import { formatMoney } from "./utils";
 import { CANCEL_ORDER_REASONS, type CancelReasonValue } from "./cancelReasons";
 import { SubmitAfterSalesTicketDialog } from "./SubmitAfterSalesTicketDialog";
 import { OrderTicketsSection } from "./OrderTicketsSection";
+import type { PrescriptionData } from "../../lib/types/prescription";
+import type { StaffOrderPrescriptionDto } from "../../lib/types/staffOrders";
 
 const CANCELABLE_STATUSES = ["Pending", "pending"];
 
@@ -146,6 +148,28 @@ function getStatusChipStyle(status: string | undefined) {
   };
 }
 
+function toPrescriptionData(
+  source: StaffOrderPrescriptionDto | undefined
+): PrescriptionData | undefined {
+  if (!source?.details?.length) return undefined;
+  const details = source.details
+    .map((d) => {
+      const eyeRaw = String(d.eye ?? "").toLowerCase();
+      const eye = eyeRaw === "right" ? 1 : eyeRaw === "left" ? 2 : null;
+      if (!eye) return null;
+      return {
+        eye,
+        sph: d.sph ?? null,
+        cyl: d.cyl ?? null,
+        axis: d.axis ?? null,
+        pd: d.pd ?? null,
+        add: d.add ?? null,
+      };
+    })
+    .filter((x): x is PrescriptionData["details"][number] => x != null);
+  return details.length ? { details } : undefined;
+}
+
 export default function OrderDetailPage() {
   const {
     orderId,
@@ -168,6 +192,22 @@ export default function OrderDetailPage() {
   const canCancel = order && CANCELABLE_STATUSES.includes(orderStatus);
   const canSubmitAfterSales = order && orderStatus === "Delivered";
   const isOtherReason = cancelReason === "other";
+  const prescriptionsByItemId = useMemo<Record<string, PrescriptionData>>(() => {
+    const out: Record<string, PrescriptionData> = {};
+    if (!order?.items?.length || !order?.prescriptions?.length) return out;
+
+    const byPrescriptionId = new Map<string, StaffOrderPrescriptionDto>();
+    order.prescriptions.forEach((p) => {
+      if (p.id) byPrescriptionId.set(p.id, p);
+    });
+
+    order.items.forEach((item) => {
+      if (!item.prescriptionId) return;
+      const fromApi = toPrescriptionData(byPrescriptionId.get(item.prescriptionId));
+      if (fromApi) out[item.id] = fromApi;
+    });
+    return out;
+  }, [order]);
 
   const handleCloseCancelDialog = () => {
     setCancelDialogOpen(false);
@@ -434,6 +474,7 @@ export default function OrderDetailPage() {
                   <OrderItemRow
                     item={item as OrderItemRowProps["item"]}
                     orderId={orderId}
+                    prescription={prescriptionsByItemId[item.id]}
                     showPrescriptionDetails
                   />
                 </Box>
