@@ -83,7 +83,8 @@ export interface InventoryRecordDetailItem {
   notes: string | null;
 }
 
-export interface InventoryRecordDetail {
+export interface InboundRecordDetail {
+  type: "inbound";
   id: string;
   sourceType: string | null;
   sourceReference: string | null;
@@ -102,6 +103,22 @@ export interface InventoryRecordDetail {
   rejectionReason: string | null;
   items: InventoryRecordDetailItem[];
 }
+
+export interface OutboundRecordDetail {
+  type: "outbound";
+  id: string;
+  orderId: string;
+  orderNumber: string | null;
+  orderStatus: string | null;
+  customerName: string | null;
+  totalItems: number;
+  totalQuantity: number;
+  recordedAt: string;
+  recordedByName: string | null;
+  items: InventoryRecordDetailItem[];
+}
+
+export type InventoryRecordDetail = InboundRecordDetail | OutboundRecordDetail;
 
 export interface InventoryInboundRecordItem {
   id: string;
@@ -330,30 +347,52 @@ async function fetchInventoryTransactions(
 
 async function fetchInventoryRecordDetail(
   id: string,
+  transactionType?: string,
 ): Promise<InventoryRecordDetail> {
-  const res = await agent.get<InventoryRecordDetail>(
-    `/operations/inventory/inbound/${id}`,
-  );
+  const isOutbound = transactionType === "Outbound";
+  const endpoint = isOutbound 
+    ? `/operations/inventory/outbound/${id}`
+    : `/operations/inventory/inbound/${id}`;
+  
+  const res = await agent.get(endpoint);
   const data = res.data;
-  return {
-    id: data?.id ?? id,
-    sourceType: data?.sourceType ?? null,
-    sourceReference: data?.sourceReference ?? null,
-    status: data?.status ?? null,
-    totalItems: data?.totalItems ?? 0,
-    notes: data?.notes ?? null,
-    createdAt: data?.createdAt ?? "",
-    createdBy: data?.createdBy ?? null,
-    createdByName: data?.createdByName ?? null,
-    approvedAt: data?.approvedAt ?? null,
-    approvedBy: data?.approvedBy ?? null,
-    approvedByName: data?.approvedByName ?? null,
-    rejectedAt: data?.rejectedAt ?? null,
-    rejectedBy: data?.rejectedBy ?? null,
-    rejectedByName: data?.rejectedByName ?? null,
-    rejectionReason: data?.rejectionReason ?? null,
-    items: Array.isArray(data?.items) ? data.items : [],
-  };
+
+  if (isOutbound) {
+    return {
+      type: "outbound",
+      id: data?.orderId ?? id,
+      orderId: data?.orderId ?? id,
+      orderNumber: data?.orderNumber ?? null,
+      orderStatus: data?.orderStatus ?? null,
+      customerName: data?.customerName ?? null,
+      totalItems: data?.totalItems ?? 0,
+      totalQuantity: data?.totalQuantity ?? 0,
+      recordedAt: data?.recordedAt ?? "",
+      recordedByName: data?.recordedByName ?? null,
+      items: Array.isArray(data?.items) ? data.items : [],
+    } as OutboundRecordDetail;
+  } else {
+    return {
+      type: "inbound",
+      id: data?.id ?? id,
+      sourceType: data?.sourceType ?? null,
+      sourceReference: data?.sourceReference ?? null,
+      status: data?.status ?? null,
+      totalItems: data?.totalItems ?? 0,
+      notes: data?.notes ?? null,
+      createdAt: data?.createdAt ?? "",
+      createdBy: data?.createdBy ?? null,
+      createdByName: data?.createdByName ?? null,
+      approvedAt: data?.approvedAt ?? null,
+      approvedBy: data?.approvedBy ?? null,
+      approvedByName: data?.approvedByName ?? null,
+      rejectedAt: data?.rejectedAt ?? null,
+      rejectedBy: data?.rejectedBy ?? null,
+      rejectedByName: data?.rejectedByName ?? null,
+      rejectionReason: data?.rejectionReason ?? null,
+      items: Array.isArray(data?.items) ? data.items : [],
+    } as InboundRecordDetail;
+  }
 }
 
 async function fetchInventoryInboundRecords(
@@ -513,10 +552,10 @@ export function useInventoryTransactions(
   });
 }
 
-export function useInventoryRecordDetail(id: string | undefined) {
+export function useInventoryRecordDetail(id: string | undefined, transactionType?: string) {
   return useQuery({
-    queryKey: ["operations", "inventory", "inbound-record-detail", id],
-    queryFn: () => fetchInventoryRecordDetail(id!),
+    queryKey: ["operations", "inventory", "inbound-record-detail", id, transactionType],
+    queryFn: () => fetchInventoryRecordDetail(id!, transactionType),
     enabled: !!id,
   });
 }

@@ -14,7 +14,7 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CameraAltIcon from "@mui/icons-material/CameraAlt";
 import ViewInArIcon from "@mui/icons-material/ViewInAr";
-import { NavLink, useNavigate, useParams } from "react-router-dom";
+import { NavLink, useNavigate, useParams, useLocation } from "react-router-dom";
 
 import { useProductDetailPage } from "./hooks/useProductDetailPage";
 import { RelatedProductsCarousel } from "./components/ProductDetailPageComponents/RelatedProductsCarousel";
@@ -34,6 +34,7 @@ const ACCENT = "#B68C5A";
 
 export default function ProductDetailPage() {
     const nav = useNavigate();
+    const location = useLocation();
     const { id: productId } = useParams<{ id: string }>();
     const cartAuth = useRequireAuthForCart();
     const { handlePreOrder } = usePreOrderButton(cartAuth);
@@ -106,21 +107,30 @@ export default function ProductDetailPage() {
     }, [product]);
 
     if (isLoading) {
+        const isManager = location.pathname.includes("/manager");
         return (
             <Box
                 component="main"
                 sx={{
-                    position: "relative",
-                    left: "50%",
-                    right: "50%",
-                    ml: "-50vw",
-                    mr: "-50vw",
-                    width: "100vw",
-                    background: "linear-gradient(180deg,#FFFFFF 0%,#FAFAF5 100%)",
-                    pt: `calc(${NAV_H}px + ${GAP_TOP}px)`,
-                    pb: `calc(${FOOT_H}px + ${GAP_BOTTOM}px)`,
-                    minHeight: `calc(100vh - ${NAV_H}px - ${FOOT_H}px)`,
-                    px: { xs: 2, md: 3 },
+                    ...(isManager ? {
+                        background: "linear-gradient(180deg,#FFFFFF 0%,#FAFAF5 100%)",
+                        pt: `calc(${NAV_H}px + ${GAP_TOP}px)`,
+                        pb: `calc(${FOOT_H}px + ${GAP_BOTTOM}px)`,
+                        minHeight: `calc(100vh - ${NAV_H}px - ${FOOT_H}px)`,
+                        px: { xs: 2, md: 3 },
+                    } : {
+                        position: "relative",
+                        left: "50%",
+                        right: "50%",
+                        ml: "-50vw",
+                        mr: "-50vw",
+                        width: "100vw",
+                        background: "linear-gradient(180deg,#FFFFFF 0%,#FAFAF5 100%)",
+                        pt: `calc(${NAV_H}px + ${GAP_TOP}px)`,
+                        pb: `calc(${FOOT_H}px + ${GAP_BOTTOM}px)`,
+                        minHeight: `calc(100vh - ${NAV_H}px - ${FOOT_H}px)`,
+                        px: { xs: 2, md: 3 },
+                    }),
                     display: "flex",
                     justifyContent: "center",
                     alignItems: "center",
@@ -132,21 +142,30 @@ export default function ProductDetailPage() {
     }
 
     if (!product) {
+        const isManager = location.pathname.includes("/manager");
         return (
             <Box
                 component="main"
                 sx={{
-                    position: "relative",
-                    left: "50%",
-                    right: "50%",
-                    ml: "-50vw",
-                    mr: "-50vw",
-                    width: "100vw",
-                    background: "linear-gradient(180deg,#FFFFFF 0%,#FAFAF5 100%)",
-                    pt: `calc(${NAV_H}px + ${GAP_TOP}px)`,
-                    pb: `calc(${FOOT_H}px + ${GAP_BOTTOM}px)`,
-                    minHeight: `calc(100vh - ${NAV_H}px - ${FOOT_H}px)`,
-                    px: { xs: 2, md: 3 },
+                    ...(isManager ? {
+                        background: "linear-gradient(180deg,#FFFFFF 0%,#FAFAF5 100%)",
+                        pt: `calc(${NAV_H}px + ${GAP_TOP}px)`,
+                        pb: `calc(${FOOT_H}px + ${GAP_BOTTOM}px)`,
+                        minHeight: `calc(100vh - ${NAV_H}px - ${FOOT_H}px)`,
+                        px: { xs: 2, md: 3 },
+                    } : {
+                        position: "relative",
+                        left: "50%",
+                        right: "50%",
+                        ml: "-50vw",
+                        mr: "-50vw",
+                        width: "100vw",
+                        background: "linear-gradient(180deg,#FFFFFF 0%,#FAFAF5 100%)",
+                        pt: `calc(${NAV_H}px + ${GAP_TOP}px)`,
+                        pb: `calc(${FOOT_H}px + ${GAP_BOTTOM}px)`,
+                        minHeight: `calc(100vh - ${NAV_H}px - ${FOOT_H}px)`,
+                        px: { xs: 2, md: 3 },
+                    }),
                 }}
             >
                 <Typography sx={{ fontWeight: 900, fontSize: 18 }}>
@@ -163,23 +182,32 @@ export default function ProductDetailPage() {
         );
     }
 
+    const isManager = location.pathname.includes("/manager");
     return (
         <>
             <SignInRequiredForCartDialog {...cartAuth.signInForCartDialogProps} />
             <Box
                 component="main"
                 sx={{
-                    position: "relative",
-                    left: "50%",
-                    right: "50%",
-                    ml: "-50vw",
-                    mr: "-50vw",
-                    width: "100vw",
-                    background: "linear-gradient(180deg,#FFFFFF 0%,#FAFAF5 100%)",
-                    pt: `calc(${NAV_H}px + ${GAP_TOP}px)`,
-                    pb: `calc(${FOOT_H}px + ${GAP_BOTTOM}px)`,
-                    minHeight: `calc(100vh - ${NAV_H}px - ${FOOT_H}px)`,
-                    px: { xs: 2, md: 3 },
+                    ...(isManager ? {
+                        background: "linear-gradient(180deg,#FFFFFF 0%,#FAFAF5 100%)",
+                        pt: `calc(${NAV_H}px + ${GAP_TOP}px)`,
+                        pb: `calc(${FOOT_H}px + ${GAP_BOTTOM}px)`,
+                        minHeight: `calc(100vh - ${NAV_H}px - ${FOOT_H}px)`,
+                        px: { xs: 2, md: 3 },
+                    } : {
+                        position: "relative",
+                        left: "50%",
+                        right: "50%",
+                        ml: "-50vw",
+                        mr: "-50vw",
+                        width: "100vw",
+                        background: "linear-gradient(180deg,#FFFFFF 0%,#FAFAF5 100%)",
+                        pt: `calc(${NAV_H}px + ${GAP_TOP}px)`,
+                        pb: `calc(${FOOT_H}px + ${GAP_BOTTOM}px)`,
+                        minHeight: `calc(100vh - ${NAV_H}px - ${FOOT_H}px)`,
+                        px: { xs: 2, md: 3 },
+                    }),
                 }}
             >
             {/* Back + breadcrumb */}

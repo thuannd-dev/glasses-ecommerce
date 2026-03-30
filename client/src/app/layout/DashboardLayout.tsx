@@ -44,7 +44,6 @@ const DASHBOARD_LINKS: { path: string; label: string; role: string; icon: React.
 ];
 
 const SALES_SUB_LINKS: { path: string; label: string; icon: React.ReactNode }[] = [
-  { path: "/sales", label: "Overview", icon: <PointOfSaleIcon /> },
   { path: "/sales/orders", label: "Orders", icon: <Inventory2Outlined /> },
   { path: "/sales/tickets", label: "After-sales", icon: <HistoryOutlined /> },
 ];
@@ -58,7 +57,6 @@ const MANAGER_SUB_LINKS: { path: string; label: string; icon: React.ReactNode }[
 ];
 
 const ADMIN_SUB_LINKS: { path: string; label: string; icon: React.ReactNode }[] = [
-  { path: "/admin", label: "Dashboard", icon: <AdminPanelSettingsIcon /> },
   { path: "/admin/roles", label: "Role Management", icon: <PeopleIcon /> },
   { path: "/admin/policies", label: "Policies", icon: <AssignmentIcon /> },
   { path: "/admin/feature-toggles", label: "Feature Toggles", icon: <ToggleOnIcon /> },
