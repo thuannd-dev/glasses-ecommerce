@@ -48,17 +48,19 @@ export default function ManagerDashboard() {
   const [dateRange, setDateRange] = useState<DateRange>("30d");
   const [customFromDate, setCustomFromDate] = useState("");
   const [customToDate, setCustomToDate] = useState("");
+  const [appliedFromDate, setAppliedFromDate] = useState("");
+  const [appliedToDate, setAppliedToDate] = useState("");
   const [useCustomRange, setUseCustomRange] = useState(false);
 
   const { fromDate, toDate } = useMemo(() => {
-    if (useCustomRange && customFromDate && customToDate) {
-      return { fromDate: customFromDate, toDate: customToDate };
+    if (useCustomRange && appliedFromDate && appliedToDate) {
+      return { fromDate: appliedFromDate, toDate: appliedToDate };
     }
     const to = format(new Date(), "yyyy-MM-dd");
     const days = dateRange === "7d" ? 7 : dateRange === "90d" ? 90 : 30;
     const from = format(subDays(new Date(), days), "yyyy-MM-dd");
     return { fromDate: from, toDate: to };
-  }, [dateRange, customFromDate, customToDate, useCustomRange]);
+  }, [dateRange, appliedFromDate, appliedToDate, useCustomRange]);
 
   const handleApplyCustomRange = () => {
     if (customFromDate && customToDate) {
@@ -67,12 +69,16 @@ export default function ManagerDashboard() {
         alert("Start date must be before or equal to end date");
         return;
       }
+      setAppliedFromDate(customFromDate);
+      setAppliedToDate(customToDate);
       setUseCustomRange(true);
     }
   };
 
   const handlePresetClick = (preset: DateRange) => {
     setDateRange(preset);
+    setAppliedFromDate("");
+    setAppliedToDate("");
     setUseCustomRange(false);
   };
 
