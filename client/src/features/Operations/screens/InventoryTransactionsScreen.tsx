@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { NavLink } from "react-router";
 import {
+  Avatar,
   Box,
   Button,
   Chip,
@@ -51,10 +52,9 @@ function getStatusChipStyle(status: string) {
 function TransactionRow({ row }: { row: InventoryTransactionItem }) {
   const [expanded, setExpanded] = useState(false);
   const detailId = row.referenceId || row.id;
-  const isInboundRecordRef =
-    row.transactionType === "Inbound" || row.referenceType === "Supplier" || row.referenceType === "Return" || row.referenceType === "Adjustment";
   const { data: detail, isLoading } = useInventoryRecordDetail(
-    expanded && isInboundRecordRef ? detailId : undefined,
+    expanded ? detailId : undefined,
+    row.transactionType,
   );
 
   return (
@@ -127,7 +127,6 @@ function TransactionRow({ row }: { row: InventoryTransactionItem }) {
               "&:hover": { color: "#171717", bgcolor: "rgba(0,0,0,0.04)" },
             }}
             aria-label={expanded ? "Hide details" : "Show details"}
-            disabled={!isInboundRecordRef}
           >
             {expanded ? <KeyboardArrowUpRoundedIcon /> : <KeyboardArrowDownRoundedIcon />}
           </IconButton>
@@ -145,9 +144,9 @@ function TransactionRow({ row }: { row: InventoryTransactionItem }) {
                 </Box>
               ) : !detail ? (
                 <Box sx={{ color: "#8A8A8A", fontSize: 13 }}>
-                  Detail is available for inbound-record references only.
+                  No detail available.
                 </Box>
-              ) : (
+              ) : detail.type === "inbound" ? (
                 <Box
                   sx={{
                     bgcolor: "#FAFAF8",
@@ -238,11 +237,152 @@ function TransactionRow({ row }: { row: InventoryTransactionItem }) {
                             gap: 1,
                           }}
                         >
-                          <Box sx={{ color: "#171717", fontSize: 13, fontWeight: 600 }}>
-                            {item.variantName || item.sku || item.productVariantId}
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 0 }}>
+                            <Avatar
+                              src={item.productImageUrl ?? undefined}
+                              alt={item.productImageAlt ?? item.productName ?? "Product image"}
+                              variant="rounded"
+                              sx={{ width: 34, height: 34, flexShrink: 0 }}
+                            />
+                            <Box sx={{ minWidth: 0 }}>
+                              <Box sx={{ color: "#171717", fontSize: 13, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                {item.productName || item.variantName || item.sku || item.productVariantId}
+                              </Box>
+                              {item.variantName && (
+                                <Box sx={{ color: "#8A8A8A", fontSize: 12.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                  {item.variantName} · SKU: {item.sku || "—"}
+                                </Box>
+                              )}
+                            </Box>
                           </Box>
-                          <Box sx={{ color: "#6B6B6B", fontSize: 13, fontVariantNumeric: "tabular-nums" }}>
-                            Qty {item.quantity}
+                          <Box sx={{ textAlign: "right", flexShrink: 0 }}>
+                            <Box sx={{ color: "#6B6B6B", fontSize: 13, fontVariantNumeric: "tabular-nums" }}>
+                              Qty {item.quantity}
+                            </Box>
+                            {item.notes && (
+                              <Box sx={{ color: "#8A8A8A", fontSize: 12.5 }}>
+                                Notes: {item.notes}
+                              </Box>
+                            )}
+                          </Box>
+                        </Box>
+                        {index < (detail.items?.length ?? 0) - 1 && <Divider />}
+                      </Box>
+                    ))}
+                  </Box>
+                </Box>
+              ) : (
+                <Box
+                  sx={{
+                    bgcolor: "#FAFAF8",
+                    border: "1px solid rgba(0,0,0,0.06)",
+                    borderRadius: "14px",
+                    p: { xs: 2, md: 2.25 },
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: "grid",
+                      gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+                      gap: 2,
+                    }}
+                  >
+                    <Stack spacing={0.8}>
+                      <Typography sx={{ fontSize: 12, color: "#8A8A8A", textTransform: "uppercase", letterSpacing: 0.8 }}>
+                        Order
+                      </Typography>
+                      <Box
+                        component="span"
+                        sx={{
+                          display: "inline-flex",
+                          width: "fit-content",
+                          px: 1.2,
+                          py: 0.4,
+                          borderRadius: 999,
+                          border: "1px solid rgba(0,0,0,0.08)",
+                          bgcolor: "#FFFFFF",
+                          fontFamily: "monospace",
+                          fontSize: 12,
+                          color: "#171717",
+                        }}
+                      >
+                        {detail.orderNumber || "—"}
+                      </Box>
+                      <Typography sx={{ fontSize: 13, color: "#6B6B6B" }}>
+                        Customer: {detail.customerName || "—"}
+                      </Typography>
+                      <Typography sx={{ fontSize: 13, color: "#6B6B6B" }}>
+                        Recorded by: {detail.recordedByName || "—"}
+                      </Typography>
+                    </Stack>
+
+                    <Stack spacing={0.8}>
+                      <Typography sx={{ fontSize: 12, color: "#8A8A8A", textTransform: "uppercase", letterSpacing: 0.8 }}>
+                        Details
+                      </Typography>
+                      <Typography sx={{ fontSize: 13, color: "#6B6B6B" }}>
+                        Recorded at: {detail.recordedAt ? new Date(detail.recordedAt).toLocaleString() : "—"}
+                      </Typography>
+                      <Typography sx={{ fontSize: 13, color: "#6B6B6B" }}>
+                        Order Status: {detail.orderStatus || "—"}
+                      </Typography>
+                      <Typography sx={{ fontSize: 13, color: "#6B6B6B" }}>
+                        Total Items: {detail.totalItems} · Total Qty: {detail.totalQuantity}
+                      </Typography>
+                    </Stack>
+                  </Box>
+
+                  <Box
+                    sx={{
+                      mt: 1.75,
+                      borderRadius: 2,
+                      border: "1px solid rgba(0,0,0,0.08)",
+                      bgcolor: "#FFFFFF",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <Box sx={{ px: 1.5, py: 1.1, fontSize: 12, letterSpacing: 0.8, color: "#8A8A8A", textTransform: "uppercase", bgcolor: "#FAFAF8" }}>
+                      Line items
+                    </Box>
+                    {detail.items?.map((item, index) => (
+                      <Box key={item.id}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            px: 1.5,
+                            py: 1.1,
+                            gap: 1,
+                          }}
+                        >
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 0 }}>
+                            <Avatar
+                              src={item.productImageUrl ?? undefined}
+                              alt={item.productImageAlt ?? item.productName ?? "Product image"}
+                              variant="rounded"
+                              sx={{ width: 34, height: 34, flexShrink: 0 }}
+                            />
+                            <Box sx={{ minWidth: 0 }}>
+                              <Box sx={{ color: "#171717", fontSize: 13, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                {item.productName || item.variantName || item.sku || item.productVariantId}
+                              </Box>
+                              {item.variantName && (
+                                <Box sx={{ color: "#8A8A8A", fontSize: 12.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                  {item.variantName} · SKU: {item.sku || "—"}
+                                </Box>
+                              )}
+                            </Box>
+                          </Box>
+                          <Box sx={{ textAlign: "right", flexShrink: 0 }}>
+                            <Box sx={{ color: "#6B6B6B", fontSize: 13, fontVariantNumeric: "tabular-nums" }}>
+                              Qty {item.quantity}
+                            </Box>
+                            {item.notes && (
+                              <Box sx={{ color: "#8A8A8A", fontSize: 12.5 }}>
+                                Notes: {item.notes}
+                              </Box>
+                            )}
                           </Box>
                         </Box>
                         {index < (detail.items?.length ?? 0) - 1 && <Divider />}

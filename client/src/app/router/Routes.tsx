@@ -54,11 +54,6 @@ const ProfilePage = lazy(
 );
 
 const SalesLayout = lazy(() => import("../../features/Sales/SalesLayout"));
-const SalesOverviewScreen = lazy(() =>
-  import("../../features/Sales/screens/OverviewScreen").then((m) => ({
-    default: m.OverviewScreen,
-  })),
-);
 const SalesOrdersScreen = lazy(() =>
   import("../../features/Sales/screens/OrdersScreen").then((m) => ({
     default: m.OrdersScreen,
@@ -70,9 +65,6 @@ const SalesTicketsScreen = lazy(() =>
   })),
 );
 
-const AdminDashboard = lazy(
-  () => import("../../features/Admin/AdminDashboard"),
-);
 const AdminLayout = lazy(() => import("../../features/Admin/AdminLayout"));
 const RoleManagement = lazy(
   () => import("../../features/Admin/RoleManagement"),
@@ -248,7 +240,7 @@ export const router = createBrowserRouter([
             path: "sales",
             element: lazyElement(<SalesLayout />),
             children: [
-              { index: true, element: lazyElement(<SalesOverviewScreen />) },
+              { index: true, element: <Navigate to="/sales/orders" replace /> },
               { path: "orders", element: lazyElement(<SalesOrdersScreen />) },
               { path: "tickets", element: lazyElement(<SalesTicketsScreen />) },
             ],
@@ -360,7 +352,7 @@ export const router = createBrowserRouter([
             path: "admin",
             element: lazyElement(<AdminLayout />),
             children: [
-              { index: true, element: lazyElement(<AdminDashboard />) },
+              { index: true, element: <Navigate to="/admin/roles" replace /> },
               { path: "roles", element: lazyElement(<RoleManagement />) },
               { path: "policies", element: lazyElement(<AdminPolicies />) },
               {
