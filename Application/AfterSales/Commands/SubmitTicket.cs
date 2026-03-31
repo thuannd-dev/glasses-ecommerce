@@ -222,9 +222,9 @@ public sealed class SubmitTicket
                 cancellationToken);
             
             if (!discountResult.IsSuccess)
-                return Result<TicketDetailDto>.Failure(discountResult.ErrorMessage, discountResult.StatusCode);
+                return Result<TicketDetailDto>.Failure(discountResult.Error!, discountResult.Code);
             
-            decimal discountApplied = discountResult.Data;
+            decimal discountApplied = discountResult.Value;
             
             // Auto-upgrade Return → Refund (RefundOnly fast-track) if all conditions are met:
             //   A. No existing Refund ticket on this order (any status)
