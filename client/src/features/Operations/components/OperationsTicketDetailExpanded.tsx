@@ -197,14 +197,14 @@ export function OperationsTicketDetailExpanded({
                   display: "flex",
                   gap: 1,
                   justifyContent: "space-between",
-                  alignItems: "flex-start",
+                  alignItems: "center",
                   p: 1,
                   bgcolor: "#FFFFFF",
                   borderRadius: 0.75,
                   border: "1px solid #E5E7EB",
                 }}
               >
-                <Box sx={{ display: "flex", gap: 1, flex: 1, minWidth: 0 }}>
+                <Box sx={{ display: "flex", gap: 1, flex: 1, minWidth: 0, alignItems: "center" }}>
                   {item.productImageUrl && (
                     <Avatar
                       variant="rounded"
