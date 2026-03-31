@@ -224,7 +224,36 @@ public sealed class SubmitTicket
             if (!discountResult.IsSuccess)
                 return Result<TicketDetailDto>.Failure(discountResult.Error!, discountResult.Code);
             
-            decimal discountApplied = discountResult.Value;
+            decimal totalDiscountApplied = discountResult.Value;
+            
+            // Pre-compute per-item discount distribution to avoid applying full discount to every ticket.
+            // If multiple items are selected, distribute proportionally; if one item or whole order, use full discount.
+            Dictionary<Guid, decimal> discountByItemId = [];
+            
+            if (request.Dto.OrderItemIds == null || request.Dto.OrderItemIds.Count == 0)
+            {
+                // Whole-order ticket: assign full discount
+                discountByItemId[Guid.Empty] = totalDiscountApplied;
+            }
+            else
+            {
+                // Item-specific tickets: distribute discount proportionally by item value
+                List<OrderItem> selectedItems = order.OrderItems
+                    .Where(oi => request.Dto.OrderItemIds.Contains(oi.Id))
+                    .ToList();
+                
+                decimal selectedItemsTotalValue = selectedItems.Sum(oi => oi.UnitPrice * oi.Quantity);
+                
+                foreach (OrderItem item in selectedItems)
+                {
+                    decimal itemValue = item.UnitPrice * item.Quantity;
+                    decimal itemDiscount = selectedItemsTotalValue > 0
+                        ? Math.Round((itemValue / selectedItemsTotalValue) * totalDiscountApplied, 2, MidpointRounding.AwayFromZero)
+                        : 0m;
+                    
+                    discountByItemId[item.Id] = itemDiscount;
+                }
+            }
             
             // Auto-upgrade Return → Refund (RefundOnly fast-track) if all conditions are met:
             //   A. No existing Refund ticket on this order (any status)
@@ -275,7 +304,8 @@ public sealed class SubmitTicket
                                 : order.OrderItems.Sum(i => i.UnitPrice * i.Quantity);
 
                             // Check C: FINAL price (after discount) within auto-upgrade threshold
-                            decimal finalPrice = itemValue - discountApplied;
+                            // Use totalDiscountApplied (aggregate) for threshold evaluation, not per-item
+                            decimal finalPrice = itemValue - totalDiscountApplied;
                             bool withinMaxAmount = !refundPolicy.RefundOnlyMaxAmount.HasValue ||
                                 finalPrice <= refundPolicy.RefundOnlyMaxAmount.Value;
 
@@ -303,6 +333,11 @@ public sealed class SubmitTicket
 
             foreach (Guid? orderItemId in orderItemIdsToProcess)
             {
+                // Determine the discount for this specific ticket
+                decimal ticketDiscount = orderItemId == null
+                    ? discountByItemId[Guid.Empty]  // Whole-order ticket
+                    : discountByItemId[(Guid)orderItemId];  // Item-specific ticket from pre-computed map
+                
                 // Build ticket entity with effective type from auto-upgrade logic
                 AfterSalesTicket ticket = new()
                 {
@@ -316,7 +351,7 @@ public sealed class SubmitTicket
                         ? null
                         : request.Dto.RequestedAction,
                     RefundAmount = request.Dto.RefundAmount,
-                    DiscountApplied = discountApplied,
+                    DiscountApplied = ticketDiscount,
                     IsRequiredEvidence = (appliedRefundPolicy ?? policy).EvidenceRequired,
                     PolicyViolation = null,
                     TicketStatus = AfterSalesTicketStatus.Pending
