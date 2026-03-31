@@ -53,6 +53,7 @@ export interface TicketItemDto {
   quantity: number;
   unitPrice: number;
   totalPrice: number;
+  discountApplied?: number;  // Discount amount for this item
   productImageUrl?: string;
 }
 
@@ -69,6 +70,7 @@ export interface TicketDetailDto {
   reason: string;
   requestedAction?: string;
   refundAmount?: number;
+  discountApplied: number;  // Total discount in this ticket
   isRequiredEvidence: boolean;
   policyViolation?: string;
   staffNotes?: string;
@@ -89,6 +91,7 @@ export interface TicketListDto {
   ticketStatus: AfterSalesTicketStatus;
   reason: string;
   refundAmount?: number;
+  discountApplied: number;  // Total discount in this ticket
   isRequiredEvidence: boolean;
   createdAt: string;
   resolvedAt?: string;

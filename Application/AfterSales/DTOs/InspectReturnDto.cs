@@ -6,4 +6,5 @@ public sealed class InspectReturnDto
 {
     public required bool IsAccepted { get; set; }
     public required string Notes { get; set; }
+    public decimal? RefundAmount { get; set; }  // Required if accepting ReturnAndRefund case
 }

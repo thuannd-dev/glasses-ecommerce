@@ -24,6 +24,16 @@ public sealed class GetOpsTicketDetail
         {
             TicketDetailDto? dto = await context.AfterSalesTickets
                 .AsNoTracking()
+                .Include(t => t.Order)
+                .ThenInclude(o => o.OrderItems)
+                .ThenInclude(oi => oi.ProductVariant)
+                .ThenInclude(pv => pv.Product)
+                .ThenInclude(p => p.Images)
+                .Include(t => t.OrderItem)
+                .ThenInclude(oi => oi.ProductVariant)
+                .ThenInclude(pv => pv.Product)
+                .ThenInclude(p => p.Images)
+                .Include(t => t.Attachments)
                 .Where(t => t.Id == request.Id &&
                             (t.TicketStatus == AfterSalesTicketStatus.InProgress ||
                              t.TicketStatus == AfterSalesTicketStatus.Resolved ||

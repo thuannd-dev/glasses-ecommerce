@@ -167,6 +167,11 @@ public sealed class InspectReturn
                     // Create Refund for ReturnAndRefund case
                     if (ticket.ResolutionType == TicketResolutionType.ReturnAndRefund)
                     {
+                        // Validate that refund amount is provided
+                        if (!request.Dto.RefundAmount.HasValue || request.Dto.RefundAmount.Value <= 0)
+                            return Result<Guid>.Failure(
+                                "Refund amount is required and must be greater than zero for ReturnAndRefund resolution.", 400);
+
                         Payment? payment = await context.Payments
                             .AsNoTracking()
                             .Where(p => p.OrderId == ticket.OrderId &&
@@ -178,26 +183,36 @@ public sealed class InspectReturn
                             return Result<Guid>.Failure(
                                 "No completed payment found for this order. Cannot process refund.", 400);
 
-                        decimal refundAmount = ticket.RefundAmount
-                            ?? scopedItems.Sum(i => i.UnitPrice * i.Quantity);
+                        // Calculate maximum refund amount by subtracting discount from items total
+                        decimal itemsTotal = scopedItems.Sum(i => i.UnitPrice * i.Quantity);
+                        decimal maximumRefund = itemsTotal - ticket.DiscountApplied;
+                        
+                        // Ensure maximum refund doesn't go negative
+                        if (maximumRefund < 0)
+                            maximumRefund = 0;
+
+                        // Validate refund amount provided by staff — must not exceed maximum allowed
+                        if (request.Dto.RefundAmount.Value > maximumRefund)
+                            return Result<Guid>.Failure(
+                                $"Refund amount ({request.Dto.RefundAmount.Value:C}) cannot exceed the maximum allowed ({maximumRefund:C}) = items total ({itemsTotal:C}) minus discount ({ticket.DiscountApplied:C}).", 400);
 
                         decimal existingRefunds = await context.Refunds
                             .Where(r => r.PaymentId == payment.Id && r.RefundStatus != RefundStatus.Rejected)
                             .SumAsync(r => r.Amount, ct);
 
-                        if (existingRefunds + refundAmount > payment.Amount)
+                        if (existingRefunds + request.Dto.RefundAmount.Value > payment.Amount)
                             return Result<Guid>.Failure(
-                                $"Cumulative refund amount ({(existingRefunds + refundAmount):C}) exceeds original payment ({payment.Amount:C}).", 400);
+                                $"Cumulative refund amount ({(existingRefunds + request.Dto.RefundAmount.Value):C}) exceeds original payment ({payment.Amount:C}).", 400);
 
                         context.Refunds.Add(new Refund
                         {
                             PaymentId = payment.Id,
-                            Amount = refundAmount,
+                            Amount = request.Dto.RefundAmount.Value,
                             RefundStatus = RefundStatus.Pending,
                             RefundReason = ticket.Reason
                         });
 
-                        ticket.RefundAmount = refundAmount;
+                        ticket.RefundAmount = request.Dto.RefundAmount.Value;
                     }
                 }
                 // CASE C: WarrantyRepair — no stock mutation, just resolve

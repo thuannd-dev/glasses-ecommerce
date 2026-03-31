@@ -1,4 +1,5 @@
 using Application.AfterSales.DTOs;
+using Application.AfterSales.Services;
 using Application.Core;
 using Application.Interfaces;
 using AutoMapper;
@@ -20,7 +21,8 @@ public sealed class SubmitTicket
     internal sealed class Handler(
         AppDbContext context,
         IMapper mapper,
-        IUserAccessor userAccessor) : IRequestHandler<Command, Result<TicketDetailDto>>
+        IUserAccessor userAccessor,
+        DiscountCalculationService discountCalculationService) : IRequestHandler<Command, Result<TicketDetailDto>>
     {
         public async Task<Result<TicketDetailDto>> Handle(Command request, CancellationToken cancellationToken)
         {
@@ -211,10 +213,18 @@ public sealed class SubmitTicket
                 return Result<TicketDetailDto>.Failure(
                     $"Cannot submit request: {policyViolation} Please contact support if you believe this is an error.", 400);
 
-            // 7.5. Auto-upgrade Return → Refund (RefundOnly fast-track) if all conditions are met:
+            // 7.5. Calculate discount upfront (needed for auto-upgrade validation and ticket creation)
+            List<TicketAttachmentInputDto> attachments = request.Dto.Attachments ?? [];
+            
+            decimal discountApplied = await discountCalculationService.CalculateDiscountAsync(
+                request.Dto.OrderId,
+                request.Dto.OrderItemIds,
+                cancellationToken);
+            
+            // Auto-upgrade Return → Refund (RefundOnly fast-track) if all conditions are met:
             //   A. No existing Refund ticket on this order (any status)
             //   B. Delivered within Refund policy's RefundWindowDays
-            //   C. Item value ≤ Refund policy's RefundOnlyMaxAmount
+            //   C. Final price (after discount) ≤ Refund policy's RefundOnlyMaxAmount
             //   D. Prescription lenses are refundable per Refund policy
             AfterSalesTicketType effectiveType = request.Dto.TicketType;
             AfterSalesTicketType? originalTicketType = null;
@@ -252,16 +262,17 @@ public sealed class SubmitTicket
 
                         if (withinRefundWindow)
                         {
-                            // Compute item value for the ticket's scope
+                            // Compute original item value for the ticket's scope
                             decimal itemValue = request.Dto.OrderItemIds?.Count > 0
                                 ? order.OrderItems
                                     .Where(i => request.Dto.OrderItemIds.Contains(i.Id))
                                     .Sum(i => i.UnitPrice * i.Quantity)
                                 : order.OrderItems.Sum(i => i.UnitPrice * i.Quantity);
 
-                            // Check C: item value within auto-upgrade threshold
+                            // Check C: FINAL price (after discount) within auto-upgrade threshold
+                            decimal finalPrice = itemValue - discountApplied;
                             bool withinMaxAmount = !refundPolicy.RefundOnlyMaxAmount.HasValue ||
-                                itemValue <= refundPolicy.RefundOnlyMaxAmount.Value;
+                                finalPrice <= refundPolicy.RefundOnlyMaxAmount.Value;
 
                             if (withinMaxAmount)
                             {
@@ -282,7 +293,7 @@ public sealed class SubmitTicket
             }
 
             // 8. Create tickets for each selected item
-            List<TicketAttachmentInputDto> attachments = request.Dto.Attachments ?? [];
+            
             AfterSalesTicket? lastCreatedTicket = null;
 
             foreach (Guid? orderItemId in orderItemIdsToProcess)
@@ -300,6 +311,7 @@ public sealed class SubmitTicket
                         ? null
                         : request.Dto.RequestedAction,
                     RefundAmount = request.Dto.RefundAmount,
+                    DiscountApplied = discountApplied,
                     IsRequiredEvidence = (appliedRefundPolicy ?? policy).EvidenceRequired,
                     PolicyViolation = null,
                     TicketStatus = AfterSalesTicketStatus.Pending

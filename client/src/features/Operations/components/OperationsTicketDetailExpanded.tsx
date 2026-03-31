@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Box, Button, Chip, CircularProgress, Typography, Link, Avatar } from "@mui/material";
 import type { TicketDetailDto } from "../../../lib/types/afterSales";
 
@@ -7,7 +8,8 @@ interface OperationsTicketDetailExpandedProps {
   readonly isReceiving?: boolean;
   readonly isInspecting?: boolean;
   readonly onReceive?: () => void;
-  readonly onAccept?: () => void;
+  readonly onAccept?: (refundAmount?: number) => void;
+  readonly onRequestRefundAmount?: () => void; // New: callback to show refund dialog
   readonly onReject?: () => void;
 }
 
@@ -18,6 +20,7 @@ export function OperationsTicketDetailExpanded({
   isInspecting,
   onReceive,
   onAccept,
+  onRequestRefundAmount,
   onReject,
 }: OperationsTicketDetailExpandedProps) {
   const formatDate = (dateStr: string | undefined) => {
@@ -37,6 +40,16 @@ export function OperationsTicketDetailExpanded({
         return "Refund Only";
       default:
         return type || "—";
+    }
+  };
+
+  const handleAcceptClick = () => {
+    // For ReturnAndRefund, show refund dialog
+    if (detail.resolutionType === "ReturnAndRefund") {
+      onRequestRefundAmount?.();
+    } else {
+      // For other resolution types, accept directly
+      onAccept?.();
     }
   };
 
@@ -222,6 +235,14 @@ export function OperationsTicketDetailExpanded({
                   <Typography sx={{ fontSize: 11, color: "#6B6B6B", mt: 0.25 }}>
                     ${item.unitPrice.toFixed(2)} each
                   </Typography>
+                  {item.discountApplied && item.discountApplied > 0 && (
+                    <Typography sx={{ fontSize: 11, color: "#DC2626", mt: 0.25, fontWeight: 500 }}>
+                      Discount: -${item.discountApplied.toFixed(2)}
+                    </Typography>
+                  )}
+                  <Typography sx={{ fontSize: 12, fontWeight: 700, color: "#16A34A", mt: 0.5, pt: 0.25, borderTop: "1px solid #E5E7EB" }}>
+                    Final: ${(item.quantity * item.unitPrice - (item.discountApplied || 0)).toFixed(2)}
+                  </Typography>
                 </Box>
               </Box>
             ))}
@@ -256,7 +277,7 @@ export function OperationsTicketDetailExpanded({
       {detail.receivedAt && !detail.resolvedAt && (
         <Box sx={{ display: "flex", gap: 1.5, mt: 2 }}>
           <Button
-            onClick={onAccept}
+            onClick={handleAcceptClick}
             disabled={isInspecting}
             variant="contained"
             fullWidth

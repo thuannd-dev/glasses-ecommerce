@@ -334,7 +334,10 @@ export function TicketDetailExpanded({ detail, onApprove, onReject, isLoading }:
                     Unit Price
                   </TableCell>
                   <TableCell sx={{ fontWeight: 600, fontSize: 12, color: "#6B6B6B" }} align="right">
-                    Total
+                    Discount
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: 12, color: "#16A34A" }} align="right">
+                    Final Price
                   </TableCell>
                 </TableRow>
               </TableHead>
@@ -368,8 +371,11 @@ export function TicketDetailExpanded({ detail, onApprove, onReject, isLoading }:
                     <TableCell sx={{ fontSize: 12, color: "#171717" }} align="right">
                       ${item.unitPrice.toFixed(2)}
                     </TableCell>
-                    <TableCell sx={{ fontSize: 12, fontWeight: 600, color: "#171717" }} align="right">
-                      ${item.totalPrice.toFixed(2)}
+                    <TableCell sx={{ fontSize: 12, color: item.discountApplied && item.discountApplied > 0 ? "#DC2626" : "#6B6B6B" }} align="right">
+                      {item.discountApplied && item.discountApplied > 0 ? `-$${item.discountApplied.toFixed(2)}` : "—"}
+                    </TableCell>
+                    <TableCell sx={{ fontSize: 12, fontWeight: 600, color: "#16A34A" }} align="right">
+                      ${(item.totalPrice - (item.discountApplied || 0)).toFixed(2)}
                     </TableCell>
                   </TableRow>
                 ))}
