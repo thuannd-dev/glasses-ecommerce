@@ -1,4 +1,4 @@
-import { useState } from "react";
+
 import {
   Box,
   Button,
@@ -12,7 +12,6 @@ import {
   TableCell,
   TableHead,
   TableRow,
-  Divider,
 } from "@mui/material";
 import type { TicketDetailDto } from "../../../lib/types/afterSales";
 
