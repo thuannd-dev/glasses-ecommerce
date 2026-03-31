@@ -1201,6 +1201,7 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
             entity.Property(ast => ast.RequestedAction).HasMaxLength(500);
             entity.Property(ast => ast.PolicyViolation).HasMaxLength(500);
             entity.Property(ast => ast.RefundAmount).HasColumnType("decimal(10,2)");
+            entity.Property(ast => ast.DiscountApplied).HasColumnType("decimal(10,2)");
 
             //Indexes
             entity.HasIndex(e => e.OrderId)

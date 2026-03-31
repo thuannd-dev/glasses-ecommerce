@@ -48,6 +48,7 @@ async function receiveAfterSalesTicket(id: string): Promise<TicketDetailDto> {
 interface InspectDecisionPayload {
   isAccepted: boolean;
   notes: string;
+  refundAmount?: number; // Optional: only required for ReturnAndRefund resolution
 }
 
 async function inspectAfterSalesTicket(id: string, decision: InspectDecisionPayload): Promise<TicketDetailDto> {

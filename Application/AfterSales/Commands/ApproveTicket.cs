@@ -97,10 +97,17 @@ public sealed class ApproveTicket
                             .SumAsync(oi => oi.Quantity * oi.UnitPrice, ct);
                     }
 
-                    // Validate refund amount equals items total
-                    if (request.Dto.RefundAmount.Value != itemsTotal)
+                    // Calculate refund amount by subtracting the discount applied
+                    decimal refundAmount = itemsTotal - ticket.DiscountApplied;
+                    
+                    // Ensure refund amount doesn't go negative
+                    if (refundAmount < 0)
+                        refundAmount = 0;
+
+                    // Validate refund amount provided by staff — must not exceed maximum allowed
+                    if (request.Dto.RefundAmount.Value > refundAmount)
                         return Result<Guid>.Failure(
-                            $"Refund amount ({request.Dto.RefundAmount.Value:C}) must equal the total amount of items ({itemsTotal:C}) for RefundOnly resolution.", 400);
+                            $"Refund amount ({request.Dto.RefundAmount.Value:C}) cannot exceed the maximum allowed ({refundAmount:C}) = items total ({itemsTotal:C}) minus discount ({ticket.DiscountApplied:C}).", 400);
 
                     // Load the most recent completed payment for the order
                     Payment? payment = await context.Payments

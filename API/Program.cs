@@ -1,6 +1,7 @@
 using API.Middleware;
 using Application.Activities.Queries;
 using Application.Activities.Validators;
+using Application.AfterSales.Services;
 using Application.Core;
 using Application.Interfaces;
 using Domain;
@@ -88,6 +89,7 @@ builder.Services.AddScoped<IUserAccessor, UserAccessor>();
 builder.Services.AddScoped<IPhotoService, PhotoService>();
 builder.Services.AddScoped<IVnPayService, VnPayService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped(provider => new DiscountCalculationService(provider.GetRequiredService<AppDbContext>()));
 builder.Services.AddHttpClient<IGHNService, GHNService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.Configure<VnpaySettings>(builder.Configuration.GetSection("VnPay"));

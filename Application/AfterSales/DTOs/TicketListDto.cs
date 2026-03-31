@@ -14,6 +14,7 @@ public sealed class TicketListDto
     public AfterSalesTicketStatus TicketStatus { get; set; }
     public string Reason { get; set; } = null!;
     public decimal? RefundAmount { get; set; }
+    public decimal DiscountApplied { get; set; }
     public bool IsRequiredEvidence { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? ResolvedAt { get; set; }

@@ -21,6 +21,7 @@ public sealed class TicketDetailDto
     public string Reason { get; set; } = null!;
     public string? RequestedAction { get; set; }
     public decimal? RefundAmount { get; set; }
+    public decimal DiscountApplied { get; set; }
     public bool IsRequiredEvidence { get; set; }
     public string? PolicyViolation { get; set; }
     public string? StaffNotes { get; set; }

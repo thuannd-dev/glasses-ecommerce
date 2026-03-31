@@ -11,6 +11,7 @@ public sealed class OrderItemOutputDto
     public int Quantity { get; set; }
     public decimal UnitPrice { get; set; }
     public decimal TotalPrice { get; set; }
+    public decimal DiscountApplied { get; set; }  // Discount amount for this item
     public string? ProductImageUrl { get; set; }
     public Guid? PrescriptionId { get; set; }
 }
