@@ -1,5 +1,19 @@
 import { useState } from "react";
-import { Box, Button, Chip, CircularProgress, Typography, Link, Avatar } from "@mui/material";
+import {
+  Box,
+  Button,
+  Chip,
+  CircularProgress,
+  Typography,
+  Link,
+  Avatar,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  Divider,
+} from "@mui/material";
 import type { TicketDetailDto } from "../../../lib/types/afterSales";
 
 interface OperationsTicketDetailExpandedProps {
@@ -185,67 +199,71 @@ export function OperationsTicketDetailExpanded({
 
       {/* Ticket Items */}
       {detail.items && detail.items.length > 0 && (
-        <Box sx={{ bgcolor: "#F6F6F6", p: 1.5, borderRadius: 1 }}>
-          <Typography sx={{ fontSize: 12, color: "#8A8A8A", fontWeight: 600, mb: 1 }}>
-            ITEMS ({detail.items.length})
+        <Box sx={{ width: "100%" }}>
+          <Typography sx={{ fontSize: 12, fontWeight: 700, color: "#8A8A8A", mb: 1 }}>
+            ITEMS
           </Typography>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-            {detail.items.map((item) => (
-              <Box
-                key={item.id}
-                sx={{
-                  display: "flex",
-                  gap: 1,
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  p: 1,
-                  bgcolor: "#FFFFFF",
-                  borderRadius: 0.75,
-                  border: "1px solid #E5E7EB",
-                }}
-              >
-                <Box sx={{ display: "flex", gap: 1, flex: 1, minWidth: 0, alignItems: "center" }}>
-                  {item.productImageUrl && (
-                    <Avatar
-                      variant="rounded"
-                      src={item.productImageUrl}
-                      sx={{ width: 48, height: 48, flexShrink: 0 }}
-                    />
-                  )}
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography sx={{ fontSize: 12, fontWeight: 600, color: "#171717" }}>
-                      {item.productName}
-                    </Typography>
-                    {item.variantName && (
-                      <Typography sx={{ fontSize: 11, color: "#6B6B6B", mt: 0.25 }}>
-                        {item.variantName}
-                      </Typography>
-                    )}
-                    {item.sku && (
-                      <Typography sx={{ fontSize: 10, color: "#999999", mt: 0.25, fontFamily: "monospace" }}>
-                        SKU: {item.sku}
-                      </Typography>
-                    )}
-                  </Box>
-                </Box>
-                <Box sx={{ textAlign: "right", ml: 1, flexShrink: 0 }}>
-                  <Typography sx={{ fontSize: 12, fontWeight: 600, color: "#171717" }}>
-                    Qty: {item.quantity}
-                  </Typography>
-                  <Typography sx={{ fontSize: 11, color: "#6B6B6B", mt: 0.25 }}>
-                    ${item.unitPrice.toFixed(2)} each
-                  </Typography>
-                  {item.discountApplied && item.discountApplied > 0 && (
-                    <Typography sx={{ fontSize: 11, color: "#DC2626", mt: 0.25, fontWeight: 500 }}>
-                      Discount: -${item.discountApplied.toFixed(2)}
-                    </Typography>
-                  )}
-                  <Typography sx={{ fontSize: 12, fontWeight: 700, color: "#16A34A", mt: 0.5, pt: 0.25, borderTop: "1px solid #E5E7EB" }}>
-                    Final: ${(item.quantity * item.unitPrice - (item.discountApplied || 0)).toFixed(2)}
-                  </Typography>
-                </Box>
-              </Box>
-            ))}
+          <Box sx={{ overflowX: "auto", borderRadius: 1, border: "1px solid rgba(0,0,0,0.08)" }}>
+            <Table size="small">
+              <TableHead sx={{ bgcolor: "#F9FAFB" }}>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 600, fontSize: 12, color: "#6B6B6B" }}>
+                    Product
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: 12, color: "#6B6B6B" }} align="right">
+                    Quantity
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: 12, color: "#6B6B6B" }} align="right">
+                    Unit Price
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: 12, color: "#6B6B6B" }} align="right">
+                    Discount
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: 12, color: "#16A34A" }} align="right">
+                    Final Price
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {detail.items.map((item) => (
+                  <TableRow key={`${item.productVariantId}-${item.quantity}`}>
+                    <TableCell sx={{ fontSize: 12, color: "#171717" }}>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        {item.productImageUrl && (
+                          <Avatar
+                            variant="rounded"
+                            src={item.productImageUrl}
+                            sx={{ width: 40, height: 40, flexShrink: 0 }}
+                          />
+                        )}
+                        <Box>
+                          <Typography sx={{ fontWeight: 600, fontSize: 12 }}>
+                            {item.productName}
+                          </Typography>
+                          {item.variantName && (
+                            <Typography sx={{ fontSize: 11, color: "#6B6B6B" }}>
+                              {item.variantName}
+                            </Typography>
+                          )}
+                        </Box>
+                      </Box>
+                    </TableCell>
+                    <TableCell sx={{ fontSize: 12, color: "#171717" }} align="right">
+                      {item.quantity}
+                    </TableCell>
+                    <TableCell sx={{ fontSize: 12, color: "#171717" }} align="right">
+                      ${item.unitPrice.toFixed(2)}
+                    </TableCell>
+                    <TableCell sx={{ fontSize: 12, color: item.discountApplied && item.discountApplied > 0 ? "#DC2626" : "#6B6B6B" }} align="right">
+                      {item.discountApplied && item.discountApplied > 0 ? `-$${item.discountApplied.toFixed(2)}` : "—"}
+                    </TableCell>
+                    <TableCell sx={{ fontSize: 12, fontWeight: 600, color: "#16A34A" }} align="right">
+                      ${(item.totalPrice - (item.discountApplied || 0)).toFixed(2)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </Box>
         </Box>
       )}
