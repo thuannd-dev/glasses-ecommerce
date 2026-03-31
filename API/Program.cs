@@ -162,7 +162,33 @@ app.UseAuthorization();
 
 //configure to serve static files (wwwroot)
 app.UseDefaultFiles();
-app.UseStaticFiles();
+
+// Configure caching for static assets
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        // For HTML files: no cache (always fetch fresh to get latest asset references)
+        if (ctx.File.Name.EndsWith(".html", StringComparison.OrdinalIgnoreCase))
+        {
+            ctx.Context.Response.Headers.Append("Cache-Control", "no-cache, no-store, must-revalidate");
+            ctx.Context.Response.Headers.Append("Pragma", "no-cache");
+            ctx.Context.Response.Headers.Append("Expires", "0");
+        }
+        // For hashed assets (JS, CSS with hash in filename): cache for 1 year
+        else if (ctx.File.Name.Contains("-") && 
+                 (ctx.File.Name.EndsWith(".js", StringComparison.OrdinalIgnoreCase) || 
+                  ctx.File.Name.EndsWith(".css", StringComparison.OrdinalIgnoreCase)))
+        {
+            ctx.Context.Response.Headers.Append("Cache-Control", "public, max-age=31536000, immutable");
+        }
+        // For other static files (images, fonts): cache for 7 days
+        else
+        {
+            ctx.Context.Response.Headers.Append("Cache-Control", "public, max-age=604800");
+        }
+    }
+});
 
 app.UseMiddleware<DisableRouteMiddleware>();
 
