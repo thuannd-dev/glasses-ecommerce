@@ -4,6 +4,7 @@ import type { ReactElement } from "react";
 import App from "../layout/App";
 import AuthLayout from "../layout/AuthLayout";
 import RouteLoadingFallback from "./RouteLoadingFallback";
+import RouteErrorBoundary from "./RouteErrorBoundary";
 
 import Counter from "../../features/counter/Counter";
 import RequireRole from "./RequireRole";
@@ -200,6 +201,7 @@ export const router = createBrowserRouter([
   // ======================
   {
     element: <AuthLayout />,
+    errorElement: <RouteErrorBoundary />,
     children: [
       { path: "login", element: lazyElement(<LoginForm />) },
       { path: "register", element: lazyElement(<RegisterForm />) },
@@ -218,6 +220,7 @@ export const router = createBrowserRouter([
   {
     path: "/product/:id/lenses",
     element: lazyElement(<SelectLensesPage />),
+    errorElement: <RouteErrorBoundary />,
   },
 
   // ======================
@@ -226,6 +229,7 @@ export const router = createBrowserRouter([
   {
     path: "/",
     element: <App />,
+    errorElement: <RouteErrorBoundary />,
     children: [
       // Landing page (was /collections)
       { index: true, element: lazyElement(<CollectionLandingPage />) },
