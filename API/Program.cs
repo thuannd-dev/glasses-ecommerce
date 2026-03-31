@@ -1,6 +1,7 @@
 using API.Middleware;
 using Application.Activities.Queries;
 using Application.Activities.Validators;
+using Application.AfterSales.Services;
 using Application.Core;
 using Application.Interfaces;
 using Domain;
@@ -88,6 +89,7 @@ builder.Services.AddScoped<IUserAccessor, UserAccessor>();
 builder.Services.AddScoped<IPhotoService, PhotoService>();
 builder.Services.AddScoped<IVnPayService, VnPayService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<DiscountCalculationService>();
 builder.Services.AddHttpClient<IGHNService, GHNService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.Configure<VnpaySettings>(builder.Configuration.GetSection("VnPay"));
@@ -202,6 +204,7 @@ app.MapScalarApiReference("/api/docs", options =>
 
 app.MapFallback(async context =>
 {
+    // 1. API endpoints should 404 with clear message
     if (context.Request.Path.StartsWithSegments("/api"))
     {
         context.Response.StatusCode = StatusCodes.Status404NotFound;
@@ -209,6 +212,24 @@ app.MapFallback(async context =>
         return;
     }
 
+    // 2. Missing static files should 404 (not serve HTML)
+    // This prevents returning HTML for missing JS/CSS/images which causes confusing errors
+    string path = context.Request.Path.Value ?? "";
+    if (Path.HasExtension(path))
+    {
+        // Common static file extensions that should NOT receive HTML fallback
+        string extension = Path.GetExtension(path).ToLowerInvariant();
+        if (extension is ".js" or ".css" or ".map" or ".json" or ".woff" or ".woff2" 
+            or ".ttf" or ".eot" or ".svg" or ".png" or ".jpg" or ".jpeg" or ".gif" 
+            or ".webp" or ".ico" or ".xml" or ".txt")
+        {
+            context.Response.StatusCode = StatusCodes.Status404NotFound;
+            await context.Response.WriteAsync($"Static file not found: {path}");
+            return;
+        }
+    }
+
+    // 3. Everything else is a SPA client route → serve index.html
     var indexPath = Path.Combine(
         app.Environment.WebRootPath!,
         "index.html"
