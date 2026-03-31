@@ -93,6 +93,13 @@ type WizardLocalState = {
 };
 
 const STORAGE_KEY = "manager_create_product_wizard";
+const PRODUCT_TYPE_ENUM_BY_LABEL: Record<string, number> = {
+  Frame: 1,
+  Lens: 2,
+  Combo: 3,
+  Accessory: 4,
+  Service: 5,
+};
 
 function Spinner({ className }: { className?: string }) {
   return (
@@ -307,10 +314,15 @@ export default function ManagerProductCreateWizardScreen() {
 
   const typeOptions = useMemo(() => {
     const list: string[] = lookups?.productType ?? [];
-    // Lookups already exclude "Unknown", so values start at enum 1 (Frame).
     return list
-      .map((label, idx) => ({ value: idx + 1, label }));
+      .map((label) => {
+        const value = PRODUCT_TYPE_ENUM_BY_LABEL[label];
+        return typeof value === "number" ? { value, label } : null;
+      })
+      .filter((item): item is { value: number; label: string } => item !== null);
   }, [lookups?.productType]);
+
+  const allowedTypeValues = useMemo(() => new Set(typeOptions.map((option) => option.value)), [typeOptions]);
 
   const persistState = (next: Partial<WizardLocalState>) => {
     const current: WizardLocalState | null = safeParseJson<WizardLocalState>(localStorage.getItem(STORAGE_KEY));
@@ -358,15 +370,19 @@ export default function ManagerProductCreateWizardScreen() {
     if (!productName.trim()) errors.productName = "Product name is required";
     if (productName.trim().length > 200) errors.productName = "Product name must not exceed 200 characters";
 
-    if (type === "" || Number.isNaN(Number(type))) errors.type = "Type is required";
-    if (Number(type) === 0) errors.type = "Type cannot be Unknown";
+    const numericType = Number(type);
+    if (type === "" || Number.isNaN(numericType)) {
+      errors.type = "Type is required";
+    } else if (!allowedTypeValues.has(numericType)) {
+      errors.type = "Type is invalid";
+    }
 
     if (!brand.trim()) errors.brand = "Brand is required";
     else if (brand.trim().length > 100) errors.brand = "Brand must not exceed 100 characters";
     if (description.trim().length > 1000) errors.description = "Description must not exceed 1000 characters";
 
     return errors;
-  }, [brand, categoryId, description, productName, type]);
+  }, [allowedTypeValues, brand, categoryId, description, productName, type]);
 
   const variantsErrors = useMemo(() => {
     const errors: string[] = [];
