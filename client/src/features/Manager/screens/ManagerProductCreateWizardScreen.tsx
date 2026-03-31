@@ -307,10 +307,9 @@ export default function ManagerProductCreateWizardScreen() {
 
   const typeOptions = useMemo(() => {
     const list: string[] = lookups?.productType ?? [];
-    // Index mapping is enum ordinal. Backend validator forbids Unknown (0) for create.
+    // Lookups already exclude "Unknown", so values start at enum 1 (Frame).
     return list
-      .map((label, idx) => ({ value: idx, label }))
-      .filter((x) => x.value !== 0);
+      .map((label, idx) => ({ value: idx + 1, label }));
   }, [lookups?.productType]);
 
   const persistState = (next: Partial<WizardLocalState>) => {

@@ -607,7 +607,7 @@ export default function ManagerProductsScreen() {
                 }
               >
                 {productTypeOptions.map((t, idx) => (
-                  <MenuItem key={idx} value={idx}>
+                  <MenuItem key={idx} value={idx + 1}>
                     {t}
                   </MenuItem>
                 ))}
