@@ -1,3 +1,4 @@
+using Application.Core;
 using Domain;
 using Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -21,8 +22,8 @@ public sealed class DiscountCalculationService(AppDbContext context)
     /// <param name="orderId">The ID of the order.</param>
     /// <param name="orderItemIds">The IDs of items in the ticket. If null/empty, calculates for all items in the order.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The total discount amount for the specified items.</returns>
-    public async Task<decimal> CalculateDiscountAsync(Guid orderId, List<Guid>? orderItemIds, CancellationToken cancellationToken = default)
+    /// <returns>The total discount amount for the specified items, or a failure result if the order/items are invalid.</returns>
+    public async Task<Result<decimal>> CalculateDiscountAsync(Guid orderId, List<Guid>? orderItemIds, CancellationToken cancellationToken = default)
     {
         // Load the order with its items and promo usage logs
         Order? order = await context.Orders
@@ -32,7 +33,7 @@ public sealed class DiscountCalculationService(AppDbContext context)
             .FirstOrDefaultAsync(o => o.Id == orderId, cancellationToken);
 
         if (order == null)
-            return 0;
+            return Result<decimal>.Failure("Order not found.", 404);
 
         // Determine which items are in scope for this ticket
         List<OrderItem> itemsInTicket = orderItemIds == null || orderItemIds.Count == 0
@@ -40,7 +41,7 @@ public sealed class DiscountCalculationService(AppDbContext context)
             : order.OrderItems.Where(i => orderItemIds.Contains(i.Id)).ToList();
 
         if (itemsInTicket.Count == 0)
-            return 0;
+            return Result<decimal>.Failure("No valid items found in the order for the specified ticket.", 400);
 
         // Calculate total value of all order items (for proportional distribution)
         decimal totalOrderValue = order.OrderItems.Sum(oi => oi.UnitPrice * oi.Quantity);
@@ -49,12 +50,16 @@ public sealed class DiscountCalculationService(AppDbContext context)
         decimal ticketItemsValue = itemsInTicket.Sum(ti => ti.UnitPrice * ti.Quantity);
 
         if (totalOrderValue == 0)
-            return 0;
+            return Result<decimal>.Failure("Order has no items with value.", 400);
 
         // Distribute total actual applied discount proportionally across selected items
         decimal totalAppliedDiscount = order.PromoUsageLogs.Sum(pul => pul.DiscountApplied);
         decimal proportionalDiscount = (ticketItemsValue / totalOrderValue) * totalAppliedDiscount;
+        
+        // Round intentionally to 2 decimal places to prevent drift across multiple tickets.
+        // This ensures all tickets see the same rounded discount value, consistent with storage.
+        proportionalDiscount = Math.Round(proportionalDiscount, 2, MidpointRounding.AwayFromZero);
 
-        return proportionalDiscount;
+        return Result<decimal>.Success(proportionalDiscount);
     }
 }

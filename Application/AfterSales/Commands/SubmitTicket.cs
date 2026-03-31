@@ -216,10 +216,15 @@ public sealed class SubmitTicket
             // 7.5. Calculate discount upfront (needed for auto-upgrade validation and ticket creation)
             List<TicketAttachmentInputDto> attachments = request.Dto.Attachments ?? [];
             
-            decimal discountApplied = await discountCalculationService.CalculateDiscountAsync(
+            Result<decimal> discountResult = await discountCalculationService.CalculateDiscountAsync(
                 request.Dto.OrderId,
                 request.Dto.OrderItemIds,
                 cancellationToken);
+            
+            if (!discountResult.IsSuccess)
+                return Result<TicketDetailDto>.Failure(discountResult.ErrorMessage, discountResult.StatusCode);
+            
+            decimal discountApplied = discountResult.Data;
             
             // Auto-upgrade Return → Refund (RefundOnly fast-track) if all conditions are met:
             //   A. No existing Refund ticket on this order (any status)
