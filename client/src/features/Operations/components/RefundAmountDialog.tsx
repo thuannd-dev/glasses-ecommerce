@@ -42,14 +42,24 @@ export function RefundAmountDialog({
     setError("");
   };
 
-  const handleClose = () => {
+  const handleClose = (_event?: object, reason?: "backdropClick" | "escapeKeyDown") => {
+    if (isLoading && (reason === "backdropClick" || reason === "escapeKeyDown")) {
+      return;
+    }
+
     setAmount("");
     setError("");
     onCancel();
   };
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      disableEscapeKeyDown={!!isLoading}
+      maxWidth="sm"
+      fullWidth
+    >
       <DialogTitle sx={{ fontSize: 16, fontWeight: 700, color: "#171717" }}>
         Enter Refund Amount
       </DialogTitle>

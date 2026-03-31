@@ -36,21 +36,23 @@ public sealed class InspectReturn
                 return Result<TicketDetailDto>.Failure(strategyResult.Error!, strategyResult.Code);
 
             // Read-back query runs outside the execution strategy
-            AfterSalesTicket? updatedTicket = await context.AfterSalesTickets
-                .AsNoTracking()
-                .AsSplitQuery()
-                .Where(t => t.Id == strategyResult.Value)
-                .Include(t => t.Order)
-                .ThenInclude(o => o.OrderItems)
-                .ThenInclude(oi => oi.ProductVariant)
-                .ThenInclude(pv => pv.Product)
-                .ThenInclude(p => p.Images)
-                .Include(t => t.OrderItem!)
-                .ThenInclude(oi => oi.ProductVariant)
-                .ThenInclude(pv => pv.Product)
-                .ThenInclude(p => p.Images)
-                .Include(t => t.Attachments)
-                .FirstOrDefaultAsync(cancellationToken);
+            IExecutionStrategy readBackStrategy = context.Database.CreateExecutionStrategy();
+            AfterSalesTicket? updatedTicket = await readBackStrategy.ExecuteAsync(() =>
+                context.AfterSalesTickets
+                    .AsNoTracking()
+                    .AsSplitQuery()
+                    .Where(t => t.Id == strategyResult.Value)
+                    .Include(t => t.Order)
+                    .ThenInclude(o => o.OrderItems)
+                    .ThenInclude(oi => oi.ProductVariant)
+                    .ThenInclude(pv => pv.Product)
+                    .ThenInclude(p => p.Images)
+                    .Include(t => t.OrderItem!)
+                    .ThenInclude(oi => oi.ProductVariant)
+                    .ThenInclude(pv => pv.Product)
+                    .ThenInclude(p => p.Images)
+                    .Include(t => t.Attachments)
+                    .FirstOrDefaultAsync(cancellationToken));
 
             if (updatedTicket == null)
                 return Result<TicketDetailDto>.Failure("Failed to retrieve updated ticket.", 500);
@@ -264,9 +266,18 @@ public sealed class InspectReturn
             CancellationToken cancellationToken)
         {
             // Validate that refund amount is provided
-            if (!request.Dto.RefundAmount.HasValue || request.Dto.RefundAmount.Value <= 0)
+            if (!request.Dto.RefundAmount.HasValue)
                 return Result<Unit>.Failure(
                     "Refund amount is required and must be greater than zero for ReturnAndRefund resolution.", 400);
+
+            decimal requestedRefund = request.Dto.RefundAmount.Value;
+            if (requestedRefund <= 0)
+                return Result<Unit>.Failure(
+                    "Refund amount is required and must be greater than zero for ReturnAndRefund resolution.", 400);
+
+            if (decimal.Round(requestedRefund, 2, MidpointRounding.AwayFromZero) != requestedRefund)
+                return Result<Unit>.Failure(
+                    "Refund amount must have at most 2 decimal places.", 400);
 
             Payment? payment = await context.Payments
                 .AsNoTracking()
@@ -287,27 +298,27 @@ public sealed class InspectReturn
                 maximumRefund = 0;
 
             // Validate refund amount provided by staff
-            if (request.Dto.RefundAmount.Value > maximumRefund)
+            if (requestedRefund > maximumRefund)
                 return Result<Unit>.Failure(
-                    $"Refund amount ({request.Dto.RefundAmount.Value:C}) cannot exceed the maximum allowed ({maximumRefund:C}) = items total ({itemsTotal:C}) minus discount ({ticket.DiscountApplied:C}).", 400);
+                    $"Refund amount ({requestedRefund:C}) cannot exceed the maximum allowed ({maximumRefund:C}) = items total ({itemsTotal:C}) minus discount ({ticket.DiscountApplied:C}).", 400);
 
             decimal existingRefunds = await context.Refunds
                 .Where(r => r.PaymentId == payment.Id && r.RefundStatus != RefundStatus.Rejected)
                 .SumAsync(r => r.Amount, cancellationToken);
 
-            if (existingRefunds + request.Dto.RefundAmount.Value > payment.Amount)
+            if (existingRefunds + requestedRefund > payment.Amount)
                 return Result<Unit>.Failure(
-                    $"Cumulative refund amount ({(existingRefunds + request.Dto.RefundAmount.Value):C}) exceeds original payment ({payment.Amount:C}).", 400);
+                    $"Cumulative refund amount ({(existingRefunds + requestedRefund):C}) exceeds original payment ({payment.Amount:C}).", 400);
 
             context.Refunds.Add(new Refund
             {
                 PaymentId = payment.Id,
-                Amount = request.Dto.RefundAmount.Value,
+                Amount = requestedRefund,
                 RefundStatus = RefundStatus.Pending,
                 RefundReason = ticket.Reason
             });
 
-            ticket.RefundAmount = request.Dto.RefundAmount.Value;
+            ticket.RefundAmount = requestedRefund;
             return Result<Unit>.Success(Unit.Value);
         }
     }

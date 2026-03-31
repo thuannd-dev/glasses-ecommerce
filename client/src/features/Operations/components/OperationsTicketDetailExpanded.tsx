@@ -225,7 +225,7 @@ export function OperationsTicketDetailExpanded({
               </TableHead>
               <TableBody>
                 {detail.items.map((item) => (
-                  <TableRow key={`${item.productVariantId}-${item.quantity}`}>
+                  <TableRow key={item.id}>
                     <TableCell sx={{ fontSize: 12, color: "#171717" }}>
                       <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                         {item.productImageUrl && (
