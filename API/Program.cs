@@ -1,7 +1,6 @@
 using API.Middleware;
 using Application.Activities.Queries;
 using Application.Activities.Validators;
-using Application.AfterSales.Services;
 using Application.Core;
 using Application.Interfaces;
 using Domain;
@@ -89,7 +88,6 @@ builder.Services.AddScoped<IUserAccessor, UserAccessor>();
 builder.Services.AddScoped<IPhotoService, PhotoService>();
 builder.Services.AddScoped<IVnPayService, VnPayService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
-builder.Services.AddScoped(provider => new DiscountCalculationService(provider.GetRequiredService<AppDbContext>()));
 builder.Services.AddHttpClient<IGHNService, GHNService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.Configure<VnpaySettings>(builder.Configuration.GetSection("VnPay"));
@@ -162,33 +160,7 @@ app.UseAuthorization();
 
 //configure to serve static files (wwwroot)
 app.UseDefaultFiles();
-
-// Configure caching for static assets
-app.UseStaticFiles(new StaticFileOptions
-{
-    OnPrepareResponse = ctx =>
-    {
-        // For HTML files: no cache (always fetch fresh to get latest asset references)
-        if (ctx.File.Name.EndsWith(".html", StringComparison.OrdinalIgnoreCase))
-        {
-            ctx.Context.Response.Headers.Append("Cache-Control", "no-cache, no-store, must-revalidate");
-            ctx.Context.Response.Headers.Append("Pragma", "no-cache");
-            ctx.Context.Response.Headers.Append("Expires", "0");
-        }
-        // For hashed assets (JS, CSS with hash in filename): cache for 1 year
-        else if (ctx.File.Name.Contains("-") && 
-                 (ctx.File.Name.EndsWith(".js", StringComparison.OrdinalIgnoreCase) || 
-                  ctx.File.Name.EndsWith(".css", StringComparison.OrdinalIgnoreCase)))
-        {
-            ctx.Context.Response.Headers.Append("Cache-Control", "public, max-age=31536000, immutable");
-        }
-        // For other static files (images, fonts): cache for 7 days
-        else
-        {
-            ctx.Context.Response.Headers.Append("Cache-Control", "public, max-age=604800");
-        }
-    }
-});
+app.UseStaticFiles();
 
 app.UseMiddleware<DisableRouteMiddleware>();
 
@@ -242,6 +214,10 @@ app.MapFallback(async context =>
         "index.html"
     );
 
+    // Keep SPA shell fresh to avoid stale hashed chunk references
+    context.Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
+    context.Response.Headers["Pragma"] = "no-cache";
+    context.Response.Headers["Expires"] = "0";
     context.Response.ContentType = "text/html";
     await context.Response.SendFileAsync(indexPath);
 });

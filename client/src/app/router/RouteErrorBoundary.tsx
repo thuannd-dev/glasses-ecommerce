@@ -5,12 +5,20 @@ import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import HomeIcon from "@mui/icons-material/Home";
 
+const isDevelopment = import.meta.env.DEV;
+
 export default function RouteErrorBoundary() {
   const error = useRouteError();
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Log error for debugging
+    // TODO: Integrate error tracking service (e.g., Sentry) in production
+    // if (!isDevelopment) {
+    //   Sentry.captureException(error, {
+    //     tags: { errorBoundary: "route" },
+    //     contexts: { route: { path: window.location.pathname } }
+    //   });
+    // }
     console.error("Route Error:", error);
   }, [error]);
 
@@ -23,10 +31,16 @@ export default function RouteErrorBoundary() {
   };
 
   // Handle chunk loading errors (dynamic import failures)
+  // Covers Vite, Webpack, and various browser error messages
   const isChunkLoadError =
     error instanceof Error &&
     (error.message.includes("Failed to fetch dynamically imported module") ||
-      error.message.includes("Importing a module script failed"));
+      error.message.includes("Importing a module script failed") ||
+      error.message.includes("Loading chunk") ||
+      error.message.includes("ChunkLoadError") ||
+      error.name === "ChunkLoadError" ||
+      (error.message.includes("Failed to fetch") &&
+        error.message.includes("module")));
 
   if (isChunkLoadError) {
     return (
@@ -92,7 +106,10 @@ export default function RouteErrorBoundary() {
     errorMessage = error.statusText || errorMessage;
     errorStatus = error.status;
   } else if (error instanceof Error) {
-    errorMessage = error.message;
+    // In production, sanitize error messages to avoid exposing implementation details
+    errorMessage = isDevelopment
+      ? error.message
+      : "Something went wrong. Please try again or contact support if the problem persists.";
   }
 
   return (
