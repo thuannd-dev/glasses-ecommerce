@@ -12,7 +12,7 @@ import type {
 import type { Product } from "../types/collections";
 
 // Chuyển 1 item từ API (productName, category.slug...) sang dạng Product dùng ở UI (name, category, glassesType)
-function mapApiItemToProduct(item: ApiProductItem): Product {
+export function mapApiItemToProduct(item: ApiProductItem): Product {
   const categorySlug = item.category?.slug ?? "";
   const category: Product["category"] =
     categorySlug === "eyeglasses" || categorySlug === "sunglasses"
@@ -39,6 +39,17 @@ function mapApiItemToProduct(item: ApiProductItem): Product {
           ? "sunglasses"
           : undefined,
   };
+}
+
+export async function fetchProductsPage(params: ProductsQueryParams = {}) {
+  const queryParams = buildProductsParams(params);
+  const response = await agent.get<ProductsApiResponse>("/products", {
+    params: queryParams,
+  });
+  const data = response.data;
+  const rawItems = data?.items;
+  const items = Array.isArray(rawItems) ? rawItems.map(mapApiItemToProduct) : [];
+  return { ...data, items };
 }
 
 // Chuyển response chi tiết sản phẩm từ API sang dạng view (ảnh đã sort, mainVariant, giá từ variant)
@@ -164,17 +175,7 @@ export function useProducts(
   } = useQuery({
     queryKey: ["products", queryParams], // params đổi thì queryKey đổi → tự gọi lại API
     enabled: options?.enabled !== false, // false thì không gọi (vd. chưa chọn type)
-    queryFn: async () => {
-      const response = await agent.get<ProductsApiResponse>("/products", {
-        params: queryParams,
-      });
-      const data = response.data;
-      const rawItems = data?.items;
-      const items = Array.isArray(rawItems)
-        ? rawItems.map(mapApiItemToProduct) // map từng item API → Product
-        : [];
-      return { ...data, items };
-    },
+    queryFn: () => fetchProductsPage(params),
   });
 
   const products = Array.isArray(data?.items) ? data.items : [];

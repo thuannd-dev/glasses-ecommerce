@@ -1,45 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { useQueries } from "@tanstack/react-query";
-import agent from "../../../lib/api/agent";
 
-import { useProducts, useCategories, useBrands } from "../../../lib/hooks/useProducts";
+import {
+  fetchProductsPage,
+  useProducts,
+  useCategories,
+  useBrands,
+} from "../../../lib/hooks/useProducts";
 import { useDebouncedValue } from "../../../lib/hooks/useDebouncedValue";
 import { normalizeForSearch } from "../../../lib/utils/searchUtils";
 import type { FiltersState, SortKey, Product } from "../../../lib/types";
-import type { ApiProductItem, ProductsApiResponse } from "../../../lib/types/product";
 
 const PAGE_SIZE = 8;
 const PRICE_DEBOUNCE_MS = 400;
-
-function mapApiItemToProduct(item: ApiProductItem): Product {
-  const categorySlug = item.category?.slug ?? "";
-  const category: Product["category"] =
-    categorySlug === "eyeglasses" || categorySlug === "sunglasses"
-      ? "glasses"
-      : categorySlug === "lens"
-        ? "lens"
-        : categorySlug === "fashion"
-          ? "fashion"
-          : "glasses";
-
-  return {
-    id: item.id,
-    name: item.productName,
-    brand: item.brand,
-    price: item.maxPrice,
-    image: item.firstImage?.imageUrl ?? "",
-    code: item.productName,
-    description: item.description ?? undefined,
-    category,
-    glassesType:
-      categorySlug === "eyeglasses"
-        ? "eyeglasses"
-        : categorySlug === "sunglasses"
-          ? "sunglasses"
-          : undefined,
-  };
-}
 
 function defaultFilters(initialKeyword: string): FiltersState {
   return {
@@ -175,31 +149,24 @@ export function useCollectionPage() {
   const {
     products: apiProducts,
     totalCount: totalItems,
-    isLoading,
+    isLoading: isLoadingCurrentPage,
   } = useProducts(
     { ...productsParams, pageNumber: page },
     {
       enabled: enableQuery,
     }
   );
-  const fillWindowEndPage = page + 2;
-  const pageNumbersToFetch = useMemo(
-    () => Array.from({ length: fillWindowEndPage }, (_, idx) => idx + 1),
-    [fillWindowEndPage]
-  );
+  const serverTotalPages = totalItems > 0 ? Math.ceil(totalItems / PAGE_SIZE) : 0;
+  const pageNumbersToFetch = useMemo(() => {
+    if (!shouldRepaginateFiltered || serverTotalPages <= 0) return [];
+    const all = Array.from({ length: serverTotalPages }, (_, idx) => idx + 1);
+    return all.filter((pageNumber) => pageNumber !== page);
+  }, [page, serverTotalPages, shouldRepaginateFiltered]);
   const fillQueries = useQueries({
     queries: pageNumbersToFetch.map((pageNumber) => ({
       queryKey: ["collection-fill", productsParams, pageNumber],
       enabled: enableQuery && shouldRepaginateFiltered,
-      queryFn: async () => {
-        const response = await agent.get<ProductsApiResponse>("/products", {
-          params: { ...productsParams, pageNumber },
-        });
-        const items = Array.isArray(response.data?.items)
-          ? response.data.items.map(mapApiItemToProduct)
-          : [];
-        return items;
-      },
+      queryFn: async () => (await fetchProductsPage({ ...productsParams, pageNumber })).items ?? [],
     })),
   });
 
@@ -213,9 +180,17 @@ export function useCollectionPage() {
             normalizeForSearch(p.brand).includes(normalizedKeyword)
         );
   const keywordFiltered = byKeyword(rawProducts);
-  const fillRawProducts = shouldRepaginateFiltered
-    ? fillQueries.flatMap((q) => (Array.isArray(q.data) ? q.data : []))
-    : [];
+  const fillRawProducts = useMemo(() => {
+    if (!shouldRepaginateFiltered) return [];
+    const fetchedByPage = new Map<number, Product[]>();
+    fillQueries.forEach((q, idx) => {
+      const pageNumber = pageNumbersToFetch[idx];
+      fetchedByPage.set(pageNumber, Array.isArray(q.data) ? q.data : []);
+    });
+    return Array.from({ length: serverTotalPages }, (_, idx) => idx + 1).flatMap((pageNumber) =>
+      pageNumber === page ? rawProducts : (fetchedByPage.get(pageNumber) ?? [])
+    );
+  }, [fillQueries, page, pageNumbersToFetch, rawProducts, serverTotalPages, shouldRepaginateFiltered]);
   const fillKeywordFiltered = byKeyword(fillRawProducts);
   // Always keep local glassesType filtering as a safety net.
   const filteredProducts =
@@ -240,6 +215,17 @@ export function useCollectionPage() {
     : normalizedKeyword
       ? filteredProducts.length
       : totalItems;
+  const isFillLoading =
+    shouldRepaginateFiltered &&
+    fillQueries.some((q) => q.isLoading || q.isFetching);
+  const isFilteredTotalReady =
+    !shouldRepaginateFiltered ||
+    serverTotalPages <= 1 ||
+    pageNumbersToFetch.every((_, idx) => {
+      const q = fillQueries[idx];
+      return !!q && (q.data !== undefined || q.isError);
+    });
+  const combinedIsLoading = isLoadingCurrentPage || (shouldRepaginateFiltered && isFillLoading);
 
   const totalPages = effectiveTotal <= 0 ? 0 : Math.max(1, Math.ceil(effectiveTotal / PAGE_SIZE));
   const showPagination = totalPages > 1;
@@ -274,8 +260,10 @@ export function useCollectionPage() {
   ]);
 
   useEffect(() => {
-    if (totalPages > 0 && page > totalPages) setPage(totalPages);
-  }, [totalPages, page]);
+    if (isFilteredTotalReady && !combinedIsLoading && totalPages > 0 && page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [combinedIsLoading, isFilteredTotalReady, totalPages, page]);
 
   useEffect(() => {
     if (prevPageRef.current !== page) {
@@ -322,7 +310,7 @@ export function useCollectionPage() {
     productsToShow,
     categoriesList,
     brandsList,
-    isLoading,
+    isLoading: combinedIsLoading,
     totalPages,
     effectiveTotal,
     showPagination,
