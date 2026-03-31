@@ -100,6 +100,13 @@ const PRODUCT_TYPE_ENUM_BY_LABEL: Record<string, number> = {
   Accessory: 4,
   Service: 5,
 };
+const PRODUCT_TYPE_LABEL_BY_ENUM: Record<number, string> = {
+  1: "Frame",
+  2: "Lens",
+  3: "Combo",
+  4: "Accessory",
+  5: "Service",
+};
 
 function Spinner({ className }: { className?: string }) {
   return (
@@ -322,7 +329,10 @@ export default function ManagerProductCreateWizardScreen() {
       .filter((item): item is { value: number; label: string } => item !== null);
   }, [lookups?.productType]);
 
-  const allowedTypeValues = useMemo(() => new Set(typeOptions.map((option) => option.value)), [typeOptions]);
+  const allowedTypeValues = useMemo(
+    () => new Set<number>(Object.values(PRODUCT_TYPE_ENUM_BY_LABEL)),
+    []
+  );
 
   const persistState = (next: Partial<WizardLocalState>) => {
     const current: WizardLocalState | null = safeParseJson<WizardLocalState>(localStorage.getItem(STORAGE_KEY));
@@ -1541,7 +1551,11 @@ export default function ManagerProductCreateWizardScreen() {
     const thumbnails = p?.images?.slice().sort((a, b) => a.displayOrder - b.displayOrder) ?? [];
     const safePreviewIndex = thumbnails.length ? Math.min(confirmPreviewIndex, thumbnails.length - 1) : 0;
     const mainImageUrl = thumbnails.length ? thumbnails[safePreviewIndex]?.imageUrl ?? null : null;
-    const typeLabel = typeOptions.find((x) => x.value === (typeof p?.type === "number" ? p?.type : Number(type)))?.label ?? "";
+    const resolvedTypeValue = typeof p?.type === "number" ? p.type : Number(type);
+    const typeLabel =
+      typeOptions.find((x) => x.value === resolvedTypeValue)?.label ??
+      PRODUCT_TYPE_LABEL_BY_ENUM[resolvedTypeValue] ??
+      "";
 
     return (
       <div className="space-y-8 py-4">
