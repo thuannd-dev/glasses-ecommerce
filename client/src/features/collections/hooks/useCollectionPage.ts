@@ -1,13 +1,45 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
+import { useQueries } from "@tanstack/react-query";
+import agent from "../../../lib/api/agent";
 
 import { useProducts, useCategories, useBrands } from "../../../lib/hooks/useProducts";
 import { useDebouncedValue } from "../../../lib/hooks/useDebouncedValue";
 import { normalizeForSearch } from "../../../lib/utils/searchUtils";
 import type { FiltersState, SortKey, Product } from "../../../lib/types";
+import type { ApiProductItem, ProductsApiResponse } from "../../../lib/types/product";
 
 const PAGE_SIZE = 8;
 const PRICE_DEBOUNCE_MS = 400;
+
+function mapApiItemToProduct(item: ApiProductItem): Product {
+  const categorySlug = item.category?.slug ?? "";
+  const category: Product["category"] =
+    categorySlug === "eyeglasses" || categorySlug === "sunglasses"
+      ? "glasses"
+      : categorySlug === "lens"
+        ? "lens"
+        : categorySlug === "fashion"
+          ? "fashion"
+          : "glasses";
+
+  return {
+    id: item.id,
+    name: item.productName,
+    brand: item.brand,
+    price: item.maxPrice,
+    image: item.firstImage?.imageUrl ?? "",
+    code: item.productName,
+    description: item.description ?? undefined,
+    category,
+    glassesType:
+      categorySlug === "eyeglasses"
+        ? "eyeglasses"
+        : categorySlug === "sunglasses"
+          ? "sunglasses"
+          : undefined,
+  };
+}
 
 function defaultFilters(initialKeyword: string): FiltersState {
   return {
@@ -120,6 +152,7 @@ export function useCollectionPage() {
     return searchKeyword;
   })();
   const normalizedKeyword = searchKeyword ? normalizeForSearch(searchKeyword) : "";
+  const hasGlassesTypeFilter = filters.glassesTypes.length > 0;
 
   const productsParams = {
     pageSize: PAGE_SIZE,
@@ -133,8 +166,8 @@ export function useCollectionPage() {
   };
 
   const hasCategoryIds = !!(categoryIds && categoryIds.length > 0);
-  const hasGlassesTypeFilter = filters.glassesTypes.length > 0;
   const isAllOrRootCategory = categorySlug === "all" || !categorySlug;
+  const shouldRepaginateFiltered = hasGlassesTypeFilter;
 
   const enableQuery =
     hasCategoryIds || (!hasGlassesTypeFilter && isAllOrRootCategory);
@@ -149,6 +182,26 @@ export function useCollectionPage() {
       enabled: enableQuery,
     }
   );
+  const fillWindowEndPage = page + 2;
+  const pageNumbersToFetch = useMemo(
+    () => Array.from({ length: fillWindowEndPage }, (_, idx) => idx + 1),
+    [fillWindowEndPage]
+  );
+  const fillQueries = useQueries({
+    queries: pageNumbersToFetch.map((pageNumber) => ({
+      queryKey: ["collection-fill", productsParams, pageNumber],
+      enabled: enableQuery && shouldRepaginateFiltered,
+      queryFn: async () => {
+        const response = await agent.get<ProductsApiResponse>("/products", {
+          params: { ...productsParams, pageNumber },
+        });
+        const items = Array.isArray(response.data?.items)
+          ? response.data.items.map(mapApiItemToProduct)
+          : [];
+        return items;
+      },
+    })),
+  });
 
   const rawProducts: Product[] = Array.isArray(apiProducts) ? apiProducts : [];
   const byKeyword = (list: Product[]) =>
@@ -160,52 +213,36 @@ export function useCollectionPage() {
             normalizeForSearch(p.brand).includes(normalizedKeyword)
         );
   const keywordFiltered = byKeyword(rawProducts);
-  const pageProducts =
+  const fillRawProducts = shouldRepaginateFiltered
+    ? fillQueries.flatMap((q) => (Array.isArray(q.data) ? q.data : []))
+    : [];
+  const fillKeywordFiltered = byKeyword(fillRawProducts);
+  // Always keep local glassesType filtering as a safety net.
+  const filteredProducts =
     hasGlassesTypeFilter && keywordFiltered.length > 0
       ? keywordFiltered.filter(
           (p) => p.glassesType && filters.glassesTypes.includes(p.glassesType)
         )
       : keywordFiltered;
+  const filledFilteredProducts =
+    hasGlassesTypeFilter && fillKeywordFiltered.length > 0
+      ? fillKeywordFiltered.filter(
+          (p) => p.glassesType && filters.glassesTypes.includes(p.glassesType)
+        )
+      : fillKeywordFiltered;
 
-  const isFirstPage = page === 1;
-  const isShortFirstPage = pageProducts.length < PAGE_SIZE;
+  const productsToShow = shouldRepaginateFiltered
+    ? filledFilteredProducts.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+    : filteredProducts;
 
-  const needMergePage2 =
-    hasCategoryIds && isFirstPage && isShortFirstPage && totalItems > pageProducts.length;
+  const effectiveTotal = shouldRepaginateFiltered
+    ? filledFilteredProducts.length
+    : normalizedKeyword
+      ? filteredProducts.length
+      : totalItems;
 
-  const { products: apiPage2 } = useProducts(
-    { ...productsParams, pageNumber: 2 },
-    { enabled: needMergePage2 }
-  );
-
-  const page2Filtered: Product[] =
-    needMergePage2 && Array.isArray(apiPage2)
-      ? hasGlassesTypeFilter
-        ? byKeyword(apiPage2).filter(
-            (p) => p.glassesType && filters.glassesTypes.includes(p.glassesType)
-          )
-        : byKeyword(apiPage2)
-      : [];
-
-  const mergedProducts =
-    needMergePage2 && page2Filtered.length > 0
-      ? [...pageProducts, ...page2Filtered]
-      : pageProducts;
-
-  const effectiveTotal = normalizedKeyword
-    ? needMergePage2
-      ? mergedProducts.length
-      : pageProducts.length
-    : needMergePage2 && mergedProducts.length > 0
-      ? mergedProducts.length
-      : hasCategoryIds && isFirstPage && isShortFirstPage
-        ? pageProducts.length
-        : totalItems;
-
-  const totalPages =
-    effectiveTotal <= 0 ? 0 : Math.max(1, Math.ceil(effectiveTotal / PAGE_SIZE));
+  const totalPages = effectiveTotal <= 0 ? 0 : Math.max(1, Math.ceil(effectiveTotal / PAGE_SIZE));
   const showPagination = totalPages > 1;
-  const productsToShow = needMergePage2 ? mergedProducts : pageProducts;
 
   useEffect(() => {
     const urlKeyword = searchParams.get("search") ?? "";
