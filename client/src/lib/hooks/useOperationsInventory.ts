@@ -118,7 +118,33 @@ export interface OutboundRecordDetail {
   items: InventoryRecordDetailItem[];
 }
 
-export type InventoryRecordDetail = InboundRecordDetail | OutboundRecordDetail;
+export interface ReturnRecordDetail {
+  type: "return";
+  id: string;
+  returnSourceType: "InboundRecord" | "Ticket";
+  status: string | null;
+  createdAt: string;
+  createdByName: string | null;
+  items: InventoryRecordDetailItem[];
+  // InboundRecord-specific
+  sourceType?: string | null;
+  sourceReference?: string | null;
+  notes?: string | null;
+  approvedAt?: string | null;
+  approvedByName?: string | null;
+  rejectedAt?: string | null;
+  rejectedByName?: string | null;
+  rejectionReason?: string | null;
+  // Ticket-specific
+  customerName?: string | null;
+  orderNumber?: string | null;
+  reason?: string | null;
+  resolutionType?: string | null;
+  ticketType?: string | null;
+  orderId?: string;
+}
+
+export type InventoryRecordDetail = InboundRecordDetail | OutboundRecordDetail | ReturnRecordDetail;
 
 export interface InventoryInboundRecordItem {
   id: string;
@@ -348,16 +374,63 @@ async function fetchInventoryTransactions(
 async function fetchInventoryRecordDetail(
   id: string,
   transactionType?: string,
+  referenceType?: string,
 ): Promise<InventoryRecordDetail> {
-  const isOutbound = transactionType === "Outbound";
-  const endpoint = isOutbound 
-    ? `/operations/inventory/outbound/${id}`
-    : `/operations/inventory/inbound/${id}`;
+  // Determine endpoint based on referenceType first (for Return), then transactionType
+  let endpoint: string;
+  
+  if (referenceType === "Return") {
+    endpoint = `/operations/inventory/return/${id}`;
+  } else if (transactionType === "Outbound") {
+    endpoint = `/operations/inventory/outbound/${id}`;
+  } else {
+    endpoint = `/operations/inventory/inbound/${id}`;
+  }
   
   const res = await agent.get(endpoint);
   const data = res.data;
 
-  if (isOutbound) {
+  // Handle Return transaction detail
+  if (referenceType === "Return" || data?.returnSourceType) {
+    return {
+      type: "return",
+      id: data?.id ?? id,
+      returnSourceType: data?.returnSourceType ?? "InboundRecord",
+      status: data?.status ?? null,
+      createdAt: data?.createdAt ?? "",
+      createdByName: data?.createdByName ?? null,
+      items: Array.isArray(data?.items) ? data.items.map((item: any) => ({
+        id: item.id ?? "",
+        productVariantId: item.productVariantId ?? "",
+        productId: null,
+        productName: item.productName ?? null,
+        variantName: item.variantName ?? null,
+        sku: item.sku ?? null,
+        productImageUrl: item.productImageUrl ?? null,
+        productImageAlt: item.productImageAlt ?? null,
+        quantity: item.quantity ?? 0,
+        notes: item.notes ?? null,
+      })) : [],
+      // InboundRecord fields
+      sourceType: data?.sourceType ?? null,
+      sourceReference: data?.sourceReference ?? null,
+      notes: data?.notes ?? null,
+      approvedAt: data?.approvedAt ?? null,
+      approvedByName: data?.approvedByName ?? null,
+      rejectedAt: data?.rejectedAt ?? null,
+      rejectionReason: data?.rejectionReason ?? null,
+      // Ticket fields
+      customerName: data?.customerName ?? null,
+      orderNumber: data?.orderNumber ?? null,
+      reason: data?.reason ?? null,
+      resolutionType: data?.resolutionType ?? null,
+      ticketType: data?.ticketType ?? null,
+      orderId: data?.orderId ?? undefined,
+    } as ReturnRecordDetail;
+  }
+
+  // Handle Outbound transaction detail
+  if (transactionType === "Outbound") {
     return {
       type: "outbound",
       id: data?.orderId ?? id,
@@ -371,28 +444,29 @@ async function fetchInventoryRecordDetail(
       recordedByName: data?.recordedByName ?? null,
       items: Array.isArray(data?.items) ? data.items : [],
     } as OutboundRecordDetail;
-  } else {
-    return {
-      type: "inbound",
-      id: data?.id ?? id,
-      sourceType: data?.sourceType ?? null,
-      sourceReference: data?.sourceReference ?? null,
-      status: data?.status ?? null,
-      totalItems: data?.totalItems ?? 0,
-      notes: data?.notes ?? null,
-      createdAt: data?.createdAt ?? "",
-      createdBy: data?.createdBy ?? null,
-      createdByName: data?.createdByName ?? null,
-      approvedAt: data?.approvedAt ?? null,
-      approvedBy: data?.approvedBy ?? null,
-      approvedByName: data?.approvedByName ?? null,
-      rejectedAt: data?.rejectedAt ?? null,
-      rejectedBy: data?.rejectedBy ?? null,
-      rejectedByName: data?.rejectedByName ?? null,
-      rejectionReason: data?.rejectionReason ?? null,
-      items: Array.isArray(data?.items) ? data.items : [],
-    } as InboundRecordDetail;
   }
+
+  // Handle Inbound transaction detail (default)
+  return {
+    type: "inbound",
+    id: data?.id ?? id,
+    sourceType: data?.sourceType ?? null,
+    sourceReference: data?.sourceReference ?? null,
+    status: data?.status ?? null,
+    totalItems: data?.totalItems ?? 0,
+    notes: data?.notes ?? null,
+    createdAt: data?.createdAt ?? "",
+    createdBy: data?.createdBy ?? null,
+    createdByName: data?.createdByName ?? null,
+    approvedAt: data?.approvedAt ?? null,
+    approvedBy: data?.approvedBy ?? null,
+    approvedByName: data?.approvedByName ?? null,
+    rejectedAt: data?.rejectedAt ?? null,
+    rejectedBy: data?.rejectedBy ?? null,
+    rejectedByName: data?.rejectedByName ?? null,
+    rejectionReason: data?.rejectionReason ?? null,
+    items: Array.isArray(data?.items) ? data.items : [],
+  } as InboundRecordDetail;
 }
 
 async function fetchInventoryInboundRecords(
@@ -552,10 +626,10 @@ export function useInventoryTransactions(
   });
 }
 
-export function useInventoryRecordDetail(id: string | undefined, transactionType?: string) {
+export function useInventoryRecordDetail(id: string | undefined, transactionType?: string, referenceType?: string) {
   return useQuery({
-    queryKey: ["operations", "inventory", "inbound-record-detail", id, transactionType],
-    queryFn: () => fetchInventoryRecordDetail(id!, transactionType),
+    queryKey: ["operations", "inventory", "inbound-record-detail", id, transactionType, referenceType],
+    queryFn: () => fetchInventoryRecordDetail(id!, transactionType, referenceType),
     enabled: !!id,
   });
 }
