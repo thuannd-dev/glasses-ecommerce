@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback, useEffect } from "react";
 import { useAccount } from "../../lib/hooks/useAccount";
 import { useManagerDashboard } from "../../lib/hooks/useManagerDashboard";
 import type { PromotionItem, LowStockItem } from "../../lib/hooks/useManagerDashboard";
-import { format, parseISO, eachMonthOfInterval } from "date-fns";
+import { format } from "date-fns";
 import * as XLSX from "xlsx";
 import {
   ShoppingBag,
@@ -59,12 +59,12 @@ export default function ManagerDashboard() {
 
   // Fetch monthly revenue data (12 API calls)
   const [monthlyRevenueData, setMonthlyRevenueData] = useState<Array<{month: string, revenue: number, orders: number, discount: number}>>([]);
-  const [isLoadingMonthly, setIsLoadingMonthly] = useState(false);
+  // const [isLoadingMonthly, setIsLoadingMonthly] = useState(false);
 
   useEffect(() => {
     const fetchMonthlyData = async () => {
       console.log(' [DASHBOARD] Starting to fetch monthly data for year:', selectedYear);
-      setIsLoadingMonthly(true);
+      // setIsLoadingMonthly(true);
       const monthlyData = [];
       
       for (let month = 0; month < 12; month++) {
@@ -114,7 +114,7 @@ export default function ManagerDashboard() {
       console.log(' [DASHBOARD] Total months with revenue > 0:', monthlyData.filter(m => m.revenue > 0).length);
       
       setMonthlyRevenueData(monthlyData);
-      setIsLoadingMonthly(false);
+      // setIsLoadingMonthly(false);
     };
 
     fetchMonthlyData();
