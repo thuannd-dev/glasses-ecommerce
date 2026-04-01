@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useAccount } from "../../lib/hooks/useAccount";
 import { useManagerDashboard } from "../../lib/hooks/useManagerDashboard";
 import type { PromotionItem, LowStockItem } from "../../lib/hooks/useManagerDashboard";
@@ -51,57 +51,16 @@ export default function ManagerDashboard() {
   const { fromDate, toDate } = useMemo(() => {
     const from = `${selectedYear}-01-01`;
     const to = `${selectedYear}-12-31`;
-      
-      const fetchMonth = async () => {
-        console.log(` [MONTH ${month + 1}] Fetching data for ${format(monthStart, 'MMM')} (${from} to ${to})`);
-        
-        try {
-          const url = `https://glasses-ecommerce.azurewebsites.net/api/manager/reports/revenue?fromDate=${from}&toDate=${to}`;
-          console.log(`   API URL: ${url}`);
-          
-          const response = await fetch(url, { 
-            credentials: 'include',
-            signal: abortController.signal 
-          });
-          const data = await response.json();
-          
-          console.log(`   Response for ${format(monthStart, 'MMM')}:`, {
-            totalRevenue: data.totalRevenue,
-            totalOrders: data.totalOrders,
-            totalDiscount: data.totalDiscount,
-            fromDate: data.fromDate,
-            toDate: data.toDate
-          });
-          
-          return {
-            month: format(monthStart, 'MMM'),
-            revenue: data.totalRevenue || 0,
-            orders: data.totalOrders || 0,
-            discount: data.totalDiscount || 0,
-          };
-        } catch (error) {
-          if (error instanceof Error && error.name === 'AbortError') {
-            console.log(`   Fetch aborted for ${format(monthStart, 'MMM')}`);
-            throw error;
-          }
-          console.error(`   Error fetching data for ${format(monthStart, 'MMM')}:`, error);
-          // Return null for failed months instead of fabricated zero data
-          return {
-            month: format(monthStart, 'MMM'),
-            revenue: null,
-            orders: null,
-            discount: null,
-          };
-        }
-      };
-      
-      fetchPromises.push(fetchMonth());
-  // Revenue chart — use monthly data from API calls
+    return { fromDate: from, toDate: to };
+  }, [selectedYear]);
+
+  // Fetch dashboard data using the custom hook
+  const { revenue, topProducts, inventory, afterSales, promotions, isLoading } = useManagerDashboard(fromDate, toDate);
+
+  // Revenue chart data - placeholder for now since monthly data fetching is removed
   const revenueChartData = useMemo(() => {
-    console.log(' [CHART DATA] revenueChartData updated:', monthlyRevenueData);
-    console.log(' [CHART DATA] Chart will render with', monthlyRevenueData.length, 'data points');
-    return monthlyRevenueData;
-  }, [monthlyRevenueData]);
+    return [];
+  }, []);
 
   // After-sales chart data
   const afterSalesChartData = useMemo(() => {
