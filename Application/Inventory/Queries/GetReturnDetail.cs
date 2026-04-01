@@ -22,6 +22,9 @@ public sealed class GetReturnDetail
     {
         public async Task<Result<ReturnDetailDto>> Handle(Query request, CancellationToken ct)
         {
+            if (request.Id == Guid.Empty)
+                return Result<ReturnDetailDto>.Failure("Invalid return id.", 400);
+
             // Try to find InboundRecord first using ProjectTo
             InboundRecordDto? inboundDto = await context.InboundRecords
                 .AsNoTracking()
