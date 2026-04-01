@@ -24,10 +24,8 @@ export function PreOrderScreen() {
 
   const pageSize = 5;
 
-  const [statusFilter, setStatusFilter] = useState<"All" | "Confirmed" | "Processing" | "Shipped" | "Delivered">(
-
-    "Confirmed",
-
+  const [statusFilter, setStatusFilter] = useState<"Confirmed" | "Processing" | "Shipped" | "Delivered">(
+    "Confirmed"
   );
 
 
@@ -40,7 +38,7 @@ export function PreOrderScreen() {
 
     orderType: "PreOrder" as OrderType,
 
-    status: statusFilter === "All" ? undefined : (statusFilter as OrderStatus | string),
+    status: statusFilter as OrderStatus | string,
 
   });
 
@@ -134,7 +132,16 @@ export function PreOrderScreen() {
 
             <>
 
-              <StatusFilterTabs value={statusFilter} onChange={setStatusFilter} hideAll />
+              <StatusFilterTabs 
+                value={statusFilter} 
+                onChange={(newStatus) => {
+                  if (newStatus !== "All") {
+                    setStatusFilter(newStatus);
+                    setPageNumber(1);
+                  }
+                }} 
+                hideAll 
+              />
 
               {safeOrders.length === 0 ? (
 
@@ -179,8 +186,6 @@ export function PreOrderScreen() {
                   .filter((o) => {
 
                     const s = String(o.orderStatus).toLowerCase();
-
-                    if (statusFilter === "All") return true;
 
                     if (statusFilter === "Confirmed") return s === "confirmed";
 
