@@ -51,35 +51,18 @@ export default function ManagerDashboard() {
   const { fromDate, toDate } = useMemo(() => {
     const from = `${selectedYear}-01-01`;
     const to = `${selectedYear}-12-31`;
-    return { fromDate: from, toDate: to };
-  }, [selectedYear]);
-
-  const { revenue, inventory, afterSales, promotions, topProducts, isLoading } =
-    useManagerDashboard(fromDate, toDate);
-
-  // Fetch monthly revenue data (12 API calls)
-  const [monthlyRevenueData, setMonthlyRevenueData] = useState<Array<{month: string, revenue: number, orders: number, discount: number}>>([]);
-  // const [isLoadingMonthly, setIsLoadingMonthly] = useState(false);
-
-  useEffect(() => {
-    const fetchMonthlyData = async () => {
-      console.log(' [DASHBOARD] Starting to fetch monthly data for year:', selectedYear);
-      // setIsLoadingMonthly(true);
-      const monthlyData = [];
       
-      for (let month = 0; month < 12; month++) {
-        const monthStart = new Date(selectedYear, month, 1);
-        const monthEnd = new Date(selectedYear, month + 1, 0);
-        const from = format(monthStart, 'yyyy-MM-dd');
-        const to = format(monthEnd, 'yyyy-MM-dd');
-        
+      const fetchMonth = async () => {
         console.log(` [MONTH ${month + 1}] Fetching data for ${format(monthStart, 'MMM')} (${from} to ${to})`);
         
         try {
           const url = `https://glasses-ecommerce.azurewebsites.net/api/manager/reports/revenue?fromDate=${from}&toDate=${to}`;
           console.log(`   API URL: ${url}`);
           
-          const response = await fetch(url, { credentials: 'include' });
+          const response = await fetch(url, { 
+            credentials: 'include',
+            signal: abortController.signal 
+          });
           const data = await response.json();
           
           console.log(`   Response for ${format(monthStart, 'MMM')}:`, {
@@ -90,36 +73,29 @@ export default function ManagerDashboard() {
             toDate: data.toDate
           });
           
-          const monthData = {
+          return {
             month: format(monthStart, 'MMM'),
             revenue: data.totalRevenue || 0,
             orders: data.totalOrders || 0,
             discount: data.totalDiscount || 0,
           };
-          
-          monthlyData.push(monthData);
-          console.log(`   Pushed data:`, monthData);
         } catch (error) {
+          if (error instanceof Error && error.name === 'AbortError') {
+            console.log(`   Fetch aborted for ${format(monthStart, 'MMM')}`);
+            throw error;
+          }
           console.error(`   Error fetching data for ${format(monthStart, 'MMM')}:`, error);
-          monthlyData.push({
+          // Return null for failed months instead of fabricated zero data
+          return {
             month: format(monthStart, 'MMM'),
-            revenue: 0,
-            orders: 0,
-            discount: 0,
-          });
+            revenue: null,
+            orders: null,
+            discount: null,
+          };
         }
-      }
+      };
       
-      console.log(' [DASHBOARD] All monthly data fetched:', monthlyData);
-      console.log(' [DASHBOARD] Total months with revenue > 0:', monthlyData.filter(m => m.revenue > 0).length);
-      
-      setMonthlyRevenueData(monthlyData);
-      // setIsLoadingMonthly(false);
-    };
-
-    fetchMonthlyData();
-  }, [selectedYear]);
-
+      fetchPromises.push(fetchMonth());
   // Revenue chart — use monthly data from API calls
   const revenueChartData = useMemo(() => {
     console.log(' [CHART DATA] revenueChartData updated:', monthlyRevenueData);
