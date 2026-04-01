@@ -360,21 +360,6 @@ export default function ProductsList() {
               </ToggleButton>
             </ToggleButtonGroup>
           </Box>
-
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => navigate("/manager/products/create")}
-            sx={{
-              textTransform: "none",
-              fontWeight: 600,
-              borderRadius: 1,
-              bgcolor: "#B68C5A",
-              "&:hover": { bgcolor: "#9A7548" },
-            }}
-          >
-            Add Product
-          </Button>
         </Box>
       </Paper>
 
