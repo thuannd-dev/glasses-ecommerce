@@ -1,6 +1,8 @@
 namespace Application.Inventory.DTOs;
 
-/// Dto Response for Return transaction detail (either InboundRecord or AfterSalesTicket)
+/// <summary>
+/// DTO response cho chi tiết phiếu hoàn hàng (từ InboundRecord hoặc AfterSalesTicket)
+/// </summary>
 public sealed class ReturnDetailDto
 {
     // Common fields
@@ -27,17 +29,4 @@ public sealed class ReturnDetailDto
     public string? ResolutionType { get; set; }
     public string? TicketType { get; set; }
     public Guid? OrderId { get; set; }
-}
-
-public sealed class ReturnItemDetailDto
-{
-    public Guid Id { get; set; }
-    public string? ProductName { get; set; }
-    public string? VariantName { get; set; }
-    public string? Sku { get; set; }
-    public int Quantity { get; set; }
-    public string? ProductImageUrl { get; set; }
-    public string? ProductImageAlt { get; set; }
-    public string? Notes { get; set; }
-    public Guid ProductVariantId { get; set; }
 }

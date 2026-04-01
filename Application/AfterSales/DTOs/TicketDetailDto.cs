@@ -31,4 +31,5 @@ public sealed class TicketDetailDto
     public DateTime? ResolvedAt { get; set; }
     public List<TicketAttachmentDto> Attachments { get; set; } = [];
     public List<OrderItemOutputDto> Items { get; set; } = [];
+    public string? CustomerName { get; set; }
 }

@@ -87,6 +87,7 @@ public sealed class GetReturnDetail
                 Status = ticket.TicketStatus.ToString(),
                 CreatedAt = ticket.CreatedAt,
                 CreatedByName = null,
+                CustomerName = ticket.CustomerName,
                 Items = ticket.Items?.Select(item => new ReturnItemDetailDto
                 {
                     Id = item.Id,
@@ -99,7 +100,6 @@ public sealed class GetReturnDetail
                     Notes = null,
                     ProductVariantId = item.ProductVariantId
                 }).ToList() ?? [],
-                CustomerName = null,
                 OrderNumber = orderNumber,
                 Reason = ticket.Reason,
                 ResolutionType = ticket.ResolutionType?.ToString(),

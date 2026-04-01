@@ -26,7 +26,7 @@ import {
   IconButton,
   Grid,
 } from "@mui/material";
-import { useState } from "react";
+import React, { useState } from "react";
 import { useAdminPolicies } from "../../lib/hooks/useAdminPolicies";
 import type {
   PolicyConfigurationDto,
@@ -477,9 +477,8 @@ export default function AdminPolicies() {
                     const typeLabel: string = getPolicyTypeLabel(policy.policyType);
                     const typeColor = POLICY_TYPE_COLORS[typeof policy.policyType === 'number' ? policy.policyType : 0];
                     return (
-                      <>
+                      <React.Fragment key={policy.id}>
                         <TableRow
-                          key={policy.id}
                           hover
                           sx={{
                             "& td": { py: 1.8, fontSize: 14 },
@@ -658,7 +657,7 @@ export default function AdminPolicies() {
                             </TableCell>
                           </TableRow>
                         )}
-                      </>
+                      </React.Fragment>
                     );
                   })}
                 </TableBody>
