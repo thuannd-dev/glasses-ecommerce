@@ -86,35 +86,34 @@ export default function RoleManagement() {
   }
 
   return (
-    <>
-      {/* Header Section */}
-      <Box 
-        sx={{ 
-          mb: 6,
-          background: "linear-gradient(135deg, rgba(25, 118, 210, 0.05) 0%, rgba(25, 118, 210, 0.02) 100%)",
-          py: 3.5,
-          px: 3.5,
-          borderRadius: 2,
-          border: "1px solid",
-          borderColor: "rgba(25, 118, 210, 0.1)",
-        }}
-      >
+    <Box
+      sx={{
+        minHeight: "100vh",
+        px: { xs: 2, md: 4, lg: 6 },
+        py: 4,
+        bgcolor: "#FAFAF8",
+        color: "#171717",
+      }}
+    >
+      {/* Header */}
+      <Box sx={{ mb: 5 }}>
         <Typography
           sx={{
             fontSize: 11,
-            letterSpacing: 2,
+            letterSpacing: 4,
             textTransform: "uppercase",
-            color: "primary.main",
+            color: "#8A8A8A",
             fontWeight: 700,
-            opacity: 0.8,
           }}
         >
           Admin Console
         </Typography>
-        <Typography sx={{ mt: 1.5, fontSize: 32, fontWeight: 900, color: "text.primary", letterSpacing: -0.5 }}>
+
+        <Typography sx={{ mt: 1, fontSize: { xs: 24, md: 30 }, fontWeight: 800, color: "#171717" }}>
           Role Management
         </Typography>
-        <Typography sx={{ mt: 1.5, color: "text.secondary", maxWidth: 700, fontSize: 15, lineHeight: 1.6 }}>
+
+        <Typography sx={{ mt: 0.5, color: "#6B6B6B", maxWidth: 520, fontSize: 14 }}>
           Assign roles to users and manage access levels across the platform.
         </Typography>
       </Box>
@@ -127,43 +126,31 @@ export default function RoleManagement() {
           borderColor: "rgba(0, 0, 0, 0.08)",
           borderRadius: 2,
           overflow: "hidden",
+          boxShadow: "0 2px 8px rgba(0, 0, 0, 0.04)",
           transition: "all 0.3s ease",
           "&:hover": {
-            boxShadow: "0 4px 16px rgba(0, 0, 0, 0.06)",
+            boxShadow: "0 12px 30px rgba(0, 0, 0, 0.08)",
           },
         }}
       >
         <TableContainer>
           <Table sx={{ minWidth: 900 }}>
             <TableHead>
-              <TableRow 
-                sx={{ 
-                  bgcolor: "rgba(33, 150, 243, 0.04)",
-                  borderBottom: "2px solid",
-                  borderColor: "rgba(33, 150, 243, 0.15)",
-                }}
-              >
-                <TableCell sx={{ fontWeight: 800, fontSize: 14, py: 2.5, color: "primary.main" }}>Display Name</TableCell>
-                <TableCell sx={{ fontWeight: 800, fontSize: 14, py: 2.5, color: "primary.main" }}>Email</TableCell>
-                <TableCell sx={{ fontWeight: 800, fontSize: 14, py: 2.5, color: "primary.main" }}>Username</TableCell>
-                <TableCell sx={{ fontWeight: 800, fontSize: 14, py: 2.5, color: "primary.main" }}>Roles</TableCell>
-                <TableCell sx={{ fontWeight: 800, fontSize: 14, py: 2.5, color: "primary.main" }} align="center">Actions</TableCell>
+              <TableRow>
+                <TableCell sx={{ fontWeight: 900, fontSize: 14 }}>Display Name</TableCell>
+                <TableCell sx={{ fontWeight: 900, fontSize: 14 }}>Email</TableCell>
+                <TableCell sx={{ fontWeight: 900, fontSize: 14 }}>Username</TableCell>
+                <TableCell sx={{ fontWeight: 900, fontSize: 14 }}>Roles</TableCell>
+                <TableCell sx={{ fontWeight: 900, fontSize: 14 }} align="right">Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {users.map((user, index) => (
+              {users.map((user) => (
                 <TableRow 
                   key={user.userId} 
                   hover
                   sx={{
-                    bgcolor: index % 2 === 0 ? "rgba(0, 0, 0, 0.01)" : "white",
-                    transition: "all 0.2s ease",
-                    "&:hover": {
-                      bgcolor: "rgba(33, 150, 243, 0.06)",
-                    },
-                    "& td": { py: 2, borderColor: "rgba(0, 0, 0, 0.05)" },
-                    borderBottom: "1px solid",
-                    borderColor: "rgba(0, 0, 0, 0.05)",
+                    "& td": { py: 1.8, fontSize: 14 },
                   }}
                 >
                   <TableCell>
@@ -206,24 +193,13 @@ export default function RoleManagement() {
                       )}
                     </Box>
                   </TableCell>
-                  <TableCell align="center">
+                  <TableCell align="right">
                     <Button
                       size="small"
-                      variant="outlined"
+                      variant="text"
                       onClick={() => handleOpenDialog(user.userId, user.roles)}
-                      sx={{
-                        textTransform: "none",
-                        fontSize: 12,
-                        fontWeight: 600,
-                        borderRadius: 1,
-                        transition: "all 0.2s ease",
-                        "&:hover": {
-                          borderColor: "primary.main",
-                          bgcolor: "rgba(33, 150, 243, 0.05)",
-                        },
-                      }}
                     >
-                      ✏️ Edit
+                      Edit
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -330,6 +306,6 @@ export default function RoleManagement() {
           </Button>
         </DialogActions>
       </Dialog>
-    </>
+    </Box>
   );
 }

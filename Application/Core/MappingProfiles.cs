@@ -335,6 +335,11 @@ public sealed class MappingProfiles : Profile
 
         CreateMap<AfterSalesTicket, TicketDetailDto>()
             .ForMember(d => d.OrderType, o => o.MapFrom(s => s.Order.OrderType.ToString()))
+            .ForMember(d => d.CustomerName, o => o.MapFrom(s =>
+                s.Order.Address != null ? s.Order.Address.RecipientName
+                    : !string.IsNullOrWhiteSpace(s.Order.WalkInCustomerName)
+                        ? s.Order.WalkInCustomerName
+                        : null))
             .ForMember(d => d.Attachments, o => o.MapFrom(s =>
                 s.Attachments.Where(a => a.DeletedAt == null).OrderBy(a => a.CreatedAt)))
             .ForMember(d => d.Items, o => o.Ignore())
