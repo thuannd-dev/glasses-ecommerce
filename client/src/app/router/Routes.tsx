@@ -67,10 +67,13 @@ const SalesTicketsScreen = lazy(() =>
 );
 
 const AdminLayout = lazy(() => import("../../features/Admin/AdminLayout"));
+const AdminPolicies = lazy(() => import("../../features/Admin/AdminPolicies"));
+const AdminFeatureToggles = lazy(
+  () => import("../../features/Admin/AdminFeatureToggles"),
+);
 const RoleManagement = lazy(
   () => import("../../features/Admin/RoleManagement"),
 );
-const AdminPolicies = lazy(() => import("../../features/Admin/AdminPolicies"));
 const PoliciesGuaranteePage = lazy(() =>
   import("../../features/policies/PoliciesListPage").then((m) => ({
     default: m.PoliciesGuaranteePage,
@@ -80,9 +83,6 @@ const PoliciesLensReplacementPage = lazy(() =>
   import("../../features/policies/PoliciesListPage").then((m) => ({
     default: m.PoliciesLensReplacementPage,
   })),
-);
-const AdminFeatureToggles = lazy(
-  () => import("../../features/Admin/AdminFeatureToggles"),
 );
 
 const OperationsLayout = lazy(

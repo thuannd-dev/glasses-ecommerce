@@ -20,13 +20,11 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  TablePagination,
-  IconButton,
-  Tooltip,
   Paper,
-  Divider,
-  Grid,
+  Stack,
   alpha,
+  IconButton,
+  Grid,
 } from "@mui/material";
 import { useState } from "react";
 import { useAdminPolicies } from "../../lib/hooks/useAdminPolicies";
@@ -37,10 +35,9 @@ import type {
 } from "../../lib/types";
 import { PolicyTypeEnum, getPolicyTypeLabel } from "../../lib/types";
 import { toast } from "react-toastify";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
-import SearchIcon from "@mui/icons-material/Search";
+import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownRounded";
+import KeyboardArrowUpRoundedIcon from "@mui/icons-material/KeyboardArrowUpRounded";
 
 // User-facing policy types with color schemes
 const POLICY_TYPES = [
@@ -113,6 +110,7 @@ export default function AdminPolicies() {
   const [formData, setFormData] = useState<CreatePolicyPayload>(INITIAL_FORM_STATE);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [expandedPolicyId, setExpandedPolicyId] = useState<string | null>(null);
 
   // Handle dialog open for create
   const handleOpenCreateDialog = () => {
@@ -293,209 +291,132 @@ export default function AdminPolicies() {
     });
   };
 
-  // Handle pagination
-  const handlePageChange = (_event: unknown, newPage: number) => {
-    setFilters((prev) => ({
-      ...prev,
-      pageNumber: newPage + 1,
-    }));
-  };
 
-  const handleRowsPerPageChange = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setFilters((prev) => ({
-      ...prev,
-      pageSize: parseInt(event.target.value, 10),
-      pageNumber: 1,
-    }));
-  };
 
   return (
-    <>
-      {/* Header Section */}
-      <Box 
-        sx={{ 
-          mb: 6,
-          background: "linear-gradient(135deg, rgba(25, 118, 210, 0.05) 0%, rgba(25, 118, 210, 0.02) 100%)",
-          py: 3.5,
-          px: 3.5,
-          borderRadius: 2,
-          border: "1px solid",
-          borderColor: "rgba(25, 118, 210, 0.1)",
-        }}
-      >
+    <Box
+      sx={{
+        minHeight: "100vh",
+        px: { xs: 2, md: 4, lg: 6 },
+        py: 4,
+        bgcolor: "#FAFAF8",
+        color: "#171717",
+      }}
+    >
+      {/* Header */}
+      <Box sx={{ mb: 5 }}>
         <Typography
           sx={{
             fontSize: 11,
-            letterSpacing: 2,
+            letterSpacing: 4,
             textTransform: "uppercase",
-            color: "primary.main",
+            color: "#8A8A8A",
             fontWeight: 700,
-            opacity: 0.8,
           }}
         >
           Admin Console
         </Typography>
-        <Typography sx={{ mt: 1.5, fontSize: 32, fontWeight: 900, color: "text.primary", letterSpacing: -0.5 }}>
+
+        <Typography sx={{ mt: 1, fontSize: { xs: 24, md: 30 }, fontWeight: 800, color: "#171717" }}>
           Policies
         </Typography>
-        <Typography sx={{ mt: 1.5, color: "text.secondary", maxWidth: 700, fontSize: 15, lineHeight: 1.6 }}>
+
+        <Typography sx={{ mt: 0.5, color: "#6B6B6B", maxWidth: 520, fontSize: 14 }}>
           Create, edit, and manage return, warranty, and refund policies with detailed configuration.
         </Typography>
       </Box>
 
-      {/* Filters Section */}
-      <Box 
-        sx={{ 
-          mb: 5, 
-          display: "flex", 
-          gap: 2, 
-          alignItems: "center", 
-          flexWrap: "wrap",
+      {/* Filters & Toolbar */}
+      <Paper
+        elevation={0}
+        sx={{
+          p: 3,
+          mb: 4,
+          borderRadius: 3,
+          border: "1px solid rgba(0,0,0,0.08)",
+          bgcolor: "#ffffff",
         }}
       >
-        {/* Search */}
-        <Box sx={{ flex: 1, minWidth: 240 }}>
-          <TextField
-            fullWidth
-            size="small"
-            placeholder="Search by policy name..."
-            InputProps={{
-              startAdornment: <SearchIcon sx={{ mr: 1.5, color: "primary.main", fontSize: 20, opacity: 0.6 }} />,
-            }}
-            value={filters.search || ""}
-            onChange={(e) =>
-              setFilters((prev) => ({ ...prev, search: e.target.value || null, pageNumber: 1 }))
-            }
-            sx={{
-              "& .MuiOutlinedInput-root": {
-                backgroundColor: "#ffffff",
-                borderRadius: 1.5,
-                transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-                border: "1.5px solid",
-                borderColor: "rgba(0, 0, 0, 0.08)",
-                "&:hover": {
-                  borderColor: "rgba(0, 0, 0, 0.12)",
-                  backgroundColor: "#ffffff",
-                },
-                "&.Mui-focused": {
-                  backgroundColor: "#ffffff",
-                  borderColor: "primary.main",
-                  boxShadow: "0 0 0 3px rgba(33, 150, 243, 0.08)",
-                },
-              },
-              "& .MuiOutlinedInput-input::placeholder": {
-                color: "rgba(0, 0, 0, 0.4)",
-                opacity: 1,
-              },
-            }}
-          />
-        </Box>
+        <Grid container spacing={2} sx={{ mb: 3 }} alignItems="center">
+          {/* Search */}
+          <Grid item xs={12} md={3}>
+            <TextField
+              fullWidth
+              placeholder="Search by policy name..."
+              size="small"
+              value={filters.search || ""}
+              onChange={(e) =>
+                setFilters((prev) => ({ ...prev, search: e.target.value || null, pageNumber: 1 }))
+              }
+            />
+          </Grid>
 
-        {/* Policy Type Filter */}
-        <TextField
-          select
-          size="small"
-          value={filters.policyType ?? ""}
-          onChange={(e) =>
-            setFilters((prev) => ({
-              ...prev,
-              policyType: e.target.value ? (parseInt(e.target.value) as PolicyTypeEnum) : null,
-              pageNumber: 1,
-            }))
-          }
-          SelectProps={{
-            native: true,
-          }}
-          sx={{
-            minWidth: 160,
-            "& .MuiOutlinedInput-root": {
-              backgroundColor: "#ffffff",
-              borderRadius: 1.5,
-              transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-              border: "1.5px solid",
-              borderColor: "rgba(0, 0, 0, 0.08)",
-              "&:hover": {
-                borderColor: "rgba(0, 0, 0, 0.12)",
-              },
-              "&.Mui-focused": {
-                borderColor: "primary.main",
-                boxShadow: "0 0 0 3px rgba(33, 150, 243, 0.08)",
-              },
-            },
-          }}
-        >
-          <option value="">All Types</option>
-          {POLICY_TYPES.map((type) => (
-            <option key={type.value} value={type.value}>{type.icon} {type.label}</option>
-          ))}
-        </TextField>
+          {/* Policy Type Filter */}
+          <Grid item xs={12} sm={6} md={2.4}>
+            <TextField
+              fullWidth
+              label="Type"
+              size="small"
+              select
+              value={filters.policyType ?? ""}
+              onChange={(e) =>
+                setFilters((prev) => ({
+                  ...prev,
+                  policyType: e.target.value ? (parseInt(e.target.value) as PolicyTypeEnum) : null,
+                  pageNumber: 1,
+                }))
+              }
+            >
+              <MenuItem value="">All Types</MenuItem>
+              <MenuItem value={1}>↩️ Return</MenuItem>
+              <MenuItem value={2}>🛡️ Warranty</MenuItem>
+              <MenuItem value={3}>💰 Refund</MenuItem>
+            </TextField>
+          </Grid>
 
-        {/* Status Filter */}
-        <TextField
-          select
-          size="small"
-          value={filters.isActive ?? ""}
-          onChange={(e) =>
-            setFilters((prev) => ({
-              ...prev,
-              isActive: e.target.value === "" ? null : e.target.value === "true",
-              pageNumber: 1,
-            }))
-          }
-          SelectProps={{
-            native: true,
-          }}
-          sx={{
-            minWidth: 140,
-            "& .MuiOutlinedInput-root": {
-              backgroundColor: "#ffffff",
-              borderRadius: 1.5,
-              transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-              border: "1.5px solid",
-              borderColor: "rgba(0, 0, 0, 0.08)",
-              "&:hover": {
-                borderColor: "rgba(0, 0, 0, 0.12)",
-              },
-              "&.Mui-focused": {
-                borderColor: "primary.main",
-                boxShadow: "0 0 0 3px rgba(33, 150, 243, 0.08)",
-              },
-            },
-          }}
-        >
-          <option value="">All Status</option>
-          <option value="true">✓ Active</option>
-          <option value="false">✕ Inactive</option>
-        </TextField>
+          {/* Status Filter */}
+          <Grid item xs={12} sm={6} md={2.4}>
+            <TextField
+              fullWidth
+              label="Status"
+              size="small"
+              select
+              value={filters.isActive ?? ""}
+              onChange={(e) =>
+                setFilters((prev) => ({
+                  ...prev,
+                  isActive: e.target.value === "" ? null : e.target.value === "true",
+                  pageNumber: 1,
+                }))
+              }
+            >
+              <MenuItem value="">All Status</MenuItem>
+              <MenuItem value="true">✓ Active</MenuItem>
+              <MenuItem value="false">✕ Inactive</MenuItem>
+            </TextField>
+          </Grid>
 
-        {/* Create Button */}
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleOpenCreateDialog}
-          sx={{
-            textTransform: "none",
-            fontWeight: 700,
-            py: 1,
-            px: 2.5,
-            fontSize: 14,
-            borderRadius: 1.5,
-            boxShadow: "0 2px 8px rgba(33, 150, 243, 0.25)",
-            transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-            "&:hover": {
-              boxShadow: "0 4px 16px rgba(33, 150, 243, 0.35)",
-              transform: "translateY(-2px)",
-            },
-            "&:active": {
-              transform: "translateY(0px)",
-            },
-          }}
-        >
-          Create Policy
-        </Button>
-      </Box>
+          {/* Actions - Create Button */}
+          <Grid item xs={12} md="auto">
+            <Stack direction="row" spacing={1}>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={handleOpenCreateDialog}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: 600,
+                  borderRadius: 1,
+                  bgcolor: "#B68C5A",
+                  "&:hover": { bgcolor: "#9A7548" },
+                }}
+              >
+                Create Policy
+              </Button>
+            </Stack>
+          </Grid>
+        </Grid>
+      </Paper>
 
       {/* Policies Table */}
       <Paper
@@ -505,9 +426,10 @@ export default function AdminPolicies() {
           borderColor: "rgba(0, 0, 0, 0.08)",
           borderRadius: 2,
           overflow: "hidden",
+          boxShadow: "0 2px 8px rgba(0, 0, 0, 0.04)",
           transition: "all 0.3s ease",
           "&:hover": {
-            boxShadow: "0 4px 16px rgba(0, 0, 0, 0.06)",
+            boxShadow: "0 12px 30px rgba(0, 0, 0, 0.08)",
           },
         }}
       >
@@ -542,137 +464,226 @@ export default function AdminPolicies() {
             <TableContainer>
               <Table sx={{ minWidth: 900 }}>
                 <TableHead>
-                  <TableRow 
-                    sx={{ 
-                      bgcolor: "rgba(33, 150, 243, 0.04)",
-                      borderBottom: "2px solid",
-                      borderColor: "rgba(33, 150, 243, 0.15)",
-                    }}
-                  >
-                    <TableCell sx={{ fontWeight: 800, fontSize: 14, py: 2.5, color: "primary.main" }}>Policy Name</TableCell>
-                    <TableCell sx={{ fontWeight: 800, fontSize: 14, py: 2.5, color: "primary.main" }}>Type</TableCell>
-                    <TableCell sx={{ fontWeight: 800, fontSize: 14, py: 2.5, color: "primary.main" }}>Status</TableCell>
-                    <TableCell sx={{ fontWeight: 800, fontSize: 14, py: 2.5, color: "primary.main" }} align="right">
-                      Return Days
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 800, fontSize: 14, py: 2.5, color: "primary.main" }} align="right">
-                      Warranty Months
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 800, fontSize: 14, py: 2.5, color: "primary.main" }} align="center">
-                      Edit
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 800, fontSize: 14, py: 2.5, color: "primary.main" }} align="center">
-                      Delete
-                    </TableCell>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 900, fontSize: 14, width: "5%" }}></TableCell>
+                    <TableCell sx={{ fontWeight: 900, fontSize: 14 }}>Policy Name</TableCell>
+                    <TableCell sx={{ fontWeight: 900, fontSize: 14 }}>Type</TableCell>
+                    <TableCell sx={{ fontWeight: 900, fontSize: 14 }}>Status</TableCell>
+                    <TableCell sx={{ fontWeight: 900, fontSize: 14 }} align="right">Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {policies.map((policy, index) => {
+                  {policies.map((policy) => {
                     const typeLabel: string = getPolicyTypeLabel(policy.policyType);
                     const typeColor = POLICY_TYPE_COLORS[typeof policy.policyType === 'number' ? policy.policyType : 0];
                     return (
-                      <TableRow
-                        key={policy.id}
-                        hover
-                        sx={{
-                          bgcolor: index % 2 === 0 ? "rgba(0, 0, 0, 0.01)" : "white",
-                          transition: "all 0.2s ease",
-                          "&:hover": {
-                            bgcolor: "rgba(33, 150, 243, 0.06)",
-                          },
-                          "& td": { py: 2, borderColor: "rgba(0, 0, 0, 0.05)" },
-                          borderBottom: "1px solid",
-                          borderColor: "rgba(0, 0, 0, 0.05)",
-                        }}
-                      >
-                        <TableCell>
-                          <Typography sx={{ fontWeight: 600, fontSize: 15 }}>
-                            {policy.policyName}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            label={typeLabel}
-                            size="medium"
+                      <>
+                        <TableRow
+                          key={policy.id}
+                          hover
+                          sx={{
+                            "& td": { py: 1.8, fontSize: 14 },
+                          }}
+                        >
+                        <TableCell sx={{ width: "5%" }}>
+                          <IconButton
+                            size="small"
+                            onClick={() => setExpandedPolicyId(expandedPolicyId === policy.id ? null : policy.id)}
                             sx={{
-                              bgcolor: alpha(typeColor || "#1976d2", 0.1),
-                              color: typeColor || "#1976d2",
-                              fontWeight: 700,
-                              fontSize: 13,
+                              color: "#6B6B6B",
+                              transition: "all 0.18s ease",
+                              "&:hover": { color: "#171717", bgcolor: "rgba(0,0,0,0.04)" },
                             }}
-                          />
+                            aria-label={expandedPolicyId === policy.id ? "Hide details" : "Show details"}
+                          >
+                            {expandedPolicyId === policy.id ? <KeyboardArrowUpRoundedIcon /> : <KeyboardArrowDownRoundedIcon />}
+                          </IconButton>
                         </TableCell>
-                        <TableCell>
-                          <Chip
-                            label={policy.isActive ? "Active" : "Inactive"}
-                            size="medium"
-                            color={policy.isActive ? "success" : "default"}
-                            variant={policy.isActive ? "filled" : "outlined"}
-                            sx={{
-                              fontWeight: 700,
-                              fontSize: 13,
-                            }}
-                          />
-                        </TableCell>
-                        <TableCell align="right">
-                          <Typography sx={{ fontSize: 15, fontWeight: 500 }}>
-                            {policy.returnWindowDays ?? "-"}
-                          </Typography>
-                        </TableCell>
-                        <TableCell align="right">
-                          <Typography sx={{ fontSize: 15, fontWeight: 500 }}>
-                            {policy.warrantyMonths ?? "-"}
-                          </Typography>
-                        </TableCell>
-                        <TableCell align="center">
-                          <Tooltip title="Edit Policy">
-                            <IconButton
+                          <TableCell>
+                            <Typography sx={{ fontWeight: 600, fontSize: 15 }}>
+                              {policy.policyName}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              label={typeLabel}
                               size="medium"
-                              onClick={() => handleOpenEditDialog(policy)}
-                              sx={{ color: "primary.main", "&:hover": { bgcolor: alpha("#1976d2", 0.08) } }}
-                            >
-                              <EditIcon sx={{ fontSize: 22 }} />
-                            </IconButton>
-                          </Tooltip>
-                        </TableCell>
-                        <TableCell align="center">
-                          <Tooltip title="Delete Policy">
-                            <IconButton
+                              sx={{
+                                bgcolor: alpha(typeColor || "#1976d2", 0.1),
+                                color: typeColor || "#1976d2",
+                                fontWeight: 700,
+                                fontSize: 13,
+                              }}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              label={policy.isActive ? "Active" : "Inactive"}
                               size="medium"
-                              color="error"
-                              onClick={() => handleOpenDeleteDialog(policy.id)}
-                              sx={{ "&:hover": { bgcolor: alpha("#d32f2f", 0.08) } }}
-                            >
-                              <DeleteIcon sx={{ fontSize: 22 }} />
-                            </IconButton>
-                          </Tooltip>
-                        </TableCell>
-                      </TableRow>
+                              color={policy.isActive ? "success" : "default"}
+                              variant={policy.isActive ? "filled" : "outlined"}
+                              sx={{
+                                fontWeight: 700,
+                                fontSize: 13,
+                              }}
+                            />
+                          </TableCell>
+                          <TableCell align="right">
+                            <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                              <Button
+                                size="small"
+                                variant="text"
+                                onClick={() => handleOpenEditDialog(policy)}
+                              >
+                                Edit
+                              </Button>
+                              <Button
+                                size="small"
+                                color="error"
+                                variant="outlined"
+                                onClick={() => handleOpenDeleteDialog(policy.id)}
+                              >
+                                Delete
+                              </Button>
+                            </Stack>
+                          </TableCell>
+                        </TableRow>
+                        {expandedPolicyId === policy.id && (
+                          <TableRow>
+                            <TableCell colSpan={5} sx={{ p: 0, borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
+                              <Box sx={{ px: 2.25, py: 1.5, bgcolor: "#FFFFFF" }}>
+                                <Box
+                                  sx={{
+                                    bgcolor: "#FAFAF8",
+                                    border: "1px solid rgba(0,0,0,0.06)",
+                                    borderRadius: "14px",
+                                    p: { xs: 2, md: 2.25 },
+                                  }}
+                                >
+                                  <Box
+                                    sx={{
+                                      display: "grid",
+                                      gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+                                      gap: 2,
+                                    }}
+                                  >
+                                    <Stack spacing={0.8}>
+                                      <Typography sx={{ fontSize: 12, color: "#8A8A8A", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.8 }}>
+                                        Return Window Days
+                                      </Typography>
+                                      <Typography sx={{ fontSize: 13, color: "#6B6B6B" }}>
+                                        {policy.returnWindowDays ?? "—"}
+                                      </Typography>
+                                    </Stack>
+                                    <Stack spacing={0.8}>
+                                      <Typography sx={{ fontSize: 12, color: "#8A8A8A", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.8 }}>
+                                        Warranty Months
+                                      </Typography>
+                                      <Typography sx={{ fontSize: 13, color: "#6B6B6B" }}>
+                                        {policy.warrantyMonths ?? "—"}
+                                      </Typography>
+                                    </Stack>
+                                    <Stack spacing={0.8}>
+                                      <Typography sx={{ fontSize: 12, color: "#8A8A8A", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.8 }}>
+                                        Refund Window Days
+                                      </Typography>
+                                      <Typography sx={{ fontSize: 13, color: "#6B6B6B" }}>
+                                        {policy.refundWindowDays ?? "—"}
+                                      </Typography>
+                                    </Stack>
+                                    <Stack spacing={0.8}>
+                                      <Typography sx={{ fontSize: 12, color: "#8A8A8A", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.8 }}>
+                                        Refund Only Max Amount
+                                      </Typography>
+                                      <Typography sx={{ fontSize: 13, color: "#6B6B6B" }}>
+                                        {policy.refundOnlyMaxAmount ? `$${policy.refundOnlyMaxAmount}` : "—"}
+                                      </Typography>
+                                    </Stack>
+                                    <Stack spacing={0.8}>
+                                      <Typography sx={{ fontSize: 12, color: "#8A8A8A", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.8 }}>
+                                        Min Order Amount
+                                      </Typography>
+                                      <Typography sx={{ fontSize: 13, color: "#6B6B6B" }}>
+                                        {policy.minOrderAmount ? `$${policy.minOrderAmount}` : "—"}
+                                      </Typography>
+                                    </Stack>
+                                    <Stack spacing={0.8}>
+                                      <Typography sx={{ fontSize: 12, color: "#8A8A8A", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.8 }}>
+                                        Refund Allowed
+                                      </Typography>
+                                      <Chip
+                                        label={policy.refundAllowed ? "Yes" : "No"}
+                                        size="small"
+                                        color={policy.refundAllowed ? "success" : "default"}
+                                        variant={policy.refundAllowed ? "filled" : "outlined"}
+                                        sx={{ fontWeight: 700, fontSize: 12, width: "fit-content" }}
+                                      />
+                                    </Stack>
+                                    <Stack spacing={0.8}>
+                                      <Typography sx={{ fontSize: 12, color: "#8A8A8A", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.8 }}>
+                                        Evidence Required
+                                      </Typography>
+                                      <Chip
+                                        label={policy.evidenceRequired ? "Yes" : "No"}
+                                        size="small"
+                                        color={policy.evidenceRequired ? "success" : "default"}
+                                        variant={policy.evidenceRequired ? "filled" : "outlined"}
+                                        sx={{ fontWeight: 700, fontSize: 12, width: "fit-content" }}
+                                      />
+                                    </Stack>
+                                    <Stack spacing={0.8}>
+                                      <Typography sx={{ fontSize: 12, color: "#8A8A8A", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.8 }}>
+                                        Customized Lens Refundable
+                                      </Typography>
+                                      <Chip
+                                        label={policy.customizedLensRefundable ? "Yes" : "No"}
+                                        size="small"
+                                        color={policy.customizedLensRefundable ? "success" : "default"}
+                                        variant={policy.customizedLensRefundable ? "filled" : "outlined"}
+                                        sx={{ fontWeight: 700, fontSize: 12, width: "fit-content" }}
+                                      />
+                                    </Stack>
+                                    <Stack spacing={0.8}>
+                                      <Typography sx={{ fontSize: 12, color: "#8A8A8A", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.8 }}>
+                                        Effective Period
+                                      </Typography>
+                                      <Typography sx={{ fontSize: 13, color: "#6B6B6B" }}>
+                                        {new Date(policy.effectiveFrom).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
+                                        {policy.effectiveTo && ` → ${new Date(policy.effectiveTo).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}`}
+                                      </Typography>
+                                    </Stack>
+                                  </Box>
+                                </Box>
+                              </Box>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </>
                     );
                   })}
                 </TableBody>
               </Table>
             </TableContainer>
-            <Divider sx={{ my: 0 }} />
-            <TablePagination
-              rowsPerPageOptions={[10, 20, 50]}
-              component="div"
-              count={policiesData?.totalCount || 0}
-              rowsPerPage={filters.pageSize}
-              page={filters.pageNumber - 1}
-              onPageChange={handlePageChange}
-              onRowsPerPageChange={handleRowsPerPageChange}
-              sx={{
-                "& .MuiTablePagination-root": {
-                  borderTop: "1px solid",
-                  borderColor: "divider",
-                },
-                "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows": {
-                  fontSize: 15,
-                  m: 0,
-                },
-              }}
-            />
+            <Stack direction="row" spacing={1} justifyContent="flex-end" sx={{ p: 2 }}>
+              <Button
+                variant="outlined"
+                disabled={filters.pageNumber <= 1}
+                onClick={() => setFilters(prev => ({ ...prev, pageNumber: prev.pageNumber - 1 }))}
+              >
+                Prev
+              </Button>
+              <Chip
+                label={`Page ${filters.pageNumber} / ${Math.ceil((policiesData?.totalCount || 0) / filters.pageSize)} · ${policiesData?.totalCount || 0} items`}
+                sx={{ bgcolor: "rgba(0,0,0,0.06)", fontWeight: 700 }}
+              />
+              <Button
+                variant="outlined"
+                disabled={filters.pageNumber >= Math.ceil((policiesData?.totalCount || 0) / filters.pageSize)}
+                onClick={() => setFilters(prev => ({ ...prev, pageNumber: prev.pageNumber + 1 }))}
+              >
+                Next
+              </Button>
+            </Stack>
           </>
         )}
       </Paper>
@@ -998,7 +1009,6 @@ export default function AdminPolicies() {
             </Box>
           </Box>
         </DialogContent>
-        <Divider sx={{ my: 0 }} />
         <DialogActions sx={{ p: 2.5, gap: 1.5 }}>
           <Button
             onClick={handleCloseDialog}
@@ -1046,7 +1056,6 @@ export default function AdminPolicies() {
             Are you sure you want to delete this policy? This action cannot be undone and may affect active orders.
           </Typography>
         </DialogContent>
-        <Divider sx={{ my: 0 }} />
         <DialogActions sx={{ p: 2.5, gap: 1.5 }}>
           <Button
             onClick={() => setOpenDeleteDialog(false)}
@@ -1066,6 +1075,6 @@ export default function AdminPolicies() {
           </Button>
         </DialogActions>
       </Dialog>
-    </>
+    </Box>
   );
 }
