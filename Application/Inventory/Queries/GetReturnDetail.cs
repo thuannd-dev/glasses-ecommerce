@@ -3,6 +3,7 @@ using Application.Core;
 using Application.Inventory.DTOs;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
+using Domain;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Persistence;
@@ -31,15 +32,47 @@ public sealed class GetReturnDetail
             if (inboundDto != null)
                 return Result<ReturnDetailDto>.Success(MapInboundDtoToReturnDetail(inboundDto));
 
-            // Try to find AfterSalesTicket using ProjectTo
-            TicketDetailDto? ticketDto = await context.AfterSalesTickets
+            // Try to find AfterSalesTicket - load full entity for AfterMap callback
+            AfterSalesTicket? ticket = await context.AfterSalesTickets
                 .AsNoTracking()
+                .Include(t => t.Order)
                 .Where(t => t.Id == request.Id)
-                .ProjectTo<TicketDetailDto>(mapper.ConfigurationProvider)
                 .FirstOrDefaultAsync(ct);
 
-            if (ticketDto != null)
+            if (ticket != null)
+            {
+                // Load Order.OrderItems separately with navigation properties
+                if (ticket.Order != null)
+                {
+                    List<OrderItem> orderItems = await context.OrderItems
+                        .AsNoTracking()
+                        .Where(oi => oi.OrderId == ticket.Order.Id)
+                        .Include(oi => oi.ProductVariant)
+                        .ThenInclude(pv => pv.Product)
+                        .ThenInclude(p => p.Images)
+                        .ToListAsync(ct);
+
+                    ticket.Order.OrderItems = orderItems;
+                }
+
+                // Load OrderItem separately if ticket is for specific item
+                if (ticket.OrderItemId.HasValue)
+                {
+                    OrderItem? orderItem = await context.OrderItems
+                        .AsNoTracking()
+                        .Where(oi => oi.Id == ticket.OrderItemId)
+                        .Include(oi => oi.ProductVariant)
+                        .ThenInclude(pv => pv.Product)
+                        .ThenInclude(p => p.Images)
+                        .FirstOrDefaultAsync(ct);
+
+                    if (orderItem != null)
+                        ticket.OrderItem = orderItem;
+                }
+
+                TicketDetailDto ticketDto = mapper.Map<TicketDetailDto>(ticket);
                 return Result<ReturnDetailDto>.Success(MapTicketDtoToReturnDetail(ticketDto));
+            }
 
             // Not found
             return Result<ReturnDetailDto>.Failure("Return record not found.", 404);
