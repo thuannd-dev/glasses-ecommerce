@@ -180,8 +180,8 @@ export default function VirtualTryOn({
         const angle = Math.atan2(dy, dx);
         const eyeDistance = Math.sqrt(dx * dx + dy * dy);
 
-        let width = eyeDistance * 2.2;
-        const depthScale = 1 + nose.z * -0.6;
+        let width = eyeDistance * 1.8;
+        const depthScale = 1 + nose.z * -0.5;
         width *= depthScale;
 
         const centerX = (x1 + x2) / 2;
@@ -211,8 +211,8 @@ export default function VirtualTryOn({
         const glasses = glassesImagesRef.current[selectedIdx];
         if (glasses) {
           const anchorX = s.width * 0.5;
-          const anchorY = s.width * 0.42 * 0.5;
-          ctx.drawImage(glasses, -anchorX, -anchorY, s.width, s.width * 0.42);
+          const anchorY = s.width * 0.35 * 0.5;
+          ctx.drawImage(glasses, -anchorX, -anchorY, s.width, s.width * 0.35);
         }
 
         ctx.restore();
@@ -305,8 +305,8 @@ export default function VirtualTryOn({
       const angle = Math.atan2(dy, dx);
       const eyeDistance = Math.sqrt(dx * dx + dy * dy);
 
-      let width = eyeDistance * 2.2;
-      const depthScale = 1 + nose.z * -0.6;
+      let width = eyeDistance * 1.8;
+      const depthScale = 1 + nose.z * -0.5;
       width *= depthScale;
 
       const centerX = (x1 + x2) / 2;
@@ -336,8 +336,8 @@ export default function VirtualTryOn({
       const glasses = glassesImagesRef.current[selectedIdxRef.current];
       if (glasses) {
         const anchorX = s.width * 0.5;
-        const anchorY = s.width * 0.42 * 0.5;
-        ctx.drawImage(glasses, -anchorX, -anchorY, s.width, s.width * 0.42);
+        const anchorY = s.width * 0.35 * 0.5;
+        ctx.drawImage(glasses, -anchorX, -anchorY, s.width, s.width * 0.35);
       }
 
       ctx.restore();
@@ -378,8 +378,8 @@ export default function VirtualTryOn({
         tempCtx.scale(1.05, 1);
       }
       const anchorX = s.width * 0.5;
-      const anchorY = s.width * 0.42 * 0.5;
-      tempCtx.drawImage(glasses, -anchorX, -anchorY, s.width, s.width * 0.42);
+      const anchorY = s.width * 0.35 * 0.5;
+      tempCtx.drawImage(glasses, -anchorX, -anchorY, s.width, s.width * 0.35);
       tempCtx.restore();
       tempCtx.filter = "none";
     }
