@@ -352,7 +352,7 @@ export default function AdminPolicies() {
           </Grid>
 
           {/* Policy Type Filter */}
-          <Grid item xs={12} sm={6} md={2.4}>
+          <Grid item xs={12} sm={6} md={3}>
             <TextField
               fullWidth
               label="Type"
@@ -375,7 +375,7 @@ export default function AdminPolicies() {
           </Grid>
 
           {/* Status Filter */}
-          <Grid item xs={12} sm={6} md={2.4}>
+          <Grid item xs={12} sm={6} md={3}>
             <TextField
               fullWidth
               label="Status"

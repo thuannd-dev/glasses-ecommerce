@@ -36,6 +36,7 @@ public sealed class GetReturnDetail
             AfterSalesTicket? ticket = await context.AfterSalesTickets
                 .AsNoTracking()
                 .Include(t => t.Order)
+                .ThenInclude(o => o.Address)
                 .Where(t => t.Id == request.Id)
                 .FirstOrDefaultAsync(ct);
 
