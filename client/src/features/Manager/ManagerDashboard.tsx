@@ -1,8 +1,8 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useAccount } from "../../lib/hooks/useAccount";
 import { useManagerDashboard } from "../../lib/hooks/useManagerDashboard";
 import type { PromotionItem, LowStockItem } from "../../lib/hooks/useManagerDashboard";
-import { format, subDays, parseISO } from "date-fns";
+import { format, parseISO, eachMonthOfInterval } from "date-fns";
 import * as XLSX from "xlsx";
 import {
   ShoppingBag,
@@ -34,9 +34,10 @@ import {
   Legend,
   BarChart,
   Bar,
+  LineChart,
+  Line,
 } from "recharts";
 
-type DateRange = "7d" | "30d" | "90d";
 
 const formatCurrency = (v: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v);
@@ -45,62 +46,86 @@ const formatNumber = (v: number) => new Intl.NumberFormat("en-US").format(v);
 
 export default function ManagerDashboard() {
   const { currentUser } = useAccount();
-  const [dateRange, setDateRange] = useState<DateRange>("30d");
-  const [customFromDate, setCustomFromDate] = useState("");
-  const [customToDate, setCustomToDate] = useState("");
-  const [appliedFromDate, setAppliedFromDate] = useState("");
-  const [appliedToDate, setAppliedToDate] = useState("");
-  const [useCustomRange, setUseCustomRange] = useState(false);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
   const { fromDate, toDate } = useMemo(() => {
-    if (useCustomRange && appliedFromDate && appliedToDate) {
-      return { fromDate: appliedFromDate, toDate: appliedToDate };
-    }
-    const to = format(new Date(), "yyyy-MM-dd");
-    const days = dateRange === "7d" ? 7 : dateRange === "90d" ? 90 : 30;
-    const from = format(subDays(new Date(), days), "yyyy-MM-dd");
+    const from = `${selectedYear}-01-01`;
+    const to = `${selectedYear}-12-31`;
     return { fromDate: from, toDate: to };
-  }, [dateRange, appliedFromDate, appliedToDate, useCustomRange]);
-
-  const handleApplyCustomRange = () => {
-    if (customFromDate && customToDate) {
-      // Validate that fromDate is before or equal to toDate
-      if (customFromDate > customToDate) {
-        alert("Start date must be before or equal to end date");
-        return;
-      }
-      setAppliedFromDate(customFromDate);
-      setAppliedToDate(customToDate);
-      setUseCustomRange(true);
-    }
-  };
-
-  const handlePresetClick = (preset: DateRange) => {
-    setDateRange(preset);
-    setAppliedFromDate("");
-    setAppliedToDate("");
-    setUseCustomRange(false);
-  };
+  }, [selectedYear]);
 
   const { revenue, inventory, afterSales, promotions, topProducts, isLoading } =
     useManagerDashboard(fromDate, toDate);
 
-  // Revenue chart — build daily data from bySource or show summary bar
+  // Fetch monthly revenue data (12 API calls)
+  const [monthlyRevenueData, setMonthlyRevenueData] = useState<Array<{month: string, revenue: number, orders: number, discount: number}>>([]);
+  const [isLoadingMonthly, setIsLoadingMonthly] = useState(false);
+
+  useEffect(() => {
+    const fetchMonthlyData = async () => {
+      console.log(' [DASHBOARD] Starting to fetch monthly data for year:', selectedYear);
+      setIsLoadingMonthly(true);
+      const monthlyData = [];
+      
+      for (let month = 0; month < 12; month++) {
+        const monthStart = new Date(selectedYear, month, 1);
+        const monthEnd = new Date(selectedYear, month + 1, 0);
+        const from = format(monthStart, 'yyyy-MM-dd');
+        const to = format(monthEnd, 'yyyy-MM-dd');
+        
+        console.log(` [MONTH ${month + 1}] Fetching data for ${format(monthStart, 'MMM')} (${from} to ${to})`);
+        
+        try {
+          const url = `https://glasses-ecommerce.azurewebsites.net/api/manager/reports/revenue?fromDate=${from}&toDate=${to}`;
+          console.log(`   API URL: ${url}`);
+          
+          const response = await fetch(url, { credentials: 'include' });
+          const data = await response.json();
+          
+          console.log(`   Response for ${format(monthStart, 'MMM')}:`, {
+            totalRevenue: data.totalRevenue,
+            totalOrders: data.totalOrders,
+            totalDiscount: data.totalDiscount,
+            fromDate: data.fromDate,
+            toDate: data.toDate
+          });
+          
+          const monthData = {
+            month: format(monthStart, 'MMM'),
+            revenue: data.totalRevenue || 0,
+            orders: data.totalOrders || 0,
+            discount: data.totalDiscount || 0,
+          };
+          
+          monthlyData.push(monthData);
+          console.log(`   Pushed data:`, monthData);
+        } catch (error) {
+          console.error(`   Error fetching data for ${format(monthStart, 'MMM')}:`, error);
+          monthlyData.push({
+            month: format(monthStart, 'MMM'),
+            revenue: 0,
+            orders: 0,
+            discount: 0,
+          });
+        }
+      }
+      
+      console.log(' [DASHBOARD] All monthly data fetched:', monthlyData);
+      console.log(' [DASHBOARD] Total months with revenue > 0:', monthlyData.filter(m => m.revenue > 0).length);
+      
+      setMonthlyRevenueData(monthlyData);
+      setIsLoadingMonthly(false);
+    };
+
+    fetchMonthlyData();
+  }, [selectedYear]);
+
+  // Revenue chart — use monthly data from API calls
   const revenueChartData = useMemo(() => {
-    if (!revenue) return [];
-    // Since the API returns summary, show a source breakdown bar
-    if (revenue.bySource.length > 0) {
-      return revenue.bySource.map((s) => ({
-        name: s.source,
-        revenue: s.revenue,
-        orders: s.orderCount,
-        discount: s.discount,
-      }));
-    }
-    return [
-      { name: "Total", revenue: revenue.totalRevenue, orders: revenue.totalOrders, discount: revenue.totalDiscount },
-    ];
-  }, [revenue]);
+    console.log(' [CHART DATA] revenueChartData updated:', monthlyRevenueData);
+    console.log(' [CHART DATA] Chart will render with', monthlyRevenueData.length, 'data points');
+    return monthlyRevenueData;
+  }, [monthlyRevenueData]);
 
   // After-sales chart data
   const afterSalesChartData = useMemo(() => {
@@ -313,57 +338,25 @@ export default function ManagerDashboard() {
               <Download className="w-4 h-4" /> Export All
             </button>
 
-            {/* Preset Date Range Buttons */}
-            <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-slate-200 shadow-sm">
-              {(["7d", "30d", "90d"] as DateRange[]).map((dr) => (
-                <button
-                  key={dr}
-                  onClick={() => handlePresetClick(dr)}
-                  className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                    dateRange === dr && !useCustomRange
-                      ? "bg-white text-indigo-600 shadow-sm"
-                      : "text-slate-500 hover:text-slate-900"
-                  }`}
-                >
-                  {dr === "7d" ? "7 Days" : dr === "30d" ? "30 Days" : "90 Days"}
-                </button>
-              ))}
-            </div>
-
-            {/* Custom Date Range Picker */}
-            <div className="flex items-center gap-2 bg-white p-2 rounded-xl border border-slate-200 shadow-sm">
-              <Calendar className="w-4 h-4 text-slate-400 ml-1" />
-              <input
-                type="date"
-                value={customFromDate}
-                onChange={(e) => setCustomFromDate(e.target.value)}
-                max={customToDate || format(new Date(), "yyyy-MM-dd")}
-                className="px-2 py-1 text-sm border-0 outline-none focus:ring-0 bg-transparent text-slate-700 font-medium"
-                placeholder="From"
-                aria-label="Start date for custom date range"
-              />
-              <span className="text-slate-400 text-sm">→</span>
-              <input
-                type="date"
-                value={customToDate}
-                onChange={(e) => setCustomToDate(e.target.value)}
-                min={customFromDate}
-                max={format(new Date(), "yyyy-MM-dd")}
-                className="px-2 py-1 text-sm border-0 outline-none focus:ring-0 bg-transparent text-slate-700 font-medium"
-                placeholder="To"
-                aria-label="End date for custom date range"
-              />
-              <button
-                onClick={handleApplyCustomRange}
-                disabled={!customFromDate || !customToDate}
-                className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-                  customFromDate && customToDate
-                    ? "bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm"
-                    : "bg-slate-100 text-slate-400 cursor-not-allowed"
-                }`}
+            {/* Year Selector */}
+            <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm">
+              <Calendar className="w-4 h-4 text-slate-400" />
+              <span className="text-sm font-medium text-slate-600">Year:</span>
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                className="px-3 py-1 bg-slate-50 border border-slate-200 rounded-lg text-sm font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                aria-label="Select year"
               >
-                Apply
-              </button>
+                {Array.from({ length: 10 }, (_, i) => {
+                  const year = new Date().getFullYear() - i;
+                  return (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  );
+                })}
+              </select>
             </div>
           </div>
         </div>
@@ -428,7 +421,7 @@ export default function ManagerDashboard() {
                   <div>
                     <h3 className="text-2xl font-bold text-slate-900 tracking-tight">Revenue Growth</h3>
                     <p className="text-sm text-slate-500 font-medium mt-0.5">
-                      {fromDate && toDate ? `${format(parseISO(fromDate), "MMM dd")} — ${format(parseISO(toDate), "MMM dd, yyyy")}` : "Selected period"}
+                      Year {selectedYear}
                     </p>
                   </div>
                 </div>
@@ -483,27 +476,16 @@ export default function ManagerDashboard() {
             ) : (
               <div className="w-full h-[380px] bg-white/50 rounded-2xl p-4 border border-slate-100">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={revenueChartData} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
+                  <LineChart data={revenueChartData} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
                     <defs>
-                      <linearGradient id="onlineGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#1976d2" stopOpacity={0.9} />
-                        <stop offset="50%" stopColor="#1565c0" stopOpacity={0.85} />
-                        <stop offset="100%" stopColor="#0d47a1" stopOpacity={0.8} />
-                      </linearGradient>
-                      <linearGradient id="offlineGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#f57c00" stopOpacity={0.9} />
-                        <stop offset="50%" stopColor="#ef6c00" stopOpacity={0.85} />
-                        <stop offset="100%" stopColor="#e65100" stopOpacity={0.8} />
-                      </linearGradient>
-                      <linearGradient id="defaultGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#6366f1" stopOpacity={0.9} />
-                        <stop offset="50%" stopColor="#8b5cf6" stopOpacity={0.8} />
-                        <stop offset="100%" stopColor="#a855f7" stopOpacity={0.7} />
+                      <linearGradient id="lineGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#6366f1" stopOpacity={0.8} />
+                        <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0.3} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" opacity={0.5} />
                     <XAxis 
-                      dataKey="name" 
+                      dataKey="month" 
                       axisLine={false} 
                       tickLine={false} 
                       tick={{ fontSize: 13, fill: "#475569", fontWeight: 600 }}
@@ -516,27 +498,18 @@ export default function ManagerDashboard() {
                       tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
                       label={{ value: 'Revenue (USD)', angle: -90, position: 'insideLeft', style: { fontSize: 12, fill: '#64748b', fontWeight: 600 } }}
                     />
-                    <Tooltip content={<RevenueTooltip />} cursor={{ fill: "#f1f5f9", opacity: 0.3 }} />
-                    <Bar 
+                    <Tooltip content={<RevenueTooltip />} cursor={{ stroke: "#6366f1", strokeWidth: 2, strokeDasharray: "5 5" }} />
+                    <Line 
+                      type="monotone"
                       dataKey="revenue" 
-                      radius={[12, 12, 0, 0]} 
+                      stroke="#6366f1"
+                      strokeWidth={3}
+                      dot={{ fill: "#6366f1", r: 6, strokeWidth: 2, stroke: "#fff" }}
+                      activeDot={{ r: 8, fill: "#8b5cf6", stroke: "#fff", strokeWidth: 2 }}
                       animationDuration={1000}
                       animationBegin={0}
-                    >
-                      {revenueChartData.map((entry, index) => (
-                        <Cell 
-                          key={`cell-${index}`} 
-                          fill={
-                            entry.name === "Online" 
-                              ? "url(#onlineGradient)" 
-                              : entry.name === "Offline" 
-                                ? "url(#offlineGradient)" 
-                                : "url(#defaultGradient)"
-                          } 
-                        />
-                      ))}
-                    </Bar>
-                  </BarChart>
+                    />
+                  </LineChart>
                 </ResponsiveContainer>
               </div>
             )}
