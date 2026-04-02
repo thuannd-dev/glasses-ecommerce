@@ -20,7 +20,6 @@ import { useManagerProducts } from "../../lib/hooks/useManagerProducts";
 import type { ProductListItem } from "../../lib/hooks/useManagerProducts";
 import ProductsTable from "./components/ProductsTable";
 import ProductCard, { ProductDetailModal } from "./components/ProductCard";
-import { ProductCreateDialog } from "./components/ProductCreateDialog";
 import { toast } from "react-toastify";
 import axios from "axios";
 
@@ -41,7 +40,6 @@ export default function ProductsList() {
   const [sortOrder, setSortOrder] = useState(1); // 0=Asc, 1=Desc
   const [viewMode, setViewMode] = useState<"table" | "gallery">("table");
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   const { products, totalPages, totalCount, isLoading, deleteProduct, isDeleting } = useManagerProducts({
     pageNumber,
@@ -200,7 +198,7 @@ export default function ProductsList() {
           <Button
             variant="contained"
             startIcon={<AddIcon />}
-            onClick={() => setCreateDialogOpen(true)}
+            onClick={() => navigate("/manager/products/create")}
           >
             Create Product
           </Button>
@@ -394,16 +392,6 @@ export default function ProductsList() {
           <ProductDetailModal
             productId={selectedProductId}
             onClose={() => setSelectedProductId(null)}
-          />
-
-          {/* Create Product Dialog */}
-          <ProductCreateDialog
-            open={createDialogOpen}
-            onClose={() => setCreateDialogOpen(false)}
-            onSuccess={() => {
-              setCreateDialogOpen(false);
-              setPageNumber(1);
-            }}
           />
 
           {/* Pagination */}
