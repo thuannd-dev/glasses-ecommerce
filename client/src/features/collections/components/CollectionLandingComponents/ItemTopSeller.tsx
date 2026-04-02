@@ -375,13 +375,13 @@ export default function ItemTopSeller() {
 
           <Typography
             component="div"
-            onClick={() => navigate("/collections/all")}
+            onClick={() => navigate("/collections")}
             role="button"
             tabIndex={0}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
-                navigate("/collections/all");
+                navigate("/collections");
               }
             }}
             sx={{

@@ -239,7 +239,10 @@ export function OrderTicketsSection({ orderId }: OrderTicketsSectionProps) {
                                 Price
                               </TableCell>
                               <TableCell align="right" sx={{ fontSize: 12, fontWeight: 600, color: PALETTE.textSecondary }}>
-                                Total
+                                Discount
+                              </TableCell>
+                              <TableCell align="right" sx={{ fontSize: 12, fontWeight: 600, color: "#16A34A" }}>
+                                Final Price
                               </TableCell>
                             </TableRow>
                           </TableHead>
@@ -287,12 +290,17 @@ export function OrderTicketsSection({ orderId }: OrderTicketsSectionProps) {
                                   </Typography>
                                 </TableCell>
                                 <TableCell align="right">
+                                  <Typography fontSize={13} sx={{ color: item.discountApplied && item.discountApplied > 0 ? "#DC2626" : PALETTE.textMuted }}>
+                                    {item.discountApplied && item.discountApplied > 0 ? `-$${item.discountApplied.toFixed(2)}` : "-"}
+                                  </Typography>
+                                </TableCell>
+                                <TableCell align="right">
                                   <Typography
                                     fontSize={13}
                                     fontWeight={600}
-                                    sx={{ color: PALETTE.textMain }}
+                                    sx={{ color: "#16A34A" }}
                                   >
-                                    ${item.totalPrice.toFixed(2)}
+                                    ${(item.totalPrice - (item.discountApplied || 0)).toFixed(2)}
                                   </Typography>
                                 </TableCell>
                               </TableRow>

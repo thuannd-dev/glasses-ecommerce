@@ -50,6 +50,9 @@ public class AfterSalesTicket
 
     public decimal? RefundAmount { get; set; }
 
+    // Discount applied to this ticket's item(s) — calculated at submission time
+    public decimal DiscountApplied { get; set; } = 0;
+
     public bool IsRequiredEvidence { get; set; } = true;
 
     public Guid? AssignedTo { get; set; }

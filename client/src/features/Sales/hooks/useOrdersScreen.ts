@@ -8,11 +8,12 @@ import type { StaffOrdersResponse } from "../../../lib/types/staffOrders";
 
 // Map filter tabs to backend order statuses
 const STATUS_FILTER_MAP: Record<string, string[]> = {
-  "All": ["Pending", "Confirmed", "Processing", "Shipped", "Delivered", "Completed", "Cancelled", "Rejected"],
+  "All": ["Pending", "Confirmed", "Processing", "Shipped", "Delivered", "Completed", "Cancelled", "Refunded"],
   "Pending": ["Pending"],
   "Confirmed": ["Confirmed", "Processing", "Shipped"],
   "Completed": ["Delivered", "Completed"],
-  "Rejected": ["Cancelled", "Rejected"],
+  // UI label kept as "Rejected", but backend order status enum uses Cancelled/Refunded.
+  "Rejected": ["Cancelled", "Refunded"],
 };
 
 async function fetchStaffOrdersForStatus(status: string, pageNumber: number, pageSize: number, orderType?: string): Promise<StaffOrdersResponse> {

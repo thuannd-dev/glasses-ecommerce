@@ -65,7 +65,7 @@ function shortenRecordId(id: string) {
 
 function InboundRecordRow({ record }: { record: InventoryInboundRecordItem }) {
   const [expanded, setExpanded] = useState(false);
-  const { data: detail, isLoading } = useInventoryRecordDetail(expanded ? record.id : undefined);
+  const { data: detail, isLoading } = useInventoryRecordDetail(expanded ? record.id : undefined, "Inbound");
   const statusStyles = getInboundStatusStyles(record.status);
   const copyRecordId = () => {
     navigator.clipboard.writeText(record.id);
@@ -184,6 +184,8 @@ function InboundRecordRow({ record }: { record: InventoryInboundRecordItem }) {
                 </Box>
               ) : !detail ? (
                 <Typography sx={{ color: "#8A8A8A", fontSize: 13 }}>No detail available.</Typography>
+              ) : detail.type !== "inbound" ? (
+                <Typography sx={{ color: "#8A8A8A", fontSize: 13 }}>Invalid detail type.</Typography>
               ) : (
                 <Box
                   sx={{

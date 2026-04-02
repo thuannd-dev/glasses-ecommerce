@@ -33,10 +33,10 @@ const UserMenu = observer(function UserMenu() {
   const isCustomerOnly = userRoles.includes("Customer");
 
   const dashboardTarget = React.useMemo(() => {
-    if (userRoles.includes("Admin")) return { label: "Admin dashboard", to: "/admin" };
+    if (userRoles.includes("Admin")) return { label: "Admin dashboard", to: "/admin/roles" };
     if (userRoles.includes("Manager")) return { label: "Manager dashboard", to: "/manager" };
     if (userRoles.includes("Operations")) return { label: "Operations dashboard", to: "/operations" };
-    if (userRoles.includes("Sales")) return { label: "Sales dashboard", to: "/sales" };
+    if (userRoles.includes("Sales")) return { label: "Sales dashboard", to: "/sales/orders" };
     return null;
   }, [userRoles]);
 

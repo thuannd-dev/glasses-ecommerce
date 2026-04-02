@@ -9,7 +9,6 @@ import {
   Paper,
   ToggleButton,
   ToggleButtonGroup,
-  Stack,
 } from "@mui/material";
 import ViewListIcon from "@mui/icons-material/ViewList";
 import GridViewIcon from "@mui/icons-material/GridView";
@@ -203,6 +202,7 @@ export default function ProductsList() {
             Create Product
           </Button>
         </Stack>
+  
 
         {/* Search */}
         <TextField

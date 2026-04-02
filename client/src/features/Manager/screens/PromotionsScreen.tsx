@@ -354,7 +354,17 @@ export default function PromotionsScreen() {
           </Typography>
         </Box>
         <Stack direction="row" spacing={1} alignItems="center">
-          <Button variant="contained" onClick={openCreate}>
+          <Button
+            variant="contained"
+            onClick={openCreate}
+            sx={{
+              textTransform: "none",
+              fontWeight: 600,
+              borderRadius: 1,
+              bgcolor: "#B68C5A",
+              "&:hover": { bgcolor: "#9A7548" },
+            }}
+          >
             + New Promotion
           </Button>
           <Button variant="outlined" onClick={() => refetch()} disabled={isLoading || isFetching}>

@@ -62,6 +62,29 @@ export const useAdminPolicies = (queryParams?: AdminPoliciesQueryParams) => {
     mutationFn: async (id: string) => {
       await agent.delete(`/admin/policies/${id}`);
     },
+    onMutate: async (id: string) => {
+      await queryClient.cancelQueries({ queryKey: ["admin", "policies"] });
+      const snapshots = queryClient.getQueriesData<PagedPoliciesResponse>({
+        queryKey: ["admin", "policies"],
+      });
+
+      snapshots.forEach(([queryKey, data]) => {
+        if (!data) return;
+        const nextItems = (data.items ?? []).filter((p) => p.id !== id);
+        queryClient.setQueryData<PagedPoliciesResponse>(queryKey, {
+          ...data,
+          items: nextItems,
+          totalCount: Math.max(0, (data.totalCount ?? nextItems.length) - 1),
+        });
+      });
+
+      return { snapshots };
+    },
+    onError: (_err, _id, context) => {
+      context?.snapshots?.forEach(([queryKey, data]) => {
+        queryClient.setQueryData(queryKey, data);
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "policies"] });
     },
@@ -76,7 +99,8 @@ export const useAdminPolicies = (queryParams?: AdminPoliciesQueryParams) => {
   };
 
   return {
-    policies: policiesData?.items || [],
+    // Hide soft-deleted policies from admin table.
+    policies: (policiesData?.items || []).filter((p) => !p.isDeleted),
     policiesData,
     isPoliciesLoading,
     createPolicy: createPolicyMutation.mutate,

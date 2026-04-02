@@ -25,7 +25,7 @@ const CATEGORIES: Category[] = [
     },
     {
         title: "ALL MY SHOP PRODUCT",
-        to: "/collections/all",
+        to: "/collections",
         image:
             "https://res.cloudinary.com/ds0b8jtbr/image/upload/v1773944645/istockphoto-2183222014-2048x2048_okqo6z.jpg",
     },
@@ -312,7 +312,7 @@ export default function CategoryCards() {
                                         <Box sx={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap" }}>
                                             <Button
                                                 component={NavLink}
-                                                to="/collections/all"
+                                                to="/collections"
                                                 variant="outlined"
                                                 size="small"
                                                 sx={{

@@ -35,6 +35,17 @@ public sealed class GetTicketsByOrder
                 return Result<List<TicketWithItemsDto>>.Failure("Order not found.", 404);
 
             // Get all tickets for this order with their items
+            // First, load order to get all items for proportional discount calculation
+            Order? order = await context.Orders
+                .AsNoTracking()
+                .Include(o => o.OrderItems)
+                .FirstOrDefaultAsync(o => o.Id == request.OrderId, cancellationToken);
+
+            if (order == null)
+                return Result<List<TicketWithItemsDto>>.Failure("Order not found.", 404);
+
+            decimal totalOrderValue = order.OrderItems.Sum(oi => oi.UnitPrice * oi.Quantity);
+
             List<TicketWithItemsDto> tickets = await context.AfterSalesTickets
                 .AsNoTracking()
                 .Where(t => t.OrderId == request.OrderId && t.CustomerId == userId)
@@ -50,6 +61,7 @@ public sealed class GetTicketsByOrder
                     Reason = t.Reason,
                     RequestedAction = t.RequestedAction,
                     RefundAmount = t.RefundAmount,
+                    DiscountApplied = t.DiscountApplied,
                     IsRequiredEvidence = t.IsRequiredEvidence,
                     PolicyViolation = t.PolicyViolation,
                     StaffNotes = t.StaffNotes,
@@ -82,6 +94,7 @@ public sealed class GetTicketsByOrder
                                 Quantity = oi.Quantity,
                                 UnitPrice = oi.UnitPrice,
                                 TotalPrice = oi.Quantity * oi.UnitPrice,
+                                DiscountApplied = t.DiscountApplied,
                                 ProductImageUrl = oi.ProductVariant.Product.Images
                                     .OrderBy(pi => pi.DisplayOrder)
                                     .Select(pi => pi.ImageUrl)
@@ -100,6 +113,9 @@ public sealed class GetTicketsByOrder
                                 Quantity = oi.Quantity,
                                 UnitPrice = oi.UnitPrice,
                                 TotalPrice = oi.Quantity * oi.UnitPrice,
+                                DiscountApplied = totalOrderValue > 0
+                                    ? (oi.Quantity * oi.UnitPrice / totalOrderValue) * t.DiscountApplied
+                                    : 0,
                                 ProductImageUrl = oi.ProductVariant.Product.Images
                                     .OrderBy(pi => pi.DisplayOrder)
                                     .Select(pi => pi.ImageUrl)

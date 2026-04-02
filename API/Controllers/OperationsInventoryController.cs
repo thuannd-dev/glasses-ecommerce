@@ -112,4 +112,13 @@ public sealed class OperationsInventoryController : BaseApiController
         return HandleResult(await Mediator.Send(
             new GetOutboundDetail.Query { OrderId = orderId }, ct));
     }
+
+    // Xem chi tiết phiếu Return — tự động detect xem là InboundRecord hay AfterSalesTicket
+    // ReferenceId có thể trỏ tới InboundRecord.Id (Flow 1) hoặc AfterSalesTicket.Id (Flow 2)
+    [HttpGet("return/{id}")]
+    public async Task<IActionResult> GetReturnDetail(Guid id, CancellationToken ct)
+    {
+        return HandleResult(await Mediator.Send(
+            new GetReturnDetail.Query { Id = id }, ct));
+    }
 }

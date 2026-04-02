@@ -16,12 +16,12 @@ import {
   TextField,
   FormControlLabel,
   Checkbox,
-  TablePagination,
-  IconButton,
-  Tooltip,
   Paper,
-  Divider,
   Switch,
+  Grid,
+  Stack,
+  MenuItem,
+  IconButton,
 } from "@mui/material";
 import { useState } from "react";
 import { useAdminFeatureToggles } from "../../lib/hooks/useAdminFeatureToggles";
@@ -31,11 +31,9 @@ import type {
   UpdateFeatureTogglePayload,
 } from "../../lib/types";
 import { toast } from "react-toastify";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
-import SearchIcon from "@mui/icons-material/Search";
-import InfoIcon from "@mui/icons-material/Info";
+import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownRounded";
+import KeyboardArrowUpRoundedIcon from "@mui/icons-material/KeyboardArrowUpRounded";
 
 // Approach 1: In-app banner showing available features
 const AVAILABLE_FEATURES = [
@@ -106,6 +104,7 @@ export default function AdminFeatureToggles() {
   const [formData, setFormData] = useState<CreateFeatureTogglePayload>(INITIAL_FORM_STATE);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [expandedToggleId, setExpandedToggleId] = useState<string | null>(null);
 
   // Handle dialog open for create
   const handleOpenCreateDialog = () => {
@@ -280,250 +279,132 @@ export default function AdminFeatureToggles() {
     );
   };
 
-  // Handle pagination
-  const handlePageChange = (_event: unknown, newPage: number) => {
-    setFilters((prev) => ({
-      ...prev,
-      pageNumber: newPage + 1,
-    }));
-  };
 
-  const handleRowsPerPageChange = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setFilters((prev) => ({
-      ...prev,
-      pageSize: parseInt(event.target.value, 10),
-      pageNumber: 1,
-    }));
-  };
 
   return (
-    <>
-      {/* Header Section */}
-      <Box 
-        sx={{ 
-          mb: 6,
-          background: "linear-gradient(135deg, rgba(25, 118, 210, 0.05) 0%, rgba(25, 118, 210, 0.02) 100%)",
-          py: 3.5,
-          px: 3.5,
-          borderRadius: 2,
-          border: "1px solid",
-          borderColor: "rgba(25, 118, 210, 0.1)",
-        }}
-      >
+    <Box
+      sx={{
+        minHeight: "100vh",
+        px: { xs: 2, md: 4, lg: 6 },
+        py: 4,
+        bgcolor: "#FAFAF8",
+        color: "#171717",
+      }}
+    >
+      {/* Header */}
+      <Box sx={{ mb: 5 }}>
         <Typography
           sx={{
             fontSize: 11,
-            letterSpacing: 2,
+            letterSpacing: 4,
             textTransform: "uppercase",
-            color: "primary.main",
+            color: "#8A8A8A",
             fontWeight: 700,
-            opacity: 0.8,
           }}
         >
           Admin Console
         </Typography>
-        <Typography sx={{ mt: 1.5, fontSize: 32, fontWeight: 900, color: "text.primary", letterSpacing: -0.5 }}>
+
+        <Typography sx={{ mt: 1, fontSize: { xs: 24, md: 30 }, fontWeight: 800, color: "#171717" }}>
           Feature Toggles
         </Typography>
-        <Typography sx={{ mt: 1.5, color: "text.secondary", maxWidth: 700, fontSize: 15, lineHeight: 1.6 }}>
+
+        <Typography sx={{ mt: 0.5, color: "#6B6B6B", maxWidth: 520, fontSize: 14 }}>
           Manage feature visibility and rollouts across your application. Control feature activation by scope, region, or time period without requiring redeployment.
         </Typography>
       </Box>
 
-      {/* Available Features Banner */}
+      {/* Filters & Toolbar */}
       <Paper
         elevation={0}
         sx={{
-          mb: 5,
           p: 3,
-          background: "linear-gradient(135deg, rgba(33, 150, 243, 0.08) 0%, rgba(33, 150, 243, 0.04) 100%)",
-          border: "1px solid",
-          borderColor: "rgba(33, 150, 243, 0.15)",
-          borderLeft: "5px solid",
-          borderLeftColor: "primary.main",
-          cursor: "default",
-          transition: "all 0.3s ease",
-          "&:hover": {
-            boxShadow: "0 4px 12px rgba(33, 150, 243, 0.12)",
-          },
-          borderRadius: 2,
-          display: "flex",
-          gap: 3,
-          alignItems: "flex-start",
+          mb: 4,
+          borderRadius: 3,
+          border: "1px solid rgba(0,0,0,0.08)",
+          bgcolor: "#ffffff",
         }}
       >
-        <InfoIcon
-          sx={{
-            color: "primary.main",
-            fontSize: 28,
-            mt: 0.5,
-            flexShrink: 0,
-            opacity: 0.9,
-          }}
-        />
-        <Box sx={{ flex: 1 }}>
-          <Typography
-            sx={{
-              fontWeight: 700,
-              fontSize: 15,
-              color: "primary.main",
-              mb: 2.5,
-              letterSpacing: 0.3,
-            }}
-          >
-            📌 Available Features for Toggle
-          </Typography>
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", md: "repeat(3, 1fr)" },
-              gap: 2,
-            }}
-          >
-            {AVAILABLE_FEATURES.map((feature) => (
-              <Box
-                key={feature.name}
+        <Grid container spacing={2} sx={{ mb: 3 }} alignItems="center">
+          {/* Search */}
+          <Grid item xs={12} md={3}>
+            <TextField
+              fullWidth
+              placeholder="Search by feature name..."
+              size="small"
+              value={filters.search || ""}
+              onChange={(e) =>
+                setFilters((prev) => ({ ...prev, search: e.target.value || null, pageNumber: 1 }))
+              }
+            />
+          </Grid>
+
+          {/* Status Filter */}
+          <Grid item xs={12} sm={6} md={2.4}>
+            <TextField
+              fullWidth
+              label="Status"
+              size="small"
+              select
+              value={filters.isEnabled ?? ""}
+              onChange={(e) =>
+                setFilters((prev) => ({
+                  ...prev,
+                  isEnabled: e.target.value === "" ? null : e.target.value === "true",
+                  pageNumber: 1,
+                }))
+              }
+            >
+              <MenuItem value="">All Status</MenuItem>
+              <MenuItem value="true">✓ Enabled</MenuItem>
+              <MenuItem value="false">✕ Disabled</MenuItem>
+            </TextField>
+          </Grid>
+
+          {/* Scope Filter */}
+          <Grid item xs={12} sm={6} md={2.4}>
+            <TextField
+              fullWidth
+              label="Scope"
+              size="small"
+              select
+              value={filters.scope ?? ""}
+              onChange={(e) =>
+                setFilters((prev) => ({
+                  ...prev,
+                  scope: e.target.value || null,
+                  pageNumber: 1,
+                }))
+              }
+            >
+              <MenuItem value="">All Scopes</MenuItem>
+              <MenuItem value="Global">Global</MenuItem>
+              <MenuItem value="Region">Region</MenuItem>
+              <MenuItem value="TimeWindow">Time Window</MenuItem>
+            </TextField>
+          </Grid>
+
+          {/* Actions - Create Button */}
+          <Grid item xs={12} md="auto">
+            <Stack direction="row" spacing={1}>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={handleOpenCreateDialog}
                 sx={{
-                  bgcolor: "white",
-                  px: 2.5,
-                  py: 1.5,
-                  borderRadius: 1.5,
-                  border: "1.5px solid",
-                  borderColor: "rgba(33, 150, 243, 0.25)",
-                  transition: "all 0.3s ease",
-                  "&:hover": {
-                    borderColor: "primary.main",
-                    boxShadow: "0 4px 12px rgba(33, 150, 243, 0.15)",
-                    transform: "translateY(-2px)",
-                  },
+                  textTransform: "none",
+                  fontWeight: 600,
+                  borderRadius: 1,
+                  bgcolor: "#B68C5A",
+                  "&:hover": { bgcolor: "#9A7548" },
                 }}
               >
-                <Typography sx={{ fontWeight: 700, fontSize: 14, color: "text.primary" }}>
-                  {feature.name}
-                </Typography>
-                <Typography sx={{ fontSize: 13, color: "text.secondary", mt: 0.75, lineHeight: 1.4 }}>
-                  {feature.description}
-                </Typography>
-              </Box>
-            ))}
-          </Box>
-        </Box>
+                Create Toggle
+              </Button>
+            </Stack>
+          </Grid>
+        </Grid>
       </Paper>
-
-      {/* Filters Section */}
-      <Box 
-        sx={{ 
-          mb: 5, 
-          display: "flex", 
-          gap: 2, 
-          alignItems: "center", 
-          flexWrap: "wrap",
-        }}
-      >
-        {/* Search */}
-        <Box sx={{ flex: 1, minWidth: 240 }}>
-          <TextField
-            fullWidth
-            size="small"
-            placeholder="Search by feature name..."
-            InputProps={{
-              startAdornment: <SearchIcon sx={{ mr: 1.5, color: "primary.main", fontSize: 20, opacity: 0.6 }} />,
-            }}
-            value={filters.search || ""}
-            onChange={(e) =>
-              setFilters((prev) => ({ ...prev, search: e.target.value || null, pageNumber: 1 }))
-            }
-            sx={{
-              "& .MuiOutlinedInput-root": {
-                backgroundColor: "#ffffff",
-                borderRadius: 1.5,
-                transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-                border: "1.5px solid",
-                borderColor: "rgba(0, 0, 0, 0.08)",
-                "&:hover": {
-                  borderColor: "rgba(0, 0, 0, 0.12)",
-                  backgroundColor: "#ffffff",
-                },
-                "&.Mui-focused": {
-                  backgroundColor: "#ffffff",
-                  borderColor: "primary.main",
-                  boxShadow: "0 0 0 3px rgba(33, 150, 243, 0.08)",
-                },
-              },
-              "& .MuiOutlinedInput-input::placeholder": {
-                color: "rgba(0, 0, 0, 0.4)",
-                opacity: 1,
-              },
-            }}
-          />
-        </Box>
-
-        {/* Status Filter */}
-        <TextField
-          select
-          size="small"
-          value={filters.isEnabled ?? ""}
-          onChange={(e) =>
-            setFilters((prev) => ({
-              ...prev,
-              isEnabled: e.target.value === "" ? null : e.target.value === "true",
-              pageNumber: 1,
-            }))
-          }
-          SelectProps={{
-            native: true,
-          }}
-          sx={{
-            minWidth: 140,
-            "& .MuiOutlinedInput-root": {
-              backgroundColor: "#ffffff",
-              borderRadius: 1.5,
-              transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-              border: "1.5px solid",
-              borderColor: "rgba(0, 0, 0, 0.08)",
-              "&:hover": {
-                borderColor: "rgba(0, 0, 0, 0.12)",
-              },
-              "&.Mui-focused": {
-                borderColor: "primary.main",
-                boxShadow: "0 0 0 3px rgba(33, 150, 243, 0.08)",
-              },
-            },
-          }}
-        >
-          <option value="">All Status</option>
-          <option value="true">✓ Enabled</option>
-          <option value="false">✕ Disabled</option>
-        </TextField>
-
-        {/* Create Button */}
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleOpenCreateDialog}
-          sx={{
-            textTransform: "none",
-            fontWeight: 700,
-            py: 1,
-            px: 2.5,
-            fontSize: 14,
-            borderRadius: 1.5,
-            boxShadow: "0 2px 8px rgba(33, 150, 243, 0.25)",
-            transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-            "&:hover": {
-              boxShadow: "0 4px 16px rgba(33, 150, 243, 0.35)",
-              transform: "translateY(-2px)",
-            },
-            "&:active": {
-              transform: "translateY(0px)",
-            },
-          }}
-        >
-          Create Toggle
-        </Button>
-      </Box>
 
       {/* Feature Toggles Table */}
       <Paper
@@ -533,9 +414,10 @@ export default function AdminFeatureToggles() {
           borderColor: "rgba(0, 0, 0, 0.08)",
           borderRadius: 2,
           overflow: "hidden",
+          boxShadow: "0 2px 8px rgba(0, 0, 0, 0.04)",
           transition: "all 0.3s ease",
           "&:hover": {
-            boxShadow: "0 4px 16px rgba(0, 0, 0, 0.06)",
+            boxShadow: "0 12px 30px rgba(0, 0, 0, 0.08)",
           },
         }}
       >
@@ -570,109 +452,67 @@ export default function AdminFeatureToggles() {
             <TableContainer>
               <Table sx={{ minWidth: 900 }}>
                 <TableHead>
-                  <TableRow 
-                    sx={{ 
-                      bgcolor: "rgba(33, 150, 243, 0.04)",
-                      borderBottom: "2px solid",
-                      borderColor: "rgba(33, 150, 243, 0.15)",
-                    }}
-                  >
-                    <TableCell sx={{ fontWeight: 800, fontSize: 14, py: 2.5, color: "primary.main" }}>
-                      Feature Name
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 800, fontSize: 14, py: 2.5, color: "primary.main" }}>
-                      Status
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 800, fontSize: 14, py: 2.5, color: "primary.main" }}>
-                      Scope
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 800, fontSize: 14, py: 2.5, color: "primary.main" }}>
-                      Effective From
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 800, fontSize: 14, py: 2.5, color: "primary.main" }}>
-                      Effective To
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 800, fontSize: 14, py: 2.5, color: "primary.main" }} align="center">
-                      Quick Toggle
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 800, fontSize: 14, py: 2.5, color: "primary.main" }} align="center">
-                      Edit
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 800, fontSize: 14, py: 2.5, color: "primary.main" }} align="center">
-                      Delete
-                    </TableCell>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 900, fontSize: 14, width: "5%" }}></TableCell>
+                    <TableCell sx={{ fontWeight: 900, fontSize: 14 }}>Feature Name</TableCell>
+                    <TableCell sx={{ fontWeight: 900, fontSize: 14 }}>Status</TableCell>
+                    <TableCell sx={{ fontWeight: 900, fontSize: 14 }} align="center">Quick Toggle</TableCell>
+                    <TableCell sx={{ fontWeight: 900, fontSize: 14 }} align="right">Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {toggles.map((toggle, index) => (
-                    <TableRow
-                      key={toggle.id}
-                      hover
-                      sx={{
-                        bgcolor: index % 2 === 0 ? "rgba(0, 0, 0, 0.01)" : "white",
-                        transition: "all 0.2s ease",
-                        "&:hover": {
-                          bgcolor: "rgba(33, 150, 243, 0.06)",
-                        },
-                        "& td": { py: 2, borderColor: "rgba(0, 0, 0, 0.05)" },
-                        borderBottom: "1px solid",
-                        borderColor: "rgba(0, 0, 0, 0.05)",
-                      }}
-                    >
-                      <TableCell>
-                        <Box>
-                          <Typography sx={{ fontWeight: 700, fontSize: 15, color: "text.primary" }}>
-                            {toggle.featureName}
-                          </Typography>
-                          {toggle.description && (
-                            <Typography sx={{ fontSize: 13, color: "text.secondary", mt: 0.75 }}>
-                              {toggle.description}
+                  {toggles.map((toggle) => (
+                    <>
+                      <TableRow
+                        key={toggle.id}
+                        hover
+                        sx={{
+                          "& td": { py: 1.8, fontSize: 14 },
+                        }}
+                      >
+                        <TableCell sx={{ width: "5%" }}>
+                          <IconButton
+                            size="small"
+                            onClick={() => setExpandedToggleId(expandedToggleId === toggle.id ? null : toggle.id)}
+                            sx={{
+                              color: "#6B6B6B",
+                              transition: "all 0.18s ease",
+                              "&:hover": { color: "#171717", bgcolor: "rgba(0,0,0,0.04)" },
+                            }}
+                            aria-label={expandedToggleId === toggle.id ? "Hide details" : "Show details"}
+                          >
+                            {expandedToggleId === toggle.id ? <KeyboardArrowUpRoundedIcon /> : <KeyboardArrowDownRoundedIcon />}
+                          </IconButton>
+                        </TableCell>
+                        <TableCell>
+                          <Box>
+                            <Typography sx={{ fontWeight: 700, fontSize: 15, color: "text.primary" }}>
+                              {toggle.featureName}
                             </Typography>
-                          )}
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={toggle.isEnabled ? "✓ Enabled" : "✕ Disabled"}
-                          size="medium"
-                          color={toggle.isEnabled ? "success" : "default"}
-                          variant={toggle.isEnabled ? "filled" : "outlined"}
-                          sx={{
-                            fontWeight: 700,
-                            fontSize: 13,
-                            transition: "all 0.2s ease",
-                            ...(toggle.isEnabled && {
-                              boxShadow: "0 2px 8px rgba(76, 175, 80, 0.3)",
-                            }),
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Typography sx={{ fontSize: 15, fontWeight: 600, color: toggle.scope ? "primary.main" : "text.secondary" }}>
-                          {toggle.scope ? `${toggle.scope}` : "-"}
-                        </Typography>
-                        {toggle.scope && toggle.scopeValue && (
-                          <Typography sx={{ fontSize: 13, color: "text.secondary", mt: 0.5 }}>
-                            {toggle.scopeValue}
-                          </Typography>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Typography sx={{ fontSize: 15, fontWeight: 500 }}>
-                          {toggle.effectiveFrom
-                            ? new Date(toggle.effectiveFrom).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
-                            : "-"}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography sx={{ fontSize: 15, fontWeight: 500 }}>
-                          {toggle.effectiveTo
-                            ? new Date(toggle.effectiveTo).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
-                            : "-"}
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="center">
-                        <Tooltip title={toggle.isEnabled ? "Click to disable" : "Click to enable"}>
+                            {toggle.description && (
+                              <Typography sx={{ fontSize: 13, color: "text.secondary", mt: 0.75 }}>
+                                {toggle.description}
+                              </Typography>
+                            )}
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            label={toggle.isEnabled ? "✓ Enabled" : "✕ Disabled"}
+                            size="medium"
+                            color={toggle.isEnabled ? "success" : "default"}
+                            variant={toggle.isEnabled ? "filled" : "outlined"}
+                            sx={{
+                              fontWeight: 700,
+                              fontSize: 13,
+                              transition: "all 0.2s ease",
+                              ...(toggle.isEnabled && {
+                                boxShadow: "0 2px 8px rgba(76, 175, 80, 0.3)",
+                              }),
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell align="center">
                           <Switch
                             checked={toggle.isEnabled}
                             onChange={() => handleQuickToggle(toggle)}
@@ -711,69 +551,114 @@ export default function AdminFeatureToggles() {
                               },
                             }}
                           />
-                        </Tooltip>
-                      </TableCell>
-                      <TableCell align="center">
-                        <Tooltip title="Edit Toggle">
-                          <IconButton
-                            size="medium"
-                            onClick={() => handleOpenEditDialog(toggle)}
-                            sx={{ 
-                              color: "primary.main", 
-                              transition: "all 0.2s ease",
-                              "&:hover": { 
-                                bgcolor: "rgba(33, 150, 243, 0.1)",
-                              } 
-                            }}
-                          >
-                            <EditIcon sx={{ fontSize: 22 }} />
-                          </IconButton>
-                        </Tooltip>
-                      </TableCell>
-                      <TableCell align="center">
-                        <Tooltip title="Delete Toggle">
-                          <IconButton
-                            size="medium"
-                            color="error"
-                            onClick={() => handleOpenDeleteDialog(toggle.id)}
-                            sx={{ 
-                              transition: "all 0.2s ease",
-                              "&:hover": { 
-                                bgcolor: "rgba(211, 47, 47, 0.1)",
-                              } 
-                            }}
-                          >
-                            <DeleteIcon sx={{ fontSize: 22 }} />
-                          </IconButton>
-                        </Tooltip>
-                      </TableCell>
-                    </TableRow>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                            <Button
+                              size="small"
+                              variant="text"
+                              onClick={() => handleOpenEditDialog(toggle)}
+                            >
+                              Edit
+                            </Button>
+                            <Button
+                              size="small"
+                              color="error"
+                              variant="outlined"
+                              onClick={() => handleOpenDeleteDialog(toggle.id)}
+                            >
+                              Delete
+                            </Button>
+                          </Stack>
+                        </TableCell>
+                      </TableRow>
+                      {expandedToggleId === toggle.id && (
+                        <TableRow>
+                          <TableCell colSpan={5} sx={{ p: 0, borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
+                            <Box sx={{ px: 2.25, py: 1.5, bgcolor: "#FFFFFF" }}>
+                              <Box
+                                sx={{
+                                  bgcolor: "#FAFAF8",
+                                  border: "1px solid rgba(0,0,0,0.06)",
+                                  borderRadius: "14px",
+                                  p: { xs: 2, md: 2.25 },
+                                }}
+                              >
+                                <Box
+                                  sx={{
+                                    display: "grid",
+                                    gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+                                    gap: 2,
+                                  }}
+                                >
+                                  <Stack spacing={0.8}>
+                                    <Typography sx={{ fontSize: 12, color: "#8A8A8A", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.8 }}>
+                                      Scope
+                                    </Typography>
+                                    <Typography sx={{ fontSize: 13, color: "#6B6B6B" }}>
+                                      {toggle.scope ?? "—"}
+                                    </Typography>
+                                  </Stack>
+                                  <Stack spacing={0.8}>
+                                    <Typography sx={{ fontSize: 12, color: "#8A8A8A", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.8 }}>
+                                      Scope Value
+                                    </Typography>
+                                    <Typography sx={{ fontSize: 13, color: "#6B6B6B" }}>
+                                      {toggle.scopeValue ?? "—"}
+                                    </Typography>
+                                  </Stack>
+                                  <Stack spacing={0.8}>
+                                    <Typography sx={{ fontSize: 12, color: "#8A8A8A", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.8 }}>
+                                      Effective From
+                                    </Typography>
+                                    <Typography sx={{ fontSize: 13, color: "#6B6B6B" }}>
+                                      {toggle.effectiveFrom
+                                        ? new Date(toggle.effectiveFrom).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
+                                        : "—"}
+                                    </Typography>
+                                  </Stack>
+                                  <Stack spacing={0.8}>
+                                    <Typography sx={{ fontSize: 12, color: "#8A8A8A", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.8 }}>
+                                      Effective To
+                                    </Typography>
+                                    <Typography sx={{ fontSize: 13, color: "#6B6B6B" }}>
+                                      {toggle.effectiveTo
+                                        ? new Date(toggle.effectiveTo).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
+                                        : "—"}
+                                    </Typography>
+                                  </Stack>
+                                </Box>
+                              </Box>
+                            </Box>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </>
                   ))}
+                
                 </TableBody>
               </Table>
             </TableContainer>
-            <Divider sx={{ my: 0 }} />
-            <TablePagination
-              rowsPerPageOptions={[10, 20, 50]}
-              component="div"
-              count={togglesData?.totalCount || 0}
-              rowsPerPage={filters.pageSize}
-              page={filters.pageNumber - 1}
-              onPageChange={handlePageChange}
-              onRowsPerPageChange={handleRowsPerPageChange}
-              sx={{
-                bgcolor: "rgba(0, 0, 0, 0.02)",
-                "& .MuiTablePagination-root": {
-                  borderTop: "1px solid",
-                  borderColor: "rgba(33, 150, 243, 0.15)",
-                },
-                "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows": {
-                  fontSize: 14,
-                  m: 0,
-                  fontWeight: 500,
-                },
-              }}
-            />
+            <Stack direction="row" spacing={1} justifyContent="flex-end" sx={{ p: 2 }}>
+              <Button
+                variant="outlined"
+                disabled={filters.pageNumber <= 1}
+                onClick={() => setFilters(prev => ({ ...prev, pageNumber: prev.pageNumber - 1 }))}
+              >
+                Prev
+              </Button>
+              <Chip
+                label={`Page ${filters.pageNumber} / ${Math.ceil((togglesData?.totalCount || 0) / filters.pageSize)} · ${togglesData?.totalCount || 0} items`}
+                sx={{ bgcolor: "rgba(0,0,0,0.06)", fontWeight: 700 }}
+              />
+              <Button
+                variant="outlined"
+                disabled={filters.pageNumber >= Math.ceil((togglesData?.totalCount || 0) / filters.pageSize)}
+                onClick={() => setFilters(prev => ({ ...prev, pageNumber: prev.pageNumber + 1 }))}
+              >
+                Next
+              </Button>
+            </Stack>
           </>
         )}
       </Paper>
@@ -876,8 +761,6 @@ export default function AdminFeatureToggles() {
               />
             </Box>
 
-            <Divider />
-
             {/* Scoping Section */}
             <Box>
               <Typography sx={{ fontWeight: 700, fontSize: 13, color: "primary.main", mb: 2, textTransform: "uppercase", letterSpacing: 0.5 }}>
@@ -908,8 +791,6 @@ export default function AdminFeatureToggles() {
                 />
               </Box>
             </Box>
-
-            <Divider />
 
             {/* Time-Based Activation */}
             <Box>
@@ -1036,6 +917,6 @@ export default function AdminFeatureToggles() {
           </Button>
         </DialogActions>
       </Dialog>
-    </>
+    </Box>
   );
 }
