@@ -10,7 +10,9 @@ import type { StaffOrdersResponse } from "../../../lib/types/staffOrders";
 const STATUS_FILTER_MAP: Record<string, string[]> = {
   "All": ["Pending", "Confirmed", "Processing", "Shipped", "Delivered", "Completed", "Cancelled", "Refunded"],
   "Pending": ["Pending"],
-  "Confirmed": ["Confirmed", "Processing", "Shipped"],
+  "Confirmed": ["Confirmed"],
+  "Processing": ["Processing"],
+  "Shipped": ["Shipped"],
   "Completed": ["Delivered", "Completed"],
   // UI label kept as "Rejected", but backend order status enum uses Cancelled/Refunded.
   "Rejected": ["Cancelled", "Refunded"],
@@ -26,6 +28,26 @@ async function fetchStaffOrdersForStatus(status: string, pageNumber: number, pag
     },
   });
   return res.data;
+}
+
+async function fetchAllStaffOrdersForStatus(status: string, orderType?: string): Promise<StaffOrderDto[]> {
+  const MAX_PAGE_SIZE = 100; // Backend limit
+  const orders: StaffOrderDto[] = [];
+  let currentPage = 1;
+
+  while (true) {
+    const response = await fetchStaffOrdersForStatus(status, currentPage, MAX_PAGE_SIZE, orderType);
+    const items = response.items || [];
+    orders.push(...items);
+
+    // Stop when backend says no next page or when returned page is short.
+    if (!response.hasNextPage || items.length < MAX_PAGE_SIZE) {
+      break;
+    }
+    currentPage += 1;
+  }
+
+  return orders;
 }
 
 export function useOrdersScreen() {
@@ -51,34 +73,41 @@ export function useOrdersScreen() {
 
   // Fetch all statuses for the current filter
   const { data: allPaginatedData, isLoading } = useQuery({
-    queryKey: ["staff", "orders", "filter", statusFilter, typeFilter, pageNumber],
+    queryKey: ["staff", "orders", "filter", statusFilter, typeFilter],
     queryFn: async () => {
-      const MAX_PAGE_SIZE = 100; // Backend limit
       const allOrders: StaffOrderDto[] = [];
+      const failedStatuses: string[] = [];
       
       // Fetch data for each status
       for (const status of statusesForFilter) {
         try {
-          const response = await fetchStaffOrdersForStatus(status, 1, MAX_PAGE_SIZE, orderTypeForApi);
-          allOrders.push(...(response.items || []));
-        } catch {
-          // Silently handle fetch errors
+          const items = await fetchAllStaffOrdersForStatus(status, orderTypeForApi);
+          allOrders.push(...items);
+        } catch (error) {
+          failedStatuses.push(status);
+          console.error("[SalesOrders] Failed to fetch orders for status:", status, error);
         }
       }
 
-      // Apply pagination locally to the combined results
-      const startIdx = (pageNumber - 1) * pageSize;
-      const endIdx = startIdx + pageSize;
-      const paginatedOrders = allOrders.slice(startIdx, endIdx);
+      if (failedStatuses.length === statusesForFilter.length) {
+        throw new Error("Unable to load sales orders for all selected statuses.");
+      }
+
+      if (failedStatuses.length > 0) {
+        console.warn(
+          `[SalesOrders] Partial results: failed statuses = ${failedStatuses.join(", ")}`
+        );
+      }
 
       return {
-        items: paginatedOrders,
+        // Return full filtered set; screen-level filters (search/date) paginate afterward.
+        items: allOrders,
         totalCount: allOrders.length,
-        pageNumber,
+        pageNumber: 1,
         pageSize,
         totalPages: Math.ceil(allOrders.length / pageSize),
-        hasPreviousPage: pageNumber > 1,
-        hasNextPage: endIdx < allOrders.length,
+        hasPreviousPage: false,
+        hasNextPage: false,
       };
     },
   });
@@ -96,6 +125,8 @@ export function useOrdersScreen() {
     { label: "All", value: "All" },
     { label: "Pending", value: "Pending" },
     { label: "Confirmed", value: "Confirmed" },
+    { label: "Processing", value: "Processing" },
+    { label: "Shipped", value: "Shipped" },
     { label: "Completed", value: "Completed" },
     { label: "Rejected", value: "Rejected" },
   ] as const;

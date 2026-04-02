@@ -13,6 +13,7 @@ import type { StaffOrderDto } from "../../../lib/types/staffOrders";
 import type { OrderStatus, OrderType } from "../../../lib/types/operations";
 
 import { OperationsPageHeader } from "../components/OperationsPageHeader";
+import { useOperations } from "../context/OperationsContext";
 
 import { OrderListCard, StatusFilterTabs } from "../components";
 
@@ -57,6 +58,7 @@ export function PreOrderScreen() {
 
 
   const updateStatus = useUpdateOrderStatus();
+  const { openCreateShipment } = useOperations();
 
 
 
@@ -181,29 +183,12 @@ export function PreOrderScreen() {
 
               >
 
-                {safeOrders
-
-                  .filter((o) => {
-
-                    const s = String(o.orderStatus).toLowerCase();
-
-                    if (statusFilter === "Confirmed") return s === "confirmed";
-
-                    if (statusFilter === "Processing") return s === "processing";
-
-                    if (statusFilter === "Shipped") return s === "shipped";
-
-                    if (statusFilter === "Delivered") return s === "delivered";
-
-                    return true;
-
-                  })
-
-                  .map((o) => {
+                {safeOrders.map((o) => {
 
                     const s = String(o.orderStatus).toLowerCase();
 
                     const canProcessing = s === "confirmed";
+                    const canAddTracking = s === "processing";
 
                     return (
 
@@ -231,6 +216,11 @@ export function PreOrderScreen() {
 
                             : undefined
 
+                        }
+                        onAddTrackingClick={
+                          canAddTracking
+                            ? (orderId) => openCreateShipment(orderId)
+                            : undefined
                         }
 
                       />

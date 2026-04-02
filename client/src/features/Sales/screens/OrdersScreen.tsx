@@ -312,10 +312,24 @@ export function OrdersScreen() {
     });
   }, [filteredOrders, searchQuery, dateFilter]);
 
+  const pageSize = meta?.pageSize ?? 10;
+  const totalPages = Math.max(1, Math.ceil(visibleOrders.length / pageSize));
+  const pagedVisibleOrders = useMemo(() => {
+    const start = (pageNumber - 1) * pageSize;
+    return visibleOrders.slice(start, start + pageSize);
+  }, [visibleOrders, pageNumber, pageSize]);
+
   // Reset page when filters change
   useEffect(() => {
     setPageNumber(1);
   }, [searchQuery, dateFilter, setPageNumber]);
+
+  // Clamp page after filtered result shrinks (e.g. status/type/search update).
+  useEffect(() => {
+    if (pageNumber > totalPages) {
+      setPageNumber(totalPages);
+    }
+  }, [pageNumber, totalPages, setPageNumber]);
 
   return (
     <Box
@@ -525,7 +539,7 @@ export function OrdersScreen() {
               "&::-webkit-scrollbar": { display: "none" },
             }}
           >
-            {visibleOrders.map((o) => (
+            {pagedVisibleOrders.map((o) => (
               <SalesOrderRow key={o.id} summary={o} />
             ))}
           </Box>
@@ -533,10 +547,10 @@ export function OrdersScreen() {
           {meta && (
             <AppPagination
               page={pageNumber}
-              totalPages={meta.totalPages || 1}
+              totalPages={totalPages}
               onChange={setPageNumber}
-              totalItems={meta.totalCount}
-              pageSize={meta.pageSize}
+              totalItems={visibleOrders.length}
+              pageSize={pageSize}
               unitLabel="orders"
               align="flex-end"
             />
