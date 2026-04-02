@@ -1,8 +1,8 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useAccount } from "../../lib/hooks/useAccount";
 import { useManagerDashboard } from "../../lib/hooks/useManagerDashboard";
 import type { PromotionItem, LowStockItem } from "../../lib/hooks/useManagerDashboard";
-import { format } from "date-fns";
+import { format, startOfMonth, endOfMonth, addMonths } from "date-fns";
 import * as XLSX from "xlsx";
 import {
   ShoppingBag,
@@ -57,10 +57,84 @@ export default function ManagerDashboard() {
   // Fetch dashboard data using the custom hook
   const { revenue, topProducts, inventory, afterSales, promotions, isLoading } = useManagerDashboard(fromDate, toDate);
 
-  // Revenue chart data - placeholder for now since monthly data fetching is removed
+  // Monthly revenue state
+  const [monthlyRevenueData, setMonthlyRevenueData] = useState<Array<{
+    month: string;
+    revenue: number;
+    orders: number;
+    discount: number;
+  }>>([]);
+  const [isLoadingMonthly, setIsLoadingMonthly] = useState(false);
+
+  // Fetch monthly revenue data for the selected year
+  useEffect(() => {
+    let isCancelled = false;
+    const abortController = new AbortController();
+
+    async function fetchMonthlyData() {
+      setIsLoadingMonthly(true);
+      setMonthlyRevenueData([]);
+
+      const monthPromises = [];
+      for (let month = 0; month < 12; month++) {
+        const monthStart = new Date(selectedYear, month, 1);
+        const from = format(startOfMonth(monthStart), 'yyyy-MM-dd');
+        const to = format(endOfMonth(monthStart), 'yyyy-MM-dd');
+
+        const promise = fetch(
+          `${import.meta.env.VITE_API_URL}/manager/reports/revenue?fromDate=${from}&toDate=${to}`,
+          {
+            credentials: 'include',
+            signal: abortController.signal,
+          }
+        )
+          .then((res) => res.json())
+          .then((data) => ({
+            month: format(monthStart, 'MMM'),
+            revenue: data.totalRevenue || 0,
+            orders: data.totalOrders || 0,
+            discount: data.totalDiscount || 0,
+          }))
+          .catch((error) => {
+            if (error.name === 'AbortError') throw error;
+            console.error(`Error fetching ${format(monthStart, 'MMM')}:`, error);
+            return {
+              month: format(monthStart, 'MMM'),
+              revenue: 0,
+              orders: 0,
+              discount: 0,
+            };
+          });
+
+        monthPromises.push(promise);
+      }
+
+      try {
+        const results = await Promise.all(monthPromises);
+        if (!isCancelled) {
+          setMonthlyRevenueData(results);
+          setIsLoadingMonthly(false);
+        }
+      } catch (error) {
+        if (!isCancelled && error instanceof Error && error.name !== 'AbortError') {
+          console.error('Error fetching monthly data:', error);
+          setIsLoadingMonthly(false);
+        }
+      }
+    }
+
+    fetchMonthlyData();
+
+    return () => {
+      isCancelled = true;
+      abortController.abort();
+    };
+  }, [selectedYear]);
+
+  // Revenue chart data - use monthly data
   const revenueChartData = useMemo(() => {
-    return [];
-  }, []);
+    return monthlyRevenueData;
+  }, [monthlyRevenueData]);
 
   // After-sales chart data
   const afterSalesChartData = useMemo(() => {
@@ -394,11 +468,11 @@ export default function ManagerDashboard() {
             )}
 
             {/* Chart */}
-            {isLoading ? (
+            {isLoadingMonthly ? (
               <div className="w-full h-[340px] bg-gradient-to-br from-slate-50 to-slate-100 animate-pulse rounded-2xl flex items-center justify-center border border-slate-200">
                 <div className="text-center">
                   <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-3"></div>
-                  <span className="text-slate-500 font-semibold text-sm">Loading analytics…</span>
+                  <span className="text-slate-500 font-semibold text-sm">Loading monthly data…</span>
                 </div>
               </div>
             ) : revenueChartData.length === 0 ? (
