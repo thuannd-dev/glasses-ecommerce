@@ -4,6 +4,7 @@ import { formatMoney } from "../../lib/utils/format";
 import { PrescriptionDisplay } from "../../app/shared/components/PrescriptionDisplay";
 import { getOrderItemImage } from "./orderImageCache";
 import { getOrderPrescription } from "./orderPrescriptionCache";
+import type { PrescriptionData } from "../../lib/types/prescription";
 
 function getItemPrice(item: {
   totalPrice?: number;
@@ -39,12 +40,20 @@ export interface OrderItemRowProps {
   compact?: boolean;
   /** Order id for cache lookup (ảnh từ cart khi place order) */
   orderId?: string;
+  /** Prescription resolved from API order detail (preferred source). */
+  prescription?: PrescriptionData;
   /** When true (Order Detail page), show full prescription details instead of label only. */
   showPrescriptionDetails?: boolean;
 }
 
 /** Renders one order item with thumbnail (item / cache / GET /products/:id), name, price */
-export function OrderItemRow({ item, compact, orderId, showPrescriptionDetails }: OrderItemRowProps) {
+export function OrderItemRow({
+  item,
+  compact,
+  orderId,
+  prescription: prescriptionFromProps,
+  showPrescriptionDetails,
+}: OrderItemRowProps) {
   const imageFromItem =
     (item as { imageUrl?: string }).imageUrl ??
     (item as { productImageUrl?: string }).productImageUrl;
@@ -66,7 +75,7 @@ export function OrderItemRow({ item, compact, orderId, showPrescriptionDetails }
   const price = getItemPrice(item as Parameters<typeof getItemPrice>[0]);
 
   const prescription =
-    orderId && item.id ? getOrderPrescription(orderId, item.id) : undefined;
+    prescriptionFromProps ?? (orderId && item.id ? getOrderPrescription(orderId, item.id) : undefined);
 
   const thumbSize = compact ? 40 : 56;
 

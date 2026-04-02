@@ -167,7 +167,7 @@ export function CollectionTopBar({
               const v = e.target.value as TypeValue;
               if (v === "all") {
                 setFilters((prev) => ({ ...prev, glassesTypes: [] }));
-                navigate("/collections/all");
+                navigate("/collections");
                 return;
               }
               setFilters((prev) => ({ ...prev, glassesTypes: [v] }));

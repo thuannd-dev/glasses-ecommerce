@@ -335,6 +335,11 @@ public sealed class MappingProfiles : Profile
 
         CreateMap<AfterSalesTicket, TicketDetailDto>()
             .ForMember(d => d.OrderType, o => o.MapFrom(s => s.Order.OrderType.ToString()))
+            .ForMember(d => d.CustomerName, o => o.MapFrom(s =>
+                s.Order.Address != null ? s.Order.Address.RecipientName
+                    : !string.IsNullOrWhiteSpace(s.Order.WalkInCustomerName)
+                        ? s.Order.WalkInCustomerName
+                        : null))
             .ForMember(d => d.Attachments, o => o.MapFrom(s =>
                 s.Attachments.Where(a => a.DeletedAt == null).OrderBy(a => a.CreatedAt)))
             .ForMember(d => d.Items, o => o.Ignore())
@@ -347,7 +352,7 @@ public sealed class MappingProfiles : Profile
                     src.OrderItem.ProductVariant != null &&
                     src.OrderItem.ProductVariant.Product != null)
                 {
-                    // Ticket is for a specific item
+                    // Ticket is for a specific item — all discount applies to this item
                     items.Add(new OrderItemOutputDto
                     {
                         Id = src.OrderItem.Id,
@@ -358,6 +363,7 @@ public sealed class MappingProfiles : Profile
                         Quantity = src.OrderItem.Quantity,
                         UnitPrice = src.OrderItem.UnitPrice,
                         TotalPrice = src.OrderItem.Quantity * src.OrderItem.UnitPrice,
+                        DiscountApplied = src.DiscountApplied,
                         ProductImageUrl = src.OrderItem.ProductVariant.Product.Images
                             ?.OrderBy(pi => pi.DisplayOrder)
                             .Select(pi => pi.ImageUrl)
@@ -366,23 +372,35 @@ public sealed class MappingProfiles : Profile
                 }
                 else if (src.Order != null && src.Order.OrderItems != null && src.Order.OrderItems.Count > 0)
                 {
-                    // Ticket is for the whole order
+                    // Ticket is for the whole order — distribute discount proportionally across items
+                    decimal totalOrderPrice = src.Order.OrderItems.Sum(oi => oi.Quantity * oi.UnitPrice);
+                    
                     items = src.Order.OrderItems
                         .Where(oi => oi.ProductVariant != null && oi.ProductVariant.Product != null)
-                        .Select(oi => new OrderItemOutputDto
+                        .Select(oi =>
                         {
-                            Id = oi.Id,
-                            ProductVariantId = oi.ProductVariantId,
-                            Sku = oi.ProductVariant.SKU,
-                            VariantName = oi.ProductVariant.VariantName,
-                            ProductName = oi.ProductVariant.Product.ProductName,
-                            Quantity = oi.Quantity,
-                            UnitPrice = oi.UnitPrice,
-                            TotalPrice = oi.Quantity * oi.UnitPrice,
-                            ProductImageUrl = oi.ProductVariant.Product.Images
-                                ?.OrderBy(pi => pi.DisplayOrder)
-                                .Select(pi => pi.ImageUrl)
-                                .FirstOrDefault()
+                            // Calculate proportional discount for this item
+                            decimal itemPrice = oi.Quantity * oi.UnitPrice;
+                            decimal itemDiscount = totalOrderPrice > 0 
+                                ? (itemPrice / totalOrderPrice) * src.DiscountApplied 
+                                : 0;
+                            
+                            return new OrderItemOutputDto
+                            {
+                                Id = oi.Id,
+                                ProductVariantId = oi.ProductVariantId,
+                                Sku = oi.ProductVariant.SKU,
+                                VariantName = oi.ProductVariant.VariantName,
+                                ProductName = oi.ProductVariant.Product.ProductName,
+                                Quantity = oi.Quantity,
+                                UnitPrice = oi.UnitPrice,
+                                TotalPrice = oi.Quantity * oi.UnitPrice,
+                                DiscountApplied = itemDiscount,
+                                ProductImageUrl = oi.ProductVariant.Product.Images
+                                    ?.OrderBy(pi => pi.DisplayOrder)
+                                    .Select(pi => pi.ImageUrl)
+                                    .FirstOrDefault()
+                            };
                         })
                         .ToList();
                 }

@@ -23,6 +23,9 @@ import type { CartItemDto } from "../../lib/types/cart";
 import type { PrescriptionData } from "../../lib/types/prescription";
 import type { CartLensMode } from "../../lib/types/lensSelection";
 
+/** Stable fallback — `cart?.items ?? []` creates a new [] every render when cart is missing → infinite useEffect loop. */
+const EMPTY_CART_ITEMS: CartItemDto[] = [];
+
 function CartItemRow({
     item,
     selected,
@@ -217,7 +220,7 @@ export default function CartPage() {
     const navigate = useNavigate();
     const { cart, isLoading, updateItem, removeItem } = useCart();
 
-    const items = cart?.items ?? [];
+    const items = cart?.items ?? EMPTY_CART_ITEMS;
     const itemIds = useMemo(() => items.map((i) => i.id), [items]);
 
     /** Split items: pre-order takes priority, then prescription, then standard. */
@@ -267,14 +270,18 @@ export default function CartPage() {
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set(itemIds));
     useEffect(() => {
         setSelectedIds((prev) => {
-            const next = new Set(prev);
-            itemIds.forEach((id) => next.add(id));
-            itemIds.forEach((id) => {
-                if (!items.some((i) => i.id === id)) next.delete(id);
+            const validIds = new Set(itemIds);
+            const next = new Set<string>();
+            prev.forEach((id) => {
+                if (validIds.has(id)) next.add(id);
             });
+            itemIds.forEach((id) => next.add(id));
+            if (prev.size === next.size && [...prev].every((id) => next.has(id))) {
+                return prev;
+            }
             return next;
         });
-    }, [itemIds, items]);
+    }, [itemIds]);
 
     const selectedItems = useMemo(
         () => items.filter((i) => selectedIds.has(i.id)),

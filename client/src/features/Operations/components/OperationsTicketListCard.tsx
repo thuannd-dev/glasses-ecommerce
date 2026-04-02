@@ -7,6 +7,7 @@ import type { AfterSalesTicketDto } from "../../../lib/types/afterSales";
 import { useOperationsAfterSalesTicket, useReceiveAfterSalesTicket, useInspectAfterSalesTicket } from "../../../lib/hooks/useOperationsAfterSalesTickets";
 import { OperationsTicketDetailExpanded } from "./OperationsTicketDetailExpanded";
 import { RejectReasonDialog } from "./RejectReasonDialog";
+import { RefundAmountDialog } from "./RefundAmountDialog";
 
 function getStatusChipColors(status: string, receivedAt?: string | null) {
   const s = (status || "").toString();
@@ -52,6 +53,7 @@ export interface OperationsTicketListCardProps {
 export function OperationsTicketListCard({ summary }: OperationsTicketListCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [showRefundDialog, setShowRefundDialog] = useState(false);
   const { data: detail, isLoading: isLoadingDetail } = useOperationsAfterSalesTicket(
     expanded ? summary.id : undefined,
   );
@@ -84,9 +86,9 @@ export function OperationsTicketListCard({ summary }: OperationsTicketListCardPr
     }
   };
 
-  const handleAccept = async () => {
+  const handleAccept = async (refundAmount?: number) => {
     try {
-      console.log("✅ Accepting ticket:", summary.id);
+      console.log("✅ Accepting ticket:", summary.id, "Refund amount:", refundAmount);
       
       // Determine staff notes based on resolution type
       let notes = "Inspection passed. Item accepted.";
@@ -103,6 +105,7 @@ export function OperationsTicketListCard({ summary }: OperationsTicketListCardPr
         decision: {
           isAccepted: true,
           notes,
+          refundAmount,
         },
       });
       console.log("✅ Ticket accepted successfully");
@@ -116,6 +119,11 @@ export function OperationsTicketListCard({ summary }: OperationsTicketListCardPr
         "Failed to accept ticket. Please check the console for details.";
       alert(message);
     }
+  };
+
+  const handleAcceptWithRefund = (refundAmount: number) => {
+    handleAccept(refundAmount);
+    setShowRefundDialog(false);
   };
 
   const handleRejectWithReason = async (reason: string) => {
@@ -345,6 +353,7 @@ export function OperationsTicketListCard({ summary }: OperationsTicketListCardPr
                 isInspecting={isInspecting}
                 onReceive={handleReceive}
                 onAccept={handleAccept}
+                onRequestRefundAmount={() => setShowRefundDialog(true)}
                 onReject={() => setShowRejectDialog(true)}
               />
               <RejectReasonDialog
@@ -353,6 +362,19 @@ export function OperationsTicketListCard({ summary }: OperationsTicketListCardPr
                 onSubmit={handleRejectWithReason}
                 isLoading={isInspecting}
               />
+              {detail && (
+                <RefundAmountDialog
+                  open={showRefundDialog}
+                  maxAmount={
+                    detail.items
+                      ? detail.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice - (item.discountApplied || 0)), 0)
+                      : 0
+                  }
+                  onConfirm={handleAcceptWithRefund}
+                  onCancel={() => setShowRefundDialog(false)}
+                  isLoading={isInspecting}
+                />
+              )}
             </>
           ) : (
             <Typography sx={{ fontSize: 12, color: "#6B6B6B" }}>Loading details...</Typography>

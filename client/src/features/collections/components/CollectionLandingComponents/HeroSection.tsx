@@ -24,7 +24,7 @@ const HERO_SLIDES: HeroSlide[] = [
     title: "Compare new frames",
     description: "Match your face shape, style and personality.",
     ctaLabel: "Shop now",
-    ctaTo: "/collections/all",
+    ctaTo: "/collections",
   },
   {
     id: "02",
@@ -34,7 +34,7 @@ const HERO_SLIDES: HeroSlide[] = [
     title: "Find must-have styles\nfor this spring",
     description: "New spring colors and styles.",
     ctaLabel: "Shop now",
-    ctaTo: "/collections/all",
+    ctaTo: "/collections",
   },
   {
     id: "03",
@@ -44,7 +44,7 @@ const HERO_SLIDES: HeroSlide[] = [
     title: "Prescription glasses at\nremarkable prices",
     description: "Find your perfect pair.",
     ctaLabel: "Shop now",
-    ctaTo: "/collections/all",
+    ctaTo: "/collections",
   },
 ];
 

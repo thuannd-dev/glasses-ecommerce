@@ -44,7 +44,6 @@ const DASHBOARD_LINKS: { path: string; label: string; role: string; icon: React.
 ];
 
 const SALES_SUB_LINKS: { path: string; label: string; icon: React.ReactNode }[] = [
-  { path: "/sales", label: "Overview", icon: <PointOfSaleIcon /> },
   { path: "/sales/orders", label: "Orders", icon: <Inventory2Outlined /> },
   { path: "/sales/tickets", label: "After-sales", icon: <HistoryOutlined /> },
 ];
@@ -58,7 +57,6 @@ const MANAGER_SUB_LINKS: { path: string; label: string; icon: React.ReactNode }[
 ];
 
 const ADMIN_SUB_LINKS: { path: string; label: string; icon: React.ReactNode }[] = [
-  { path: "/admin", label: "Dashboard", icon: <AdminPanelSettingsIcon /> },
   { path: "/admin/roles", label: "Role Management", icon: <PeopleIcon /> },
   { path: "/admin/policies", label: "Policies", icon: <AssignmentIcon /> },
   { path: "/admin/feature-toggles", label: "Feature Toggles", icon: <ToggleOnIcon /> },
@@ -114,6 +112,7 @@ export default function DashboardLayout() {
           flexShrink: 0,
           display: "flex",
           flexDirection: "column",
+          overflow: "hidden",
           height: "calc(100vh - 56px)",
           mt: 7,
           position: "sticky",
@@ -835,10 +834,13 @@ export default function DashboardLayout() {
               <LogoutIcon />
             </ListItemIcon>
             <ListItemText
-              primary={
-                logoutUser.isPending ? "Signing out…" : "Sign out"
-              }
+              primary={logoutUser.isPending ? "Signing out…" : "Sign out"}
               primaryTypographyProps={{ fontWeight: 600 }}
+              sx={{
+                opacity: sidebarOpen ? 1 : 0,
+                whiteSpace: "nowrap",
+                transition: "opacity 120ms ease",
+              }}
             />
           </ListItemButton>
         </List>

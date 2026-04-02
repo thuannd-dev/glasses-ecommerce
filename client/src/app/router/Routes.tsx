@@ -4,6 +4,7 @@ import type { ReactElement } from "react";
 import App from "../layout/App";
 import AuthLayout from "../layout/AuthLayout";
 import RouteLoadingFallback from "./RouteLoadingFallback";
+import RouteErrorBoundary from "./RouteErrorBoundary";
 
 import Counter from "../../features/counter/Counter";
 import RequireRole from "./RequireRole";
@@ -54,11 +55,6 @@ const ProfilePage = lazy(
 );
 
 const SalesLayout = lazy(() => import("../../features/Sales/SalesLayout"));
-const SalesOverviewScreen = lazy(() =>
-  import("../../features/Sales/screens/OverviewScreen").then((m) => ({
-    default: m.OverviewScreen,
-  })),
-);
 const SalesOrdersScreen = lazy(() =>
   import("../../features/Sales/screens/OrdersScreen").then((m) => ({
     default: m.OrdersScreen,
@@ -70,14 +66,14 @@ const SalesTicketsScreen = lazy(() =>
   })),
 );
 
-const AdminDashboard = lazy(
-  () => import("../../features/Admin/AdminDashboard"),
-);
 const AdminLayout = lazy(() => import("../../features/Admin/AdminLayout"));
+const AdminPolicies = lazy(() => import("../../features/Admin/AdminPolicies"));
+const AdminFeatureToggles = lazy(
+  () => import("../../features/Admin/AdminFeatureToggles"),
+);
 const RoleManagement = lazy(
   () => import("../../features/Admin/RoleManagement"),
 );
-const AdminPolicies = lazy(() => import("../../features/Admin/AdminPolicies"));
 const PoliciesGuaranteePage = lazy(() =>
   import("../../features/policies/PoliciesListPage").then((m) => ({
     default: m.PoliciesGuaranteePage,
@@ -87,9 +83,6 @@ const PoliciesLensReplacementPage = lazy(() =>
   import("../../features/policies/PoliciesListPage").then((m) => ({
     default: m.PoliciesLensReplacementPage,
   })),
-);
-const AdminFeatureToggles = lazy(
-  () => import("../../features/Admin/AdminFeatureToggles"),
 );
 
 const OperationsLayout = lazy(
@@ -208,6 +201,7 @@ export const router = createBrowserRouter([
   // ======================
   {
     element: <AuthLayout />,
+    errorElement: <RouteErrorBoundary />,
     children: [
       { path: "login", element: lazyElement(<LoginForm />) },
       { path: "register", element: lazyElement(<RegisterForm />) },
@@ -226,6 +220,7 @@ export const router = createBrowserRouter([
   {
     path: "/product/:id/lenses",
     element: lazyElement(<SelectLensesPage />),
+    errorElement: <RouteErrorBoundary />,
   },
 
   // ======================
@@ -234,6 +229,7 @@ export const router = createBrowserRouter([
   {
     path: "/",
     element: <App />,
+    errorElement: <RouteErrorBoundary />,
     children: [
       // Landing page (was /collections)
       { index: true, element: lazyElement(<CollectionLandingPage />) },
@@ -248,7 +244,7 @@ export const router = createBrowserRouter([
             path: "sales",
             element: lazyElement(<SalesLayout />),
             children: [
-              { index: true, element: lazyElement(<SalesOverviewScreen />) },
+              { index: true, element: <Navigate to="/sales/orders" replace /> },
               { path: "orders", element: lazyElement(<SalesOrdersScreen />) },
               { path: "tickets", element: lazyElement(<SalesTicketsScreen />) },
             ],
@@ -360,7 +356,7 @@ export const router = createBrowserRouter([
             path: "admin",
             element: lazyElement(<AdminLayout />),
             children: [
-              { index: true, element: lazyElement(<AdminDashboard />) },
+              { index: true, element: <Navigate to="/admin/roles" replace /> },
               { path: "roles", element: lazyElement(<RoleManagement />) },
               { path: "policies", element: lazyElement(<AdminPolicies />) },
               {
@@ -376,9 +372,10 @@ export const router = createBrowserRouter([
       {
         path: "collections",
         children: [
-          // Keep /collections working, but redirect index to /
-          { index: true, element: <Navigate replace to="/" /> }, // /collections
-          { path: ":category", element: lazyElement(<CollectionPage />) }, // /collections/glasses
+          // /collections = xem tất cả (category param undefined → useCollectionPage coi như "all")
+          { index: true, element: lazyElement(<CollectionPage />) },
+          { path: "all", element: <Navigate replace to="/collections" /> },
+          { path: ":category", element: lazyElement(<CollectionPage />) },
         ],
       },
 

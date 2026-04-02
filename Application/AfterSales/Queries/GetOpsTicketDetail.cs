@@ -22,20 +22,31 @@ public sealed class GetOpsTicketDetail
     {
         public async Task<Result<TicketDetailDto>> Handle(Query request, CancellationToken cancellationToken)
         {
-            TicketDetailDto? dto = await context.AfterSalesTickets
+            AfterSalesTicket? ticket = await context.AfterSalesTickets
                 .AsNoTracking()
+                .AsSplitQuery()
                 .Where(t => t.Id == request.Id &&
                             (t.TicketStatus == AfterSalesTicketStatus.InProgress ||
                              t.TicketStatus == AfterSalesTicketStatus.Resolved ||
                              t.TicketStatus == AfterSalesTicketStatus.Rejected) &&
                             t.ResolutionType != null &&
                             t.ResolutionType != TicketResolutionType.RefundOnly)
-                .ProjectTo<TicketDetailDto>(mapper.ConfigurationProvider)
+                .Include(t => t.Order)
+                .ThenInclude(o => o.OrderItems)
+                .ThenInclude(oi => oi.ProductVariant)
+                .ThenInclude(pv => pv.Product)
+                .ThenInclude(p => p.Images)
+                .Include(t => t.OrderItem)
+                .ThenInclude(oi => oi.ProductVariant)
+                .ThenInclude(pv => pv.Product)
+                .ThenInclude(p => p.Images)
+                .Include(t => t.Attachments)
                 .FirstOrDefaultAsync(cancellationToken);
 
-            if (dto == null)
+            if (ticket == null)
                 return Result<TicketDetailDto>.Failure("Ticket not found or you do not have permission to view it.", 404);
 
+            TicketDetailDto dto = mapper.Map<TicketDetailDto>(ticket);
             return Result<TicketDetailDto>.Success(dto);
         }
     }

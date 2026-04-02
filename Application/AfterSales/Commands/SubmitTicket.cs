@@ -1,4 +1,5 @@
 using Application.AfterSales.DTOs;
+using Application.AfterSales.Services;
 using Application.Core;
 using Application.Interfaces;
 using AutoMapper;
@@ -20,7 +21,8 @@ public sealed class SubmitTicket
     internal sealed class Handler(
         AppDbContext context,
         IMapper mapper,
-        IUserAccessor userAccessor) : IRequestHandler<Command, Result<TicketDetailDto>>
+        IUserAccessor userAccessor,
+        DiscountCalculationService discountCalculationService) : IRequestHandler<Command, Result<TicketDetailDto>>
     {
         public async Task<Result<TicketDetailDto>> Handle(Command request, CancellationToken cancellationToken)
         {
@@ -211,10 +213,52 @@ public sealed class SubmitTicket
                 return Result<TicketDetailDto>.Failure(
                     $"Cannot submit request: {policyViolation} Please contact support if you believe this is an error.", 400);
 
-            // 7.5. Auto-upgrade Return → Refund (RefundOnly fast-track) if all conditions are met:
+            // 7.5. Calculate discount upfront (needed for auto-upgrade validation and ticket creation)
+            List<TicketAttachmentInputDto> attachments = request.Dto.Attachments ?? [];
+            
+            Result<decimal> discountResult = await discountCalculationService.CalculateDiscountAsync(
+                request.Dto.OrderId,
+                request.Dto.OrderItemIds,
+                cancellationToken);
+            
+            if (!discountResult.IsSuccess)
+                return Result<TicketDetailDto>.Failure(discountResult.Error!, discountResult.Code);
+            
+            decimal totalDiscountApplied = discountResult.Value;
+            
+            // Pre-compute per-item discount distribution to avoid applying full discount to every ticket.
+            // If multiple items are selected, distribute proportionally; if one item or whole order, use full discount.
+            Dictionary<Guid, decimal> discountByItemId = [];
+            
+            if (request.Dto.OrderItemIds == null || request.Dto.OrderItemIds.Count == 0)
+            {
+                // Whole-order ticket: assign full discount
+                discountByItemId[Guid.Empty] = totalDiscountApplied;
+            }
+            else
+            {
+                // Item-specific tickets: distribute discount proportionally by item value
+                List<OrderItem> selectedItems = order.OrderItems
+                    .Where(oi => request.Dto.OrderItemIds.Contains(oi.Id))
+                    .ToList();
+                
+                decimal selectedItemsTotalValue = selectedItems.Sum(oi => oi.UnitPrice * oi.Quantity);
+                
+                foreach (OrderItem item in selectedItems)
+                {
+                    decimal itemValue = item.UnitPrice * item.Quantity;
+                    decimal itemDiscount = selectedItemsTotalValue > 0
+                        ? Math.Round((itemValue / selectedItemsTotalValue) * totalDiscountApplied, 2, MidpointRounding.AwayFromZero)
+                        : 0m;
+                    
+                    discountByItemId[item.Id] = itemDiscount;
+                }
+            }
+            
+            // Auto-upgrade Return → Refund (RefundOnly fast-track) if all conditions are met:
             //   A. No existing Refund ticket on this order (any status)
             //   B. Delivered within Refund policy's RefundWindowDays
-            //   C. Item value ≤ Refund policy's RefundOnlyMaxAmount
+            //   C. Final price (after discount) ≤ Refund policy's RefundOnlyMaxAmount
             //   D. Prescription lenses are refundable per Refund policy
             AfterSalesTicketType effectiveType = request.Dto.TicketType;
             AfterSalesTicketType? originalTicketType = null;
@@ -252,16 +296,18 @@ public sealed class SubmitTicket
 
                         if (withinRefundWindow)
                         {
-                            // Compute item value for the ticket's scope
+                            // Compute original item value for the ticket's scope
                             decimal itemValue = request.Dto.OrderItemIds?.Count > 0
                                 ? order.OrderItems
                                     .Where(i => request.Dto.OrderItemIds.Contains(i.Id))
                                     .Sum(i => i.UnitPrice * i.Quantity)
                                 : order.OrderItems.Sum(i => i.UnitPrice * i.Quantity);
 
-                            // Check C: item value within auto-upgrade threshold
+                            // Check C: FINAL price (after discount) within auto-upgrade threshold
+                            // Use totalDiscountApplied (aggregate) for threshold evaluation, not per-item
+                            decimal finalPrice = itemValue - totalDiscountApplied;
                             bool withinMaxAmount = !refundPolicy.RefundOnlyMaxAmount.HasValue ||
-                                itemValue <= refundPolicy.RefundOnlyMaxAmount.Value;
+                                finalPrice <= refundPolicy.RefundOnlyMaxAmount.Value;
 
                             if (withinMaxAmount)
                             {
@@ -282,11 +328,16 @@ public sealed class SubmitTicket
             }
 
             // 8. Create tickets for each selected item
-            List<TicketAttachmentInputDto> attachments = request.Dto.Attachments ?? [];
+            
             AfterSalesTicket? lastCreatedTicket = null;
 
             foreach (Guid? orderItemId in orderItemIdsToProcess)
             {
+                // Determine the discount for this specific ticket
+                decimal ticketDiscount = orderItemId == null
+                    ? discountByItemId[Guid.Empty]  // Whole-order ticket
+                    : discountByItemId[(Guid)orderItemId];  // Item-specific ticket from pre-computed map
+                
                 // Build ticket entity with effective type from auto-upgrade logic
                 AfterSalesTicket ticket = new()
                 {
@@ -300,6 +351,7 @@ public sealed class SubmitTicket
                         ? null
                         : request.Dto.RequestedAction,
                     RefundAmount = request.Dto.RefundAmount,
+                    DiscountApplied = ticketDiscount,
                     IsRequiredEvidence = (appliedRefundPolicy ?? policy).EvidenceRequired,
                     PolicyViolation = null,
                     TicketStatus = AfterSalesTicketStatus.Pending

@@ -127,6 +127,7 @@ export interface CustomerOrderItemDto {
   quantity: number;
   unitPrice: number;
   totalPrice: number;
+  prescriptionId?: string | null;
   productId?: string;
   name?: string;
   imageUrl?: string;
@@ -180,6 +181,7 @@ export interface CustomerOrderDetailDto {
   trackingNumber?: string;
   carrier?: string;
   prescription?: StaffOrderPrescriptionDto | null;
+  prescriptions?: StaffOrderPrescriptionDto[];
   shipment?: ShipmentInfoDto | null;
   payment: CustomerOrderPaymentDto | null;
   statusHistories: CustomerOrderStatusHistoryDto[];
