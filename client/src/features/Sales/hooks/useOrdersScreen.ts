@@ -76,15 +76,27 @@ export function useOrdersScreen() {
     queryKey: ["staff", "orders", "filter", statusFilter, typeFilter],
     queryFn: async () => {
       const allOrders: StaffOrderDto[] = [];
+      const failedStatuses: string[] = [];
       
       // Fetch data for each status
       for (const status of statusesForFilter) {
         try {
           const items = await fetchAllStaffOrdersForStatus(status, orderTypeForApi);
           allOrders.push(...items);
-        } catch {
-          // Silently handle fetch errors
+        } catch (error) {
+          failedStatuses.push(status);
+          console.error("[SalesOrders] Failed to fetch orders for status:", status, error);
         }
+      }
+
+      if (failedStatuses.length === statusesForFilter.length) {
+        throw new Error("Unable to load sales orders for all selected statuses.");
+      }
+
+      if (failedStatuses.length > 0) {
+        console.warn(
+          `[SalesOrders] Partial results: failed statuses = ${failedStatuses.join(", ")}`
+        );
       }
 
       return {
