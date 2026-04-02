@@ -13,6 +13,7 @@ import type { StaffOrderDto } from "../../../lib/types/staffOrders";
 import type { OrderStatus, OrderType } from "../../../lib/types/operations";
 
 import { OperationsPageHeader } from "../components/OperationsPageHeader";
+import { useOperations } from "../context/OperationsContext";
 
 import { OrderListCard, StatusFilterTabs } from "../components";
 
@@ -57,6 +58,7 @@ export function PrescriptionScreen() {
 
 
   const updateStatus = useUpdateOrderStatus();
+  const { openCreateShipment } = useOperations();
 
 
 
@@ -204,6 +206,7 @@ export function PrescriptionScreen() {
                     const s = String(o.orderStatus).toLowerCase();
 
                     const canProcessing = s === "confirmed";
+                    const canAddTracking = s === "processing";
 
                     return (
 
@@ -231,6 +234,11 @@ export function PrescriptionScreen() {
 
                             : undefined
 
+                        }
+                        onAddTrackingClick={
+                          canAddTracking
+                            ? (orderId) => openCreateShipment(orderId)
+                            : undefined
                         }
 
                       />
