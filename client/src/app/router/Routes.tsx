@@ -88,11 +88,6 @@ const PoliciesLensReplacementPage = lazy(() =>
 const OperationsLayout = lazy(
   () => import("../../features/Operations/OperationsLayout"),
 );
-const PackScreen = lazy(() =>
-  import("../../features/Operations/screens/PackScreen").then((m) => ({
-    default: m.PackScreen,
-  })),
-);
 const CreateShipmentScreen = lazy(() =>
   import("../../features/Operations/screens/CreateShipmentScreen").then(
     (m) => ({ default: m.CreateShipmentScreen }),
@@ -260,9 +255,8 @@ export const router = createBrowserRouter([
             children: [
               {
                 index: true,
-                element: <Navigate to="/operations/pack" replace />,
+                element: <Navigate to="/operations/order-types" replace />,
               },
-              { path: "pack", element: lazyElement(<PackScreen />) },
               {
                 path: "create-shipment",
                 element: lazyElement(<CreateShipmentScreen />),

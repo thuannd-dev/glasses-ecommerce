@@ -1,10 +1,9 @@
 import { Box, Button } from "@mui/material";
 import { NavLink } from "react-router-dom";
 
-type OrdersTabKey = "confirmed" | "packing" | "in-transit" | "completed";
+type OrdersTabKey = "packing" | "in-transit" | "completed";
 
 const ORDERS_TABS: Array<{ key: OrdersTabKey; label: string; to: string }> = [
-  { key: "confirmed", label: "Confirmed", to: "/operations/pack" },
   { key: "packing", label: "Packing", to: "/operations/create-shipment" },
   { key: "in-transit", label: "In-transit", to: "/operations/in-transit" },
   { key: "completed", label: "Completed", to: "/operations/completed" },

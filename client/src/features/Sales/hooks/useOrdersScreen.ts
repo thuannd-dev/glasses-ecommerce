@@ -10,7 +10,9 @@ import type { StaffOrdersResponse } from "../../../lib/types/staffOrders";
 const STATUS_FILTER_MAP: Record<string, string[]> = {
   "All": ["Pending", "Confirmed", "Processing", "Shipped", "Delivered", "Completed", "Cancelled", "Refunded"],
   "Pending": ["Pending"],
-  "Confirmed": ["Confirmed", "Processing", "Shipped"],
+  "Confirmed": ["Confirmed"],
+  "Processing": ["Processing"],
+  "Shipped": ["Shipped"],
   "Completed": ["Delivered", "Completed"],
   // UI label kept as "Rejected", but backend order status enum uses Cancelled/Refunded.
   "Rejected": ["Cancelled", "Refunded"],
@@ -66,19 +68,15 @@ export function useOrdersScreen() {
         }
       }
 
-      // Apply pagination locally to the combined results
-      const startIdx = (pageNumber - 1) * pageSize;
-      const endIdx = startIdx + pageSize;
-      const paginatedOrders = allOrders.slice(startIdx, endIdx);
-
       return {
-        items: paginatedOrders,
+        // Return full filtered set; screen-level filters (search/date) paginate afterward.
+        items: allOrders,
         totalCount: allOrders.length,
-        pageNumber,
+        pageNumber: 1,
         pageSize,
         totalPages: Math.ceil(allOrders.length / pageSize),
-        hasPreviousPage: pageNumber > 1,
-        hasNextPage: endIdx < allOrders.length,
+        hasPreviousPage: false,
+        hasNextPage: false,
       };
     },
   });
@@ -96,6 +94,8 @@ export function useOrdersScreen() {
     { label: "All", value: "All" },
     { label: "Pending", value: "Pending" },
     { label: "Confirmed", value: "Confirmed" },
+    { label: "Processing", value: "Processing" },
+    { label: "Shipped", value: "Shipped" },
     { label: "Completed", value: "Completed" },
     { label: "Rejected", value: "Rejected" },
   ] as const;
