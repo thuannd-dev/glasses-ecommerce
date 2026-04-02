@@ -324,6 +324,13 @@ export function OrdersScreen() {
     setPageNumber(1);
   }, [searchQuery, dateFilter, setPageNumber]);
 
+  // Clamp page after filtered result shrinks (e.g. status/type/search update).
+  useEffect(() => {
+    if (pageNumber > totalPages) {
+      setPageNumber(totalPages);
+    }
+  }, [pageNumber, totalPages, setPageNumber]);
+
   return (
     <Box
       sx={{

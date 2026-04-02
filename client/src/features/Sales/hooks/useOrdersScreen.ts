@@ -30,6 +30,26 @@ async function fetchStaffOrdersForStatus(status: string, pageNumber: number, pag
   return res.data;
 }
 
+async function fetchAllStaffOrdersForStatus(status: string, orderType?: string): Promise<StaffOrderDto[]> {
+  const MAX_PAGE_SIZE = 100; // Backend limit
+  const orders: StaffOrderDto[] = [];
+  let currentPage = 1;
+
+  while (true) {
+    const response = await fetchStaffOrdersForStatus(status, currentPage, MAX_PAGE_SIZE, orderType);
+    const items = response.items || [];
+    orders.push(...items);
+
+    // Stop when backend says no next page or when returned page is short.
+    if (!response.hasNextPage || items.length < MAX_PAGE_SIZE) {
+      break;
+    }
+    currentPage += 1;
+  }
+
+  return orders;
+}
+
 export function useOrdersScreen() {
   const [searchParams] = useSearchParams();
 
@@ -53,16 +73,15 @@ export function useOrdersScreen() {
 
   // Fetch all statuses for the current filter
   const { data: allPaginatedData, isLoading } = useQuery({
-    queryKey: ["staff", "orders", "filter", statusFilter, typeFilter, pageNumber],
+    queryKey: ["staff", "orders", "filter", statusFilter, typeFilter],
     queryFn: async () => {
-      const MAX_PAGE_SIZE = 100; // Backend limit
       const allOrders: StaffOrderDto[] = [];
       
       // Fetch data for each status
       for (const status of statusesForFilter) {
         try {
-          const response = await fetchStaffOrdersForStatus(status, 1, MAX_PAGE_SIZE, orderTypeForApi);
-          allOrders.push(...(response.items || []));
+          const items = await fetchAllStaffOrdersForStatus(status, orderTypeForApi);
+          allOrders.push(...items);
         } catch {
           // Silently handle fetch errors
         }
