@@ -9,10 +9,11 @@ import {
   Paper,
   ToggleButton,
   ToggleButtonGroup,
+  Stack,
 } from "@mui/material";
-import AddIcon from "@mui/icons-material/Add";
 import ViewListIcon from "@mui/icons-material/ViewList";
 import GridViewIcon from "@mui/icons-material/GridView";
+import AddIcon from "@mui/icons-material/Add";
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { useManagerProducts } from "../../lib/hooks/useManagerProducts";
@@ -185,14 +186,24 @@ export default function ProductsList() {
           bgcolor: "#ffffff",
         }}
       >
-        <Box sx={{ mb: 2 }}>
-          <Typography fontWeight={900} fontSize={14}>
-            Create
-          </Typography>
-          <Typography fontSize={12} color="text.secondary">
-            Use the wizard to save progress and resume later.
-          </Typography>
-        </Box>
+        <Stack direction={{ xs: "column", md: "row" }} spacing={1.5} justifyContent="space-between" sx={{ mb: 2 }}>
+          <Box>
+            <Typography fontWeight={900} fontSize={14}>
+              Create
+            </Typography>
+            <Typography fontSize={12} color="text.secondary">
+              Use the wizard to save progress and resume later.
+            </Typography>
+          </Box>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => navigate("/manager/products/create")}
+          >
+            Create Product
+          </Button>
+        </Stack>
+  
 
         {/* Search */}
         <TextField
@@ -350,21 +361,6 @@ export default function ProductsList() {
               </ToggleButton>
             </ToggleButtonGroup>
           </Box>
-
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => navigate("/manager/products/create")}
-            sx={{
-              textTransform: "none",
-              fontWeight: 600,
-              borderRadius: 1,
-              bgcolor: "#B68C5A",
-              "&:hover": { bgcolor: "#9A7548" },
-            }}
-          >
-            Add Product
-          </Button>
         </Box>
       </Paper>
 

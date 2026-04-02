@@ -52,6 +52,8 @@ export function ProductCreateDialog({
   onClose,
   onSuccess,
 }: ProductCreateDialogProps): React.JSX.Element {
+  console.log("ProductCreateDialog rendered, open:", open);
+  
   const [formData, setFormData] = useState<CreateProductDto>({
     categoryId: "",
     productName: "",
@@ -239,9 +241,23 @@ export function ProductCreateDialog({
 
         {createMutation.error && (
           <Alert severity="error" sx={{ marginBottom: "16px" }}>
-            {(createMutation.error as any)?.response?.data?.message ||
-              (createMutation.error as any)?.message ||
-              "Failed to create product"}
+            {(() => {
+              const err = createMutation.error as any;
+              const errorMessage = 
+                err?.response?.data?.detail ||
+                err?.response?.data?.title ||
+                err?.response?.data?.message ||
+                err?.response?.data ||
+                err?.message ||
+                "Failed to create product";
+              
+              console.error("Full error object:", err);
+              console.error("Error response:", err?.response);
+              
+              return typeof errorMessage === 'string' 
+                ? errorMessage 
+                : JSON.stringify(errorMessage);
+            })()}
           </Alert>
         )}
 

@@ -243,9 +243,6 @@ export default function ManagerProductsScreen() {
         </Box>
 
         <Stack direction="row" spacing={1} alignItems="center">
-          <Button variant="contained" onClick={() => setCreateDialogOpen(true)} disabled={isLoading || isFetching}>
-            Create Product
-          </Button>
           <Button variant="outlined" onClick={() => refetch()} disabled={isLoading || isFetching}>
             Refresh
           </Button>
