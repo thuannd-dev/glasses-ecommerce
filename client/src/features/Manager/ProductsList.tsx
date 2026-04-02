@@ -11,9 +11,9 @@ import {
   ToggleButtonGroup,
   Stack,
 } from "@mui/material";
-import AddIcon from "@mui/icons-material/Add";
 import ViewListIcon from "@mui/icons-material/ViewList";
 import GridViewIcon from "@mui/icons-material/GridView";
+import AddIcon from "@mui/icons-material/Add";
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { useManagerProducts } from "../../lib/hooks/useManagerProducts";
