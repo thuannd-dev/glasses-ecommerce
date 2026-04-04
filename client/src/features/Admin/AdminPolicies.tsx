@@ -125,9 +125,16 @@ export default function AdminPolicies() {
     // Normalize policyType to numeric value
     let normalizedType: PolicyTypeEnum = PolicyTypeEnum.Return;
     
-    if (typeof policy.policyType === 'number') {
-      normalizedType = Object.values(PolicyTypeEnum).includes(policy.policyType as any)
-        ? (policy.policyType as PolicyTypeEnum)
+    if (typeof policy.policyType === "number") {
+      const n = policy.policyType;
+      const allowed: PolicyTypeEnum[] = [
+        PolicyTypeEnum.Unknown,
+        PolicyTypeEnum.Return,
+        PolicyTypeEnum.Warranty,
+        PolicyTypeEnum.Refund,
+      ];
+      normalizedType = allowed.includes(n as PolicyTypeEnum)
+        ? (n as PolicyTypeEnum)
         : PolicyTypeEnum.Return;
     } else if (typeof policy.policyType === 'string') {
       const typeMap: Record<string, PolicyTypeEnum> = {
@@ -140,7 +147,7 @@ export default function AdminPolicies() {
     }
     
     // Initialize form data and clear fields that don't apply to this policy type
-    let formDataToSet = {
+    const formDataToSet = {
       policyType: normalizedType,
       policyName: policy.policyName,
       returnWindowDays: normalizedType === PolicyTypeEnum.Return ? policy.returnWindowDays : null,
@@ -229,7 +236,7 @@ export default function AdminPolicies() {
     }
 
     // Clear fields that don't apply to this policy type
-    let submitData = { ...formData };
+    const submitData = { ...formData };
     if (formData.policyType !== PolicyTypeEnum.Return) {
       submitData.returnWindowDays = null;
     }

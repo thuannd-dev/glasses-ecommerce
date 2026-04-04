@@ -33,9 +33,19 @@ export default function ResetPasswordForm() {
 
   const email = searchParams.get("email");
   const token = searchParams.get("token");
+  const hasValidParams = Boolean(email && token);
 
-  // If no email or token, show error
-  if (!email || !token) {
+  const {
+    control,
+    handleSubmit,
+    formState: { isValid, errors },
+  } = useForm<ResetPasswordSchema>({
+    mode: "onTouched",
+    resolver: zodResolver(resetPasswordSchema),
+  });
+
+  // If no email or token, show error (hooks must run before any return)
+  if (!hasValidParams) {
     return (
       <Box
         sx={{
@@ -74,14 +84,8 @@ export default function ResetPasswordForm() {
     );
   }
 
-  const {
-    control,
-    handleSubmit,
-    formState: { isValid, errors },
-  } = useForm<ResetPasswordSchema>({
-    mode: "onTouched",
-    resolver: zodResolver(resetPasswordSchema),
-  });
+  const resetEmail = email as string;
+  const resetToken = token as string;
 
   const onSubmit = async (data: ResetPasswordSchema) => {
     if (submittingRef.current || isLoading) return;
@@ -97,8 +101,8 @@ export default function ResetPasswordForm() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            email,
-            token,
+            email: resetEmail,
+            token: resetToken,
             newPassword: data.newPassword,
             confirmPassword: data.confirmPassword,
           }),

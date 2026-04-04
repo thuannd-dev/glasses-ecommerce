@@ -285,11 +285,8 @@ export function OrdersScreen() {
       // Search by customer phone or order id
       const q = searchQuery.trim().toLowerCase();
       if (q) {
-        const phone = (
-          (o as any).customerPhone ??
-          (o as any).walkInCustomerPhone ??
-          ""
-        )
+        const row = o as StaffOrderDto & { customerPhone?: string | null };
+        const phone = (row.customerPhone ?? row.walkInCustomerPhone ?? "")
           .toString()
           .toLowerCase();
         const orderId = (o.id ?? "").toString().toLowerCase();

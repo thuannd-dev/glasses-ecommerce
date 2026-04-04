@@ -70,6 +70,22 @@ function removeCartItemPrescriptionEntry(cartItemId: string) {
   write(STORAGE_KEY, cache);
 }
 
+/** Clear prescription + lens mode for a line; optional variant key for by-variant cache. */
+export function removeCartItemLocalData(
+  cartItemId: string,
+  productVariantId?: string | null,
+) {
+  removeCartItemPrescriptionEntry(cartItemId);
+  const lensModes = readLensModes();
+  delete lensModes[cartItemId];
+  writeLensModes(lensModes);
+  if (productVariantId) {
+    const byVar = read(STORAGE_KEY_BY_VARIANT);
+    delete byVar[productVariantId];
+    write(STORAGE_KEY_BY_VARIANT, byVar);
+  }
+}
+
 export function setCartItemLensMode(cartItemId: string, mode: CartLensMode) {
   const cache = readLensModes();
   cache[cartItemId] = mode;

@@ -29,7 +29,6 @@ type OperationsContextValue = {
 
 const OperationsContext = createContext<OperationsContextValue | null>(null);
 
-// eslint-disable-next-line react-refresh/only-export-components
 export function useOperations() {
   const ctx = useContext(OperationsContext);
   if (!ctx) throw new Error("useOperations must be used within OperationsProvider");

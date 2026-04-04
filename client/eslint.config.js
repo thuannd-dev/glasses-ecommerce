@@ -19,5 +19,11 @@ export default tseslint.config([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      // Legacy codebase: tighten gradually; errors block CI, warnings do not.
+      '@typescript-eslint/no-explicit-any': 'warn',
+      // Context files legitimately export hooks alongside providers.
+      'react-refresh/only-export-components': 'off',
+    },
   },
 ])
