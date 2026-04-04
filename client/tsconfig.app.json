@@ -15,7 +15,7 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
-    /* Path aliases (relative paths; baseUrl no longer used in TS 6+ / native preview) */
+    /* Path aliases: values must be relative (./...). Omit baseUrl when required by your TS/editor. */
     "paths": {
       "@/*": ["./src/*"]
     },

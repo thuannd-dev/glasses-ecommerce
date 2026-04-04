@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { isAxiosError } from "axios";
 import { toast } from "react-toastify";
 
 import agent from "../api/agent";
@@ -14,6 +15,23 @@ function getThrownMessage(err: unknown): string {
   if (err instanceof Error) return err.message;
   if (typeof err === "string") return err;
   if (Array.isArray(err)) return err.map(String).join(" ");
+
+  if (isAxiosError(err)) {
+    const data = err.response?.data;
+    if (typeof data === "string" && data.trim()) return data;
+    if (data && typeof data === "object" && !Array.isArray(data)) {
+      const rec = data as Record<string, unknown>;
+      if (typeof rec.message === "string") return rec.message;
+      if (typeof rec.title === "string") return rec.title;
+      if (rec.errors && typeof rec.errors === "object") {
+        const errs = rec.errors as Record<string, unknown>;
+        const parts = Object.values(errs).flatMap((v) =>
+          Array.isArray(v) ? v.map(String) : v != null ? [String(v)] : [],
+        );
+        if (parts.length) return parts.join(" ");
+      }
+    }
+  }
   return "";
 }
 
