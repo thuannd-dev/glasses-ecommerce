@@ -32,6 +32,11 @@ function getThrownMessage(err: unknown): string {
       }
     }
   }
+
+  if (typeof err === "object" && err !== null && "message" in err) {
+    const m = (err as { message: unknown }).message;
+    if (typeof m === "string" && m.trim()) return m;
+  }
   return "";
 }
 
