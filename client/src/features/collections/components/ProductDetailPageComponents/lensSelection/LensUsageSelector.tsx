@@ -1,7 +1,5 @@
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import LandscapeOutlinedIcon from "@mui/icons-material/LandscapeOutlined";
-import LayersOutlinedIcon from "@mui/icons-material/LayersOutlined";
-import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import { Box, Button, Tooltip, Typography } from "@mui/material";
 
@@ -28,18 +26,6 @@ const ROWS: RowDef[] = [
         title: "Single Vision",
         description: "General use to see Near, Intermediate, or Distance.",
         Icon: LandscapeOutlinedIcon,
-    },
-    {
-        pick: "bifocal-progressive",
-        title: "Bifocal & Progressive",
-        description: "Lenses for seeing things both close and far away.",
-        Icon: LayersOutlinedIcon,
-    },
-    {
-        pick: "reading",
-        title: "Reading",
-        description: "One magnification field for reading.",
-        Icon: MenuBookOutlinedIcon,
     },
     {
         pick: "non-prescription",

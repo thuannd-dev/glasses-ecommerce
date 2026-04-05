@@ -3,13 +3,56 @@ import { isAxiosError } from "axios";
 import { toast } from "react-toastify";
 
 import agent from "../api/agent";
-import { removeCartItemLocalData } from "../../features/cart/prescriptionCache";
+import {
+  getCartItemLensMode,
+  removeCartItemLocalData,
+} from "../../features/cart/prescriptionCache";
 import type { CartDto, CartItemDto, AddCartItemPayload, UpdateCartItemPayload } from "../types/cart";
 import {
   addCartItemSchema,
   updateCartItemSchema,
 } from "../schemas/cartSchema";
 import { useAccount } from "./useAccount";
+
+/** Normalize GET /me/cart response (shared by query + merge path). */
+function normalizeCartDto(data: CartDto): CartDto {
+  const items: CartItemDto[] = data.items ?? [];
+  const totalQuantity =
+    typeof data.totalQuantity === "number"
+      ? data.totalQuantity
+      : items.reduce((sum, it) => sum + it.quantity, 0);
+  const totalAmount =
+    typeof data.totalAmount === "number"
+      ? data.totalAmount
+      : items.reduce((sum, it) => sum + it.subtotal, 0);
+
+  return {
+    ...data,
+    items,
+    totalQuantity,
+    totalAmount,
+  };
+}
+
+async function fetchCartFromApi(): Promise<CartDto> {
+  const res = await agent.get<CartDto>("/me/cart");
+  return normalizeCartDto(res.data);
+}
+
+/**
+ * Serialize client-side “merge same variant” updates so concurrent adds cannot read the same
+ * stale cache and under-count (TOCTOU). Each task sees server state after the previous PUT.
+ */
+let addCartMergeChain: Promise<unknown> = Promise.resolve();
+
+function runAddCartMergeSerialized<T>(task: () => Promise<T>): Promise<T> {
+  const next = addCartMergeChain.then(() => task());
+  addCartMergeChain = next.then(
+    () => undefined,
+    () => undefined,
+  );
+  return next;
+}
 
 function getThrownMessage(err: unknown): string {
   if (err instanceof Error) return err.message;
@@ -78,26 +121,7 @@ export function useCart() {
   } = useQuery<CartDto>({
     queryKey: ["cart"],
     enabled: shouldLoadCart,
-    queryFn: async () => {
-      const res = await agent.get<CartDto>("/me/cart");
-      const data = res.data;
-      const items: CartItemDto[] = data.items ?? [];
-      const totalQuantity =
-        typeof data.totalQuantity === "number"
-          ? data.totalQuantity
-          : items.reduce((sum, it) => sum + it.quantity, 0);
-      const totalAmount =
-        typeof data.totalAmount === "number"
-          ? data.totalAmount
-          : items.reduce((sum, it) => sum + it.subtotal, 0);
-
-      return {
-        ...data,
-        items,
-        totalQuantity,
-        totalAmount,
-      };
-    },
+    queryFn: fetchCartFromApi,
   });
 
   // ===== POST /api/carts/items =====
@@ -113,31 +137,40 @@ export function useCart() {
 
       const { productVariantId, quantity, prescription } = parsed.data;
 
-      // Client-side merge: same variant → increase quantity on existing line (no BE change).
-      // Skip merge when prescription is present so callers can still target a new line if needed.
+      // Client-side merge: same variant → increase qty on one line (no BE merge).
+      // Never merge into a prescription line (local lens mode); add RX always skips merge below.
       const skipMerge =
         prescription !== undefined && prescription !== null;
 
       if (!skipMerge) {
-        const cached = queryClient.getQueryData<CartDto>(["cart"]);
-        const existing = (cached?.items ?? []).find(
-          (it) => it.productVariantId === productVariantId,
-        );
-        if (existing) {
-          const newQty = existing.quantity + quantity;
-          // API returns a single CartItemDto (same as UpdateCartItem), not a full cart.
-          const res = await agent.put<CartItemDto>(
-            `/me/cart/items/${existing.id}`,
-            { quantity: newQty },
-          );
+        return runAddCartMergeSerialized(async () => {
+          await queryClient.cancelQueries({ queryKey: ["cart"] });
+          const fresh = await fetchCartFromApi();
+          const existing = (fresh.items ?? []).find((it) => {
+            if (it.productVariantId !== productVariantId) return false;
+            return getCartItemLensMode(it.id) !== "prescription";
+          });
+          if (existing) {
+            const newQty = existing.quantity + quantity;
+            const res = await agent.put<CartItemDto>(
+              `/me/cart/items/${existing.id}`,
+              { quantity: newQty },
+            );
+            return res.data;
+          }
+          const res = await agent.post<CartItemDto>("/me/cart/items", {
+            productVariantId,
+            quantity,
+          });
           return res.data;
-        }
+        });
       }
 
       // API returns the new line (CartItemDto), not a full cart.
       const res = await agent.post<CartItemDto>("/me/cart/items", {
         productVariantId,
         quantity,
+        ...(prescription != null ? { prescription } : {}),
       });
       return res.data;
     },

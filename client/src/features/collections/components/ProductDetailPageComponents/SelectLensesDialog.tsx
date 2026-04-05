@@ -1,7 +1,9 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import {
     Dialog,
+    DialogActions,
     DialogContent,
+    DialogTitle,
     Button,
     Box,
     Container,
@@ -21,7 +23,6 @@ import { EYE_LABELS } from "../../../../lib/types/prescription";
 import type { LensSelectionOption, LensUsagePick } from "../../../../lib/types/lensSelection";
 import { LensUsageSelector } from "./lensSelection/LensUsageSelector";
 import { NonPrescriptionLensPanel } from "./lensSelection/NonPrescriptionLensPanel";
-import { PrescriptionFlowEntryPanel } from "./lensSelection/PrescriptionFlowEntryPanel";
 import { SingleVisionPrescriptionPanel } from "./lensSelection/SingleVisionPrescriptionPanel";
 import { LensProgressNav } from "./lensSelection/LensProgressNav";
 import { LENS_WIZARD_STEPS } from "./lensSelection/lensFlowSteps";
@@ -101,7 +102,6 @@ export function SelectLensesDialog({
     onLogoClick,
 }: Props) {
     const [selectedOption, setSelectedOption] = useState<LensSelectionOption | null>(null);
-    const [usagePick, setUsagePick] = useState<LensUsagePick | null>(null);
     const [rxUsageLabel, setRxUsageLabel] = useState("Single Vision");
     const [hasEnteredPrescriptionFlow, setHasEnteredPrescriptionFlow] = useState(false);
     const [nonRxSubmitting, setNonRxSubmitting] = useState(false);
@@ -115,6 +115,7 @@ export function SelectLensesDialog({
     const [twoPdNumbers, setTwoPdNumbers] = useState(false);
     const [pdLeft, setPdLeft] = useState<string>("");
     const [pdRight, setPdRight] = useState<string>("");
+    const [pdHelpOpen, setPdHelpOpen] = useState(false);
 
     const prescription: PrescriptionData = useMemo(() => {
         const rows = details.map((row) => {
@@ -135,7 +136,6 @@ export function SelectLensesDialog({
     useEffect(() => {
         if (open) {
             setSelectedOption(null);
-            setUsagePick(null);
             setHasEnteredPrescriptionFlow(false);
             setNonRxSubmitting(false);
             setRxConfirming(false);
@@ -146,23 +146,17 @@ export function SelectLensesDialog({
             setPdLeft("");
             setPdRight("");
             setTwoPdNumbers(false);
+            setPdHelpOpen(false);
         }
     }, [open]);
 
     const handleUsagePick = useCallback((pick: LensUsagePick) => {
         if (pick === "non-prescription") {
-            setUsagePick(null);
             setSelectedOption("non-prescription");
             return;
         }
-        setUsagePick(pick);
         setSelectedOption("prescription");
-        const labels: Record<Exclude<LensUsagePick, "non-prescription">, string> = {
-            "single-vision": "Single Vision",
-            "bifocal-progressive": "Bifocal & Progressive",
-            reading: "Reading",
-        };
-        setRxUsageLabel(labels[pick]);
+        setRxUsageLabel("Single Vision");
     }, []);
 
     const showLegacyPrescriptionFlow =
@@ -208,7 +202,6 @@ export function SelectLensesDialog({
 
     const resetToOptionStep = useCallback(() => {
         setSelectedOption(null);
-        setUsagePick(null);
         setHasEnteredPrescriptionFlow(false);
         setStep("form");
         setRxUsageLabel("Single Vision");
@@ -216,8 +209,6 @@ export function SelectLensesDialog({
 
     const formatNum = (n: number | null) =>
         n == null ? "—" : Number.isInteger(n) ? String(n) : n.toFixed(2);
-
-    const usageLabel = rxUsageLabel;
 
     const rxTableCellSx = embeddedInPage
         ? {
@@ -782,6 +773,7 @@ export function SelectLensesDialog({
                                                                 onClick={(e) => {
                                                                     e.preventDefault();
                                                                     e.stopPropagation();
+                                                                    setPdHelpOpen(true);
                                                                 }}
                                                                 sx={{
                                                                     color: LENS_FLOW_ACCENT,
@@ -854,7 +846,7 @@ export function SelectLensesDialog({
                                             fontWeight={600}
                                             sx={{ mb: 1, fontSize: embeddedInPage ? 15 : 14 }}
                                         >
-                                            Type: {usageLabel}
+                                            Type: {rxUsageLabel}
                                         </Typography>
                                         <Typography
                                             fontSize={embeddedInPage ? 15 : 14}
@@ -979,19 +971,11 @@ export function SelectLensesDialog({
                                     />
                                 )}
                                 {selectedOption === "prescription" && !hasEnteredPrescriptionFlow && (
-                                    usagePick === "single-vision" ? (
-                                        <SingleVisionPrescriptionPanel
-                                            onBack={resetToOptionStep}
-                                            onFillManually={() => setHasEnteredPrescriptionFlow(true)}
-                                            embedConfiguratorLayout={embeddedInPage}
-                                        />
-                                    ) : (
-                                        <PrescriptionFlowEntryPanel
-                                            onContinue={() => setHasEnteredPrescriptionFlow(true)}
-                                            onChangeOption={resetToOptionStep}
-                                            isPreOrder={isPreOrder}
-                                        />
-                                    )
+                                    <SingleVisionPrescriptionPanel
+                                        onBack={resetToOptionStep}
+                                        onFillManually={() => setHasEnteredPrescriptionFlow(true)}
+                                        embedConfiguratorLayout={embeddedInPage}
+                                    />
                                 )}
                             </Box>
                         )}
@@ -999,71 +983,174 @@ export function SelectLensesDialog({
                 </Box>
     );
 
+    /** Parent lens modal already dims the viewport — skip second backdrop to avoid “double black”. */
+    const pdHelpHideBackdrop = !embeddedInPage && !fullPage;
+
+    const pdHelpDialog = (
+        <Dialog
+            open={pdHelpOpen}
+            onClose={() => setPdHelpOpen(false)}
+            maxWidth="sm"
+            fullWidth
+            scroll="paper"
+            onClick={(e) => e.stopPropagation()}
+            hideBackdrop={pdHelpHideBackdrop}
+            slotProps={{
+                backdrop: {
+                    sx: {
+                        backgroundColor: "rgba(17, 24, 39, 0.28)",
+                    },
+                },
+            }}
+            sx={{ zIndex: (theme) => theme.zIndex.modal + 2 }}
+            PaperProps={{
+                sx: {
+                    borderRadius: 2,
+                    bgcolor: "#FFFFFF",
+                    boxShadow: "0 25px 50px -12px rgba(15, 23, 42, 0.18)",
+                },
+            }}
+        >
+            <DialogTitle
+                sx={{
+                    fontWeight: 800,
+                    fontSize: 20,
+                    pr: 6,
+                    bgcolor: "#FFFFFF",
+                    borderBottom: "1px solid rgba(17, 24, 39, 0.08)",
+                    pb: 2,
+                }}
+            >
+                How to find your PD
+            </DialogTitle>
+            <DialogContent
+                sx={{
+                    bgcolor: "#FFFFFF",
+                    pt: 2.5,
+                }}
+            >
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2, lineHeight: 1.65 }}>
+                    <Box component="span" sx={{ fontWeight: 700, color: "text.primary" }}>
+                        Pupillary distance (PD)
+                    </Box>{" "}
+                    is the space between the centers of your pupils in millimeters. Accurate PD helps align lenses with
+                    your eyes for clear, comfortable vision.
+                </Typography>
+                <Box component="ul" sx={{ m: 0, pl: 2.5, color: "text.secondary", fontSize: 14, lineHeight: 1.7 }}>
+                    <Box component="li" sx={{ mb: 1.25 }}>
+                        Check your prescription paperwork—many prescriptions list a single PD or separate left/right
+                        values.
+                    </Box>
+                    <Box component="li" sx={{ mb: 1.25 }}>
+                        Ask your optometrist or optical shop; they can measure PD for you.
+                    </Box>
+                    <Box component="li" sx={{ mb: 1.25 }}>
+                        If you use two PD numbers (for each eye), enable &quot;I have 2 PD numbers&quot; and enter OD/OS
+                        as written on your rx.
+                    </Box>
+                    <Box component="li">
+                        Adults often fall roughly between mid-50s and low-70s mm for a single PD, but always use the
+                        value from your provider when available.
+                    </Box>
+                </Box>
+            </DialogContent>
+            <DialogActions
+                sx={{
+                    px: 3,
+                    py: 2,
+                    bgcolor: "#FFFFFF",
+                    borderTop: "1px solid rgba(17, 24, 39, 0.08)",
+                }}
+            >
+                <Button
+                    variant="contained"
+                    onClick={() => setPdHelpOpen(false)}
+                    sx={{
+                        textTransform: "none",
+                        fontWeight: 700,
+                        bgcolor: LENS_FLOW_ACCENT,
+                        color: LENS_FLOW_ON_ACCENT,
+                        boxShadow: "none",
+                        "&:hover": { bgcolor: LENS_FLOW_ACCENT_HOVER, boxShadow: "none" },
+                    }}
+                >
+                    Got it
+                </Button>
+            </DialogActions>
+        </Dialog>
+    );
+
     if (embeddedInPage) {
         if (!open) return null;
         return (
-            <Box
-                component="main"
-                sx={{
-                    bgcolor: "#fff",
-                    minHeight: "calc(100vh - 56px)",
-                }}
-            >
-                <Container
-                    maxWidth={false}
+            <>
+                <Box
+                    component="main"
                     sx={{
-                        maxWidth: LENS_CONFIGURATOR_MAX_WIDTH_PX,
-                        mx: "auto",
-                        px: { xs: 2, sm: 3, md: 4 },
-                        pt: NAV_OFFSET_PT,
-                        pb: { xs: 4, md: 6 },
+                        bgcolor: "#fff",
+                        minHeight: "calc(100vh - 56px)",
                     }}
                 >
-                    <Typography
-                        component="button"
-                        type="button"
-                        onClick={onClose}
+                    <Container
+                        maxWidth={false}
                         sx={{
-                            display: "block",
-                            mb: { xs: 2, md: 3 },
-                            color: "#111827",
-                            fontSize: { xs: 14, md: 15 },
-                            fontWeight: 600,
-                            cursor: "pointer",
-                            border: "none",
-                            background: "none",
-                            textAlign: "left",
-                            fontFamily: "inherit",
-                            "&:hover": { textDecoration: "underline", color: LENS_FLOW_ACCENT },
-                            "&:focus-visible": {
-                                outline: `2px solid ${LENS_FLOW_ACCENT}`,
-                                outlineOffset: 2,
-                            },
+                            maxWidth: LENS_CONFIGURATOR_MAX_WIDTH_PX,
+                            mx: "auto",
+                            px: { xs: 2, sm: 3, md: 4 },
+                            pt: NAV_OFFSET_PT,
+                            pb: { xs: 4, md: 6 },
                         }}
                     >
-                        {"< Back to Frame Description"}
-                    </Typography>
-                    {mainGrid}
-                </Container>
-            </Box>
+                        <Typography
+                            component="button"
+                            type="button"
+                            onClick={onClose}
+                            sx={{
+                                display: "block",
+                                mb: { xs: 2, md: 3 },
+                                color: "#111827",
+                                fontSize: { xs: 14, md: 15 },
+                                fontWeight: 600,
+                                cursor: "pointer",
+                                border: "none",
+                                background: "none",
+                                textAlign: "left",
+                                fontFamily: "inherit",
+                                "&:hover": { textDecoration: "underline", color: LENS_FLOW_ACCENT },
+                                "&:focus-visible": {
+                                    outline: `2px solid ${LENS_FLOW_ACCENT}`,
+                                    outlineOffset: 2,
+                                },
+                            }}
+                        >
+                            {"< Back to Frame Description"}
+                        </Typography>
+                        {mainGrid}
+                    </Container>
+                </Box>
+                {pdHelpDialog}
+            </>
         );
     }
 
     return (
-        <Dialog
-            open={open}
-            onClose={onClose}
-            fullScreen={!!fullPage}
-            hideBackdrop={!!fullPage}
-            maxWidth={fullPage ? false : "lg"}
-            fullWidth={!fullPage}
-            PaperProps={{
-                sx: fullPage
-                    ? { borderRadius: 0, width: "100%", height: "100%", maxWidth: "100%", m: 0 }
-                    : { borderRadius: 2 },
-            }}
-        >
-            <DialogContent sx={{ p: 0, overflow: "hidden" }}>{mainGrid}</DialogContent>
-        </Dialog>
+        <>
+            <Dialog
+                open={open}
+                onClose={onClose}
+                fullScreen={!!fullPage}
+                hideBackdrop={!!fullPage}
+                maxWidth={fullPage ? false : "lg"}
+                fullWidth={!fullPage}
+                PaperProps={{
+                    sx: fullPage
+                        ? { borderRadius: 0, width: "100%", height: "100%", maxWidth: "100%", m: 0 }
+                        : { borderRadius: 2 },
+                }}
+            >
+                <DialogContent sx={{ p: 0, overflow: "hidden" }}>{mainGrid}</DialogContent>
+            </Dialog>
+            {pdHelpDialog}
+        </>
     );
 }
