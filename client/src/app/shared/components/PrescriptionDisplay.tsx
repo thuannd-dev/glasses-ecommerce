@@ -1,4 +1,5 @@
 import {
+  alpha,
   Box,
   Typography,
   Table,
@@ -7,6 +8,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  useTheme,
 } from "@mui/material";
 import type { PrescriptionData } from "../../../lib/types/prescription";
 import { EYE_LABELS } from "../../../lib/types/prescription";
@@ -14,30 +16,41 @@ import { EYE_LABELS } from "../../../lib/types/prescription";
 const formatVal = (n: number | null) =>
   n == null ? "—" : Number.isInteger(n) ? String(n) : n.toFixed(2);
 
-const CELL_BORDER = "1px solid rgba(17, 24, 39, 0.12)";
-
 type Props = {
   prescription: PrescriptionData;
   variant?: "inline" | "block";
 };
 
+const labelTypographySx = {
+  mb: 0.5,
+  fontSize: 12,
+  fontWeight: 700,
+  letterSpacing: "0.02em",
+} as const;
+
 export function PrescriptionDisplay({ prescription, variant = "block" }: Props) {
+  const theme = useTheme();
+
   if (!prescription?.details?.length) return null;
 
+  const cellBorder = `1px solid ${theme.palette.divider}`;
   const cellSx = {
     py: 0.85,
     px: 1.25,
     fontSize: 12,
     lineHeight: 1.4,
-    border: CELL_BORDER,
+    border: cellBorder,
     verticalAlign: "middle" as const,
   };
 
   const headCellSx = {
     ...cellSx,
     fontWeight: 700,
-    color: "#374151",
-    bgcolor: "rgba(17, 24, 39, 0.06)",
+    color: theme.palette.text.secondary,
+    bgcolor:
+      theme.palette.mode === "light"
+        ? theme.palette.grey[100]
+        : alpha(theme.palette.common.white, 0.08),
   };
 
   const table = (
@@ -68,7 +81,7 @@ export function PrescriptionDisplay({ prescription, variant = "block" }: Props) 
       <TableBody>
         {prescription.details.map((row) => (
           <TableRow key={row.eye}>
-            <TableCell sx={{ ...cellSx, fontWeight: 600, color: "#111827" }}>
+            <TableCell sx={{ ...cellSx, fontWeight: 600, color: "text.primary" }}>
               {EYE_LABELS[row.eye]}
             </TableCell>
             <TableCell sx={{ ...cellSx, textAlign: "right" }}>{formatVal(row.sph)}</TableCell>
@@ -85,21 +98,23 @@ export function PrescriptionDisplay({ prescription, variant = "block" }: Props) 
     return (
       <Box sx={{ mt: 0.75, maxWidth: 360 }}>
         <Typography
-          component="h4"
-          fontSize={12}
-          fontWeight={700}
+          component="span"
+          display="block"
           color="text.secondary"
-          sx={{ mb: 0.5, letterSpacing: "0.02em" }}
+          sx={labelTypographySx}
         >
           Prescription detail
         </Typography>
         <TableContainer
           sx={{
-            border: CELL_BORDER,
+            border: cellBorder,
             borderRadius: 1,
             overflow: "hidden",
-            bgcolor: "#fff",
-            boxShadow: "0 1px 2px rgba(17, 24, 39, 0.04)",
+            bgcolor: "background.paper",
+            boxShadow:
+              theme.palette.mode === "light"
+                ? `0 1px 2px ${alpha(theme.palette.common.black, 0.04)}`
+                : `0 1px 2px ${alpha(theme.palette.common.black, 0.2)}`,
           }}
         >
           {table}
@@ -113,20 +128,21 @@ export function PrescriptionDisplay({ prescription, variant = "block" }: Props) 
       sx={{
         mt: 1,
         p: 1.5,
-        bgcolor: "rgba(17,24,39,0.04)",
         borderRadius: 1.5,
-        border: "1px solid rgba(17,24,39,0.08)",
+        border: 1,
+        borderColor: "divider",
+        bgcolor: theme.palette.mode === "light" ? alpha(theme.palette.common.black, 0.04) : alpha(theme.palette.common.white, 0.05),
       }}
     >
-      <Typography fontSize={12} fontWeight={700} color="text.secondary" sx={{ mb: 0.5 }}>
+      <Typography component="span" display="block" color="text.secondary" sx={labelTypographySx}>
         Prescription detail
       </Typography>
       <TableContainer
         sx={{
-          border: CELL_BORDER,
+          border: cellBorder,
           borderRadius: 1,
           overflow: "hidden",
-          bgcolor: "#fff",
+          bgcolor: "background.paper",
         }}
       >
         {table}

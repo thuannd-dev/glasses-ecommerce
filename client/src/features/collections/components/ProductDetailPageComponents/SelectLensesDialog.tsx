@@ -61,7 +61,29 @@ function buildCylOptions(): string[] {
 }
 
 const AXIS_OPTIONS = Array.from({ length: 181 }, (_, i) => String(i));
-const PD_OPTIONS = Array.from({ length: 128 }, (_, i) => String(i + 53));
+
+/** Binocular / “one PD” (typical adult ~54–74 mm). Backend allows 40–80 per stored row. */
+const SINGLE_PD_OPTIONS = Array.from({ length: 31 }, (_, i) => String(50 + i));
+
+/**
+ * Monocular PD per eye when “I have 2 PD numbers” (typically ~25–40 mm each).
+ * DB check is 40–80 per eye, so options start at 40; cap below binocular totals to avoid nonsense like 65 mm for one eye only.
+ */
+const DUAL_PD_OPTIONS = Array.from({ length: 16 }, (_, i) => String(40 + i));
+
+function isPdChoiceValid(value: string, mode: "single" | "dual"): boolean {
+    if (value === "") return false;
+    const n = Number(value);
+    if (!Number.isFinite(n)) return false;
+    if (mode === "single") {
+        const min = Number(SINGLE_PD_OPTIONS[0]);
+        const max = Number(SINGLE_PD_OPTIONS[SINGLE_PD_OPTIONS.length - 1]);
+        return n >= min && n <= max;
+    }
+    const min = Number(DUAL_PD_OPTIONS[0]);
+    const max = Number(DUAL_PD_OPTIONS[DUAL_PD_OPTIONS.length - 1]);
+    return n >= min && n <= max;
+}
 
 const SPH_OPTIONS = buildSphOptions();
 const CYL_OPTIONS = buildCylOptions();
@@ -134,20 +156,22 @@ export function SelectLensesDialog({
     }, [details, pdSingle, pdLeft, pdRight, twoPdNumbers]);
 
     useEffect(() => {
-        if (open) {
-            setSelectedOption(null);
-            setHasEnteredPrescriptionFlow(false);
-            setNonRxSubmitting(false);
-            setRxConfirming(false);
-            setStep("form");
-            setRxUsageLabel("Single Vision");
-            setDetails(INITIAL_DETAILS.map((d) => ({ ...d })));
-            setPdSingle("");
-            setPdLeft("");
-            setPdRight("");
-            setTwoPdNumbers(false);
+        if (!open) {
             setPdHelpOpen(false);
+            return;
         }
+        setSelectedOption(null);
+        setHasEnteredPrescriptionFlow(false);
+        setNonRxSubmitting(false);
+        setRxConfirming(false);
+        setStep("form");
+        setRxUsageLabel("Single Vision");
+        setDetails(INITIAL_DETAILS.map((d) => ({ ...d })));
+        setPdSingle("");
+        setPdLeft("");
+        setPdRight("");
+        setTwoPdNumbers(false);
+        setPdHelpOpen(false);
     }, [open]);
 
     const handleUsagePick = useCallback((pick: LensUsagePick) => {
@@ -172,7 +196,9 @@ export function SelectLensesDialog({
         const bothEyesFilled = details.every(
             (row) => row.sph != null && row.cyl != null && row.axis != null
         );
-        const pdFilled = twoPdNumbers ? pdRight !== "" && pdLeft !== "" : pdSingle !== "";
+        const pdFilled = twoPdNumbers
+            ? isPdChoiceValid(pdRight, "dual") && isPdChoiceValid(pdLeft, "dual")
+            : isPdChoiceValid(pdSingle, "single");
         return bothEyesFilled && pdFilled;
     }, [details, twoPdNumbers, pdSingle, pdRight, pdLeft]);
 
@@ -686,7 +712,7 @@ export function SelectLensesDialog({
                                                                 }}
                                                             >
                                                                 <MenuItem value="">Select PD</MenuItem>
-                                                                {PD_OPTIONS.map((opt) => (
+                                                                {SINGLE_PD_OPTIONS.map((opt) => (
                                                                     <MenuItem key={opt} value={opt}>
                                                                         {opt}
                                                                     </MenuItem>
@@ -696,9 +722,18 @@ export function SelectLensesDialog({
                                                                 control={
                                                                     <Checkbox
                                                                         checked={twoPdNumbers}
-                                                                        onChange={(e) =>
-                                                                            setTwoPdNumbers(e.target.checked)
-                                                                        }
+                                                                        onChange={(e) => {
+                                                                            const checked = e.target.checked;
+                                                                            setTwoPdNumbers(checked);
+                                                                            if (checked) {
+                                                                                setPdSingle("");
+                                                                                setPdLeft("");
+                                                                                setPdRight("");
+                                                                            } else {
+                                                                                setPdLeft("");
+                                                                                setPdRight("");
+                                                                            }
+                                                                        }}
                                                                         sx={{
                                                                             color: LENS_FLOW_ACCENT,
                                                                             "&.Mui-checked": {
@@ -728,7 +763,13 @@ export function SelectLensesDialog({
                                                                             setPdRight(e.target.value)
                                                                         }
                                                                         sx={{ flex: 1, minWidth: 120 }}
+                                                                        InputLabelProps={{ shrink: true }}
                                                                         SelectProps={{
+                                                                            displayEmpty: true,
+                                                                            renderValue: (selected: unknown) =>
+                                                                                selected === ""
+                                                                                    ? "Select PD"
+                                                                                    : (selected as string),
                                                                             MenuProps: {
                                                                                 PaperProps: {
                                                                                     sx: { maxHeight: 280 },
@@ -736,7 +777,8 @@ export function SelectLensesDialog({
                                                                             },
                                                                         }}
                                                                     >
-                                                                        {PD_OPTIONS.map((opt) => (
+                                                                        <MenuItem value="">Select PD</MenuItem>
+                                                                        {DUAL_PD_OPTIONS.map((opt) => (
                                                                             <MenuItem key={opt} value={opt}>
                                                                                 {opt}
                                                                             </MenuItem>
@@ -751,7 +793,13 @@ export function SelectLensesDialog({
                                                                             setPdLeft(e.target.value)
                                                                         }
                                                                         sx={{ flex: 1, minWidth: 120 }}
+                                                                        InputLabelProps={{ shrink: true }}
                                                                         SelectProps={{
+                                                                            displayEmpty: true,
+                                                                            renderValue: (selected: unknown) =>
+                                                                                selected === ""
+                                                                                    ? "Select PD"
+                                                                                    : (selected as string),
                                                                             MenuProps: {
                                                                                 PaperProps: {
                                                                                     sx: { maxHeight: 280 },
@@ -759,7 +807,8 @@ export function SelectLensesDialog({
                                                                             },
                                                                         }}
                                                                     >
-                                                                        {PD_OPTIONS.map((opt) => (
+                                                                        <MenuItem value="">Select PD</MenuItem>
+                                                                        {DUAL_PD_OPTIONS.map((opt) => (
                                                                             <MenuItem key={opt} value={opt}>
                                                                                 {opt}
                                                                             </MenuItem>
@@ -988,7 +1037,7 @@ export function SelectLensesDialog({
 
     const pdHelpDialog = (
         <Dialog
-            open={pdHelpOpen}
+            open={open && pdHelpOpen}
             onClose={() => setPdHelpOpen(false)}
             maxWidth="sm"
             fullWidth
