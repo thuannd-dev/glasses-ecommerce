@@ -105,6 +105,16 @@ export default function ManagerProductDetailScreen() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
+  const { data: product, isLoading, error } = useQuery<ProductDetail>({
+    queryKey: ["manager-product-detail", id],
+    queryFn: async () => {
+      if (!id) throw new Error("Product id is required");
+      const res = await agent.get<ProductDetail>(`/products/${id}`);
+      return res.data;
+    },
+    enabled: Boolean(id),
+  });
+
   if (!id) {
     return (
       <Box sx={{ px: 4, py: 4 }}>
@@ -112,14 +122,6 @@ export default function ManagerProductDetailScreen() {
       </Box>
     );
   }
-
-  const { data: product, isLoading, error } = useQuery<ProductDetail>({
-    queryKey: ["manager-product-detail", id],
-    queryFn: async () => {
-      const res = await agent.get<ProductDetail>(`/products/${id}`);
-      return res.data;
-    },
-  });
 
   if (isLoading) {
     return (

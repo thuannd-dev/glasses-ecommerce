@@ -1,13 +1,56 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { isAxiosError } from "axios";
 import { toast } from "react-toastify";
 
 import agent from "../api/agent";
+import { removeCartItemLocalData } from "../../features/cart/prescriptionCache";
 import type { CartDto, CartItemDto, AddCartItemPayload, UpdateCartItemPayload } from "../types/cart";
 import {
   addCartItemSchema,
   updateCartItemSchema,
 } from "../schemas/cartSchema";
 import { useAccount } from "./useAccount";
+
+function getThrownMessage(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (typeof err === "string") return err;
+  if (Array.isArray(err)) return err.map(String).join(" ");
+
+  if (isAxiosError(err)) {
+    const data = err.response?.data;
+    if (typeof data === "string" && data.trim()) return data;
+    if (data && typeof data === "object" && !Array.isArray(data)) {
+      const rec = data as Record<string, unknown>;
+      if (typeof rec.message === "string") return rec.message;
+      if (typeof rec.title === "string") return rec.title;
+      if (rec.errors && typeof rec.errors === "object") {
+        const errs = rec.errors as Record<string, unknown>;
+        const parts = Object.values(errs).flatMap((v) =>
+          Array.isArray(v) ? v.map(String) : v != null ? [String(v)] : [],
+        );
+        if (parts.length) return parts.join(" ");
+      }
+    }
+  }
+
+  if (typeof err === "object" && err !== null && "message" in err) {
+    const m = (err as { message: unknown }).message;
+    if (typeof m === "string" && m.trim()) return m;
+  }
+  return "";
+}
+
+/** Backend messages when a cart line references a dead SKU / variant. */
+function isUnavailableCartLineMessage(message: string): boolean {
+  const m = message.toLowerCase();
+  return (
+    m.includes("no longer available") ||
+    m.includes("not available") ||
+    m.includes("out of stock") ||
+    m.includes("discontinued") ||
+    (m.includes("variant") && (m.includes("invalid") || m.includes("unavailable")))
+  );
+}
 
 /**
  * Hook quản lý Cart sử dụng API:
@@ -130,11 +173,31 @@ export function useCart() {
 
       return { previous };
     },
-    onError: (_err, _vars, context) => {
+    onError: (err, variables, context) => {
+      const id = variables.id;
+      const msg = getThrownMessage(err);
+      if (id && isUnavailableCartLineMessage(msg)) {
+        const prev = context?.previous;
+        const variantId = prev?.items?.find((it) => it.id === id)?.productVariantId;
+        removeCartItemLocalData(id, variantId ?? null);
+
+        void (async () => {
+          try {
+            await agent.delete(`/me/cart/items/${id}`);
+          } catch {
+            /* ignore — refetch will reconcile */
+          }
+          queryClient.invalidateQueries({ queryKey: ["cart"] });
+        })();
+
+        toast.info("This item is no longer available and was removed from your cart.");
+        return;
+      }
+
       if (context?.previous) {
         queryClient.setQueryData(["cart"], context.previous);
       }
-      toast.error("Failed to update cart.");
+      toast.error(msg.trim() ? msg : "Failed to update cart.");
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["cart"] });

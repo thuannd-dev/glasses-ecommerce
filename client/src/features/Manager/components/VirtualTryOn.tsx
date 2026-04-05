@@ -233,7 +233,7 @@ export default function VirtualTryOn({
               if (faceMeshRef.current && videoRef.current) {
                 await faceMeshRef.current.send({ image: videoRef.current });
               }
-            } catch (_) {
+            } catch {
               // Silently ignore send errors (e.g. during unmount or camera stop)
             }
           },

@@ -74,7 +74,6 @@ export default function InventoryTransactionsScreen() {
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, pageSize, typeFilter, refFilter, normalizedVariantId]);
 
   return (

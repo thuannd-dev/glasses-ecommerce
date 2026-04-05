@@ -65,7 +65,7 @@ export default function RevenueReportScreen() {
       // TODO: Implement revenue report API integration
       toast.info("Revenue report feature coming soon");
       setReport(null);
-    } catch (error) {
+    } catch {
       toast.error("Failed to load revenue report");
     } finally {
       setLoading(false);

@@ -172,7 +172,7 @@ export default function PromotionsScreen() {
     const e: Record<string, string> = {};
     if (!form.promoCode.trim()) e.promoCode = "Promo code is required";
     else if (form.promoCode.trim().length < 3) e.promoCode = "Min 3 characters";
-    else if (!/^[A-Za-z0-9\-]+$/.test(form.promoCode.trim())) e.promoCode = "Only letters, digits, hyphens";
+    else if (!/^[A-Za-z0-9-]+$/.test(form.promoCode.trim())) e.promoCode = "Only letters, digits, hyphens";
     if (!form.promoName.trim()) e.promoName = "Promo name is required";
     if (!form.discountValue && form.promotionType !== PromotionType.FreeShipping) e.discountValue = "Required";
     if (form.promotionType === PromotionType.Percentage) {
