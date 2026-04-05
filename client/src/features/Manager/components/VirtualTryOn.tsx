@@ -6,6 +6,8 @@ import {
   Button,
   CircularProgress,
   Tooltip,
+  Slider,
+  Paper,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import CameraAltIcon from "@mui/icons-material/CameraAlt";
@@ -21,10 +23,10 @@ declare global {
   }
 }
 
-// Overlay scaling constants
-const OVERLAY_EYE_SCALE = 1.8;
+// Default overlay scaling constants
+const DEFAULT_EYE_SCALE = 1.8; 
 const OVERLAY_DEPTH_FACTOR = -0.5;
-const OVERLAY_CENTER_OFFSET = 0.35;
+const DEFAULT_CENTER_OFFSET = 0.35;
 
 interface VariantImage {
   id: string;
@@ -73,14 +75,23 @@ export default function VirtualTryOn({
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  
+  // Adjustable parameters
+  const [offsetX, setOffsetX] = useState(0);
+  const [offsetY, setOffsetY] = useState(-5);
+  const [scale, setScale] = useState(1.4);
 
-  // Smoothing state
+  // Smoothing state with 3D rotation tracking
   const smoothRef = useRef({
     x: 0,
     y: 0,
     angle: 0,
     width: 0,
     yaw: 0,
+    pitch: 0,
+    roll: 0,
+    scaleX: 1,
+    scaleY: 1,
   });
 
   // Preload glasses images as blob URLs to avoid cross-origin canvas tainting
@@ -174,6 +185,7 @@ export default function VirtualTryOn({
         const nose = lm[1];
         const leftEar = lm[234];
         const rightEar = lm[454];
+        const forehead = lm[10];
 
         const x1 = leftEye.x * canvas.width;
         const y1 = leftEye.y * canvas.height;
@@ -185,39 +197,53 @@ export default function VirtualTryOn({
         const angle = Math.atan2(dy, dx);
         const eyeDistance = Math.sqrt(dx * dx + dy * dy);
 
-        let width = eyeDistance * OVERLAY_EYE_SCALE;
+        // Calculate 3D rotation angles
+        const yaw = Math.atan2(leftEar.x - rightEar.x, 0.5) * 0.5;
+        const pitch = Math.atan2(nose.y - forehead.y, nose.z - forehead.z) * 0.3;
+        const roll = angle;
+
+        // Apply user-adjustable scale
+        let width = eyeDistance * DEFAULT_EYE_SCALE * scale;
         const depthScale = 1 + nose.z * OVERLAY_DEPTH_FACTOR;
         width *= depthScale;
 
-        const centerX = (x1 + x2) / 2;
-        const centerY = (y1 + y2) / 2;
-        const yaw = leftEar.x - rightEar.x;
+        // Calculate center with user offsets
+        const centerX = (x1 + x2) / 2 + offsetX;
+        const centerY = (y1 + y2) / 2 + offsetY;
+
+        // Calculate perspective scaling based on head rotation
+        const perspectiveScaleX = 1 - Math.abs(yaw) * 0.3;
+        const perspectiveScaleY = 1 - Math.abs(pitch) * 0.2;
 
         const s = smoothRef.current;
-        s.yaw = s.yaw * 0.8 + yaw * 0.2;
+        // Smooth all parameters for stable tracking
+        s.yaw = s.yaw * 0.7 + yaw * 0.3;
+        s.pitch = s.pitch * 0.7 + pitch * 0.3;
+        s.roll = s.roll * 0.85 + roll * 0.15;
         s.x = s.x * 0.85 + centerX * 0.15;
         s.y = s.y * 0.85 + centerY * 0.15;
-        s.angle = s.angle * 0.85 + angle * 0.15;
         s.width = s.width * 0.85 + width * 0.15;
+        s.scaleX = s.scaleX * 0.8 + perspectiveScaleX * 0.2;
+        s.scaleY = s.scaleY * 0.8 + perspectiveScaleY * 0.2;
 
+        // Adjust brightness based on depth
         const brightness = 1 + nose.z * 0.5;
         ctx.filter = `brightness(${brightness})`;
 
         ctx.save();
         ctx.translate(s.x, s.y);
-        ctx.rotate(s.angle);
+        ctx.rotate(s.roll);
 
-        if (s.yaw > 0) {
-          ctx.scale(0.95, 1);
-        } else {
-          ctx.scale(1.05, 1);
-        }
+        // Apply 3D perspective scaling
+        const finalScaleX = s.scaleX * (1 + s.yaw * 0.5);
+        const finalScaleY = s.scaleY;
+        ctx.scale(finalScaleX, finalScaleY);
 
         const glasses = glassesImagesRef.current[selectedIdx];
         if (glasses) {
           const anchorX = s.width * 0.5;
-          const anchorY = s.width * OVERLAY_CENTER_OFFSET * 0.5;
-          ctx.drawImage(glasses, -anchorX, -anchorY, s.width, s.width * OVERLAY_CENTER_OFFSET);
+          const anchorY = s.width * DEFAULT_CENTER_OFFSET * 0.5;
+          ctx.drawImage(glasses, -anchorX, -anchorY, s.width, s.width * DEFAULT_CENTER_OFFSET);
         }
 
         ctx.restore();
@@ -299,6 +325,7 @@ export default function VirtualTryOn({
       const nose = lm[1];
       const leftEar = lm[234];
       const rightEar = lm[454];
+      const forehead = lm[10];
 
       const x1 = leftEye.x * canvas.width;
       const y1 = leftEye.y * canvas.height;
@@ -310,45 +337,59 @@ export default function VirtualTryOn({
       const angle = Math.atan2(dy, dx);
       const eyeDistance = Math.sqrt(dx * dx + dy * dy);
 
-      let width = eyeDistance * OVERLAY_EYE_SCALE;
+      // Calculate 3D rotation angles
+      const yaw = Math.atan2(leftEar.x - rightEar.x, 0.5) * 0.5;
+      const pitch = Math.atan2(nose.y - forehead.y, nose.z - forehead.z) * 0.3;
+      const roll = angle;
+
+      // Apply user-adjustable scale
+      let width = eyeDistance * DEFAULT_EYE_SCALE * scale;
       const depthScale = 1 + nose.z * OVERLAY_DEPTH_FACTOR;
       width *= depthScale;
 
-      const centerX = (x1 + x2) / 2;
-      const centerY = (y1 + y2) / 2;
-      const yaw = leftEar.x - rightEar.x;
+      // Calculate center with user offsets
+      const centerX = (x1 + x2) / 2 + offsetX;
+      const centerY = (y1 + y2) / 2 + offsetY;
+
+      // Calculate perspective scaling based on head rotation
+      const perspectiveScaleX = 1 - Math.abs(yaw) * 0.3;
+      const perspectiveScaleY = 1 - Math.abs(pitch) * 0.2;
 
       const s = smoothRef.current;
-      s.yaw = s.yaw * 0.8 + yaw * 0.2;
+      // Smooth all parameters for stable tracking
+      s.yaw = s.yaw * 0.7 + yaw * 0.3;
+      s.pitch = s.pitch * 0.7 + pitch * 0.3;
+      s.roll = s.roll * 0.85 + roll * 0.15;
       s.x = s.x * 0.85 + centerX * 0.15;
       s.y = s.y * 0.85 + centerY * 0.15;
-      s.angle = s.angle * 0.85 + angle * 0.15;
       s.width = s.width * 0.85 + width * 0.15;
+      s.scaleX = s.scaleX * 0.8 + perspectiveScaleX * 0.2;
+      s.scaleY = s.scaleY * 0.8 + perspectiveScaleY * 0.2;
 
+      // Adjust brightness based on depth
       const brightness = 1 + nose.z * 0.5;
       ctx.filter = `brightness(${brightness})`;
 
       ctx.save();
       ctx.translate(s.x, s.y);
-      ctx.rotate(s.angle);
+      ctx.rotate(s.roll);
 
-      if (s.yaw > 0) {
-        ctx.scale(0.95, 1);
-      } else {
-        ctx.scale(1.05, 1);
-      }
+      // Apply 3D perspective scaling
+      const finalScaleX = s.scaleX * (1 + s.yaw * 0.5);
+      const finalScaleY = s.scaleY;
+      ctx.scale(finalScaleX, finalScaleY);
 
       const glasses = glassesImagesRef.current[selectedIdxRef.current];
       if (glasses) {
         const anchorX = s.width * 0.5;
-        const anchorY = s.width * OVERLAY_CENTER_OFFSET * 0.5;
-        ctx.drawImage(glasses, -anchorX, -anchorY, s.width, s.width * OVERLAY_CENTER_OFFSET);
+        const anchorY = s.width * DEFAULT_CENTER_OFFSET * 0.5;
+        ctx.drawImage(glasses, -anchorX, -anchorY, s.width, s.width * DEFAULT_CENTER_OFFSET);
       }
 
       ctx.restore();
       ctx.filter = "none";
     });
-  }, [selectedIdx]);
+  }, [selectedIdx, offsetX, offsetY, scale]);
 
   const handleCapture = () => {
     const video = videoRef.current;
@@ -377,14 +418,12 @@ export default function VirtualTryOn({
       tempCtx.save();
       tempCtx.translate(s.x, s.y);
       tempCtx.rotate(s.angle);
-      if (s.yaw > 0) {
-        tempCtx.scale(0.95, 1);
-      } else {
-        tempCtx.scale(1.05, 1);
-      }
+      const finalScaleX = s.scaleX * (1 + s.yaw * 0.5);
+      const finalScaleY = s.scaleY;
+      tempCtx.scale(finalScaleX, finalScaleY);
       const anchorX = s.width * 0.5;
-      const anchorY = s.width * OVERLAY_CENTER_OFFSET * 0.5;
-      tempCtx.drawImage(glasses, -anchorX, -anchorY, s.width, s.width * OVERLAY_CENTER_OFFSET);
+      const anchorY = s.width * DEFAULT_CENTER_OFFSET * 0.5;
+      tempCtx.drawImage(glasses, -anchorX, -anchorY, s.width, s.width * DEFAULT_CENTER_OFFSET);
       tempCtx.restore();
       tempCtx.filter = "none";
     }
@@ -499,11 +538,239 @@ export default function VirtualTryOn({
           display: "flex",
           gap: 3,
           alignItems: "flex-start",
-          maxWidth: 1100,
+          maxWidth: 1200,
           width: "100%",
           px: 3,
         }}
       >
+        {/* Controls Panel */}
+        {!capturedImage && (
+          <Paper
+            sx={{
+              width: 240,
+              flexShrink: 0,
+              bgcolor: "rgba(255,255,255,0.08)",
+              backdropFilter: "blur(12px)",
+              borderRadius: 3,
+              p: 2.5,
+              border: "1px solid rgba(255,255,255,0.1)",
+            }}
+          >
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2.5 }}>
+              <Box
+                sx={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: "50%",
+                  bgcolor: "#10b981",
+                  boxShadow: "0 0 8px rgba(16,185,129,0.6)",
+                }}
+              />
+              <Typography
+                sx={{
+                  color: "#fff",
+                  fontWeight: 900,
+                  fontSize: 13,
+                  letterSpacing: "0.06em",
+                  textTransform: "uppercase",
+                }}
+              >
+                Controls
+              </Typography>
+            </Box>
+
+            {/* Camera & Face Detection Status */}
+            <Box
+              sx={{
+                mb: 3,
+                pb: 2.5,
+                borderBottom: "1px solid rgba(255,255,255,0.1)",
+              }}
+            >
+              <Typography
+                sx={{
+                  color: "rgba(255,255,255,0.7)",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  mb: 1.5,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                }}
+              >
+                Camera & Face Detection
+              </Typography>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+                <Tooltip title={isCamOn ? "Stop Camera" : "Start Camera"}>
+                  <Button
+                    variant={isCamOn ? "contained" : "outlined"}
+                    onClick={toggleCamera}
+                    disabled={isLoading || !!error}
+                    sx={{
+                      flex: 1,
+                      borderRadius: 2,
+                      textTransform: "none",
+                      fontWeight: 700,
+                      fontSize: 12,
+                      py: 1,
+                      bgcolor: isCamOn ? "#10b981" : "transparent",
+                      borderColor: "rgba(255,255,255,0.3)",
+                      color: "#fff",
+                      "&:hover": {
+                        bgcolor: isCamOn ? "#059669" : "rgba(255,255,255,0.1)",
+                        borderColor: "rgba(255,255,255,0.5)",
+                      },
+                    }}
+                  >
+                    {isCamOn ? "Stop" : "Start"}
+                  </Button>
+                </Tooltip>
+              </Box>
+            </Box>
+
+            {/* Position Controls */}
+            <Box sx={{ mb: 3 }}>
+              <Typography
+                sx={{
+                  color: "rgba(255,255,255,0.7)",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  mb: 1.5,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                }}
+              >
+                Position
+              </Typography>
+
+              {/* X Position */}
+              <Box sx={{ mb: 2 }}>
+                <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}>
+                  <Typography sx={{ color: "rgba(255,255,255,0.9)", fontSize: 12, fontWeight: 600 }}>
+                    X:
+                  </Typography>
+                  <Typography sx={{ color: "#10b981", fontSize: 12, fontWeight: 700 }}>
+                    {offsetX}
+                  </Typography>
+                </Box>
+                <Slider
+                  value={offsetX}
+                  onChange={(_, val) => setOffsetX(val as number)}
+                  min={-50}
+                  max={50}
+                  step={1}
+                  sx={{
+                    color: "#10b981",
+                    "& .MuiSlider-thumb": {
+                      width: 16,
+                      height: 16,
+                      bgcolor: "#fff",
+                      border: "2px solid #10b981",
+                      "&:hover, &.Mui-focusVisible": {
+                        boxShadow: "0 0 0 8px rgba(16,185,129,0.16)",
+                      },
+                    },
+                    "& .MuiSlider-track": {
+                      bgcolor: "#10b981",
+                      border: "none",
+                    },
+                    "& .MuiSlider-rail": {
+                      bgcolor: "rgba(255,255,255,0.2)",
+                    },
+                  }}
+                />
+              </Box>
+
+              {/* Y Position */}
+              <Box>
+                <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}>
+                  <Typography sx={{ color: "rgba(255,255,255,0.9)", fontSize: 12, fontWeight: 600 }}>
+                    Y:
+                  </Typography>
+                  <Typography sx={{ color: "#10b981", fontSize: 12, fontWeight: 700 }}>
+                    {offsetY}
+                  </Typography>
+                </Box>
+                <Slider
+                  value={offsetY}
+                  onChange={(_, val) => setOffsetY(val as number)}
+                  min={-50}
+                  max={50}
+                  step={1}
+                  sx={{
+                    color: "#10b981",
+                    "& .MuiSlider-thumb": {
+                      width: 16,
+                      height: 16,
+                      bgcolor: "#fff",
+                      border: "2px solid #10b981",
+                      "&:hover, &.Mui-focusVisible": {
+                        boxShadow: "0 0 0 8px rgba(16,185,129,0.16)",
+                      },
+                    },
+                    "& .MuiSlider-track": {
+                      bgcolor: "#10b981",
+                      border: "none",
+                    },
+                    "& .MuiSlider-rail": {
+                      bgcolor: "rgba(255,255,255,0.2)",
+                    },
+                  }}
+                />
+              </Box>
+            </Box>
+
+            {/* Scale Control */}
+            <Box>
+              <Typography
+                sx={{
+                  color: "rgba(255,255,255,0.7)",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  mb: 1.5,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                }}
+              >
+                Scale
+              </Typography>
+              <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}>
+                <Typography sx={{ color: "rgba(255,255,255,0.9)", fontSize: 12, fontWeight: 600 }}>
+                  Size:
+                </Typography>
+                <Typography sx={{ color: "#10b981", fontSize: 12, fontWeight: 700 }}>
+                  {scale.toFixed(1)}x
+                </Typography>
+              </Box>
+              <Slider
+                value={scale}
+                onChange={(_, val) => setScale(val as number)}
+                min={0.5}
+                max={2.5}
+                step={0.1}
+                sx={{
+                  color: "#10b981",
+                  "& .MuiSlider-thumb": {
+                    width: 16,
+                    height: 16,
+                    bgcolor: "#fff",
+                    border: "2px solid #10b981",
+                    "&:hover, &.Mui-focusVisible": {
+                      boxShadow: "0 0 0 8px rgba(16,185,129,0.16)",
+                    },
+                  },
+                  "& .MuiSlider-track": {
+                    bgcolor: "#10b981",
+                    border: "none",
+                  },
+                  "& .MuiSlider-rail": {
+                    bgcolor: "rgba(255,255,255,0.2)",
+                  },
+                }}
+              />
+            </Box>
+          </Paper>
+        )}
+
         {/* Camera viewer */}
         <Box sx={{ flex: 1, position: "relative" }}>
           {capturedImage ? (
@@ -597,6 +864,7 @@ export default function VirtualTryOn({
                   width: "100%",
                   height: "100%",
                   pointerEvents: "none",
+                  transform: "scaleX(-1)",
                 }}
               />
 
