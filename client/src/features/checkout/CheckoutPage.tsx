@@ -874,6 +874,19 @@ export default function CheckoutPage() {
                                                             }}
                                                         >
                                                             × {item.quantity}
+                                                            <Box
+                                                                component="span"
+                                                                sx={{ color: "#BDBDBD", mx: 0.5 }}
+                                                            >
+                                                                ·
+                                                            </Box>
+                                                            {formatMoney(
+                                                                item.quantity > 0
+                                                                    ? (item.subtotal ?? item.price * item.quantity) /
+                                                                          item.quantity
+                                                                    : item.price,
+                                                            )}{" "}
+                                                            each
                                                         </Typography>
                                                         {itemPrescriptions[item.id] && (
                                                             <Typography
