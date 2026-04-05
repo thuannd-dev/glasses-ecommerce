@@ -255,12 +255,12 @@ export function SelectLensesDialog({
     const mainGrid = (
                 <Box
                     sx={{
+                        width: "100%",
                         minHeight: embeddedInPage
                             ? "min(680px, calc(100vh - 56px - 100px))"
                             : fullPage
                               ? "100vh"
                               : 520,
-                        width: "100%",
                         ...(embeddedInPage
                             ? lensEmbeddedGridSx
                             : {

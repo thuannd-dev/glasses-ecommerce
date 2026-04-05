@@ -7,7 +7,6 @@ export const LENS_CONFIGURATOR_MAX_WIDTH_PX = 1520;
 /** Grid: left summary ~44–46%, right task ~54–56% on md+; single column on mobile. */
 export const lensEmbeddedGridSx = {
     display: "grid",
-    width: "100%",
     boxSizing: "border-box" as const,
     alignItems: "start",
     gridTemplateColumns: {
