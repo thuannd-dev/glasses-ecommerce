@@ -6,7 +6,6 @@ import {
   Button,
   CircularProgress,
   Tooltip,
-  Slider,
   Paper,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
@@ -76,10 +75,10 @@ export default function VirtualTryOn({
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   
-  // Adjustable parameters
-  const [offsetX, setOffsetX] = useState(0);
-  const [offsetY, setOffsetY] = useState(-5);
-  const [scale, setScale] = useState(1.4);
+  // Fixed overlay parameters
+  const offsetX = 0;
+  const offsetY = -5;
+  const scale = 1.4;
 
   // Smoothing state with 3D rotation tracking
   const smoothRef = useRef({
@@ -580,13 +579,7 @@ export default function VirtualTryOn({
             </Box>
 
             {/* Camera & Face Detection Status */}
-            <Box
-              sx={{
-                mb: 3,
-                pb: 2.5,
-                borderBottom: "1px solid rgba(255,255,255,0.1)",
-              }}
-            >
+            <Box>
               <Typography
                 sx={{
                   color: "rgba(255,255,255,0.7)",
@@ -625,148 +618,6 @@ export default function VirtualTryOn({
                   </Button>
                 </Tooltip>
               </Box>
-            </Box>
-
-            {/* Position Controls */}
-            <Box sx={{ mb: 3 }}>
-              <Typography
-                sx={{
-                  color: "rgba(255,255,255,0.7)",
-                  fontSize: 11,
-                  fontWeight: 700,
-                  mb: 1.5,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.05em",
-                }}
-              >
-                Position
-              </Typography>
-
-              {/* X Position */}
-              <Box sx={{ mb: 2 }}>
-                <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}>
-                  <Typography sx={{ color: "rgba(255,255,255,0.9)", fontSize: 12, fontWeight: 600 }}>
-                    X:
-                  </Typography>
-                  <Typography sx={{ color: "#10b981", fontSize: 12, fontWeight: 700 }}>
-                    {offsetX}
-                  </Typography>
-                </Box>
-                <Slider
-                  value={offsetX}
-                  onChange={(_, val) => setOffsetX(val as number)}
-                  min={-50}
-                  max={50}
-                  step={1}
-                  sx={{
-                    color: "#10b981",
-                    "& .MuiSlider-thumb": {
-                      width: 16,
-                      height: 16,
-                      bgcolor: "#fff",
-                      border: "2px solid #10b981",
-                      "&:hover, &.Mui-focusVisible": {
-                        boxShadow: "0 0 0 8px rgba(16,185,129,0.16)",
-                      },
-                    },
-                    "& .MuiSlider-track": {
-                      bgcolor: "#10b981",
-                      border: "none",
-                    },
-                    "& .MuiSlider-rail": {
-                      bgcolor: "rgba(255,255,255,0.2)",
-                    },
-                  }}
-                />
-              </Box>
-
-              {/* Y Position */}
-              <Box>
-                <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}>
-                  <Typography sx={{ color: "rgba(255,255,255,0.9)", fontSize: 12, fontWeight: 600 }}>
-                    Y:
-                  </Typography>
-                  <Typography sx={{ color: "#10b981", fontSize: 12, fontWeight: 700 }}>
-                    {offsetY}
-                  </Typography>
-                </Box>
-                <Slider
-                  value={offsetY}
-                  onChange={(_, val) => setOffsetY(val as number)}
-                  min={-50}
-                  max={50}
-                  step={1}
-                  sx={{
-                    color: "#10b981",
-                    "& .MuiSlider-thumb": {
-                      width: 16,
-                      height: 16,
-                      bgcolor: "#fff",
-                      border: "2px solid #10b981",
-                      "&:hover, &.Mui-focusVisible": {
-                        boxShadow: "0 0 0 8px rgba(16,185,129,0.16)",
-                      },
-                    },
-                    "& .MuiSlider-track": {
-                      bgcolor: "#10b981",
-                      border: "none",
-                    },
-                    "& .MuiSlider-rail": {
-                      bgcolor: "rgba(255,255,255,0.2)",
-                    },
-                  }}
-                />
-              </Box>
-            </Box>
-
-            {/* Scale Control */}
-            <Box>
-              <Typography
-                sx={{
-                  color: "rgba(255,255,255,0.7)",
-                  fontSize: 11,
-                  fontWeight: 700,
-                  mb: 1.5,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.05em",
-                }}
-              >
-                Scale
-              </Typography>
-              <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}>
-                <Typography sx={{ color: "rgba(255,255,255,0.9)", fontSize: 12, fontWeight: 600 }}>
-                  Size:
-                </Typography>
-                <Typography sx={{ color: "#10b981", fontSize: 12, fontWeight: 700 }}>
-                  {scale.toFixed(1)}x
-                </Typography>
-              </Box>
-              <Slider
-                value={scale}
-                onChange={(_, val) => setScale(val as number)}
-                min={0.5}
-                max={2.5}
-                step={0.1}
-                sx={{
-                  color: "#10b981",
-                  "& .MuiSlider-thumb": {
-                    width: 16,
-                    height: 16,
-                    bgcolor: "#fff",
-                    border: "2px solid #10b981",
-                    "&:hover, &.Mui-focusVisible": {
-                      boxShadow: "0 0 0 8px rgba(16,185,129,0.16)",
-                    },
-                  },
-                  "& .MuiSlider-track": {
-                    bgcolor: "#10b981",
-                    border: "none",
-                  },
-                  "& .MuiSlider-rail": {
-                    bgcolor: "rgba(255,255,255,0.2)",
-                  },
-                }}
-              />
             </Box>
           </Paper>
         )}
