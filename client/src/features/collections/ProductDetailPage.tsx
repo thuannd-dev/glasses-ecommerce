@@ -90,21 +90,31 @@ export default function ProductDetailPage() {
         return () => window.cancelAnimationFrame(raf);
     }, [productId]);
 
-    // Find the first available modelUrl from all product + variant images
+    // Find the first available modelUrl - prioritize currentVariant, then fallback to product
     const modelUrl = useMemo(() => {
         if (!product) return null;
-        // Check product-level images first
+        
+        // Priority 1: Check currentVariant's images first
+        if (currentVariant?.images) {
+            for (const img of currentVariant.images) {
+                if (img.modelUrl) return img.modelUrl;
+            }
+        }
+        
+        // Priority 2: Fallback to product-level images
         for (const img of product.images) {
             if (img.modelUrl) return img.modelUrl;
         }
-        // Then check all variant images
+        
+        // Priority 3: Check other variants as last resort
         for (const v of product.variants ?? []) {
             for (const img of v.images) {
                 if (img.modelUrl) return img.modelUrl;
             }
         }
+        
         return null;
-    }, [product]);
+    }, [product, currentVariant]);
 
     if (isLoading) {
         const isManager = location.pathname.includes("/manager");
