@@ -49,7 +49,7 @@ export default function SelectLensesPage() {
         <>
             <SelectLensesDialog
                 open
-                fullPage
+                embeddedInPage
                 isPreOrder={isPreOrder}
                 onClose={handleDialogClose}
                 onLogoClick={() => navigate("/collections")}

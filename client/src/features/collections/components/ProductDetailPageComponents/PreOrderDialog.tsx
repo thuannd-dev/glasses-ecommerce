@@ -33,10 +33,8 @@ export function usePreOrderButton(cartAuth: CartAuthGateApi) {
           productVariantId: line.productVariantId,
           quantity: 1,
         });
-
-        toast.success("Pre-order added to your cart.");
       } catch {
-        // addItemAsync / useCart mutation already shows an error toast
+        // addItemAsync / useCart mutation shows success and error toasts
       }
     });
   };

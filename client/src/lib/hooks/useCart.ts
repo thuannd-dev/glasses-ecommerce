@@ -110,12 +110,40 @@ export function useCart() {
         toast.error(msg);
         throw new Error(msg);
       }
+
+      const { productVariantId, quantity, prescription } = parsed.data;
+
+      // Client-side merge: same variant → increase quantity on existing line (no BE change).
+      // Skip merge when prescription is present so callers can still target a new line if needed.
+      const skipMerge =
+        prescription !== undefined && prescription !== null;
+
+      if (!skipMerge) {
+        const cached = queryClient.getQueryData<CartDto>(["cart"]);
+        const existing = (cached?.items ?? []).find(
+          (it) => it.productVariantId === productVariantId,
+        );
+        if (existing) {
+          const newQty = existing.quantity + quantity;
+          // API returns a single CartItemDto (same as UpdateCartItem), not a full cart.
+          const res = await agent.put<CartItemDto>(
+            `/me/cart/items/${existing.id}`,
+            { quantity: newQty },
+          );
+          return res.data;
+        }
+      }
+
       // API returns the new line (CartItemDto), not a full cart.
-      const res = await agent.post<CartItemDto>("/me/cart/items", parsed.data);
+      const res = await agent.post<CartItemDto>("/me/cart/items", {
+        productVariantId,
+        quantity,
+      });
       return res.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cart"] });
+      toast.success("Added to cart.");
     },
     onError: () => {
       toast.error("Failed to add item to cart.");

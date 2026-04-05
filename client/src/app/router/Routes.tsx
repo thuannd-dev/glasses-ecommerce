@@ -210,15 +210,6 @@ export const router = createBrowserRouter([
   },
 
   // ======================
-  // SELECT LENSES (NO NAVBAR)
-  // ======================
-  {
-    path: "/product/:id/lenses",
-    element: lazyElement(<SelectLensesPage />),
-    errorElement: <RouteErrorBoundary />,
-  },
-
-  // ======================
   // APP (WITH NAVBAR)
   // ======================
   {
@@ -386,6 +377,10 @@ export const router = createBrowserRouter([
 
       // ✅ Product detail
       { path: "product/:id", element: lazyElement(<ProductDetailPage />) }, // /product/g1
+      {
+        path: "product/:id/lenses",
+        element: lazyElement(<SelectLensesPage />),
+      },
 
       // Other pages
       { path: "counter", element: <Counter /> },

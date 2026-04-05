@@ -61,6 +61,9 @@ function App() {
 
   const isHome = location.pathname === "/";
   const isCollectionsPage = location.pathname.startsWith("/collections");
+  const isProductLensPage = /\/product\/[^/]+\/lenses\/?$/.test(
+    location.pathname,
+  );
   const isDashboard = ["/sales", "/operations", "/manager", "/admin"].some(
     (p) => location.pathname.startsWith(p),
   );
@@ -152,7 +155,10 @@ function App() {
           <>
             <NavBar collapsed={navCollapsed} />
             <Box component="main" sx={{ flex: 1 }}>
-              <Container maxWidth="xl" sx={{ mt: isCollectionsPage ? 0 : 3 }}>
+              <Container
+                maxWidth="xl"
+                sx={{ mt: isCollectionsPage || isProductLensPage ? 0 : 3 }}
+              >
                 <Outlet />
               </Container>
             </Box>

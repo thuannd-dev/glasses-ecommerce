@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { observer, Observer } from "mobx-react-lite";
 import {
@@ -146,6 +146,19 @@ const NavBar = observer(function NavBar({
   const isLoggedIn = Boolean(currentUser?.id);
   const isHeroPage = location.pathname === "/";
   const [isPastHero, setIsPastHero] = useState(!isHeroPage);
+  const cartAnchorRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!uiStore.isCartOpen) return;
+    const onPointerDown = (event: MouseEvent) => {
+      const el = cartAnchorRef.current;
+      if (el && !el.contains(event.target as Node)) {
+        uiStore.closeCart();
+      }
+    };
+    document.addEventListener("mousedown", onPointerDown);
+    return () => document.removeEventListener("mousedown", onPointerDown);
+  }, [uiStore.isCartOpen, uiStore]);
 
   const menuItems = useMemo(() => {
     if (categories.length > 0) {
@@ -288,8 +301,8 @@ const NavBar = observer(function NavBar({
                 sx={{ mx: 0.75, borderColor: dividerColor }}
               />
 
-              {/* CART */}
-              <Box sx={{ position: "relative" }}>
+              {/* CART — ref wraps icon + dropdown so outside-click does not fire on the trigger */}
+              <Box ref={cartAnchorRef} sx={{ position: "relative" }}>
                 <IconButton
                   sx={ICON_BUTTON_SX}
                   onClick={() => {
