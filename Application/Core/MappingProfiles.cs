@@ -69,19 +69,19 @@ public sealed class MappingProfiles : Profile
                     .OrderBy(i => i.DisplayOrder)
                     .FirstOrDefault()))
             .ForMember(d => d.AvailableColors, o => o.MapFrom(s =>
-                s.Variants.Where(v => v.IsActive && v.Color != null)
+                s.Variants.Where(v => v.IsActive && !string.IsNullOrWhiteSpace(v.Color))
                     .Select(v => v.Color!)
                     .Distinct()
                     .OrderBy(c => c)
                     .ToList()))
             .ForMember(d => d.AvailableSizes, o => o.MapFrom(s =>
-                s.Variants.Where(v => v.IsActive && v.Size != null)
+                s.Variants.Where(v => v.IsActive && !string.IsNullOrWhiteSpace(v.Size))
                     .Select(v => v.Size!)
                     .Distinct()
                     .OrderBy(s => s)
                     .ToList()))
             .ForMember(d => d.AvailableMaterials, o => o.MapFrom(s =>
-                s.Variants.Where(v => v.IsActive && v.Material != null)
+                s.Variants.Where(v => v.IsActive && !string.IsNullOrWhiteSpace(v.Material))
                     .Select(v => v.Material!)
                     .Distinct()
                     .OrderBy(m => m)
