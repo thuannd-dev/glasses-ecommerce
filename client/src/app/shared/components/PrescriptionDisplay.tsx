@@ -1,4 +1,15 @@
-import { Box, Typography, Table, TableBody, TableCell, TableHead, TableRow } from "@mui/material";
+import {
+  alpha,
+  Box,
+  Typography,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  useTheme,
+} from "@mui/material";
 import type { PrescriptionData } from "../../../lib/types/prescription";
 import { EYE_LABELS } from "../../../lib/types/prescription";
 
@@ -10,28 +21,73 @@ type Props = {
   variant?: "inline" | "block";
 };
 
+const labelTypographySx = {
+  mb: 0.5,
+  fontSize: 12,
+  fontWeight: 700,
+  letterSpacing: "0.02em",
+} as const;
+
 export function PrescriptionDisplay({ prescription, variant = "block" }: Props) {
+  const theme = useTheme();
+
   if (!prescription?.details?.length) return null;
 
+  const cellBorder = `1px solid ${theme.palette.divider}`;
+  const cellSx = {
+    py: 0.85,
+    px: 1.25,
+    fontSize: 12,
+    lineHeight: 1.4,
+    border: cellBorder,
+    verticalAlign: "middle" as const,
+  };
+
+  const headCellSx = {
+    ...cellSx,
+    fontWeight: 700,
+    color: theme.palette.text.secondary,
+    bgcolor:
+      theme.palette.mode === "light"
+        ? theme.palette.grey[100]
+        : alpha(theme.palette.common.white, 0.08),
+  };
+
   const table = (
-    <Table size="small" sx={{ "& td, & th": { py: 0.5, px: 1, fontSize: 12 } }}>
+    <Table
+      size="small"
+      sx={{
+        width: "100%",
+        borderCollapse: "collapse",
+      }}
+    >
       <TableHead>
         <TableRow>
-          <TableCell sx={{ fontWeight: 700 }}></TableCell>
-          <TableCell sx={{ fontWeight: 700 }}>SPH</TableCell>
-          <TableCell sx={{ fontWeight: 700 }}>CYL</TableCell>
-          <TableCell sx={{ fontWeight: 700 }}>Axis</TableCell>
-          <TableCell sx={{ fontWeight: 700 }}>PD</TableCell>
+          <TableCell sx={headCellSx} component="th" scope="col"></TableCell>
+          <TableCell sx={headCellSx} component="th" scope="col" align="right">
+            SPH
+          </TableCell>
+          <TableCell sx={headCellSx} component="th" scope="col" align="right">
+            CYL
+          </TableCell>
+          <TableCell sx={headCellSx} component="th" scope="col" align="right">
+            Axis
+          </TableCell>
+          <TableCell sx={headCellSx} component="th" scope="col" align="right">
+            PD
+          </TableCell>
         </TableRow>
       </TableHead>
       <TableBody>
         {prescription.details.map((row) => (
           <TableRow key={row.eye}>
-            <TableCell sx={{ fontWeight: 600 }}>{EYE_LABELS[row.eye]}</TableCell>
-            <TableCell>{formatVal(row.sph)}</TableCell>
-            <TableCell>{formatVal(row.cyl)}</TableCell>
-            <TableCell>{formatVal(row.axis)}</TableCell>
-            <TableCell>{formatVal(row.pd)}</TableCell>
+            <TableCell sx={{ ...cellSx, fontWeight: 600, color: "text.primary" }}>
+              {EYE_LABELS[row.eye]}
+            </TableCell>
+            <TableCell sx={{ ...cellSx, textAlign: "right" }}>{formatVal(row.sph)}</TableCell>
+            <TableCell sx={{ ...cellSx, textAlign: "right" }}>{formatVal(row.cyl)}</TableCell>
+            <TableCell sx={{ ...cellSx, textAlign: "right" }}>{formatVal(row.axis)}</TableCell>
+            <TableCell sx={{ ...cellSx, textAlign: "right" }}>{formatVal(row.pd)}</TableCell>
           </TableRow>
         ))}
       </TableBody>
@@ -40,11 +96,29 @@ export function PrescriptionDisplay({ prescription, variant = "block" }: Props) 
 
   if (variant === "inline") {
     return (
-      <Box sx={{ mt: 0.5 }}>
-        <Typography fontSize={12} fontWeight={700} color="text.secondary" sx={{ mb: 0.25 }}>
+      <Box sx={{ mt: 0.75, maxWidth: 360 }}>
+        <Typography
+          component="span"
+          display="block"
+          color="text.secondary"
+          sx={labelTypographySx}
+        >
           Prescription detail
         </Typography>
-        {table}
+        <TableContainer
+          sx={{
+            border: cellBorder,
+            borderRadius: 1,
+            overflow: "hidden",
+            bgcolor: "background.paper",
+            boxShadow:
+              theme.palette.mode === "light"
+                ? `0 1px 2px ${alpha(theme.palette.common.black, 0.04)}`
+                : `0 1px 2px ${alpha(theme.palette.common.black, 0.2)}`,
+          }}
+        >
+          {table}
+        </TableContainer>
       </Box>
     );
   }
@@ -54,15 +128,25 @@ export function PrescriptionDisplay({ prescription, variant = "block" }: Props) 
       sx={{
         mt: 1,
         p: 1.5,
-        bgcolor: "rgba(17,24,39,0.04)",
         borderRadius: 1.5,
-        border: "1px solid rgba(17,24,39,0.08)",
+        border: 1,
+        borderColor: "divider",
+        bgcolor: theme.palette.mode === "light" ? alpha(theme.palette.common.black, 0.04) : alpha(theme.palette.common.white, 0.05),
       }}
     >
-      <Typography fontSize={12} fontWeight={700} color="text.secondary" sx={{ mb: 0.5 }}>
+      <Typography component="span" display="block" color="text.secondary" sx={labelTypographySx}>
         Prescription detail
       </Typography>
-      {table}
+      <TableContainer
+        sx={{
+          border: cellBorder,
+          borderRadius: 1,
+          overflow: "hidden",
+          bgcolor: "background.paper",
+        }}
+      >
+        {table}
+      </TableContainer>
     </Box>
   );
 }

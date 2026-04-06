@@ -105,9 +105,13 @@ export function useProductDetailPage(
         price: addToCartPayload.price,
       });
       const variantId = addToCartPayload.variantId;
+      // Must send `prescription` so useCart sets skipMerge: otherwise it finds the existing
+      // non-RX line (same variant), PUTs quantity+1 on that row, then we attach RX to that id —
+      // the non-prescription line “becomes” prescription with merged qty.
       const cart = await addItemAsync({
         productVariantId: variantId,
         quantity: 1,
+        prescription,
       });
 
       const item = await resolveLastCartItemForVariant(variantId, cart);
