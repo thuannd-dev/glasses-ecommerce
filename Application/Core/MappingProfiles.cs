@@ -67,7 +67,25 @@ public sealed class MappingProfiles : Profile
             .ForMember(d => d.FirstImage, o => o.MapFrom(s =>
                 s.Images.Where(i => !i.IsDeleted && i.ProductId != null)
                     .OrderBy(i => i.DisplayOrder)
-                    .FirstOrDefault()));
+                    .FirstOrDefault()))
+            .ForMember(d => d.AvailableColors, o => o.MapFrom(s =>
+                s.Variants.Where(v => v.IsActive && v.Color != null)
+                    .Select(v => v.Color!)
+                    .Distinct()
+                    .OrderBy(c => c)
+                    .ToList()))
+            .ForMember(d => d.AvailableSizes, o => o.MapFrom(s =>
+                s.Variants.Where(v => v.IsActive && v.Size != null)
+                    .Select(v => v.Size!)
+                    .Distinct()
+                    .OrderBy(s => s)
+                    .ToList()))
+            .ForMember(d => d.AvailableMaterials, o => o.MapFrom(s =>
+                s.Variants.Where(v => v.IsActive && v.Material != null)
+                    .Select(v => v.Material!)
+                    .Distinct()
+                    .OrderBy(m => m)
+                    .ToList()));
 
         // Cart mappings
         CreateMap<Cart, CartDto>()
