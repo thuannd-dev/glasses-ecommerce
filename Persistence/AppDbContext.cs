@@ -284,6 +284,9 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
             entity.HasIndex(e => e.Size)
                 .HasDatabaseName("IX_ProductVariant_Size");
 
+            entity.HasIndex(e => e.Material)
+                .HasDatabaseName("IX_ProductVariant_Material");
+
             entity.ToTable(t =>
             {
                 t.HasCheckConstraint("CK_ProductVariant_Price", "[Price] >= 0");

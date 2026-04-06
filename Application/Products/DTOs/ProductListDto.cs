@@ -16,4 +16,7 @@ public sealed class ProductListDto
     public int TotalQuantityAvailable { get; set; }
     public ProductImageDto? FirstImage { get; set; }
     public required ProductCategoryDto Category { get; set; }
+    public List<string> AvailableColors { get; set; } = [];
+    public List<string> AvailableSizes { get; set; } = [];
+    public List<string> AvailableMaterials { get; set; } = [];
 }
