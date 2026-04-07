@@ -277,7 +277,7 @@ public sealed class AzureVisionService(
         if (axisField == null)
         {
             // If AXIS not found inline, try vertical format: AXIS label on separate line
-            axisField = FindVerticalValue(scopedLines, AxisRegex, "AXIS", "AX", cancellationToken);
+            axisField = FindVerticalValue(scopedLines, AxisRegex, cancellationToken, "AXIS", "AX");
         }
         if (axisField != null)
             eyeData.AXIS = axisField;
@@ -286,7 +286,7 @@ public sealed class AzureVisionService(
         if (pdField == null)
         {
             // If PD not found inline, try vertical format: PD label on separate line
-            pdField = FindVerticalValue(scopedLines, PdRegex, "PD", "P.D", cancellationToken);
+            pdField = FindVerticalValue(scopedLines, PdRegex, cancellationToken, "PD", "P.D");
         }
         if (pdField != null)
             eyeData.PD = pdField;
