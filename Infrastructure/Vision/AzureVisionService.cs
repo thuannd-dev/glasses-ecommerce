@@ -304,6 +304,10 @@ public sealed class AzureVisionService(
         {
             cancellationToken.ThrowIfCancellationRequested();
 
+            // Skip lines that are eye labels (they contain no prescription values)
+            if (RightEyeLabelRegex.IsMatch(line.Text) || LeftEyeLabelRegex.IsMatch(line.Text))
+                continue;
+
             string normalizedLineText = NormalizeText(line.Text);
             MatchCollection matches = pattern.Matches(normalizedLineText);
             foreach (Match match in matches)
@@ -359,14 +363,30 @@ public sealed class AzureVisionService(
 
         if (eyeType == EyeType.Right)
         {
-            List<OcrReadLine> rightLines = lines.Where(l => RightEyeLabelRegex.IsMatch(l.Text)).ToList();
-            return rightLines.Count > 0 ? rightLines : lines;
+            int rightLabelIndex = lines.FindIndex(l => RightEyeLabelRegex.IsMatch(l.Text));
+            if (rightLabelIndex >= 0)
+            {
+                // Include label + next 10 lines to ensure we capture all values
+                return lines
+                    .Skip(rightLabelIndex)
+                    .Take(11)
+                    .ToList();
+            }
+            return lines;
         }
 
         if (eyeType == EyeType.Left)
         {
-            List<OcrReadLine> leftLines = lines.Where(l => LeftEyeLabelRegex.IsMatch(l.Text)).ToList();
-            return leftLines.Count > 0 ? leftLines : lines;
+            int leftLabelIndex = lines.FindIndex(l => LeftEyeLabelRegex.IsMatch(l.Text));
+            if (leftLabelIndex >= 0)
+            {
+                // Include label + next 10 lines to ensure we capture all values
+                return lines
+                    .Skip(leftLabelIndex)
+                    .Take(11)
+                    .ToList();
+            }
+            return lines;
         }
 
         return lines;
@@ -770,5 +790,36 @@ public sealed class AzureVisionService(
             return OcrConfidenceLevel.Medium;
         
         return OcrConfidenceLevel.Low;
+    }
+
+    /// <summary>
+    /// Check if text is a valid numeric value (excluding eye labels like O.D., O.S., OD, OS)
+    /// </summary>
+    private static bool IsValidNumericValue(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return false;
+
+        string upper = text.ToUpperInvariant().Trim();
+
+        // Exclude eye labels and related noise
+        if (upper == "OD" || upper == "O.D" || upper == "O.D." ||
+            upper == "OS" || upper == "O.S" || upper == "O.S." ||
+            upper == "RIGHT" || upper == "LEFT" || upper == "R" || upper == "L")
+            return false;
+
+        // Accept decimal or integer values
+        return decimal.TryParse(text, out _) || int.TryParse(text, out _);
+    }
+
+    /// <summary>
+    /// Extract numeric values from OCR lines, filtering out noise and labels
+    /// </summary>
+    private static List<string> ExtractNumericValues(List<OcrReadLine> lines)
+    {
+        return lines
+            .Select(l => NormalizeNumericToken(l.Text))
+            .Where(IsValidNumericValue)
+            .ToList();
     }
 }
