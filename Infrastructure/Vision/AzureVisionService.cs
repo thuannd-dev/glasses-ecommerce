@@ -17,10 +17,14 @@ public sealed class AzureVisionService(
     private const decimal MediumFieldConfidence = 0.80m;
     private const decimal MediumOverallConfidenceThreshold = 0.60m;
     private const decimal HighOverallConfidenceThreshold = 0.85m;
-    private const decimal SphWeight = 0.40m;
-    private const decimal CylWeight = 0.30m;
-    private const decimal AxisWeight = 0.20m;
-    private const decimal AddWeight = 0.10m;
+    // Per-eye weighted confidence: SPH+CYL+AXIS+ADD+PD = 1.00
+    private const decimal SphWeight  = 0.37m;
+    private const decimal CylWeight  = 0.27m;
+    private const decimal AxisWeight = 0.18m;
+    private const decimal AddWeight  = 0.08m;
+    private const decimal PdWeight   = 0.10m;
+    // Binocular PD weight when folding into result-level OverallConfidence
+    private const decimal BinocularPdResultWeight = 0.10m;
 
     private static readonly Regex RightEyeLabelRegex = new(
         @"\b(?:O\.?D\.?|RIGHT|R)\b",
@@ -117,6 +121,7 @@ public sealed class AzureVisionService(
                 RawText = rawText,
                 RightEye = parseResult.RightEye,
                 LeftEye = parseResult.LeftEye,
+                PD = parseResult.PD,
                 ConfidenceLevel = confidenceLevel,
                 OverallConfidence = parseResult.OverallConfidence,
                 ParsedSuccessfully = parseResult.ParsedSuccessfully,
@@ -134,6 +139,10 @@ public sealed class AzureVisionService(
     {
         public ExtractedPrescriptionValueDto? RightEye { get; set; }
         public ExtractedPrescriptionValueDto? LeftEye { get; set; }
+        /// <summary>
+        /// Binocular PD placed here; monocular split PD goes into each eye's .PD field instead.
+        /// </summary>
+        public OcrFieldDto? PD { get; set; }
         public decimal OverallConfidence { get; set; }
         public bool ParsedSuccessfully { get; set; }
         public List<string> Warnings { get; set; } = [];
@@ -167,6 +176,30 @@ public sealed class AzureVisionService(
 
         if (HasAnyValue(layoutEyes.LeftEye))
             result.LeftEye = layoutEyes.LeftEye;
+
+        // Fix for missing AXIS/PD: Merge with regex-based extraction (fallback)
+        // This handles cases where values are on separate lines and layout-based parsing fails
+        List<OcrReadLine> rightLinesForFallback = lines
+            .Where(l => RightEyeLabelRegex.IsMatch(l.Text))
+            .ToList();
+        
+        List<OcrReadLine> leftLinesForFallback = lines
+            .Where(l => LeftEyeLabelRegex.IsMatch(l.Text))
+            .ToList();
+
+        if (rightLinesForFallback.Count > 0 && result.RightEye != null)
+        {
+            ExtractedPrescriptionValueDto fallbackRight = ExtractEyeValues(rightLinesForFallback, EyeType.Right, cancellationToken);
+            result.RightEye.AXIS ??= fallbackRight.AXIS;
+            result.RightEye.PD ??= fallbackRight.PD;
+        }
+
+        if (leftLinesForFallback.Count > 0 && result.LeftEye != null)
+        {
+            ExtractedPrescriptionValueDto fallbackLeft = ExtractEyeValues(leftLinesForFallback, EyeType.Left, cancellationToken);
+            result.LeftEye.AXIS ??= fallbackLeft.AXIS;
+            result.LeftEye.PD ??= fallbackLeft.PD;
+        }
 
         List<OcrReadLine> rightLines = lines
             .Where(l => RightEyeLabelRegex.IsMatch(l.Text))
@@ -236,19 +269,87 @@ public sealed class AzureVisionService(
                 result.LeftEye = segmentEyes.LeftEye;
         }
 
+        // Fix for missing AXIS: When layout/regex parsing missed AXIS (e.g. vertical-format
+        // prescriptions where the header row is separate), extract AXIS per-eye by looking
+        // at each eye's scoped lines and using the positional fallback that was already there
+        // in ExtractEyeValues – but only apply it when AXIS is still null.
+        if (result.RightEye != null && result.RightEye.AXIS == null)
+        {
+            List<OcrReadLine> rightScopedLines = GetEyeScopedLines(lines, EyeType.Right);
+            OcrFieldDto? axisFromVertical = FindVerticalValue(rightScopedLines, AxisRegex, cancellationToken, "AXIS", "AX");
+            if (axisFromVertical == null)
+                axisFromVertical = FindAxisFromPositionalLines(rightScopedLines);
+            result.RightEye.AXIS ??= axisFromVertical;
+        }
+
+        if (result.LeftEye != null && result.LeftEye.AXIS == null)
+        {
+            List<OcrReadLine> leftScopedLines = GetEyeScopedLines(lines, EyeType.Left);
+            OcrFieldDto? axisFromVertical = FindVerticalValue(leftScopedLines, AxisRegex, cancellationToken, "AXIS", "AX");
+            if (axisFromVertical == null)
+                axisFromVertical = FindAxisFromPositionalLines(leftScopedLines);
+            result.LeftEye.AXIS ??= axisFromVertical;
+        }
+
+        // PD parsing: try vertical layout first (label on one line, value on next),
+        // then fall back to inline regex.
+        OcrFieldDto? globalPdField = FindVerticalValue(lines, PdRegex, cancellationToken, "PD", "P.D");
+        globalPdField ??= FindBestField(lines, PdRegex, cancellationToken, "PD");
+
+        if (globalPdField != null)
+        {
+            string pdValue = globalPdField.Value ?? string.Empty;
+
+            if (pdValue.Contains('/'))
+            {
+                // Monocular split PD e.g. "31/30" → OD gets first part, OS gets second.
+                string[] parts = pdValue.Split('/', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+                if (parts.Length == 2)
+                {
+                    OcrFieldDto rightPd = new OcrFieldDto { Value = parts[0], Confidence = globalPdField.Confidence, IsExtracted = true };
+                    OcrFieldDto leftPd  = new OcrFieldDto { Value = parts[1], Confidence = globalPdField.Confidence, IsExtracted = true };
+
+                    if (result.RightEye != null) result.RightEye.PD ??= rightPd;
+                    if (result.LeftEye  != null) result.LeftEye.PD  ??= leftPd;
+                }
+            }
+            else
+            {
+                // Binocular PD (e.g. "61") → top-level only; do NOT duplicate into each eye.
+                result.PD ??= globalPdField;
+            }
+        }
+
         ValidateEyeValues(result.RightEye, "Right", result.Warnings);
         ValidateEyeValues(result.LeftEye, "Left", result.Warnings);
 
         // Calculate overall confidence
-        List<decimal> confidences = [];
+        // Eye-level: average of right and left weighted confidences.
+        // Binocular PD is a separate measurement; fold it in with a small weight
+        // so a successfully-parsed PD boosts the overall score slightly.
+        List<decimal> eyeConfidences = [];
 
         if (HasAnyValue(result.RightEye) && result.RightEye != null)
-            confidences.Add(result.RightEye.OverallConfidence);
+            eyeConfidences.Add(result.RightEye.OverallConfidence);
 
         if (HasAnyValue(result.LeftEye) && result.LeftEye != null)
-            confidences.Add(result.LeftEye.OverallConfidence);
+            eyeConfidences.Add(result.LeftEye.OverallConfidence);
 
-        result.OverallConfidence = confidences.Any() ? confidences.Average() : 0;
+        decimal eyeAverage = eyeConfidences.Any() ? eyeConfidences.Average() : 0m;
+
+        if (result.PD?.IsExtracted == true)
+        {
+            // Binocular PD found: blend its confidence into the result using BinocularPdResultWeight.
+            // eye portion shrinks proportionally so total still stays in [0,1].
+            decimal pdConfidence = result.PD.Confidence;
+            result.OverallConfidence = (eyeAverage * (1m - BinocularPdResultWeight))
+                                     + (pdConfidence * BinocularPdResultWeight);
+        }
+        else
+        {
+            result.OverallConfidence = eyeAverage;
+        }
+
         result.ParsedSuccessfully = result.OverallConfidence >= MediumOverallConfidenceThreshold;
 
         return result;
@@ -294,6 +395,29 @@ public sealed class AzureVisionService(
         OcrFieldDto? addField = FindBestField(scopedLines, AddRegex, cancellationToken, "ADD", "ADDITION");
         if (addField != null)
             eyeData.ADD = addField;
+
+        // Positional mapping fallback: For vertical layouts without labels
+        // Extract numeric values in order and map positionally (SPH, CYL, AXIS)
+        List<string> numericValues = scopedLines
+            .Select(l => NormalizeNumericToken(l.Text))
+            .Where(IsValidNumericValue)
+            .ToList();
+
+        if (numericValues.Count >= 3)
+        {
+            decimal averageConfidence = scopedLines.Average(l => l.Confidence);
+            
+            eyeData.SPH ??= CreateField(numericValues[0], averageConfidence);
+            eyeData.CYL ??= CreateField(numericValues[1], averageConfidence);
+            
+            // For AXIS, prefer integer values between 1-180
+            string? axisValue = numericValues
+                .Skip(2)
+                .FirstOrDefault(v => int.TryParse(v, out int axis) && axis >= 1 && axis <= 180);
+            
+            if (axisValue != null)
+                eyeData.AXIS ??= CreateField(axisValue, averageConfidence);
+        }
 
         // Calculate overall confidence for this eye
         eyeData.OverallConfidence = ComputeWeightedConfidence(eyeData);
@@ -735,16 +859,19 @@ public sealed class AzureVisionService(
 
     private static decimal ComputeWeightedConfidence(ExtractedPrescriptionValueDto eyeData)
     {
-        decimal sphConfidence = eyeData.SPH?.Confidence ?? 0m;
-        decimal cylConfidence = eyeData.CYL?.Confidence ?? 0m;
+        decimal sphConfidence  = eyeData.SPH?.Confidence  ?? 0m;
+        decimal cylConfidence  = eyeData.CYL?.Confidence  ?? 0m;
         decimal axisConfidence = eyeData.AXIS?.Confidence ?? 0m;
-        decimal addConfidence = eyeData.ADD?.Confidence ?? 0m;
+        decimal addConfidence  = eyeData.ADD?.Confidence  ?? 0m;
+        // Monocular per-eye PD (only set when prescription uses split format, e.g. "31/30")
+        decimal pdConfidence   = eyeData.PD?.Confidence   ?? 0m;
 
         return
-            (sphConfidence * SphWeight) +
-            (cylConfidence * CylWeight) +
+            (sphConfidence  * SphWeight)  +
+            (cylConfidence  * CylWeight)  +
             (axisConfidence * AxisWeight) +
-            (addConfidence * AddWeight);
+            (addConfidence  * AddWeight)  +
+            (pdConfidence   * PdWeight);
     }
 
     private static (decimal CenterX, decimal CenterY) GetLineCenter(IReadOnlyList<ImagePoint> polygon)
@@ -847,6 +974,16 @@ public sealed class AzureVisionService(
         return isSingleValid;
     }
 
+    private static OcrFieldDto CreateField(string value, decimal confidence)
+    {
+        return new OcrFieldDto
+        {
+            Value = value,
+            Confidence = Math.Clamp(confidence, 0m, 1m),
+            IsExtracted = true
+        };
+    }
+
     private OcrConfidenceLevel DetermineConfidenceLevel(PrescriptionParseResult parseResult)
     {
         decimal confidence = parseResult.OverallConfidence;
@@ -892,5 +1029,52 @@ public sealed class AzureVisionService(
             .Select(l => NormalizeNumericToken(l.Text))
             .Where(IsValidNumericValue)
             .ToList();
+    }
+
+    /// <summary>
+    /// Fallback: find AXIS from positional numeric lines within the already-scoped eye lines.
+    /// Used when the AXIS header is shared (e.g. a single "AXIS" column header at the top of
+    /// the table), so FindVerticalValue would wrongly pick the right-eye axis for the left eye.
+    /// Looks for the first integer in range [1,180] that appears on a line after the eye label,
+    /// AND is preceded by at least two decimal values (SPH, CYL) in the same or prior lines.
+    /// </summary>
+    private static OcrFieldDto? FindAxisFromPositionalLines(List<OcrReadLine> scopedLines)
+    {
+        // Collect numeric tokens from scoped eye lines (skip the eye-label line itself)
+        List<string> numericTokens = scopedLines
+            .Where(l => !RightEyeLabelRegex.IsMatch(l.Text) && !LeftEyeLabelRegex.IsMatch(l.Text))
+            .SelectMany(l => NumericTokenRegex.Matches(NormalizeText(l.Text)).Cast<Match>())
+            .Select(m => NormalizeNumericToken(m.Value))
+            .Where(IsValidNumericValue)
+            .ToList();
+
+        // Skip SPH and CYL (first two decimal tokens) and look for an integer axis value
+        int decimalCount = 0;
+        foreach (string token in numericTokens)
+        {
+            if (token.Contains('.'))
+            {
+                decimalCount++;
+                continue;
+            }
+
+            if (decimalCount >= 2 &&
+                int.TryParse(token, out int axisCandidate) &&
+                axisCandidate >= 1 && axisCandidate <= 180)
+            {
+                decimal confidence = scopedLines.Count > 0
+                    ? scopedLines.Average(l => l.Confidence)
+                    : MediumFieldConfidence;
+
+                return new OcrFieldDto
+                {
+                    Value = token,
+                    Confidence = Math.Clamp(confidence, 0m, 1m),
+                    IsExtracted = true
+                };
+            }
+        }
+
+        return null;
     }
 }

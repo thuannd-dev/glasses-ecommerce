@@ -52,6 +52,13 @@ public sealed class PrescriptionOcrResultDto
     public ExtractedPrescriptionValueDto? LeftEye { get; set; }
 
     /// <summary>
+    /// Pupillary Distance (PD) — shared across both eyes.
+    /// Binocular PD (e.g. "61") is stored here.
+    /// Monocular split PD (e.g. "31/30") is split: RightEye.PD = 31, LeftEye.PD = 30.
+    /// </summary>
+    public OcrFieldDto? PD { get; set; }
+
+    /// <summary>
     /// Overall confidence level
     /// </summary>
     public OcrConfidenceLevel ConfidenceLevel { get; set; }
