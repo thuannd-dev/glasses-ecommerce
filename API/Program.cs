@@ -95,6 +95,7 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.Configure<VnpaySettings>(builder.Configuration.GetSection("VnPay"));
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.Configure<GHNSettings>(builder.Configuration.GetSection("GHN"));
+builder.Services.Configure<VisionSettings>(builder.Configuration.GetSection("Vision"));
 
 /*
     Register auto mapper and specify where the assembly - [kết quả biên dịch (compile) của project]
