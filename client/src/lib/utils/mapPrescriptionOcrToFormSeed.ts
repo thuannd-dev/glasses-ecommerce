@@ -37,10 +37,12 @@ function parseAxisField(field?: { isExtracted?: boolean; value?: string | null }
     return a;
 }
 
+/** PD is often in 0.5 mm steps; keep half-mm precision (do not round to whole mm). */
 function parsePdToken(raw: string): string {
     const n = parseFloat(raw.replace(",", ".").trim());
     if (!Number.isFinite(n)) return "";
-    return String(Math.round(n));
+    const halfMm = Math.round(n * 2) / 2;
+    return Number.isInteger(halfMm) ? String(halfMm) : halfMm.toFixed(1);
 }
 
 /**

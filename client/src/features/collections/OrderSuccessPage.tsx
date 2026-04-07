@@ -507,7 +507,7 @@ export default function OrderSuccessPage() {
                         <Box
                           component="img"
                           src={item.imageUrl}
-                          alt=""
+                          alt={item.productName ? `${item.productName} thumbnail` : "Product thumbnail"}
                           sx={{ width: "100%", height: "100%", objectFit: "cover" }}
                         />
                       ) : null}

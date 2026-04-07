@@ -2,6 +2,7 @@ import CheckIcon from "@mui/icons-material/Check";
 import { Box, Typography } from "@mui/material";
 import { Fragment } from "react";
 
+import { clampLensProgressStepIndex } from "./lensFlowSteps";
 import { LENS_FLOW_ACCENT, LENS_FLOW_ON_ACCENT } from "./lensFlowTheme";
 
 const TRACK = "rgba(17,24,39,0.1)";
@@ -25,6 +26,7 @@ function getGridTemplateColumns(stepCount: number): string {
 /** Node/track columns are fixed so connector always meets circle edges. */
 export function LuxuryLensProgressCircles({ steps, currentStepIndex, id }: Props) {
     const gridTemplateColumns = getGridTemplateColumns(steps.length);
+    const safeStepIndex = clampLensProgressStepIndex(currentStepIndex, steps.length);
 
     return (
         <Box
@@ -43,8 +45,8 @@ export function LuxuryLensProgressCircles({ steps, currentStepIndex, id }: Props
                 }}
             >
                 {steps.map((label, i) => {
-                    const done = i < currentStepIndex;
-                    const active = i === currentStepIndex;
+                    const done = i < safeStepIndex;
+                    const active = i === safeStepIndex;
                     const nodeCol = i * 2 + 1;
                     const trackCol = i * 2 + 2;
                     return (

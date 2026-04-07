@@ -17,9 +17,8 @@ export function useUploadImage() {
         mutationFn: async (file: File): Promise<ImageUploadResult> => {
             const form = new FormData();
             form.append("file", file);
-            const res = await agent.post<ImageUploadResult>("/uploads/image", form, {
-                headers: { "Content-Type": "multipart/form-data" },
-            });
+            // Let the runtime set multipart boundary; a bare "multipart/form-data" breaks ASP.NET parsing.
+            const res = await agent.post<ImageUploadResult>("/uploads/image", form);
             return res.data;
         },
     });

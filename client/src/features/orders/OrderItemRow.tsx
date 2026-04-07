@@ -5,6 +5,7 @@ import { PrescriptionDisplay } from "../../app/shared/components/PrescriptionDis
 import { getOrderItemImage } from "./orderImageCache";
 import { getOrderPrescription } from "./orderPrescriptionCache";
 import type { PrescriptionData } from "../../lib/types/prescription";
+import { getTrustedPrescriptionImageUrl } from "../../lib/utils/getTrustedPrescriptionImageUrl";
 
 function getItemPrice(item: {
   totalPrice?: number;
@@ -76,6 +77,9 @@ export function OrderItemRow({
 
   const prescription =
     prescriptionFromProps ?? (orderId && item.id ? getOrderPrescription(orderId, item.id) : undefined);
+  const trustedPrescriptionImageUrl = getTrustedPrescriptionImageUrl(
+    prescription?.imageUrl
+  );
 
   const thumbSize = compact ? 40 : 56;
 
@@ -149,11 +153,11 @@ export function OrderItemRow({
         {prescription &&
           (showPrescriptionDetails ? (
             <Box sx={{ mt: 0.5 }}>
-              {prescription.imageUrl ? (
+              {trustedPrescriptionImageUrl ? (
                 <Box sx={{ mb: 0.75 }}>
                   <Typography
                     component="a"
-                    href={prescription.imageUrl}
+                    href={trustedPrescriptionImageUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     fontSize={12}

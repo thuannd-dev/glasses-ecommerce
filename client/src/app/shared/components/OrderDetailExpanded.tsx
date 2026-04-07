@@ -16,6 +16,7 @@ import type {
   StaffOrderDetailDto,
   StaffOrderShippingAddressDto,
 } from "../../../lib/types/staffOrders";
+import { getTrustedPrescriptionImageUrl } from "../../../lib/utils/getTrustedPrescriptionImageUrl";
 
 const TOKENS = {
   bgTint: "#FAFAF8",
@@ -324,7 +325,10 @@ export function OrderDetailExpanded({ detail, onProcessOrderClick, showProcessBu
             // Find the prescription for this item
             const prescription = detail.prescriptions?.find((rx) => rx.id === item.prescriptionId);
             const isVerified = prescription?.isVerified === true;
-            
+            const trustedPrescriptionImageUrl = getTrustedPrescriptionImageUrl(
+              prescription?.imageUrl
+            );
+
             return (
               <Box key={item.id}>
                 {idx > 0 && <Divider sx={{ borderColor: TOKENS.divider }} />}
@@ -407,7 +411,7 @@ export function OrderDetailExpanded({ detail, onProcessOrderClick, showProcessBu
                         </Box>
                       )}
                     </Box>
-                    {prescription.imageUrl ? (
+                    {trustedPrescriptionImageUrl ? (
                       <Box
                         sx={{
                           mb: 1.5,
@@ -423,7 +427,7 @@ export function OrderDetailExpanded({ detail, onProcessOrderClick, showProcessBu
                       >
                         <Box
                           component="img"
-                          src={prescription.imageUrl}
+                          src={trustedPrescriptionImageUrl}
                           alt="Uploaded prescription"
                           sx={{
                             width: 72,
@@ -442,7 +446,7 @@ export function OrderDetailExpanded({ detail, onProcessOrderClick, showProcessBu
                             size="small"
                             variant="text"
                             component="a"
-                            href={prescription.imageUrl}
+                            href={trustedPrescriptionImageUrl}
                             target="_blank"
                             rel="noopener noreferrer"
                             sx={{

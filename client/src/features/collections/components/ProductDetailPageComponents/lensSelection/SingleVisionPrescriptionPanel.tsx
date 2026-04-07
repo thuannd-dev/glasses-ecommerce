@@ -75,6 +75,8 @@ export function SingleVisionPrescriptionPanel({
         async (files: FileList | null) => {
             const file = files?.[0];
             if (!file) return;
+            setUploadedImageUrl(null);
+            setUploadedPublicId(null);
             if (!file.type.startsWith("image/")) {
                 toast.error("Please choose an image file (JPG, PNG, or HEIC).");
                 return;
