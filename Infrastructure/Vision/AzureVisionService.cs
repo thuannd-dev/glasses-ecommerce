@@ -385,8 +385,9 @@ public sealed class AzureVisionService(
             }
         }
 
-        ValidateEyeValues(result.RightEye, "Right", result.Warnings);
-        ValidateEyeValues(result.LeftEye, "Left", result.Warnings);
+        PrescriptionValidator.ValidateEyeValues(result.RightEye, "Right", result.Warnings);
+        PrescriptionValidator.ValidateEyeValues(result.LeftEye, "Left", result.Warnings);
+        PrescriptionValidator.ValidateGlobalPd(result.PD, result.Warnings);
 
         // Calculate overall confidence
         // Eye-level: average of right and left weighted confidences.
@@ -947,19 +948,8 @@ public sealed class AzureVisionService(
 
     private static decimal ComputeWeightedConfidence(ExtractedPrescriptionValueDto eyeData)
     {
-        decimal sphConfidence = eyeData.SPH?.Confidence ?? 0m;
-        decimal cylConfidence = eyeData.CYL?.Confidence ?? 0m;
-        decimal axisConfidence = eyeData.AXIS?.Confidence ?? 0m;
-        decimal addConfidence = eyeData.ADD?.Confidence ?? 0m;
-        // Monocular per-eye PD (only set when prescription uses split format, e.g. "31/30")
-        decimal pdConfidence = eyeData.PD?.Confidence ?? 0m;
-
-        return
-            (sphConfidence * SphWeight) +
-            (cylConfidence * CylWeight) +
-            (axisConfidence * AxisWeight) +
-            (addConfidence * AddWeight) +
-            (pdConfidence * PdWeight);
+        PrescriptionValidator.RecalculateEyeConfidence(eyeData);
+        return eyeData.OverallConfidence;
     }
 
     private static (decimal CenterX, decimal CenterY) GetLineCenter(IReadOnlyList<ImagePoint> polygon)
@@ -973,57 +963,6 @@ public sealed class AzureVisionService(
         return (centerX, centerY);
     }
 
-    private static void ValidateEyeValues(
-        ExtractedPrescriptionValueDto? eye,
-        string eyeName,
-        List<string> warnings)
-    {
-        if (eye == null)
-            return;
-
-        if (eye.SPH?.IsExtracted == true &&
-            decimal.TryParse(eye.SPH.Value, out decimal sphValue) &&
-            (sphValue < -20m || sphValue > 20m))
-        {
-            warnings.Add($"{eyeName} eye: Invalid SPH value '{eye.SPH.Value}'.");
-        }
-
-        if (eye.SPH?.IsExtracted == true &&
-            decimal.TryParse(eye.SPH.Value, out decimal sphStepValue) &&
-            !IsQuarterStep(sphStepValue))
-        {
-            warnings.Add($"{eyeName} eye: SPH value '{eye.SPH.Value}' is not in 0.25 step.");
-        }
-
-        if (eye.CYL?.IsExtracted == true &&
-            decimal.TryParse(eye.CYL.Value, out decimal cylValue) &&
-            (cylValue < -6m || cylValue > 0m))
-        {
-            // Domain rule: CYL must be in [-6, 0]. Positive values are not used in this system
-            // and would be rejected at checkout/order validation — flag early.
-            warnings.Add($"{eyeName} eye: CYL value '{eye.CYL.Value}' is outside the valid domain range [-6, 0].");
-        }
-
-        if (eye.CYL?.IsExtracted == true &&
-            decimal.TryParse(eye.CYL.Value, out decimal cylStepValue) &&
-            !IsQuarterStep(cylStepValue))
-        {
-            warnings.Add($"{eyeName} eye: CYL value '{eye.CYL.Value}' is not in 0.25 step.");
-        }
-
-        if (eye.AXIS?.IsExtracted == true &&
-            int.TryParse(eye.AXIS.Value, out int axisValue) &&
-            (axisValue < 1 || axisValue > 180))
-        {
-            warnings.Add($"{eyeName} eye: Invalid AXIS value '{eye.AXIS.Value}'.");
-        }
-
-        if (eye.PD?.IsExtracted == true && !string.IsNullOrWhiteSpace(eye.PD.Value) && !IsValidPdValue(eye.PD.Value))
-        {
-            warnings.Add($"{eyeName} eye: Invalid PD value '{eye.PD.Value}'.");
-        }
-    }
-
     private static bool HasAnyValue(ExtractedPrescriptionValueDto? eye)
     {
         if (eye == null)
@@ -1034,34 +973,6 @@ public sealed class AzureVisionService(
                eye.AXIS?.IsExtracted == true ||
                eye.PD?.IsExtracted == true ||
                eye.ADD?.IsExtracted == true;
-    }
-
-    private static bool IsQuarterStep(decimal value)
-    {
-        decimal scaled = value * 4m;
-        decimal rounded = Math.Round(scaled, 0, MidpointRounding.AwayFromZero);
-        decimal delta = Math.Abs(scaled - rounded);
-        return delta < 0.0001m;
-    }
-
-    private static bool IsValidPdValue(string pdText)
-    {
-        if (string.IsNullOrWhiteSpace(pdText))
-            return false;
-
-        if (pdText.Contains('/'))
-        {
-            string[] parts = pdText.Split('/', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length != 2)
-                return false;
-
-            bool isLeftValid = decimal.TryParse(parts[0], out decimal leftPd) && leftPd >= 25m && leftPd <= 40m;
-            bool isRightValid = decimal.TryParse(parts[1], out decimal rightPd) && rightPd >= 25m && rightPd <= 40m;
-            return isLeftValid && isRightValid;
-        }
-
-        bool isSingleValid = decimal.TryParse(pdText, out decimal singlePd) && singlePd >= 50m && singlePd <= 75m;
-        return isSingleValid;
     }
 
     private static OcrFieldDto CreateField(string value, decimal confidence)

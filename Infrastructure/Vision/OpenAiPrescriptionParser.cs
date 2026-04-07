@@ -171,21 +171,6 @@ public sealed class OpenAiPrescriptionParser(
             }
         }
 
-        // ---- Confidence ----
-        string confidenceStr = GetSafeStringValue(root["confidence"]) ?? "low";
-        (OcrConfidenceLevel level, decimal score) = MapConfidence(confidenceStr);
-
-        // Recalculate weighted eye confidence and blend with LLM confidence
-        decimal rightScore = rightEye?.OverallConfidence ?? 0m;
-        decimal leftScore = leftEye?.OverallConfidence ?? 0m;
-
-        decimal eyeAvg = (rightEye is not null && leftEye is not null)
-            ? (rightScore + leftScore) / 2m
-            : Math.Max(rightScore, leftScore);
-
-        // Blend: 60% LLM confidence signal + 40% field-level confidence
-        decimal blended = (score * 0.6m) + (eyeAvg * 0.4m);
-
         // ---- Warnings ----
         List<string> warnings = [];
         JsonArray? warningsNode = root["warnings"]?.AsArray();
@@ -198,6 +183,28 @@ public sealed class OpenAiPrescriptionParser(
                     warnings.Add(wStr);
             }
         }
+
+        // ---- Confidence ----
+        string confidenceStr = GetSafeStringValue(root["confidence"]) ?? "low";
+        (OcrConfidenceLevel level, decimal score) = MapConfidence(confidenceStr);
+
+        PrescriptionValidator.ValidateEyeValues(rightEye, "Right", warnings);
+        PrescriptionValidator.ValidateEyeValues(leftEye, "Left", warnings);
+        PrescriptionValidator.ValidateGlobalPd(binocularPd, warnings);
+
+        PrescriptionValidator.RecalculateEyeConfidence(rightEye);
+        PrescriptionValidator.RecalculateEyeConfidence(leftEye);
+
+        // Recalculate weighted eye confidence and blend with LLM confidence
+        decimal rightScore = rightEye?.OverallConfidence ?? 0m;
+        decimal leftScore = leftEye?.OverallConfidence ?? 0m;
+
+        decimal eyeAvg = (rightEye is not null && leftEye is not null)
+            ? (rightScore + leftScore) / 2m
+            : Math.Max(rightScore, leftScore);
+
+        // Blend: 60% LLM confidence signal + 40% field-level confidence
+        decimal blended = (score * 0.6m) + (eyeAvg * 0.4m);
 
         bool parsedSuccessfully = blended >= 0.60m;
 
@@ -229,16 +236,7 @@ public sealed class OpenAiPrescriptionParser(
         eye.ADD  = ToField(GetSafeStringValue(node["add"]));
         eye.PD   = ToField(GetSafeStringValue(node["pd"]));
 
-        // Compute per-eye confidence: each extracted field contributes a weight.
-        // Weights mirror AzureVisionService constants: SPH 37%, CYL 27%, AXIS 18%, ADD 8%, PD 10%
-        decimal confidence =
-            (eye.SPH is not null ? 0.37m : 0m) +
-            (eye.CYL is not null ? 0.27m : 0m) +
-            (eye.AXIS is not null ? 0.18m : 0m) +
-            (eye.ADD is not null ? 0.08m : 0m) +
-            (eye.PD is not null ? 0.10m : 0m);
-
-        eye.OverallConfidence = confidence;
+        PrescriptionValidator.RecalculateEyeConfidence(eye);
 
         // Return null when no fields were found
         bool hasAny = eye.SPH is not null || eye.CYL is not null ||
