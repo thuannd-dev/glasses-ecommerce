@@ -6,6 +6,9 @@ namespace Application.Orders.Validators;
 
 public sealed class CheckoutValidator : AbstractValidator<Checkout.Command>
 {
+    private const string CloudinaryDomain = "res.cloudinary.com";
+    private const int MaxUrlLength = 2048;
+
     public CheckoutValidator()
     {
         RuleFor(x => x.Dto)
@@ -62,6 +65,19 @@ public sealed class CheckoutValidator : AbstractValidator<Checkout.Command>
 
                     prescriptionInfo.When(p => p.Prescription != null, () =>
                     {
+                        // ImageUrl is optional (user can input prescription manually),
+                        // but if provided, must be a valid Cloudinary URL
+                        prescriptionInfo.RuleFor(p => p.Prescription.ImageUrl)
+                            .MaximumLength(MaxUrlLength)
+                            .When(p => !string.IsNullOrWhiteSpace(p.Prescription.ImageUrl))
+                            .WithMessage($"ImageUrl must not exceed {MaxUrlLength} characters.")
+                            .Must(BeValidHttpUrl)
+                            .When(p => !string.IsNullOrWhiteSpace(p.Prescription.ImageUrl))
+                            .WithMessage("ImageUrl must be a valid HTTP or HTTPS URL.")
+                            .Must(BeFromCloudinary)
+                            .When(p => !string.IsNullOrWhiteSpace(p.Prescription.ImageUrl))
+                            .WithMessage($"ImageUrl must be from {CloudinaryDomain} domain.");
+
                         prescriptionInfo.RuleFor(p => p.Prescription.Details)
                             .NotEmpty().WithMessage("Each prescription must have at least one eye detail.");
 
@@ -111,5 +127,26 @@ public sealed class CheckoutValidator : AbstractValidator<Checkout.Command>
                 .When(x => x.Dto.CustomerNote != null);
 
         }); // end When Dto != null
+    }
+
+    private static bool BeValidHttpUrl(string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+            return true;
+
+        return Uri.TryCreate(url, UriKind.Absolute, out Uri? uriResult)
+            && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
+    }
+
+    private static bool BeFromCloudinary(string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+            return true;
+
+        if (!Uri.TryCreate(url, UriKind.Absolute, out Uri? uri))
+            return false;
+
+        return uri.Host.Equals(CloudinaryDomain, StringComparison.OrdinalIgnoreCase)
+            || uri.Host.EndsWith($".{CloudinaryDomain}", StringComparison.OrdinalIgnoreCase);
     }
 }
