@@ -18,12 +18,7 @@ public sealed class AzureVisionService(
     private const decimal MediumFieldConfidence = 0.80m;
     private const decimal MediumOverallConfidenceThreshold = 0.60m;
     private const decimal HighOverallConfidenceThreshold = 0.85m;
-    // Per-eye weighted confidence: SPH+CYL+AXIS+ADD+PD = 1.00
-    private const decimal SphWeight = 0.37m;
-    private const decimal CylWeight = 0.27m;
-    private const decimal AxisWeight = 0.18m;
-    private const decimal AddWeight = 0.08m;
-    private const decimal PdWeight = 0.10m;
+
     // Binocular PD weight when folding into result-level OverallConfidence
     private const decimal BinocularPdResultWeight = 0.10m;
 
@@ -87,7 +82,7 @@ public sealed class AzureVisionService(
                 cancellationToken: cancellationToken);
 
             // Extract all text lines
-            StringBuilder rawTextBuilder = new StringBuilder();
+            StringBuilder rawTextBuilder = new();
             List<OcrReadLine> allLines = [];
 
             if (result.Read?.Blocks != null)
@@ -266,13 +261,9 @@ public sealed class AzureVisionService(
             result.LeftEye.PD ??= fallbackLeft.PD;
         }
 
-        List<OcrReadLine> rightLines = lines
-            .Where(l => RightEyeLabelRegex.IsMatch(l.Text))
-            .ToList();
-
-        List<OcrReadLine> leftLines = lines
-            .Where(l => LeftEyeLabelRegex.IsMatch(l.Text))
-            .ToList();
+        // Reuse the already-filtered lists
+        List<OcrReadLine> rightLines = rightLinesForFallback;
+        List<OcrReadLine> leftLines = leftLinesForFallback;
 
         // Extract values for right eye (OD)
         if (rightLines.Count > 0 && !HasAnyValue(result.RightEye))
@@ -588,7 +579,7 @@ public sealed class AzureVisionService(
                         {
                             return new OcrFieldDto
                             {
-                                Value      = matchedValue,
+                                Value = matchedValue,
                                 Confidence = confidence,
                                 IsExtracted = true
                             };
@@ -602,7 +593,7 @@ public sealed class AzureVisionService(
                     {
                         return new OcrFieldDto
                         {
-                            Value      = normalizedValue,
+                            Value = normalizedValue,
                             Confidence = confidence,
                             IsExtracted = true
                         };
@@ -1021,16 +1012,7 @@ public sealed class AzureVisionService(
         return decimal.TryParse(text, out _) || int.TryParse(text, out _);
     }
 
-    /// <summary>
-    /// Extract numeric values from OCR lines, filtering out noise and labels
-    /// </summary>
-    private static List<string> ExtractNumericValues(List<OcrReadLine> lines)
-    {
-        return lines
-            .Select(l => NormalizeNumericToken(l.Text))
-            .Where(IsValidNumericValue)
-            .ToList();
-    }
+
 
     /// <summary>
     /// Fallback: find AXIS from positional numeric lines within the already-scoped eye lines.

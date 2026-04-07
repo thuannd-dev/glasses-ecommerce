@@ -2,13 +2,13 @@ using Application.Prescriptions.DTOs;
 
 namespace Infrastructure.Vision;
 
-public static class PrescriptionValidator
+internal static class PrescriptionValidator
 {
-    private const decimal SphWeight = 0.37m;
-    private const decimal CylWeight = 0.27m;
-    private const decimal AxisWeight = 0.18m;
-    private const decimal AddWeight = 0.08m;
-    private const decimal PdWeight = 0.10m;
+    internal const decimal SphWeight = 0.37m;
+    internal const decimal CylWeight = 0.27m;
+    internal const decimal AxisWeight = 0.18m;
+    internal const decimal AddWeight = 0.08m;
+    internal const decimal PdWeight = 0.10m;
 
     public static void ValidateEyeValues(
         ExtractedPrescriptionValueDto? eye,
@@ -19,35 +19,35 @@ public static class PrescriptionValidator
             return;
 
         if (eye.SPH?.IsExtracted == true &&
-            decimal.TryParse(eye.SPH.Value, out decimal sphValue) &&
-            (sphValue < -20m || sphValue > 20m))
+            decimal.TryParse(eye.SPH.Value, out decimal sphValue))
         {
-            eye.SPH.Confidence = 0m;
-            warnings.Add($"{eyeName} eye: Invalid SPH value '{eye.SPH.Value}'.");
-        }
-
-        if (eye.SPH?.IsExtracted == true &&
-            decimal.TryParse(eye.SPH.Value, out decimal sphStepValue) &&
-            !IsQuarterStep(sphStepValue))
-        {
-            eye.SPH.Confidence = 0m;
-            warnings.Add($"{eyeName} eye: SPH value '{eye.SPH.Value}' is not in 0.25 step.");
-        }
-
-        if (eye.CYL?.IsExtracted == true &&
-            decimal.TryParse(eye.CYL.Value, out decimal cylValue) &&
-            (cylValue < -6m || cylValue > 0m))
-        {
-            eye.CYL.Confidence = 0m;
-            warnings.Add($"{eyeName} eye: CYL value '{eye.CYL.Value}' is outside the valid domain range [-6, 0].");
+            if (sphValue < -20m || sphValue > 20m)
+            {
+                eye.SPH.Confidence = 0m;
+                warnings.Add($"{eyeName} eye: Invalid SPH value '{eye.SPH.Value}'.");
+            }
+            else if (!IsQuarterStep(sphValue))
+            {
+                eye.SPH.Confidence = 0m;
+                warnings.Add($"{eyeName} eye: SPH value '{eye.SPH.Value}' is not in 0.25 step.");
+            }
         }
 
         if (eye.CYL?.IsExtracted == true &&
-            decimal.TryParse(eye.CYL.Value, out decimal cylStepValue) &&
-            !IsQuarterStep(cylStepValue))
+            decimal.TryParse(eye.CYL.Value, out decimal cylValue))
         {
-            eye.CYL.Confidence = 0m;
-            warnings.Add($"{eyeName} eye: CYL value '{eye.CYL.Value}' is not in 0.25 step.");
+            if (cylValue < -6m || cylValue > 0m)
+            {
+                eye.CYL.Confidence = 0m;
+                // Domain rule: CYL must be in [-6, 0]. Positive values are not used in this system
+                // and would be rejected at checkout/order validation — flag early.
+                warnings.Add($"{eyeName} eye: CYL value '{eye.CYL.Value}' is outside the valid domain range [-6, 0].");
+            }
+            else if (!IsQuarterStep(cylValue))
+            {
+                eye.CYL.Confidence = 0m;
+                warnings.Add($"{eyeName} eye: CYL value '{eye.CYL.Value}' is not in 0.25 step.");
+            }
         }
 
         if (eye.AXIS?.IsExtracted == true &&
