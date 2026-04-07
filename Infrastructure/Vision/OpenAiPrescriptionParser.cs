@@ -65,9 +65,9 @@ public sealed class OpenAiPrescriptionParser(
         }
         """;
 
-    private const decimal HighConfidenceScore   = 0.92m;
+    private const decimal HighConfidenceScore = 0.92m;
     private const decimal MediumConfidenceScore = 0.72m;
-    private const decimal LowConfidenceScore    = 0.40m;
+    private const decimal LowConfidenceScore = 0.40m;
 
     private readonly OpenAiSettings _settings = options.Value;
 
@@ -118,6 +118,11 @@ public sealed class OpenAiPrescriptionParser(
         ClientResult<ChatCompletion> response =
             await chatClient.CompleteChatAsync(messages, chatOptions, ct);
 
+        if (response.Value.Content.Count == 0)
+        {
+            throw new InvalidOperationException("OpenAI returned no content in response.");
+        }
+
         string content = response.Value.Content[0].Text;
 
         return content;
@@ -141,11 +146,11 @@ public sealed class OpenAiPrescriptionParser(
 
         // ---- Eyes ----
         ExtractedPrescriptionValueDto? rightEye = MapEyeNode(root["rightEye"]);
-        ExtractedPrescriptionValueDto? leftEye  = MapEyeNode(root["leftEye"]);
+        ExtractedPrescriptionValueDto? leftEye = MapEyeNode(root["leftEye"]);
 
         // ---- Binocular PD ----
         OcrFieldDto? binocularPd = null;
-        string? pdValue = root["pd"]?.GetValue<string>();
+        string? pdValue = GetSafeStringValue(root["pd"]);
         if (!string.IsNullOrWhiteSpace(pdValue))
         {
             binocularPd = new OcrFieldDto { Value = pdValue, Confidence = 0.95m, IsExtracted = true };
@@ -159,7 +164,7 @@ public sealed class OpenAiPrescriptionParser(
                     if (rightEye is not null)
                         rightEye.PD ??= new OcrFieldDto { Value = parts[0], Confidence = 0.95m, IsExtracted = true };
                     if (leftEye is not null)
-                        leftEye.PD  ??= new OcrFieldDto { Value = parts[1], Confidence = 0.95m, IsExtracted = true };
+                        leftEye.PD ??= new OcrFieldDto { Value = parts[1], Confidence = 0.95m, IsExtracted = true };
 
                     binocularPd = null; // No top-level PD for split format
                 }
@@ -167,12 +172,12 @@ public sealed class OpenAiPrescriptionParser(
         }
 
         // ---- Confidence ----
-        string confidenceStr = root["confidence"]?.GetValue<string>() ?? "low";
+        string confidenceStr = GetSafeStringValue(root["confidence"]) ?? "low";
         (OcrConfidenceLevel level, decimal score) = MapConfidence(confidenceStr);
 
         // Recalculate weighted eye confidence and blend with LLM confidence
         decimal rightScore = rightEye?.OverallConfidence ?? 0m;
-        decimal leftScore  = leftEye?.OverallConfidence  ?? 0m;
+        decimal leftScore = leftEye?.OverallConfidence ?? 0m;
 
         decimal eyeAvg = (rightEye is not null && leftEye is not null)
             ? (rightScore + leftScore) / 2m
@@ -188,7 +193,7 @@ public sealed class OpenAiPrescriptionParser(
         {
             foreach (JsonNode? w in warningsNode)
             {
-                string? wStr = w?.GetValue<string>();
+                string? wStr = GetSafeStringValue(w);
                 if (!string.IsNullOrWhiteSpace(wStr))
                     warnings.Add(wStr);
             }
@@ -198,16 +203,16 @@ public sealed class OpenAiPrescriptionParser(
 
         return new PrescriptionOcrResultDto
         {
-            ImageUrl          = string.Empty,  // Set by command handler
-            PublicId          = string.Empty,  // Set by command handler
-            RawText           = rawText,
-            RightEye          = rightEye,
-            LeftEye           = leftEye,
-            PD                = binocularPd,
-            ConfidenceLevel   = level,
+            ImageUrl = string.Empty,  // Set by command handler
+            PublicId = string.Empty,  // Set by command handler
+            RawText = rawText,
+            RightEye = rightEye,
+            LeftEye = leftEye,
+            PD = binocularPd,
+            ConfidenceLevel = level,
             OverallConfidence = Math.Round(blended, 4),
             ParsedSuccessfully = parsedSuccessfully,
-            Warnings          = warnings
+            Warnings = warnings
         };
     }
 
@@ -218,20 +223,20 @@ public sealed class OpenAiPrescriptionParser(
 
         ExtractedPrescriptionValueDto eye = new();
 
-        eye.SPH  = ToField(node["sph"]?.GetValue<string>());
-        eye.CYL  = ToField(node["cyl"]?.GetValue<string>());
-        eye.AXIS = ToField(node["axis"]?.GetValue<string>());
-        eye.ADD  = ToField(node["add"]?.GetValue<string>());
-        eye.PD   = ToField(node["pd"]?.GetValue<string>());
+        eye.SPH  = ToField(GetSafeStringValue(node["sph"]));
+        eye.CYL  = ToField(GetSafeStringValue(node["cyl"]));
+        eye.AXIS = ToField(GetSafeStringValue(node["axis"]));
+        eye.ADD  = ToField(GetSafeStringValue(node["add"]));
+        eye.PD   = ToField(GetSafeStringValue(node["pd"]));
 
         // Compute per-eye confidence: each extracted field contributes a weight.
         // Weights mirror AzureVisionService constants: SPH 37%, CYL 27%, AXIS 18%, ADD 8%, PD 10%
         decimal confidence =
-            (eye.SPH  is not null ? 0.37m : 0m) +
-            (eye.CYL  is not null ? 0.27m : 0m) +
+            (eye.SPH is not null ? 0.37m : 0m) +
+            (eye.CYL is not null ? 0.27m : 0m) +
             (eye.AXIS is not null ? 0.18m : 0m) +
-            (eye.ADD  is not null ? 0.08m : 0m) +
-            (eye.PD   is not null ? 0.10m : 0m);
+            (eye.ADD is not null ? 0.08m : 0m) +
+            (eye.PD is not null ? 0.10m : 0m);
 
         eye.OverallConfidence = confidence;
 
@@ -242,6 +247,20 @@ public sealed class OpenAiPrescriptionParser(
         return hasAny ? eye : null;
     }
 
+    /// <summary>
+    /// Safely extracts a string from any <see cref="JsonNode"/> regardless of its underlying
+    /// JSON type (string, number, boolean). Prevents <see cref="InvalidOperationException"/>
+    /// when the LLM returns a numeric literal (e.g. 62) instead of a quoted string ("62").
+    /// </summary>
+    private static string? GetSafeStringValue(JsonNode? node)
+    {
+        if (node is null) return null;
+
+        // JsonValue covers strings, numbers, booleans — ToString() always produces a clean value.
+        // JsonObject / JsonArray are ignored (not a scalar value).
+        return node is JsonValue jv ? jv.ToString() : null;
+    }
+
     private static OcrFieldDto? ToField(string? value)
     {
         if (string.IsNullOrWhiteSpace(value))
@@ -249,7 +268,7 @@ public sealed class OpenAiPrescriptionParser(
 
         return new OcrFieldDto
         {
-            Value      = value.Trim(),
+            Value = value.Trim(),
             Confidence = 0.95m,  // LLM extracted — we trust it highly
             IsExtracted = true
         };
@@ -258,23 +277,23 @@ public sealed class OpenAiPrescriptionParser(
     private static (OcrConfidenceLevel Level, decimal Score) MapConfidence(string raw) =>
         raw.ToLowerInvariant() switch
         {
-            "high"   => (OcrConfidenceLevel.High,   HighConfidenceScore),
+            "high" => (OcrConfidenceLevel.High, HighConfidenceScore),
             "medium" => (OcrConfidenceLevel.Medium, MediumConfidenceScore),
-            _        => (OcrConfidenceLevel.Low,    LowConfidenceScore)
+            _ => (OcrConfidenceLevel.Low, LowConfidenceScore)
         };
 
     private static PrescriptionOcrResultDto EmptyFailureResult(List<string> warnings) =>
         new()
         {
-            ImageUrl           = string.Empty,
-            PublicId           = string.Empty,
-            RawText            = string.Empty,
-            RightEye           = null,
-            LeftEye            = null,
-            PD                 = null,
-            ConfidenceLevel    = OcrConfidenceLevel.Low,
-            OverallConfidence  = 0m,
+            ImageUrl = string.Empty,
+            PublicId = string.Empty,
+            RawText = string.Empty,
+            RightEye = null,
+            LeftEye = null,
+            PD = null,
+            ConfidenceLevel = OcrConfidenceLevel.Low,
+            OverallConfidence = 0m,
             ParsedSuccessfully = false,
-            Warnings           = warnings
+            Warnings = warnings
         };
 }

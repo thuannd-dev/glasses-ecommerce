@@ -538,7 +538,13 @@ public sealed class AzureVisionService(
 
     /// <summary>
     /// Find field value in vertical list format: label on one line, value on next line.
-    /// Example: "AXIS" on line N, "100" on line N+1
+    /// Example: "AXIS" on line N, "100" on line N+1.
+    /// <para>
+    /// The <paramref name="labelPattern"/> is applied to the candidate next-line text to validate
+    /// the extracted value — if the regex matches, the captured group 1 is used; otherwise the
+    /// raw normalised token is accepted only when it is a plain numeric value. This allows split
+    /// PD formats such as "31/30" to be captured correctly by <c>PdRegex</c>.
+    /// </para>
     /// </summary>
     private static OcrFieldDto? FindVerticalValue(
         List<OcrReadLine> lines,
@@ -563,22 +569,39 @@ public sealed class AzureVisionService(
                 {
                     string nextLine = NormalizeText(lines[j].Text);
 
-                    // Skip lines that are labels
+                    // Skip lines that are eye labels or repeated field headers
                     if (RightEyeLabelRegex.IsMatch(nextLine) ||
                         LeftEyeLabelRegex.IsMatch(nextLine) ||
                         labelKeywords.Any(kw => nextLine.Contains(kw, StringComparison.OrdinalIgnoreCase)))
                         continue;
 
-                    // Try to extract value using pattern
-                    string normalizedValue = NormalizeNumericToken(nextLine);
+                    decimal confidence = Math.Clamp((lines[i].Confidence + lines[j].Confidence) / 2, 0m, 1m);
 
-                    // Check if it's a valid numeric value
+                    // Primary: use labelPattern to validate and extract the value.
+                    // This handles structured values (e.g. split PD "31/30" matched by PdRegex).
+                    Match patternMatch = labelPattern.Match(nextLine);
+                    if (patternMatch.Success && patternMatch.Groups.Count >= 2)
+                    {
+                        string matchedValue = NormalizeNumericToken(patternMatch.Groups[1].Value);
+                        if (!string.IsNullOrWhiteSpace(matchedValue))
+                        {
+                            return new OcrFieldDto
+                            {
+                                Value      = matchedValue,
+                                Confidence = confidence,
+                                IsExtracted = true
+                            };
+                        }
+                    }
+
+                    // Fallback: accept a plain numeric token when the regex produced no match
+                    // (e.g. a bare "100" on the line after "AXIS").
+                    string normalizedValue = NormalizeNumericToken(nextLine);
                     if (IsValidNumericValue(normalizedValue))
                     {
-                        decimal confidence = Math.Clamp((lines[i].Confidence + lines[j].Confidence) / 2, 0m, 1m);
                         return new OcrFieldDto
                         {
-                            Value = normalizedValue,
+                            Value      = normalizedValue,
                             Confidence = confidence,
                             IsExtracted = true
                         };
@@ -974,9 +997,11 @@ public sealed class AzureVisionService(
 
         if (eye.CYL?.IsExtracted == true &&
             decimal.TryParse(eye.CYL.Value, out decimal cylValue) &&
-            (cylValue < -6m || cylValue > 6m))
+            (cylValue < -6m || cylValue > 0m))
         {
-            warnings.Add($"{eyeName} eye: Invalid CYL value '{eye.CYL.Value}'.");
+            // Domain rule: CYL must be in [-6, 0]. Positive values are not used in this system
+            // and would be rejected at checkout/order validation — flag early.
+            warnings.Add($"{eyeName} eye: CYL value '{eye.CYL.Value}' is outside the valid domain range [-6, 0].");
         }
 
         if (eye.CYL?.IsExtracted == true &&
