@@ -22,6 +22,9 @@ export type ChatbotProduct = {
     slug: string;
     description: string | null;
   };
+  availableColors: string[];
+  availableSizes: string[];
+  availableMaterials: string[];
 };
 
 type ProductsApiResponse = {
@@ -64,6 +67,9 @@ export function buildProductsJsonForPrompt(products: ChatbotProduct[]): string {
     category: p.category.name,
     image: p.firstImage?.imageUrl ?? "",
     detail_url: `/product/${p.id}`,
+    availableColors: p.availableColors ?? [],
+    availableSizes: p.availableSizes ?? [],
+    availableMaterials: p.availableMaterials ?? [],
   }));
   return JSON.stringify(simplified, null, 2);
 }
