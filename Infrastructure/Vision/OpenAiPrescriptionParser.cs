@@ -90,7 +90,7 @@ public sealed class OpenAiPrescriptionParser(
         catch (Exception ex)
         {
             logger.LogError(ex, "LLM prescription parsing failed.");
-            return EmptyFailureResult([$"LLM parsing error: {ex.Message}"]);
+            return EmptyFailureResult([$"LLM parsing error: {ex.Message}"], rawOcrText);
         }
     }
 
@@ -282,18 +282,20 @@ public sealed class OpenAiPrescriptionParser(
             _ => (OcrConfidenceLevel.Low, LowConfidenceScore)
         };
 
-    private static PrescriptionOcrResultDto EmptyFailureResult(List<string> warnings) =>
+    private static PrescriptionOcrResultDto EmptyFailureResult(
+        List<string> warnings,
+        string? rawOcrText = null) =>
         new()
         {
-            ImageUrl = string.Empty,
-            PublicId = string.Empty,
-            RawText = string.Empty,
-            RightEye = null,
-            LeftEye = null,
-            PD = null,
-            ConfidenceLevel = OcrConfidenceLevel.Low,
-            OverallConfidence = 0m,
+            ImageUrl           = string.Empty,
+            PublicId           = string.Empty,
+            RawText            = string.IsNullOrWhiteSpace(rawOcrText) ? string.Empty : rawOcrText,
+            RightEye           = null,
+            LeftEye            = null,
+            PD                 = null,
+            ConfidenceLevel    = OcrConfidenceLevel.Low,
+            OverallConfidence  = 0m,
             ParsedSuccessfully = false,
-            Warnings = warnings
+            Warnings           = warnings
         };
 }
