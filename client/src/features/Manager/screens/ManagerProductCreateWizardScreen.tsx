@@ -27,7 +27,7 @@ import {
   type CreateProductVariantDto,
   useManagerProducts,
 } from "../../../lib/hooks/useManagerProducts";
-import FrameDimensionsForm, { type FrameDimensions } from "../components/FrameDimensionsForm";
+import FrameDimensionsForm from "../components/FrameDimensionsForm";
 
 type WizardStepId = 0 | 1 | 2 | 3;
 
