@@ -8,6 +8,8 @@ public class Prescription
 
     public required Guid OrderId { get; set; }
 
+    public string? ImageUrl { get; set; }
+    
     public bool IsVerified { get; set; }
 
     public Guid? VerifiedBy { get; set; }

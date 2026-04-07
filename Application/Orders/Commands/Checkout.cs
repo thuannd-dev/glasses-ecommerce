@@ -374,6 +374,7 @@ public sealed class Checkout
                         {
                             OrderId = order.Id,
                             IsVerified = false,
+                            ImageUrl = prescriptionInfo.Prescription.ImageUrl
                         };
                         context.Prescriptions.Add(prescription);
 

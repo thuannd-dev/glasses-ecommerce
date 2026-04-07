@@ -7,5 +7,6 @@ public sealed class OrderPrescriptionDto
     public bool IsVerified { get; set; }
     public DateTime? VerifiedAt { get; set; }
     public string? VerificationNotes { get; set; }
+    public string? ImageUrl { get; set; }
     public List<PrescriptionDetailOutputDto> Details { get; set; } = [];
 }

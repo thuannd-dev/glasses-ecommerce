@@ -13,5 +13,6 @@ public sealed class MyPrescriptionDto
     public DateTime? VerifiedAt { get; set; }
     public string? VerificationNotes { get; set; }
     public DateTime CreatedAt { get; set; }
+    public string? ImageUrl { get; set; }
     public List<PrescriptionDetailOutputDto> Details { get; set; } = [];
 }

@@ -11,12 +11,16 @@ using Infrastructure.GHN;
 using Infrastructure.Payments;
 using Infrastructure.Photos;
 using Infrastructure.Security;
+using Infrastructure.Vision;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Persistence;
 using Scalar.AspNetCore;
+using Azure;
+using Azure.AI.Vision.ImageAnalysis;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -89,6 +93,7 @@ builder.Services.AddScoped<IUserAccessor, UserAccessor>();
 builder.Services.AddScoped<IPhotoService, PhotoService>();
 builder.Services.AddScoped<IVnPayService, VnPayService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IAzureVisionService, AzureVisionService>();
 builder.Services.AddScoped<DiscountCalculationService>();
 builder.Services.AddHttpClient<IGHNService, GHNService>();
 builder.Services.AddHttpContextAccessor();
@@ -96,6 +101,14 @@ builder.Services.Configure<VnpaySettings>(builder.Configuration.GetSection("VnPa
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.Configure<GHNSettings>(builder.Configuration.GetSection("GHN"));
 builder.Services.Configure<VisionSettings>(builder.Configuration.GetSection("Vision"));
+builder.Services.AddSingleton<ImageAnalysisClient>(serviceProvider =>
+{
+    IOptions<VisionSettings> visionOptions = serviceProvider.GetRequiredService<IOptions<VisionSettings>>();
+    VisionSettings visionSettings = visionOptions.Value;
+    return new ImageAnalysisClient(
+        new Uri(visionSettings.Endpoint),
+        new AzureKeyCredential(visionSettings.Key));
+});
 
 /*
     Register auto mapper and specify where the assembly - [kết quả biên dịch (compile) của project]

@@ -1,3 +1,5 @@
+using Application.Prescriptions.Commands;
+using Application.Prescriptions.DTOs;
 using Application.Uploads.Commands;
 using Application.Uploads.DTOs;
 using Microsoft.AspNetCore.Authorization;
@@ -48,6 +50,19 @@ public sealed class UploadsController : BaseApiController
             return BadRequest("File size exceeds the 10 MB limit.");
 
         return HandleResult(await Mediator.Send(new UploadGlb.Command { File = file }));
+    }
+
+
+    /// <summary>
+    /// Analyze a prescription image from Cloudinary URL using Azure AI Vision Read API.
+    /// Returns OCR results with parsed prescription values (SPH, CYL, AXIS, PD, ADD) 
+    /// and confidence scores for frontend to pre-fill the form.
+    /// Should be called AFTER uploading image via /api/uploads/image endpoint.
+    /// </summary>
+    [HttpPost("prescription/analyze-url")]
+    public async Task<ActionResult<PrescriptionOcrResultDto>> AnalyzePrescriptionFromUrl([FromBody] AnalyzePrescriptionFromUrl.Command command)
+    {
+        return HandleResult(await Mediator.Send(command));
     }
 }
 

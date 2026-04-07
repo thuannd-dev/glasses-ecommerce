@@ -17,5 +17,6 @@ public sealed class StaffPrescriptionDto
     public string? VerificationNotes { get; set; }
     public string? VerifiedByName { get; set; }
     public DateTime CreatedAt { get; set; }
+    public string? ImageUrl { get; set; }
     public List<PrescriptionDetailOutputDto> Details { get; set; } = [];
 }
