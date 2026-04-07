@@ -23,11 +23,11 @@ public sealed class AzureVisionService(
     private const decimal AddWeight = 0.10m;
 
     private static readonly Regex RightEyeLabelRegex = new(
-        @"\b(OD|RIGHT|R)\b",
+        @"\b(?:O\.?D\.?|RIGHT|R)\b",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     private static readonly Regex LeftEyeLabelRegex = new(
-        @"\b(OS|LEFT|L)\b",
+        @"\b(?:O\.?S\.?|LEFT|L)\b",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     private static readonly Regex SphRegex = new(
@@ -59,11 +59,11 @@ public sealed class AzureVisionService(
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     private static readonly Regex RightEyeSegmentRegex = new(
-        @"\b(?:OD|RIGHT|R)\b(?<values>.{0,120}?)(?=\b(?:OS|LEFT|L)\b|$)",
+        @"\b(?:O\.?D\.?|RIGHT|R)\b(?<values>.{0,120}?)(?=\b(?:O\.?S\.?|LEFT|L)\b|$)",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     private static readonly Regex LeftEyeSegmentRegex = new(
-        @"\b(?:OS|LEFT|L)\b(?<values>.{0,120}?)(?=\b(?:OD|RIGHT|R)\b|$)",
+        @"\b(?:O\.?S\.?|LEFT|L)\b(?<values>.{0,120}?)(?=\b(?:O\.?D\.?|RIGHT|R)\b|$)",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     private readonly VisionSettings _settings = settings.Value;
