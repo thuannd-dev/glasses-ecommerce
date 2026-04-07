@@ -27,6 +27,7 @@ import {
   type CreateProductVariantDto,
   useManagerProducts,
 } from "../../../lib/hooks/useManagerProducts";
+import FrameDimensionsForm from "../components/FrameDimensionsForm";
 
 type WizardStepId = 0 | 1 | 2 | 3;
 
@@ -416,9 +417,9 @@ export default function ManagerProductCreateWizardScreen() {
       if (v.price == null || Number.isNaN(v.price) || v.price < 0) errors.push(`Variant #${idx + 1}: Price must be >= 0`);
       if (v.compareAtPrice != null && v.compareAtPrice < v.price) errors.push(`Variant #${idx + 1}: Compare-at must be >= price`);
       if (v.frameWidth != null && v.frameWidth <= 0) errors.push(`Variant #${idx + 1}: Frame width must be > 0`);
-      if (v.lensWidth != null && v.lensWidth <= 0) errors.push(`Variant #${idx + 1}: Lens width must be > 0`);
-      if (v.bridgeWidth != null && v.bridgeWidth <= 0) errors.push(`Variant #${idx + 1}: Bridge width must be > 0`);
-      if (v.templeLength != null && v.templeLength <= 0) errors.push(`Variant #${idx + 1}: Temple length must be > 0`);
+      if (v.lensWidth != null && (v.lensWidth < 48 || v.lensWidth > 60)) errors.push(`Variant #${idx + 1}: Lens width must be 48-60 mm`);
+      if (v.bridgeWidth != null && (v.bridgeWidth < 14 || v.bridgeWidth > 24)) errors.push(`Variant #${idx + 1}: Bridge width must be 14-24 mm`);
+      if (v.templeLength != null && (v.templeLength < 135 || v.templeLength > 150)) errors.push(`Variant #${idx + 1}: Temple length must be 135-150 mm`);
       if (v.quantityAvailable < 0) errors.push(`Variant #${idx + 1}: Quantity must be >= 0`);
     });
 
@@ -1302,57 +1303,45 @@ export default function ManagerProductCreateWizardScreen() {
                     </div>
                   </div>
 
-                  <div className="mt-5 grid grid-cols-2 gap-4 md:grid-cols-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-zinc-700">Frame width</label>
+                  <div className="mt-5">
+                    <FrameDimensionsForm
+                      dimensions={{
+                        lensWidth: v.lensWidth ?? null,
+                        bridgeWidth: v.bridgeWidth ?? null,
+                        templeLength: v.templeLength ?? null,
+                      }}
+                      onChange={(dimensions) => {
+                        setNewVariants((prev) =>
+                          prev.map((x) =>
+                            x._tempId === v._tempId
+                              ? {
+                                  ...x,
+                                  lensWidth: dimensions.lensWidth,
+                                  bridgeWidth: dimensions.bridgeWidth,
+                                  templeLength: dimensions.templeLength,
+                                }
+                              : x
+                          )
+                        );
+                        setIsDirty((prev) => ({ ...prev, 2: true }));
+                      }}
+                      onSizeChange={(newSize) => {
+                        setNewVariants((prev) =>
+                          prev.map((x) =>
+                            x._tempId === v._tempId ? { ...x, size: newSize } : x
+                          )
+                        );
+                        setIsDirty((prev) => ({ ...prev, 2: true }));
+                      }}
+                    />
+                    <div className="mt-4 space-y-2">
+                      <label className="text-sm font-medium text-zinc-700">Frame width (optional)</label>
                       <input
                         type="number"
                         value={v.frameWidth ?? ""}
                         onChange={(e) => {
                           const value = e.target.value === "" ? null : Number(e.target.value);
                           setNewVariants((prev) => prev.map((x) => (x._tempId === v._tempId ? { ...x, frameWidth: value } : x)));
-                          setIsDirty((prev) => ({ ...prev, 2: true }));
-                        }}
-                        className="w-full px-4 py-2 rounded-lg border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
-                        placeholder="mm"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-zinc-700">Lens width</label>
-                      <input
-                        type="number"
-                        value={v.lensWidth ?? ""}
-                        onChange={(e) => {
-                          const value = e.target.value === "" ? null : Number(e.target.value);
-                          setNewVariants((prev) => prev.map((x) => (x._tempId === v._tempId ? { ...x, lensWidth: value } : x)));
-                          setIsDirty((prev) => ({ ...prev, 2: true }));
-                        }}
-                        className="w-full px-4 py-2 rounded-lg border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
-                        placeholder="mm"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-zinc-700">Bridge width</label>
-                      <input
-                        type="number"
-                        value={v.bridgeWidth ?? ""}
-                        onChange={(e) => {
-                          const value = e.target.value === "" ? null : Number(e.target.value);
-                          setNewVariants((prev) => prev.map((x) => (x._tempId === v._tempId ? { ...x, bridgeWidth: value } : x)));
-                          setIsDirty((prev) => ({ ...prev, 2: true }));
-                        }}
-                        className="w-full px-4 py-2 rounded-lg border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
-                        placeholder="mm"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-zinc-700">Temple length</label>
-                      <input
-                        type="number"
-                        value={v.templeLength ?? ""}
-                        onChange={(e) => {
-                          const value = e.target.value === "" ? null : Number(e.target.value);
-                          setNewVariants((prev) => prev.map((x) => (x._tempId === v._tempId ? { ...x, templeLength: value } : x)));
                           setIsDirty((prev) => ({ ...prev, 2: true }));
                         }}
                         className="w-full px-4 py-2 rounded-lg border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"

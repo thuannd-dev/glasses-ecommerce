@@ -54,6 +54,7 @@ import { useManagerProducts } from "../../lib/hooks/useManagerProducts";
 import { toast } from "react-toastify";
 import axios from "axios";
 import agent from "../../lib/api/agent";
+import FrameDimensionsForm from "./components/FrameDimensionsForm";
 
 export default function ProductDetail() {
   const navigate = useNavigate();
@@ -1481,7 +1482,23 @@ export default function ProductDetail() {
               />
             </Grid>
 
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12}>
+              <FrameDimensionsForm
+                dimensions={{
+                  lensWidth: variantLensWidth ? Number(variantLensWidth) : null,
+                  bridgeWidth: variantBridgeWidth ? Number(variantBridgeWidth) : null,
+                  templeLength: variantTempleLength ? Number(variantTempleLength) : null,
+                }}
+                onChange={(dimensions) => {
+                  setVariantLensWidth(dimensions.lensWidth?.toString() ?? "");
+                  setVariantBridgeWidth(dimensions.bridgeWidth?.toString() ?? "");
+                  setVariantTempleLength(dimensions.templeLength?.toString() ?? "");
+                }}
+                onSizeChange={(size) => setVariantSize(size)}
+              />
+            </Grid>
+
+            <Grid item xs={12}>
               <TextField
                 size="small"
                 fullWidth
@@ -1489,43 +1506,7 @@ export default function ProductDetail() {
                 type="number"
                 value={variantFrameWidth}
                 onChange={(e) => setVariantFrameWidth(e.target.value)}
-                helperText="Optional"
-              />
-            </Grid>
-
-            <Grid item xs={12} sm={6}>
-              <TextField
-                size="small"
-                fullWidth
-                label="Lens width (mm)"
-                type="number"
-                value={variantLensWidth}
-                onChange={(e) => setVariantLensWidth(e.target.value)}
-                helperText="Optional"
-              />
-            </Grid>
-
-            <Grid item xs={12} sm={6}>
-              <TextField
-                size="small"
-                fullWidth
-                label="Bridge width (mm)"
-                type="number"
-                value={variantBridgeWidth}
-                onChange={(e) => setVariantBridgeWidth(e.target.value)}
-                helperText="Optional"
-              />
-            </Grid>
-
-            <Grid item xs={12} sm={6}>
-              <TextField
-                size="small"
-                fullWidth
-                label="Temple length (mm)"
-                type="number"
-                value={variantTempleLength}
-                onChange={(e) => setVariantTempleLength(e.target.value)}
-                helperText="Optional"
+                helperText="Optional - Total width of the frame"
               />
             </Grid>
 
@@ -2511,7 +2492,23 @@ function VariantEditDialog({
             />
           </Grid>
 
-          <Grid item xs={12} sm={6}>
+          <Grid item xs={12}>
+            <FrameDimensionsForm
+              dimensions={{
+                lensWidth: lensWidth ? Number(lensWidth) : null,
+                bridgeWidth: bridgeWidth ? Number(bridgeWidth) : null,
+                templeLength: templeLength ? Number(templeLength) : null,
+              }}
+              onChange={(dimensions) => {
+                setLensWidth(dimensions.lensWidth?.toString() ?? "");
+                setBridgeWidth(dimensions.bridgeWidth?.toString() ?? "");
+                setTempleLength(dimensions.templeLength?.toString() ?? "");
+              }}
+              onSizeChange={(newSize) => setSize(newSize)}
+            />
+          </Grid>
+
+          <Grid item xs={12}>
             <TextField
               size="small"
               fullWidth
@@ -2519,40 +2516,7 @@ function VariantEditDialog({
               type="number"
               value={frameWidth}
               onChange={(e) => setFrameWidth(e.target.value)}
-              helperText="Optional"
-            />
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <TextField
-              size="small"
-              fullWidth
-              label="Lens width (mm)"
-              type="number"
-              value={lensWidth}
-              onChange={(e) => setLensWidth(e.target.value)}
-              helperText="Optional"
-            />
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <TextField
-              size="small"
-              fullWidth
-              label="Bridge width (mm)"
-              type="number"
-              value={bridgeWidth}
-              onChange={(e) => setBridgeWidth(e.target.value)}
-              helperText="Optional"
-            />
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <TextField
-              size="small"
-              fullWidth
-              label="Temple length (mm)"
-              type="number"
-              value={templeLength}
-              onChange={(e) => setTempleLength(e.target.value)}
-              helperText="Optional"
+              helperText="Optional - Total width of the frame"
             />
           </Grid>
 
