@@ -10,6 +10,8 @@ export type PrescriptionDetailRow = {
 
 export type PrescriptionData = {
   details: PrescriptionDetailRow[];
+  /** Cloudinary URL from upload — sent with order for staff verification. */
+  imageUrl?: string | null;
 };
 
 export const EYE_LABELS: Record<1 | 2, string> = {

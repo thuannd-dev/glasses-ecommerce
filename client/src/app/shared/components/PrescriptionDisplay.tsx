@@ -74,6 +74,9 @@ export function PrescriptionDisplay({ prescription, variant = "block" }: Props) 
             Axis
           </TableCell>
           <TableCell sx={headCellSx} component="th" scope="col" align="right">
+            ADD
+          </TableCell>
+          <TableCell sx={headCellSx} component="th" scope="col" align="right">
             PD
           </TableCell>
         </TableRow>
@@ -87,6 +90,7 @@ export function PrescriptionDisplay({ prescription, variant = "block" }: Props) 
             <TableCell sx={{ ...cellSx, textAlign: "right" }}>{formatVal(row.sph)}</TableCell>
             <TableCell sx={{ ...cellSx, textAlign: "right" }}>{formatVal(row.cyl)}</TableCell>
             <TableCell sx={{ ...cellSx, textAlign: "right" }}>{formatVal(row.axis)}</TableCell>
+            <TableCell sx={{ ...cellSx, textAlign: "right" }}>{formatVal(row.add)}</TableCell>
             <TableCell sx={{ ...cellSx, textAlign: "right" }}>{formatVal(row.pd)}</TableCell>
           </TableRow>
         ))}

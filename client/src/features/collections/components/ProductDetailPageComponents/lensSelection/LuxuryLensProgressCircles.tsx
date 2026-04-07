@@ -6,7 +6,6 @@ import { LENS_FLOW_ACCENT, LENS_FLOW_ON_ACCENT } from "./lensFlowTheme";
 
 const TRACK = "rgba(17,24,39,0.1)";
 const NODE = 28;
-const CONNECTOR_MT_PX = NODE / 2 - 1;
 
 type Props = {
     steps: readonly string[];
@@ -14,8 +13,19 @@ type Props = {
     id?: string;
 };
 
-/** Short bars only in the gaps between nodes — no single line through circle centers. */
+function getGridTemplateColumns(stepCount: number): string {
+    const cols: string[] = [];
+    for (let i = 0; i < stepCount; i += 1) {
+        cols.push(`${NODE}px`);
+        if (i < stepCount - 1) cols.push("minmax(8px, 1fr)");
+    }
+    return cols.join(" ");
+}
+
+/** Node/track columns are fixed so connector always meets circle edges. */
 export function LuxuryLensProgressCircles({ steps, currentStepIndex, id }: Props) {
+    const gridTemplateColumns = getGridTemplateColumns(steps.length);
+
     return (
         <Box
             id={id}
@@ -25,26 +35,27 @@ export function LuxuryLensProgressCircles({ steps, currentStepIndex, id }: Props
         >
             <Box
                 sx={{
-                    display: "flex",
-                    flexDirection: "row",
-                    alignItems: "flex-start",
+                    display: "grid",
+                    gridTemplateColumns,
+                    rowGap: 0.65,
+                    alignItems: "start",
                     width: "100%",
                 }}
             >
                 {steps.map((label, i) => {
                     const done = i < currentStepIndex;
                     const active = i === currentStepIndex;
+                    const nodeCol = i * 2 + 1;
+                    const trackCol = i * 2 + 2;
                     return (
                         <Fragment key={label}>
                             <Box
                                 sx={{
                                     display: "flex",
-                                    flexDirection: "column",
+                                    gridColumn: nodeCol,
+                                    gridRow: 1,
                                     alignItems: "center",
-                                    gap: 0.65,
                                     flexShrink: 0,
-                                    minWidth: NODE,
-                                    maxWidth: { xs: 76, sm: 92 },
                                 }}
                             >
                                 <Box
@@ -79,6 +90,28 @@ export function LuxuryLensProgressCircles({ steps, currentStepIndex, id }: Props
                                         />
                                     ) : null}
                                 </Box>
+                            </Box>
+                            {i < steps.length - 1 ? (
+                                <Box
+                                    sx={{
+                                        gridColumn: trackCol,
+                                        gridRow: 1,
+                                        height: 2,
+                                        alignSelf: "center",
+                                        bgcolor: TRACK,
+                                        borderRadius: 1,
+                                    }}
+                                    aria-hidden
+                                />
+                            ) : null}
+                            <Box
+                                sx={{
+                                    gridColumn: nodeCol,
+                                    gridRow: 2,
+                                    width: { xs: 56, sm: 92 },
+                                    justifySelf: "center",
+                                }}
+                            >
                                 <Typography
                                     sx={{
                                         fontSize: { xs: 7.5, sm: 8.5 },
@@ -91,26 +124,11 @@ export function LuxuryLensProgressCircles({ steps, currentStepIndex, id }: Props
                                             done || active
                                                 ? LENS_FLOW_ACCENT
                                                 : "rgba(22, 23, 27, 0.35)",
-                                        maxWidth: "100%",
                                     }}
                                 >
                                     {label}
                                 </Typography>
                             </Box>
-                            {i < steps.length - 1 ? (
-                                <Box
-                                    sx={{
-                                        flex: 1,
-                                        height: 2,
-                                        minWidth: 4,
-                                        mt: `${CONNECTOR_MT_PX}px`,
-                                        alignSelf: "flex-start",
-                                        bgcolor: TRACK,
-                                        borderRadius: 1,
-                                    }}
-                                    aria-hidden
-                                />
-                            ) : null}
                         </Fragment>
                     );
                 })}

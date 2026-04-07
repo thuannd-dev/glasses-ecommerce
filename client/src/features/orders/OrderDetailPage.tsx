@@ -167,7 +167,9 @@ function toPrescriptionData(
       };
     })
     .filter((x): x is PrescriptionData["details"][number] => x != null);
-  return details.length ? { details } : undefined;
+  return details.length
+    ? { details, imageUrl: source.imageUrl ?? null }
+    : undefined;
 }
 
 export default function OrderDetailPage() {

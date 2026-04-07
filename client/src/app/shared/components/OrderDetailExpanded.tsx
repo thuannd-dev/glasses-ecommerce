@@ -407,6 +407,58 @@ export function OrderDetailExpanded({ detail, onProcessOrderClick, showProcessBu
                         </Box>
                       )}
                     </Box>
+                    {prescription.imageUrl ? (
+                      <Box
+                        sx={{
+                          mb: 1.5,
+                          p: 1,
+                          borderRadius: 1.5,
+                          border: `1px solid ${TOKENS.divider}`,
+                          bgcolor: "#FFFFFF",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1.25,
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <Box
+                          component="img"
+                          src={prescription.imageUrl}
+                          alt="Uploaded prescription"
+                          sx={{
+                            width: 72,
+                            height: 72,
+                            borderRadius: 1,
+                            objectFit: "cover",
+                            border: `1px solid ${TOKENS.divider}`,
+                            bgcolor: TOKENS.thumbnailBg,
+                          }}
+                        />
+                        <Box sx={{ minWidth: 0 }}>
+                          <Typography sx={{ fontSize: 12, fontWeight: 700, color: TOKENS.muted, mb: 0.35 }}>
+                            Uploaded Prescription
+                          </Typography>
+                          <Button
+                            size="small"
+                            variant="text"
+                            component="a"
+                            href={prescription.imageUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            sx={{
+                              p: 0,
+                              minWidth: 0,
+                              textTransform: "none",
+                              fontWeight: 700,
+                              color: TOKENS.accent,
+                              "&:hover": { bgcolor: "transparent", textDecoration: "underline" },
+                            }}
+                          >
+                            View full image
+                          </Button>
+                        </Box>
+                      </Box>
+                    ) : null}
 
                     <Table size="small" sx={{ 
                       "& td, & th": { py: 0.6, px: 1, fontSize: 13 },

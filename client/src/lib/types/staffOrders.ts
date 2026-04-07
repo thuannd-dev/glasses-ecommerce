@@ -99,6 +99,7 @@ export interface StaffOrderPrescriptionDto {
   isVerified?: boolean;
   verifiedAt?: string | null;
   verificationNotes?: string | null;
+  imageUrl?: string | null;
   details: StaffOrderPrescriptionDetailDto[];
 }
 

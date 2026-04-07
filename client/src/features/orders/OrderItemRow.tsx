@@ -149,6 +149,21 @@ export function OrderItemRow({
         {prescription &&
           (showPrescriptionDetails ? (
             <Box sx={{ mt: 0.5 }}>
+              {prescription.imageUrl ? (
+                <Box sx={{ mb: 0.75 }}>
+                  <Typography
+                    component="a"
+                    href={prescription.imageUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    fontSize={12}
+                    fontWeight={700}
+                    sx={{ color: "#B68C5A", textDecoration: "none", "&:hover": { textDecoration: "underline" } }}
+                  >
+                    View uploaded prescription
+                  </Typography>
+                </Box>
+              ) : null}
               <PrescriptionDisplay prescription={prescription} variant="inline" />
             </Box>
           ) : (
