@@ -12,17 +12,18 @@ namespace Infrastructure.Vision;
 public sealed class AzureVisionService(
     ImageAnalysisClient imageAnalysisClient,
     IOptions<VisionSettings> settings,
-    ILogger<AzureVisionService> logger) : IAzureVisionService
+    ILogger<AzureVisionService> logger,
+    ILlmPrescriptionParser llmParser) : IAzureVisionService
 {
     private const decimal MediumFieldConfidence = 0.80m;
     private const decimal MediumOverallConfidenceThreshold = 0.60m;
     private const decimal HighOverallConfidenceThreshold = 0.85m;
     // Per-eye weighted confidence: SPH+CYL+AXIS+ADD+PD = 1.00
-    private const decimal SphWeight  = 0.37m;
-    private const decimal CylWeight  = 0.27m;
+    private const decimal SphWeight = 0.37m;
+    private const decimal CylWeight = 0.27m;
     private const decimal AxisWeight = 0.18m;
-    private const decimal AddWeight  = 0.08m;
-    private const decimal PdWeight   = 0.10m;
+    private const decimal AddWeight = 0.08m;
+    private const decimal PdWeight = 0.10m;
     // Binocular PD weight when folding into result-level OverallConfidence
     private const decimal BinocularPdResultWeight = 0.10m;
 
@@ -109,24 +110,88 @@ public sealed class AzureVisionService(
 
             string rawText = rawTextBuilder.ToString();
 
-            // Parse prescription values
-            PrescriptionParseResult parseResult = ParsePrescriptionValues(allLines, cancellationToken);
+            // ----------------------------------------------------------------
+            // Step 1: LLM-based parsing (primary path)
+            // ----------------------------------------------------------------
+            PrescriptionOcrResultDto? llmResult = null;
+            bool llmSucceeded = false;
 
-            OcrConfidenceLevel confidenceLevel = DetermineConfidenceLevel(parseResult);
-
-            return new PrescriptionOcrResultDto
+            try
             {
-                ImageUrl = string.Empty, // Will be set by command handler
-                PublicId = string.Empty, // Will be set by command handler
-                RawText = rawText,
-                RightEye = parseResult.RightEye,
-                LeftEye = parseResult.LeftEye,
-                PD = parseResult.PD,
-                ConfidenceLevel = confidenceLevel,
-                OverallConfidence = parseResult.OverallConfidence,
-                ParsedSuccessfully = parseResult.ParsedSuccessfully,
-                Warnings = parseResult.Warnings
-            };
+                llmResult = await llmParser.ParseAsync(rawText, cancellationToken);
+                llmSucceeded = llmResult.ParsedSuccessfully;
+
+                if (llmSucceeded)
+                {
+                    logger.LogInformation(
+                        "LLM parsing succeeded. Confidence={Confidence}, Level={Level}",
+                        llmResult.OverallConfidence, llmResult.ConfidenceLevel);
+                }
+                else
+                {
+                    logger.LogWarning(
+                        "LLM parsing returned low quality (Confidence={Confidence}). Will try regex fallback.",
+                        llmResult.OverallConfidence);
+                }
+            }
+            catch (Exception llmEx)
+            {
+                logger.LogWarning(llmEx, "LLM parsing threw an exception. Falling back to regex pipeline.");
+            }
+
+            // ----------------------------------------------------------------
+            // Step 2: Regex-based parsing (fallback)
+            // Run when: LLM threw, or LLM returned ParsedSuccessfully=false,
+            //           or LLM confidence is Low.
+            // ----------------------------------------------------------------
+            bool needsFallback = !llmSucceeded ||
+                                 llmResult?.ConfidenceLevel == OcrConfidenceLevel.Low;
+
+            if (needsFallback)
+            {
+                logger.LogInformation("Running regex fallback pipeline on {LineCount} OCR lines.", allLines.Count);
+
+                PrescriptionParseResult regexResult = ParsePrescriptionValues(allLines, cancellationToken);
+                OcrConfidenceLevel regexLevel = DetermineConfidenceLevel(regexResult);
+
+                PrescriptionOcrResultDto regexDto = new PrescriptionOcrResultDto
+                {
+                    ImageUrl = string.Empty,
+                    PublicId = string.Empty,
+                    RawText = rawText,
+                    RightEye = regexResult.RightEye,
+                    LeftEye = regexResult.LeftEye,
+                    PD = regexResult.PD,
+                    ConfidenceLevel = regexLevel,
+                    OverallConfidence = regexResult.OverallConfidence,
+                    ParsedSuccessfully = regexResult.ParsedSuccessfully,
+                    Warnings = regexResult.Warnings
+                };
+
+                // ---- Pick the better result ----
+                // If LLM produced something but regex is better → use regex.
+                // If LLM failed entirely (null) → always use regex.
+                bool regexIsBetter = llmResult is null ||
+                                     regexDto.OverallConfidence > llmResult.OverallConfidence;
+
+                if (regexIsBetter)
+                {
+                    regexDto.Warnings.Insert(0, "Primary LLM parsing was insufficient; result produced by regex fallback engine.");
+                    logger.LogInformation(
+                        "Regex fallback chosen. RegexConfidence={RC}, LlmConfidence={LC}",
+                        regexDto.OverallConfidence, llmResult?.OverallConfidence ?? 0m);
+                    return regexDto;
+                }
+
+                // LLM result is still better despite low confidence (regex did worse)
+                llmResult!.Warnings.Insert(0, "Regex fallback ran but LLM result had higher confidence; LLM result returned.");
+                logger.LogInformation(
+                    "LLM result retained over regex. LlmConfidence={LC}, RegexConfidence={RC}",
+                    llmResult.OverallConfidence, regexDto.OverallConfidence);
+            }
+
+            // llmResult is guaranteed non-null here (llmSucceeded=true means no exception + not null)
+            return llmResult!;
         }
         catch (Exception ex)
         {
@@ -182,7 +247,7 @@ public sealed class AzureVisionService(
         List<OcrReadLine> rightLinesForFallback = lines
             .Where(l => RightEyeLabelRegex.IsMatch(l.Text))
             .ToList();
-        
+
         List<OcrReadLine> leftLinesForFallback = lines
             .Where(l => LeftEyeLabelRegex.IsMatch(l.Text))
             .ToList();
@@ -307,10 +372,10 @@ public sealed class AzureVisionService(
                 if (parts.Length == 2)
                 {
                     OcrFieldDto rightPd = new OcrFieldDto { Value = parts[0], Confidence = globalPdField.Confidence, IsExtracted = true };
-                    OcrFieldDto leftPd  = new OcrFieldDto { Value = parts[1], Confidence = globalPdField.Confidence, IsExtracted = true };
+                    OcrFieldDto leftPd = new OcrFieldDto { Value = parts[1], Confidence = globalPdField.Confidence, IsExtracted = true };
 
                     if (result.RightEye != null) result.RightEye.PD ??= rightPd;
-                    if (result.LeftEye  != null) result.LeftEye.PD  ??= leftPd;
+                    if (result.LeftEye != null) result.LeftEye.PD ??= leftPd;
                 }
             }
             else
@@ -406,15 +471,15 @@ public sealed class AzureVisionService(
         if (numericValues.Count >= 3)
         {
             decimal averageConfidence = scopedLines.Average(l => l.Confidence);
-            
+
             eyeData.SPH ??= CreateField(numericValues[0], averageConfidence);
             eyeData.CYL ??= CreateField(numericValues[1], averageConfidence);
-            
+
             // For AXIS, prefer integer values between 1-180
             string? axisValue = numericValues
                 .Skip(2)
                 .FirstOrDefault(v => int.TryParse(v, out int axis) && axis >= 1 && axis <= 180);
-            
+
             if (axisValue != null)
                 eyeData.AXIS ??= CreateField(axisValue, averageConfidence);
         }
@@ -488,7 +553,7 @@ public sealed class AzureVisionService(
             string currentLine = NormalizeText(lines[i].Text);
 
             // Check if current line contains the label keyword
-            bool hasLabel = labelKeywords.Any(keyword => 
+            bool hasLabel = labelKeywords.Any(keyword =>
                 currentLine.Contains(keyword, StringComparison.OrdinalIgnoreCase));
 
             if (hasLabel)
@@ -499,14 +564,14 @@ public sealed class AzureVisionService(
                     string nextLine = NormalizeText(lines[j].Text);
 
                     // Skip lines that are labels
-                    if (RightEyeLabelRegex.IsMatch(nextLine) || 
+                    if (RightEyeLabelRegex.IsMatch(nextLine) ||
                         LeftEyeLabelRegex.IsMatch(nextLine) ||
                         labelKeywords.Any(kw => nextLine.Contains(kw, StringComparison.OrdinalIgnoreCase)))
                         continue;
 
                     // Try to extract value using pattern
                     string normalizedValue = NormalizeNumericToken(nextLine);
-                    
+
                     // Check if it's a valid numeric value
                     if (IsValidNumericValue(normalizedValue))
                     {
@@ -859,19 +924,19 @@ public sealed class AzureVisionService(
 
     private static decimal ComputeWeightedConfidence(ExtractedPrescriptionValueDto eyeData)
     {
-        decimal sphConfidence  = eyeData.SPH?.Confidence  ?? 0m;
-        decimal cylConfidence  = eyeData.CYL?.Confidence  ?? 0m;
+        decimal sphConfidence = eyeData.SPH?.Confidence ?? 0m;
+        decimal cylConfidence = eyeData.CYL?.Confidence ?? 0m;
         decimal axisConfidence = eyeData.AXIS?.Confidence ?? 0m;
-        decimal addConfidence  = eyeData.ADD?.Confidence  ?? 0m;
+        decimal addConfidence = eyeData.ADD?.Confidence ?? 0m;
         // Monocular per-eye PD (only set when prescription uses split format, e.g. "31/30")
-        decimal pdConfidence   = eyeData.PD?.Confidence   ?? 0m;
+        decimal pdConfidence = eyeData.PD?.Confidence ?? 0m;
 
         return
-            (sphConfidence  * SphWeight)  +
-            (cylConfidence  * CylWeight)  +
+            (sphConfidence * SphWeight) +
+            (cylConfidence * CylWeight) +
             (axisConfidence * AxisWeight) +
-            (addConfidence  * AddWeight)  +
-            (pdConfidence   * PdWeight);
+            (addConfidence * AddWeight) +
+            (pdConfidence * PdWeight);
     }
 
     private static (decimal CenterX, decimal CenterY) GetLineCenter(IReadOnlyList<ImagePoint> polygon)
@@ -990,10 +1055,10 @@ public sealed class AzureVisionService(
 
         if (confidence >= HighOverallConfidenceThreshold)
             return OcrConfidenceLevel.High;
-        
+
         if (confidence >= MediumOverallConfidenceThreshold)
             return OcrConfidenceLevel.Medium;
-        
+
         return OcrConfidenceLevel.Low;
     }
 

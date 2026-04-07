@@ -101,6 +101,8 @@ builder.Services.Configure<VnpaySettings>(builder.Configuration.GetSection("VnPa
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.Configure<GHNSettings>(builder.Configuration.GetSection("GHN"));
 builder.Services.Configure<VisionSettings>(builder.Configuration.GetSection("Vision"));
+builder.Services.Configure<OpenAiSettings>(builder.Configuration.GetSection("OpenAI"));
+builder.Services.AddScoped<ILlmPrescriptionParser, OpenAiPrescriptionParser>();
 builder.Services.AddSingleton<ImageAnalysisClient>(serviceProvider =>
 {
     IOptions<VisionSettings> visionOptions = serviceProvider.GetRequiredService<IOptions<VisionSettings>>();
