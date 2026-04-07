@@ -274,10 +274,20 @@ public sealed class AzureVisionService(
             eyeData.CYL = cylField;
 
         OcrFieldDto? axisField = FindBestField(scopedLines, AxisRegex, cancellationToken, "AXIS", "AX");
+        if (axisField == null)
+        {
+            // If AXIS not found inline, try vertical format: AXIS label on separate line
+            axisField = FindVerticalValue(scopedLines, AxisRegex, "AXIS", "AX", cancellationToken);
+        }
         if (axisField != null)
             eyeData.AXIS = axisField;
 
         OcrFieldDto? pdField = FindBestField(scopedLines, PdRegex, cancellationToken, "PD", "P.D");
+        if (pdField == null)
+        {
+            // If PD not found inline, try vertical format: PD label on separate line
+            pdField = FindVerticalValue(scopedLines, PdRegex, "PD", "P.D", cancellationToken);
+        }
         if (pdField != null)
             eyeData.PD = pdField;
 
@@ -335,6 +345,60 @@ public sealed class AzureVisionService(
             Confidence = bestConfidence,
             IsExtracted = true
         };
+    }
+
+    /// <summary>
+    /// Find field value in vertical list format: label on one line, value on next line.
+    /// Example: "AXIS" on line N, "100" on line N+1
+    /// </summary>
+    private static OcrFieldDto? FindVerticalValue(
+        List<OcrReadLine> lines,
+        Regex labelPattern,
+        CancellationToken cancellationToken,
+        params string[] labelKeywords)
+    {
+        for (int i = 0; i < lines.Count - 1; i++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            string currentLine = NormalizeText(lines[i].Text);
+
+            // Check if current line contains the label keyword
+            bool hasLabel = labelKeywords.Any(keyword => 
+                currentLine.Contains(keyword, StringComparison.OrdinalIgnoreCase));
+
+            if (hasLabel)
+            {
+                // Try to get value from next line(s)
+                for (int j = i + 1; j < Math.Min(i + 3, lines.Count); j++)
+                {
+                    string nextLine = NormalizeText(lines[j].Text);
+
+                    // Skip lines that are labels
+                    if (RightEyeLabelRegex.IsMatch(nextLine) || 
+                        LeftEyeLabelRegex.IsMatch(nextLine) ||
+                        labelKeywords.Any(kw => nextLine.Contains(kw, StringComparison.OrdinalIgnoreCase)))
+                        continue;
+
+                    // Try to extract value using pattern
+                    string normalizedValue = NormalizeNumericToken(nextLine);
+                    
+                    // Check if it's a valid numeric value
+                    if (IsValidNumericValue(normalizedValue))
+                    {
+                        decimal confidence = Math.Clamp((lines[i].Confidence + lines[j].Confidence) / 2, 0m, 1m);
+                        return new OcrFieldDto
+                        {
+                            Value = normalizedValue,
+                            Confidence = confidence,
+                            IsExtracted = true
+                        };
+                    }
+                }
+            }
+        }
+
+        return null;
     }
 
     private static decimal GetLabelBonus(string normalizedLineText, IEnumerable<string> keywords)
@@ -472,9 +536,13 @@ public sealed class AzureVisionService(
 
         List<string> normalizedTokens = tokenMatches
             .Select(m => NormalizeNumericToken(m.Value))
+            .Where(IsValidNumericValue)
             .ToList();
 
-        List<string> decimalTokens = normalizedTokens.Where(t => t.Contains('.')).ToList();
+        List<string> decimalTokens = normalizedTokens
+            .Where(t => decimal.TryParse(t, out _))
+            .Where(t => t.Contains('.')).ToList();
+
         if (decimalTokens.Count >= 2)
         {
             eye.SPH = new OcrFieldDto
@@ -806,6 +874,9 @@ public sealed class AzureVisionService(
         if (upper == "OD" || upper == "O.D" || upper == "O.D." ||
             upper == "OS" || upper == "O.S" || upper == "O.S." ||
             upper == "RIGHT" || upper == "LEFT" || upper == "R" || upper == "L")
+            return false;
+
+        if (upper.Any(char.IsLetter))
             return false;
 
         // Accept decimal or integer values
