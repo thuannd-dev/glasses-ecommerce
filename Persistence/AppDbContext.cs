@@ -37,6 +37,9 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
     public required DbSet<TicketAttachment> TicketAttachments { get; set; }
     public required DbSet<PolicyConfiguration> PolicyConfigurations { get; set; }
     public required DbSet<FeatureToggle> FeatureToggles { get; set; }
+    public required DbSet<LensVariantAttribute> LensVariantAttributes { get; set; }
+    public required DbSet<LensCoatingOption> LensCoatingOptions { get; set; }
+    public required DbSet<FrameLensCompatibility> FrameLensCompatibilities { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -645,6 +648,25 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
                 .HasForeignKey(ci => ci.ProductVariantId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            // Lens variant FK — nullable (null = gọng trần)
+            entity.HasOne(ci => ci.LensVariant)
+                .WithMany()
+                .HasForeignKey(ci => ci.LensVariantId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            //Properties — prescription inline values
+            entity.Property(ci => ci.PrescriptionSphOD).HasColumnType("decimal(5,2)");
+            entity.Property(ci => ci.PrescriptionCylOD).HasColumnType("decimal(5,2)");
+            entity.Property(ci => ci.PrescriptionAddOD).HasColumnType("decimal(5,2)");
+            entity.Property(ci => ci.PrescriptionPdOD).HasColumnType("decimal(5,2)");
+            entity.Property(ci => ci.PrescriptionSphOS).HasColumnType("decimal(5,2)");
+            entity.Property(ci => ci.PrescriptionCylOS).HasColumnType("decimal(5,2)");
+            entity.Property(ci => ci.PrescriptionAddOS).HasColumnType("decimal(5,2)");
+            entity.Property(ci => ci.PrescriptionPdOS).HasColumnType("decimal(5,2)");
+            entity.Property(ci => ci.PrescriptionPd).HasColumnType("decimal(5,2)");
+            entity.Property(ci => ci.CoatingExtraPrice).HasColumnType("decimal(10,2)");
+
             //Indexes
             entity.HasIndex(e => e.CartId)
                 .HasDatabaseName("IX_CartItem_CartId");
@@ -655,12 +677,19 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
             entity.HasIndex(e => new { e.CartId, e.ProductVariantId })
                 .HasDatabaseName("IX_CartItem_Cart_ProductVariant");
 
+            entity.HasIndex(e => e.LensVariantId)
+                .HasDatabaseName("IX_CartItem_LensVariantId");
+
             //Constraints
             entity.ToTable(t =>
             {
                 t.HasCheckConstraint(
                     "CK_CartItem_Quantity",
                     "Quantity > 0"
+                );
+                t.HasCheckConstraint(
+                    "CK_CartItem_CoatingExtraPrice",
+                    "[CoatingExtraPrice] >= 0"
                 );
             });
         });
@@ -808,8 +837,17 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
                 .HasPrincipalKey(p => new { p.Id, p.OrderId })
                 .OnDelete(DeleteBehavior.Restrict); // Changed from SetNull to Restrict to avoid cycle
 
+            // Lens variant FK — nullable (null = gọng trần)
+            entity.HasOne(oi => oi.LensVariant)
+                .WithMany()
+                .HasForeignKey(oi => oi.LensVariantId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+
             //Properties
             entity.Property(oi => oi.UnitPrice).HasColumnType("decimal(10,2)");
+            entity.Property(oi => oi.LensUnitPrice).HasColumnType("decimal(10,2)");
+            entity.Property(oi => oi.CoatingExtraPrice).HasColumnType("decimal(10,2)");
             entity.Ignore(oi => oi.TotalPrice);
 
             //Indexes
@@ -818,6 +856,9 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
 
             entity.HasIndex(e => e.ProductVariantId)
                 .HasDatabaseName("IX_OrderItem_ProductVariantId");
+
+            entity.HasIndex(e => e.LensVariantId)
+                .HasDatabaseName("IX_OrderItem_LensVariantId");
 
             entity.HasIndex(e => new { e.OrderId, e.ProductVariantId, e.PrescriptionId })
                 .IsUnique()
@@ -835,6 +876,16 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
                 t.HasCheckConstraint(
                     "CK_OrderItem_UnitPrice",
                     "UnitPrice >= 0"
+                );
+
+                t.HasCheckConstraint(
+                    "CK_OrderItem_LensUnitPrice",
+                    "[LensUnitPrice] >= 0"
+                );
+
+                t.HasCheckConstraint(
+                    "CK_OrderItem_CoatingExtraPrice",
+                    "[CoatingExtraPrice] >= 0"
                 );
             });
         });
@@ -1434,6 +1485,121 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
                     "EffectiveTo IS NULL OR EffectiveTo > EffectiveFrom"
                 );
             });
+        });
+
+        // LENS VARIANT ATTRIBUTE ENTITY CONFIGURATION
+        builder.Entity<LensVariantAttribute>(entity =>
+        {
+            // Shared PK with ProductVariant (1:1, dependent side)
+            entity.HasKey(e => e.ProductVariantId);
+
+            entity.HasOne(e => e.Variant)
+                .WithOne(pv => pv.LensVariantAttribute)
+                .HasForeignKey<LensVariantAttribute>(e => e.ProductVariantId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Properties
+            entity.Property(e => e.SphMin).HasColumnType("decimal(5,2)");
+            entity.Property(e => e.SphMax).HasColumnType("decimal(5,2)");
+            entity.Property(e => e.CylMin).HasColumnType("decimal(5,2)");
+            entity.Property(e => e.CylMax).HasColumnType("decimal(5,2)");
+            entity.Property(e => e.AddMin).HasColumnType("decimal(5,2)");
+            entity.Property(e => e.AddMax).HasColumnType("decimal(5,2)");
+            entity.Property(e => e.Index).HasColumnType("decimal(4,2)");
+
+            // Indexes
+            entity.HasIndex(e => e.LensDesign)
+                .HasDatabaseName("IX_LensVariantAttribute_LensDesign");
+
+            entity.HasIndex(e => e.Index)
+                .HasDatabaseName("IX_LensVariantAttribute_Index");
+
+            entity.HasIndex(e => new { e.SphMin, e.SphMax })
+                .HasDatabaseName("IX_LensVariantAttribute_SphRange");
+
+            // Constraints (enforce ophthalmic domain rules)
+            entity.ToTable(t =>
+            {
+                t.HasCheckConstraint(
+                    "CK_LensVariantAttribute_CylNegative",
+                    "[CylMin] <= 0 AND [CylMax] <= 0"
+                );
+                t.HasCheckConstraint(
+                    "CK_LensVariantAttribute_AxisRange",
+                    "[AxisMin] >= 0 AND [AxisMax] <= 180 AND [AxisMin] <= [AxisMax]"
+                );
+                t.HasCheckConstraint(
+                    "CK_LensVariantAttribute_SphRange",
+                    "[SphMin] <= [SphMax]"
+                );
+                t.HasCheckConstraint(
+                    "CK_LensVariantAttribute_CylRange",
+                    "[CylMin] <= [CylMax]"
+                );
+                t.HasCheckConstraint(
+                    "CK_LensVariantAttribute_Index",
+                    "[Index] > 0"
+                );
+                t.HasCheckConstraint(
+                    "CK_LensVariantAttribute_LensDesign",
+                    "[LensDesign] IN (1, 2, 3)"
+                );
+            });
+        });
+
+        // LENS COATING OPTION ENTITY CONFIGURATION
+        builder.Entity<LensCoatingOption>(entity =>
+        {
+            // Relationships
+            entity.HasOne(e => e.LensProduct)
+                .WithMany(p => p.CoatingOptions)
+                .HasForeignKey(e => e.LensProductId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Properties
+            entity.Property(e => e.CoatingName).HasMaxLength(100);
+            entity.Property(e => e.Description).HasMaxLength(500);
+            entity.Property(e => e.ExtraPrice).HasColumnType("decimal(10,2)");
+
+            // Indexes
+            entity.HasIndex(e => e.LensProductId)
+                .HasDatabaseName("IX_LensCoatingOption_LensProductId");
+
+            entity.HasIndex(e => new { e.LensProductId, e.IsActive })
+                .HasDatabaseName("IX_LensCoatingOption_LensProductId_IsActive");
+
+            // Constraints
+            entity.ToTable(t =>
+            {
+                t.HasCheckConstraint(
+                    "CK_LensCoatingOption_ExtraPrice",
+                    "[ExtraPrice] >= 0"
+                );
+            });
+        });
+
+        // FRAME LENS COMPATIBILITY ENTITY CONFIGURATION
+        builder.Entity<FrameLensCompatibility>(entity =>
+        {
+            // Composite PK
+            entity.HasKey(e => new { e.FrameProductId, e.LensProductId });
+
+            entity.HasOne(e => e.FrameProduct)
+                .WithMany(p => p.CompatibleLensLinks)
+                .HasForeignKey(e => e.FrameProductId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.LensProduct)
+                .WithMany()
+                .HasForeignKey(e => e.LensProductId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Indexes
+            entity.HasIndex(e => e.FrameProductId)
+                .HasDatabaseName("IX_FrameLensCompatibility_FrameProductId");
+
+            entity.HasIndex(e => e.LensProductId)
+                .HasDatabaseName("IX_FrameLensCompatibility_LensProductId");
         });
     }
 }

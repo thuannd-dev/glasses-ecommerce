@@ -39,7 +39,13 @@ public class ProductVariant
 
     // Navigation properties
     public Product Product { get; set; } = null!;
-    
+
     public Stock? Stock { get; set; }
     public ICollection<ProductImage> Images { get; set; } = [];
+
+    /// <summary>
+    /// Thông số quang học. Chỉ có giá trị khi Product.Type = Lens.
+    /// Null với frame variants.
+    /// </summary>
+    public LensVariantAttribute? LensVariantAttribute { get; set; }
 }
