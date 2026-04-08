@@ -50,6 +50,7 @@ public sealed class GetCompatibleLenses
             // Load compatible lens products với variants + attributues + coatings
             List<CompatibleLensDto> result = await context.FrameLensCompatibilities
                 .AsNoTracking()
+                .AsSplitQuery()
                 .Where(flc => flc.FrameProductId == request.FrameProductId
                            && flc.LensProduct.Status == ProductStatus.Active)
                 .Select(flc => new CompatibleLensDto
