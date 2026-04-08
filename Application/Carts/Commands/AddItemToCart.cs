@@ -47,12 +47,6 @@ public sealed class AddItemToCart
                         $"Insufficient stock. Only {frameVariant.Stock?.QuantityAvailable ?? 0} items available.", 400);
             }
 
-            // ── 2. Validate lens variant (optional) ──────────────────────
-            // Guard: coating options are meaningless without a lens
-            if (dto.SelectedCoatingIds is { Count: > 0 } && !dto.LensVariantId.HasValue)
-                return Result<CartItemDto>.Failure(
-                    "Coating options can only be added when a lens variant is selected.", 400);
-
             decimal lensPrice = 0;
             decimal coatingExtraPrice = 0;
             string? coatingIdsJson = null;
@@ -120,6 +114,21 @@ public sealed class AddItemToCart
                         return Result<CartItemDto>.Failure(
                             $"Left eye CYL ({dto.CylOS.Value:0.00}) is outside this lens range ({attr.CylMin:0.00} to {attr.CylMax:0.00}).", 400);
                 }
+
+                // ── AXIS validation (DB-dependent rules only) ─────────────
+                // Rule 1: Lens is spherical-only (CylMax == 0) → reject any AXIS input (needs attr.CylMax from DB)
+                if (attr.CylMax == 0 && (dto.AxisOD.HasValue || dto.AxisOS.HasValue))
+                    return Result<CartItemDto>.Failure(
+                        "This lens does not support astigmatism correction. AXIS values should not be provided.", 400);
+
+                // Rule 4: AXIS outside lens AxisMin–AxisMax range (needs attr.AxisMin/Max from DB)
+                if (dto.AxisOD.HasValue && (dto.AxisOD.Value < attr.AxisMin || dto.AxisOD.Value > attr.AxisMax))
+                    return Result<CartItemDto>.Failure(
+                        $"Right eye AXIS ({dto.AxisOD.Value}°) is outside this lens range ({attr.AxisMin}° to {attr.AxisMax}°).", 400);
+
+                if (dto.AxisOS.HasValue && (dto.AxisOS.Value < attr.AxisMin || dto.AxisOS.Value > attr.AxisMax))
+                    return Result<CartItemDto>.Failure(
+                        $"Left eye AXIS ({dto.AxisOS.Value}°) is outside this lens range ({attr.AxisMin}° to {attr.AxisMax}°).", 400);
 
                 lensPrice = lensVariant.Price;
 
