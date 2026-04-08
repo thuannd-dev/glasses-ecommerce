@@ -30,7 +30,11 @@ public sealed class GetCompatibleLenses
             // Validate frame product exists
             bool frameExists = await context.Products
                 .AsNoTracking()
-                .AnyAsync(p => p.Id == request.FrameProductId && p.Type == ProductType.Frame, ct);
+                .AnyAsync(
+                    p => p.Id == request.FrameProductId
+                      && p.Type == ProductType.Frame
+                      && p.Status == ProductStatus.Active,
+                    ct);
 
             if (!frameExists)
                 return Result<List<CompatibleLensDto>>.Failure("Frame product not found.", 404);
@@ -52,7 +56,15 @@ public sealed class GetCompatibleLenses
                 .AsNoTracking()
                 .AsSplitQuery()
                 .Where(flc => flc.FrameProductId == request.FrameProductId
-                           && flc.LensProduct.Status == ProductStatus.Active)
+                           && flc.LensProduct.Status == ProductStatus.Active
+                           && flc.LensProduct.Variants.Any(pv => 
+                                   pv.IsActive
+                                && pv.LensVariantAttribute != null
+                                && (!hasRx
+                                    || ((!rxSphLow.HasValue  || pv.LensVariantAttribute!.SphMin <= rxSphLow.Value)
+                                     && (!rxSphHigh.HasValue || pv.LensVariantAttribute!.SphMax >= rxSphHigh.Value)
+                                     && (!rxCylLow.HasValue  || pv.LensVariantAttribute!.CylMin <= rxCylLow.Value)
+                                     && (!rxCylHigh.HasValue || pv.LensVariantAttribute!.CylMax >= rxCylHigh.Value)))))
                 .Select(flc => new CompatibleLensDto
                 {
                     LensProductId   = flc.LensProductId,
