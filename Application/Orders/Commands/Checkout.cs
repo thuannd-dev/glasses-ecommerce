@@ -1,4 +1,5 @@
 using System.Data;
+using System.Text.Json;
 using Application.Core;
 using Application.Interfaces;
 using Application.Orders.DTOs;
@@ -246,6 +247,26 @@ public sealed class Checkout
                 decimal totalAmount = 0;
                 List<OrderItem> orderItems = [];
 
+                // Batch-load coating details for rich snapshot.
+                // Cart stores only IDs (SelectedCoatingIdsJson); we re-query here to snapshot
+                // name + price at the moment of purchase — guarantees the snapshot stays valid
+                // even if the coating record is later edited or soft-deleted.
+                List<Guid> allCoatingIds = selectedItems
+                    .Where(i => i.SelectedCoatingIdsJson != null)
+                    .SelectMany(i => JsonSerializer.Deserialize<List<Guid>>(i.SelectedCoatingIdsJson!) ?? [])
+                    .Distinct()
+                    .ToList();
+
+                Dictionary<Guid, LensCoatingOption> coatingLookup = [];
+                if (allCoatingIds.Count > 0)
+                {
+                    coatingLookup = (await context.LensCoatingOptions
+                        .AsNoTracking()
+                        .Where(c => allCoatingIds.Contains(c.Id))
+                        .ToListAsync(ct))
+                        .ToDictionary(c => c.Id);
+                }
+
                 // Group 1: Bare-frame items (no lens, no prescription) → merge by variant
                 var mergedBareItems = selectedItems
                     .Where(i => !individualCartItemIds.Contains(i.Id))
@@ -293,7 +314,17 @@ public sealed class Checkout
                         LensVariantId     = cartItem.LensVariantId,
                         LensUnitPrice     = lensUnitPrice,
                         CoatingExtraPrice = cartItem.CoatingExtraPrice,
-                        CoatingsSnapshot  = cartItem.SelectedCoatingIdsJson,
+                        // Rich snapshot: [{Id, CoatingName, Price}]
+                        // Immutable audit — survives coating deletion/rename/reprice.
+                        CoatingsSnapshot = cartItem.SelectedCoatingIdsJson != null
+                            ? JsonSerializer.Serialize(
+                                JsonSerializer.Deserialize<List<Guid>>(cartItem.SelectedCoatingIdsJson)!
+                                    .Select(id => coatingLookup.TryGetValue(id, out LensCoatingOption? c)
+                                        ? new { c.Id, c.CoatingName, Price = c.ExtraPrice }
+                                        : null)
+                                    .Where(x => x != null)
+                                    .ToList())
+                            : null,
                         OrderId           = Guid.Empty,
                     };
                     orderItems.Add(orderItem);

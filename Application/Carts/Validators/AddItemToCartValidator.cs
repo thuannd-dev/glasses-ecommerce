@@ -17,6 +17,12 @@ public sealed class AddItemToCartValidator : AbstractValidator<AddItemToCart.Com
             .LessThanOrEqualTo(999)
             .WithMessage("Quantity cannot exceed 999 items.");
 
+        // SelectedCoatingIds: null = no coating (valid), [] = empty list (invalid ambiguity)
+        // Must be either null or a non-empty list with actual IDs.
+        RuleFor(x => x.AddCartItemDto.SelectedCoatingIds)
+            .Must(ids => ids == null || ids.Count > 0)
+            .WithMessage("SelectedCoatingIds must be either null (no coating) or a non-empty list. Use null to indicate no coating selection.");
+
         // Coating without lens: pure cross-field, no DB needed → FluentValidation
         RuleFor(x => x.AddCartItemDto.SelectedCoatingIds)
             .Must(ids => ids == null || ids.Count == 0)
