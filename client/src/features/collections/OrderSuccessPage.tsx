@@ -16,6 +16,10 @@ const PALETTE = {
   accent: "#B68C5A",
 };
 
+/** Order summary line: thumbnail + gap 1.5 (12px) — prescription block aligns with product text when thumb shown. */
+const ORDER_SUMMARY_THUMB_PX = 44;
+const ORDER_SUMMARY_ROW_GAP_PX = 12;
+
 function getStatusChipStyle(status: string | undefined) {
   if (!status) return {};
   const lower = status.toLowerCase();
@@ -493,25 +497,25 @@ export default function OrderSuccessPage() {
                       gap: 1.5,
                     }}
                   >
-                    <Box
-                      sx={{
-                        width: 44,
-                        height: 44,
-                        borderRadius: 1.5,
-                        bgcolor: "#F7F7F7",
-                        overflow: "hidden",
-                        flexShrink: 0,
-                      }}
-                    >
-                      {item.imageUrl ? (
+                    {item.imageUrl ? (
+                      <Box
+                        sx={{
+                          width: ORDER_SUMMARY_THUMB_PX,
+                          height: ORDER_SUMMARY_THUMB_PX,
+                          borderRadius: 1.5,
+                          bgcolor: "#F7F7F7",
+                          overflow: "hidden",
+                          flexShrink: 0,
+                        }}
+                      >
                         <Box
                           component="img"
                           src={item.imageUrl}
                           alt={item.productName ? `${item.productName} thumbnail` : "Product thumbnail"}
                           sx={{ width: "100%", height: "100%", objectFit: "cover" }}
                         />
-                      ) : null}
-                    </Box>
+                      </Box>
+                    ) : null}
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                       <Typography
                         sx={{
@@ -548,7 +552,14 @@ export default function OrderSuccessPage() {
                   {(() => {
                     const prescription = getOrderPrescription(order.id, item.id);
                     return prescription ? (
-                      <Box sx={{ mt: 1, pl: 5.75 }}>
+                      <Box
+                        sx={{
+                          mt: 1,
+                          pl: item.imageUrl
+                            ? `${ORDER_SUMMARY_THUMB_PX + ORDER_SUMMARY_ROW_GAP_PX}px`
+                            : 0,
+                        }}
+                      >
                         <PrescriptionDisplay prescription={prescription} variant="block" />
                       </Box>
                     ) : null;

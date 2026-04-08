@@ -73,12 +73,13 @@ export function SingleVisionPrescriptionPanel({
 
     const onFileChosen = useCallback(
         async (files: FileList | null) => {
+            if (uploadImage.isPending || analyzePrescription.isPending) return;
             const file = files?.[0];
             if (!file) return;
             setUploadedImageUrl(null);
             setUploadedPublicId(null);
             if (!file.type.startsWith("image/")) {
-                toast.error("Please choose an image file (JPG, PNG, or HEIC).");
+                toast.error("Please choose an image file (JPG, PNG, HEIC, or WebP).");
                 return;
             }
             if (file.size > 20 * 1024 * 1024) {
@@ -99,7 +100,7 @@ export function SingleVisionPrescriptionPanel({
                 toast.error(message);
             }
         },
-        [uploadImage],
+        [uploadImage, analyzePrescription],
     );
 
     const handleContinueWithOcr = useCallback(async () => {
@@ -151,6 +152,7 @@ export function SingleVisionPrescriptionPanel({
     const handleDrop = (e: React.DragEvent) => {
         e.preventDefault();
         setIsDragging(false);
+        if (isUploading || isAnalyzing) return;
         onFileChosen(e.dataTransfer.files);
     };
 
@@ -241,6 +243,7 @@ export function SingleVisionPrescriptionPanel({
                         ref={fileInputRef}
                         type="file"
                         accept="image/jpeg,image/png,image/heic,image/webp"
+                        disabled={isUploading || isAnalyzing}
                         style={{ display: "none" }}
                         onChange={(e) => onFileChosen(e.target.files)}
                     />
@@ -292,7 +295,7 @@ export function SingleVisionPrescriptionPanel({
                         }}
                         onDragOver={(e) => {
                             e.preventDefault();
-                            setIsDragging(true);
+                            if (!isUploading && !isAnalyzing) setIsDragging(true);
                         }}
                         onDragLeave={() => setIsDragging(false)}
                         onDrop={handleDrop}
@@ -304,8 +307,8 @@ export function SingleVisionPrescriptionPanel({
                             px: 2,
                             textAlign: "center",
                             cursor: "pointer",
-                            pointerEvents: isUploading ? "none" : "auto",
-                            opacity: isUploading ? 0.7 : 1,
+                            pointerEvents: isUploading || isAnalyzing ? "none" : "auto",
+                            opacity: isUploading || isAnalyzing ? 0.7 : 1,
                             transition: "border-color 160ms ease, background-color 160ms ease",
                             "&:hover": {
                                 borderColor: LENS_FLOW_ACCENT,
@@ -318,13 +321,17 @@ export function SingleVisionPrescriptionPanel({
                             aria-hidden
                         />
                         <Typography sx={{ fontSize: 15, fontWeight: 600, color: "#111827", mb: 0.5 }}>
-                            {isUploading ? "Uploading photo..." : "Drag and drop a file here or"}{" "}
+                            {isAnalyzing
+                                ? "Reading prescription…"
+                                : isUploading
+                                  ? "Uploading photo..."
+                                  : "Drag and drop a file here or"}{" "}
                             <Box component="span" sx={{ color: LENS_FLOW_ACCENT, textDecoration: "underline" }}>
-                                {isUploading ? "please wait" : "browse"}
+                                {isAnalyzing || isUploading ? "please wait" : "browse"}
                             </Box>
                         </Typography>
                         <Typography variant="body2" color="text.secondary" sx={{ fontSize: 13 }}>
-                            JPG, PNG, or HEIC · max 20 MB
+                            JPG, PNG, HEIC, or WebP · max 20 MB
                         </Typography>
                     </Box>
 
