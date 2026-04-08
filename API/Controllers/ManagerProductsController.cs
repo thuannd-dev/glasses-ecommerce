@@ -183,22 +183,22 @@ public sealed class ManagerProductsController : BaseApiController
     /// <summary>
     /// Cập nhật coating option. Partial update — chỉ cần truyền field muốn thay đổi.
     /// </summary>
-    [HttpPatch("coating-options/{coatingId}")]
+    [HttpPatch("{id}/coating-options/{coatingId}")]
     public async Task<ActionResult<LensCoatingOptionDto>> UpdateLensCoatingOption(
-        Guid coatingId, UpdateLensCoatingOptionDto dto, CancellationToken ct)
+        Guid id, Guid coatingId, UpdateLensCoatingOptionDto dto, CancellationToken ct)
     {
         return HandleResult(await Mediator.Send(
-            new UpdateLensCoatingOption.Command { CoatingId = coatingId, Dto = dto }, ct));
+            new UpdateLensCoatingOption.Command { LensProductId = id, CoatingId = coatingId, Dto = dto }, ct));
     }
 
     /// <summary>
     /// Xóa vĩnh viễn coating option. Để ẩn tạm thời, dùng PATCH với IsActive = false.
     /// </summary>
-    [HttpDelete("coating-options/{coatingId}")]
-    public async Task<IActionResult> DeleteLensCoatingOption(Guid coatingId, CancellationToken ct)
+    [HttpDelete("{id}/coating-options/{coatingId}")]
+    public async Task<IActionResult> DeleteLensCoatingOption(Guid id, Guid coatingId, CancellationToken ct)
     {
         return HandleResult(await Mediator.Send(
-            new DeleteLensCoatingOption.Command { CoatingId = coatingId }, ct));
+            new DeleteLensCoatingOption.Command { LensProductId = id, CoatingId = coatingId }, ct));
     }
 
     // ───────────────────── FRAME↔LENS COMPATIBILITY ──────────────────────

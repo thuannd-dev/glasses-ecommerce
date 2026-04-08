@@ -10,6 +10,7 @@ public sealed class DeleteLensCoatingOption
 {
     public sealed class Command : IRequest<Result<Unit>>
     {
+        public required Guid LensProductId { get; set; }
         public required Guid CoatingId { get; set; }
     }
 
@@ -22,6 +23,9 @@ public sealed class DeleteLensCoatingOption
 
             if (coating == null)
                 return Result<Unit>.Failure("Coating option not found.", 404);
+
+            if (coating.LensProductId != request.LensProductId)
+                return Result<Unit>.Failure("The specified coating option does not belong to the provided product.", 400);
 
             context.LensCoatingOptions.Remove(coating);
 

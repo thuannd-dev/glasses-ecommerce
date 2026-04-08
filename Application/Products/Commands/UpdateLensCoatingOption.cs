@@ -11,6 +11,7 @@ public sealed class UpdateLensCoatingOption
 {
     public sealed class Command : IRequest<Result<LensCoatingOptionDto>>
     {
+        public required Guid LensProductId { get; set; }
         public required Guid CoatingId { get; set; }
         public required UpdateLensCoatingOptionDto Dto { get; set; }
     }
@@ -26,6 +27,9 @@ public sealed class UpdateLensCoatingOption
 
             if (coating == null)
                 return Result<LensCoatingOptionDto>.Failure("Coating option not found.", 404);
+
+            if (coating.LensProductId != request.LensProductId)
+                return Result<LensCoatingOptionDto>.Failure("The specified coating option does not belong to the provided product.", 400);
 
             // Partial update: chỉ update field nào được cung cấp
             if (!string.IsNullOrWhiteSpace(dto.CoatingName))
