@@ -13,6 +13,10 @@ public sealed class SetLensVariantAttributeValidator : AbstractValidator<SetLens
 
         When(x => x.Dto != null, () =>
         {
+            RuleFor(x => x.Dto.LensDesign)
+                .IsInEnum()
+                .WithMessage("LensDesign is invalid.");
+
             // SPH range
             RuleFor(x => x.Dto.SphMin)
                 .LessThanOrEqualTo(x => x.Dto.SphMax)
