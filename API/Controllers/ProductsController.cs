@@ -46,4 +46,42 @@ public sealed class ProductsController : BaseApiController
     {
         return HandleResult(await Mediator.Send(new GetProductDetail.Query { Id = id }));
     }
+
+    // ───────────────────── LENS BROWSING ─────────────────────────
+
+    /// <summary>
+    /// Lấy danh sách tròng kính (lens) tương thích với một frame.
+    /// Optional: lọc theo toa mắt (sphOD, cylOD, sphOS, cylOS) để chỉ hiện variants
+    /// có range quang học bao phủ được cả 2 mắt của khách.
+    /// </summary>
+    [HttpGet("{id}/compatible-lenses")]
+    public async Task<ActionResult<List<CompatibleLensDto>>> GetCompatibleLenses(
+        Guid id,
+        [FromQuery] decimal? sphOD = null,
+        [FromQuery] decimal? cylOD = null,
+        [FromQuery] decimal? sphOS = null,
+        [FromQuery] decimal? cylOS = null,
+        CancellationToken ct = default)
+    {
+        return HandleResult(await Mediator.Send(new GetCompatibleLenses.Query
+        {
+            FrameProductId = id,
+            SphOD = sphOD,
+            CylOD = cylOD,
+            SphOS = sphOS,
+            CylOS = cylOS,
+        }, ct));
+    }
+
+    /// <summary>
+    /// Lấy danh sách coating options (UV, BlueLight...) của một Lens Product.
+    /// Chỉ trả về các coating IsActive = true.
+    /// </summary>
+    [HttpGet("{id}/coating-options")]
+    public async Task<ActionResult<List<LensCoatingOptionDto>>> GetLensCoatingOptions(
+        Guid id, CancellationToken ct)
+    {
+        return HandleResult(await Mediator.Send(
+            new GetLensCoatingOptions.Query { LensProductId = id }, ct));
+    }
 }

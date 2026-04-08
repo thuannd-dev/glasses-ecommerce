@@ -39,7 +39,19 @@ public class Product
 
     // Navigation properties
     public ProductCategory Category { get; set; } = null!;
-    
+
     public ICollection<ProductVariant> Variants { get; set; } = [];
     public ICollection<ProductImage> Images { get; set; } = [];
+
+    /// <summary>
+    /// Danh sách các Lens Product tương thích với Frame này.
+    /// Chỉ có ý nghĩa khi Type = Frame.
+    /// </summary>
+    public ICollection<FrameLensCompatibility> CompatibleLensLinks { get; set; } = [];
+
+    /// <summary>
+    /// Các tùy chọn coating của Lens Product này.
+    /// Chỉ có ý nghĩa khi Type = Lens.
+    /// </summary>
+    public ICollection<LensCoatingOption> CoatingOptions { get; set; } = [];
 }

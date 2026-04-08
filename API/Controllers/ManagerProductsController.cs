@@ -1,6 +1,7 @@
 using Application.Core;
 using Application.Products.Commands;
 using Application.Products.DTOs;
+using Application.Products.Queries;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -152,5 +153,84 @@ public sealed class ManagerProductsController : BaseApiController
         return HandleResult(await Mediator.Send(
             new ReorderVariantImages.Command { ProductId = id, VariantId = variantId, Dto = dto }, ct));
     }
-}
 
+    // ────────────────────── LENS VARIANT ATTRIBUTES ──────────────────────
+
+    /// <summary>
+    /// Tạo hoặc cập nhật thông số quang học (SPH, CYL, AXIS, Index, LensDesign) cho một Lens variant.
+    /// </summary>
+    [HttpPut("{id}/variants/{variantId}/lens-attributes")]
+    public async Task<ActionResult<LensVariantAttributeDto>> SetLensVariantAttribute(
+        Guid id, Guid variantId, UpsertLensVariantAttributeDto dto, CancellationToken ct)
+    {
+        return HandleResult(await Mediator.Send(
+            new SetLensVariantAttribute.Command { ProductId = id, VariantId = variantId, Dto = dto }, ct));
+    }
+
+    // ────────────────────── LENS COATING OPTIONS ─────────────────────────
+
+    /// <summary>
+    /// Thêm một coating option (UV, BlueLight...) vào Lens Product.
+    /// </summary>
+    [HttpPost("{id}/coating-options")]
+    public async Task<ActionResult<LensCoatingOptionDto>> AddLensCoatingOption(
+        Guid id, AddLensCoatingOptionDto dto, CancellationToken ct)
+    {
+        return HandleResult(await Mediator.Send(
+            new AddLensCoatingOption.Command { LensProductId = id, Dto = dto }, ct));
+    }
+
+    /// <summary>
+    /// Cập nhật coating option. Partial update — chỉ cần truyền field muốn thay đổi.
+    /// </summary>
+    [HttpPatch("{id}/coating-options/{coatingId}")]
+    public async Task<ActionResult<LensCoatingOptionDto>> UpdateLensCoatingOption(
+        Guid id, Guid coatingId, UpdateLensCoatingOptionDto dto, CancellationToken ct)
+    {
+        return HandleResult(await Mediator.Send(
+            new UpdateLensCoatingOption.Command { LensProductId = id, CoatingId = coatingId, Dto = dto }, ct));
+    }
+
+    /// <summary>
+    /// Xóa vĩnh viễn coating option. Để ẩn tạm thời, dùng PATCH với IsActive = false.
+    /// </summary>
+    [HttpDelete("{id}/coating-options/{coatingId}")]
+    public async Task<IActionResult> DeleteLensCoatingOption(Guid id, Guid coatingId, CancellationToken ct)
+    {
+        return HandleResult(await Mediator.Send(
+            new DeleteLensCoatingOption.Command { LensProductId = id, CoatingId = coatingId }, ct));
+    }
+
+    // ───────────────────── FRAME↔LENS COMPATIBILITY ──────────────────────
+
+    /// <summary>
+    /// Lấy danh sách Lens Product tương thích với Frame Product.
+    /// </summary>
+    [HttpGet("{id}/compatible-lenses")]
+    public async Task<ActionResult<List<CompatibleLensLinkDto>>> GetCompatibleLensLinks(Guid id, CancellationToken ct)
+    {
+        return HandleResult(await Mediator.Send(
+            new GetFrameCompatibleLensLinks.Query { FrameProductId = id }, ct));
+    }
+
+    /// <summary>
+    /// Link một Lens Product vào Frame Product (thêm compatibility).
+    /// </summary>
+    [HttpPost("{id}/compatible-lenses")]
+    public async Task<IActionResult> AddCompatibleLens(
+        Guid id, AddFrameLensCompatibilityDto dto, CancellationToken ct)
+    {
+        return HandleResult(await Mediator.Send(
+            new AddFrameLensCompatibility.Command { FrameProductId = id, LensProductId = dto.LensProductId }, ct));
+    }
+
+    /// <summary>
+    /// Xóa link tương thích giữa Frame Product và một Lens Product.
+    /// </summary>
+    [HttpDelete("{id}/compatible-lenses/{lensProductId}")]
+    public async Task<IActionResult> RemoveCompatibleLens(Guid id, Guid lensProductId, CancellationToken ct)
+    {
+        return HandleResult(await Mediator.Send(
+            new RemoveFrameLensCompatibility.Command { FrameProductId = id, LensProductId = lensProductId }, ct));
+    }
+}

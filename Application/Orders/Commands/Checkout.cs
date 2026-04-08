@@ -1,4 +1,5 @@
 using System.Data;
+using System.Text.Json;
 using Application.Core;
 using Application.Interfaces;
 using Application.Orders.DTOs;
@@ -38,10 +39,19 @@ public sealed class Checkout
             if (dto.DistrictId <= 0 || string.IsNullOrWhiteSpace(dto.WardCode))
                 return Result<CustomerOrderDto>.Failure("DistrictId and WardCode are required to calculate shipping fee.", 400);
 
-            decimal estimatedTotalAmount = await context.CartItems
-                .Where(ci => ci.Cart.UserId == userId && ci.Cart.Status == CartStatus.Active && dto.SelectedCartItemIds.Contains(ci.Id))
-                .Select(ci => ci.Quantity * ci.ProductVariant.Price)
-                .SumAsync(ct);
+            // Include lens price and coating in the estimated amount used for shipping calculation.
+            // Project each selected cart item directly to a single decimal total to avoid an anonymous intermediate projection.
+            List<decimal> shippingAmounts = await context.CartItems
+                .AsNoTracking()
+                .Where(ci => ci.Cart.UserId == userId
+                          && ci.Cart.Status == CartStatus.Active
+                          && dto.SelectedCartItemIds.Contains(ci.Id))
+                .Select(ci =>
+                    ((decimal)ci.Quantity * ci.ProductVariant.Price) +
+                    (ci.LensVariantId != null ? (decimal)ci.Quantity * ci.LensVariant!.Price : 0m) +
+                    ((decimal)ci.Quantity * ci.CoatingExtraPrice))
+                .ToListAsync(ct);
+            decimal estimatedTotalAmount = shippingAmounts.Sum();
 
             decimal precalculatedShippingFee;
             try
@@ -133,6 +143,37 @@ public sealed class Checkout
                             $"Product '{variant.VariantName}' is no longer available.", 400);
                 }
 
+                // ── Lens variants: aggregate + load + validate ──────────────────────────
+                var mergedLensItems = selectedItems
+                    .Where(i => i.LensVariantId.HasValue)
+                    .GroupBy(i => i.LensVariantId!.Value)
+                    .Select(g => new { LensVariantId = g.Key, Quantity = g.Sum(i => i.Quantity) })
+                    .ToList();
+
+                List<Guid> lensVariantIds = mergedLensItems.Select(i => i.LensVariantId).ToList();
+                List<ProductVariant> lensVariants = [];
+
+                if (lensVariantIds.Count > 0)
+                {
+                    lensVariants = await context.ProductVariants
+                        .Include(pv => pv.Product)
+                        .Where(pv => lensVariantIds.Contains(pv.Id))
+                        .ToListAsync(ct);
+
+                    if (lensVariants.Count != lensVariantIds.Distinct().Count())
+                        return Result<Guid>.Failure("One or more selected lens variants are no longer available.", 400);
+
+                    // Lock lens stocks alongside frame stocks to prevent race conditions
+                    _ = await context.GetStocksWithLockAsync(lensVariantIds, ct);
+
+                    foreach (var mergedLensItem in mergedLensItems)
+                    {
+                        ProductVariant lens = lensVariants.First(v => v.Id == mergedLensItem.LensVariantId);
+                        if (!lens.IsActive)
+                            return Result<Guid>.Failure($"Lens '{lens.VariantName}' is no longer available.", 400);
+                    }
+                }
+
                 // Phân loại items: PreOrder vs Regular
                 bool hasPreOrderItems = mergedItems
                     .Any(m => variants.First(v => v.Id == m.ProductVariantId).IsPreOrder);
@@ -170,27 +211,88 @@ public sealed class Checkout
                     }
                 }
 
+                // Lens stock check (only non-PreOrder lens variants)
+                foreach (var mergedLensItem in mergedLensItems)
+                {
+                    ProductVariant lens = lensVariants.First(v => v.Id == mergedLensItem.LensVariantId);
+                    if (!lens.IsPreOrder)
+                    {
+                        if (lens.Stock == null || lens.Stock.QuantityAvailable < mergedLensItem.Quantity)
+                            return Result<Guid>.Failure(
+                                $"Insufficient lens stock for '{lens.VariantName}'. Available: {lens.Stock?.QuantityAvailable ?? 0}.", 400);
+                    }
+                }
+
                 // 4. Calculate totals and build OrderItems.
-                // Items with prescriptions are kept as individual order lines so each line can hold
-                // a distinct prescription. Non-prescription items are merged by variant as before.
+                //
+                // Merging rules:
+                //   - Bare-frame items (no lens, no prescription) → merged by variant (aggregate qty)
+                //   - Items with a lens selection OR a prescription → individual lines (never merged)
+                //     • Lens items: carry LensVariantId, LensUnitPrice, CoatingExtraPrice snapshot
+                //     • Prescription items: linked via cartItemOrderItemMap
+
                 HashSet<Guid> prescriptionCartItemIds = dto.Prescriptions?
                     .Select(p => p.CartItemId)
                     .ToHashSet() ?? [];
 
-                // cartItemId → OrderItem lookup for prescription items (used when linking prescriptions below)
-                Dictionary<Guid, OrderItem> cartItemOrderItemMap = [];
+                // "Individual" = has lens OR has prescription (or both)
+                HashSet<Guid> individualCartItemIds = new HashSet<Guid>(
+                    selectedItems
+                        .Where(i => i.LensVariantId.HasValue || prescriptionCartItemIds.Contains(i.Id))
+                        .Select(i => i.Id));
 
+                Dictionary<Guid, OrderItem> cartItemOrderItemMap = [];
                 decimal totalAmount = 0;
                 List<OrderItem> orderItems = [];
 
-                // Non-prescription items: merge by variant (aggregate quantity)
-                var mergedNonPrescriptionItems = selectedItems
-                    .Where(i => !prescriptionCartItemIds.Contains(i.Id))
+                // Batch-load coating details for rich snapshot.
+                // Cart stores only IDs (SelectedCoatingIdsJson); we re-query here to snapshot
+                // name + price at the moment of purchase — guarantees the snapshot stays valid
+                // even if the coating record is later edited or soft-deleted.
+                //
+                // Safe-parse: corrupt/legacy JSON returns [] instead of throwing inside the transaction.
+                // CoatingExtraPrice on CartItem is the authoritative pricing source, so the worst case
+                // for corrupt JSON is an incomplete audit snapshot (not a pricing error or a 500).
+                static List<Guid> ParseCoatingIdsSafely(string? json)
+                {
+                    if (string.IsNullOrWhiteSpace(json)) return [];
+                    try
+                    {
+                        return JsonSerializer.Deserialize<List<Guid>>(json) ?? [];
+                    }
+                    catch (Exception ex) when (ex is JsonException or NotSupportedException)
+                    {
+                        return [];
+                    }
+                }
+
+                HashSet<Guid> allCoatingIdSet = [];
+                foreach (CartItem selectedItem in selectedItems)
+                {
+                    foreach (Guid id in ParseCoatingIdsSafely(selectedItem.SelectedCoatingIdsJson))
+                        allCoatingIdSet.Add(id);
+                }
+                List<Guid> allCoatingIds = [.. allCoatingIdSet];
+
+                Dictionary<Guid, LensCoatingOption> coatingLookup = [];
+                if (allCoatingIds.Count > 0)
+                {
+                    coatingLookup = (await context.LensCoatingOptions
+                        .AsNoTracking()
+                        .Where(c => allCoatingIds.Contains(c.Id))
+                        .ToListAsync(ct))
+                        .ToDictionary(c => c.Id);
+                }
+
+
+                // Group 1: Bare-frame items (no lens, no prescription) → merge by variant
+                var mergedBareItems = selectedItems
+                    .Where(i => !individualCartItemIds.Contains(i.Id))
                     .GroupBy(i => i.ProductVariantId)
                     .Select(g => new { ProductVariantId = g.Key, Quantity = g.Sum(i => i.Quantity) })
                     .ToList();
 
-                foreach (var item in mergedNonPrescriptionItems)
+                foreach (var item in mergedBareItems)
                 {
                     ProductVariant variant = variants.First(v => v.Id == item.ProductVariantId);
                     decimal unitPrice = variant.Price;
@@ -199,28 +301,55 @@ public sealed class Checkout
                     orderItems.Add(new OrderItem
                     {
                         ProductVariantId = item.ProductVariantId,
-                        Quantity = item.Quantity,
-                        UnitPrice = unitPrice,
-                        OrderId = Guid.Empty,
+                        Quantity         = item.Quantity,
+                        UnitPrice        = unitPrice,
+                        OrderId          = Guid.Empty,
                     });
                 }
 
-                // Prescription items: one OrderItem per cart item to allow a distinct prescription per line
-                foreach (CartItem cartItem in selectedItems.Where(i => prescriptionCartItemIds.Contains(i.Id)))
+                // Group 2: Individual items (lens-selected OR prescription, or both)
+                foreach (CartItem cartItem in selectedItems.Where(i => individualCartItemIds.Contains(i.Id)))
                 {
                     ProductVariant variant = variants.First(v => v.Id == cartItem.ProductVariantId);
                     decimal unitPrice = variant.Price;
-                    totalAmount += unitPrice * cartItem.Quantity;
+
+                    // Snapshot lens price at checkout time
+                    decimal lensUnitPrice = 0;
+                    if (cartItem.LensVariantId.HasValue)
+                    {
+                        ProductVariant? lensVariant = lensVariants
+                            .FirstOrDefault(v => v.Id == cartItem.LensVariantId.Value);
+                        lensUnitPrice = lensVariant?.Price ?? 0;
+                    }
+
+                    totalAmount += (unitPrice + lensUnitPrice + cartItem.CoatingExtraPrice) * cartItem.Quantity;
 
                     OrderItem orderItem = new OrderItem
                     {
-                        ProductVariantId = cartItem.ProductVariantId,
-                        Quantity = cartItem.Quantity,
-                        UnitPrice = unitPrice,
-                        OrderId = Guid.Empty,
+                        ProductVariantId  = cartItem.ProductVariantId,
+                        Quantity          = cartItem.Quantity,
+                        UnitPrice         = unitPrice,
+                        LensVariantId     = cartItem.LensVariantId,
+                        LensUnitPrice     = lensUnitPrice,
+                        CoatingExtraPrice = cartItem.CoatingExtraPrice,
+                        // Rich snapshot: [{Id, CoatingName, Price}]
+                        // Immutable audit — survives coating deletion/rename/reprice.
+                        CoatingsSnapshot = cartItem.SelectedCoatingIdsJson != null
+                            ? JsonSerializer.Serialize(
+                                JsonSerializer.Deserialize<List<Guid>>(cartItem.SelectedCoatingIdsJson)!
+                                    .Select(id => coatingLookup.TryGetValue(id, out LensCoatingOption? c)
+                                        ? new { c.Id, c.CoatingName, Price = c.ExtraPrice }
+                                        : null)
+                                    .Where(x => x != null)
+                                    .ToList())
+                            : null,
+                        OrderId           = Guid.Empty,
                     };
                     orderItems.Add(orderItem);
-                    cartItemOrderItemMap[cartItem.Id] = orderItem;
+
+                    // Link to prescription if this cart item has one
+                    if (prescriptionCartItemIds.Contains(cartItem.Id))
+                        cartItemOrderItemMap[cartItem.Id] = orderItem;
                 }
 
                 // Use the precalculated shipping fee to avoid external API calls inside Serializable transaction
@@ -338,6 +467,27 @@ public sealed class Checkout
                             stock.UpdatedAt = DateTime.UtcNow;
                             stock.UpdatedBy = userId;
                         }
+                    }
+                }
+
+                // 8b. Reserve lens stock (mirrors frame stock logic above)
+                foreach (var mergedLensItem in mergedLensItems)
+                {
+                    ProductVariant lens = lensVariants.First(v => v.Id == mergedLensItem.LensVariantId);
+                    if (lens.IsPreOrder)
+                    {
+                        if (lens.Stock == null)
+                            return Result<Guid>.Failure(
+                                $"PreOrder lens '{lens.VariantName}' has no stock record configured.", 400);
+                        lens.Stock.QuantityPreOrdered += mergedLensItem.Quantity;
+                        lens.Stock.UpdatedAt = DateTime.UtcNow;
+                        lens.Stock.UpdatedBy = userId;
+                    }
+                    else if (lens.Stock != null)
+                    {
+                        lens.Stock.QuantityReserved += mergedLensItem.Quantity;
+                        lens.Stock.UpdatedAt = DateTime.UtcNow;
+                        lens.Stock.UpdatedBy = userId;
                     }
                 }
 

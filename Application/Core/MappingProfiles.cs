@@ -92,7 +92,10 @@ public sealed class MappingProfiles : Profile
             .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()))
             .ForMember(d => d.TotalItems, o => o.MapFrom(s => s.Items.Sum(i => i.Quantity)))
             .ForMember(d => d.TotalPrice, o => o.MapFrom(s =>
-                s.Items.Sum(i => i.Quantity * (i.ProductVariant != null ? i.ProductVariant.Price : 0))));
+                s.Items.Sum(i => i.Quantity * (
+                    (i.ProductVariant != null ? i.ProductVariant.Price : 0)
+                    + (i.LensVariant != null ? i.LensVariant.Price : 0)
+                    + i.CoatingExtraPrice))));
 
         CreateMap<CartItem, CartItemDto>()
             .ForMember(d => d.Sku, o => o.MapFrom(s => s.ProductVariant != null ? s.ProductVariant.SKU : null))
@@ -123,7 +126,20 @@ public sealed class MappingProfiles : Profile
                                 .FirstOrDefault()
                             : null))
                     : null))
-            .ForMember(d => d.Subtotal, o => o.MapFrom(s => s.Quantity * (s.ProductVariant != null ? s.ProductVariant.Price : 0)));
+            // Lens fields
+            .ForMember(d => d.LensVariantName, o => o.MapFrom(s =>
+                s.LensVariant != null ? s.LensVariant.VariantName : null))
+            .ForMember(d => d.LensPrice, o => o.MapFrom(s =>
+                s.LensVariant != null ? s.LensVariant.Price : 0))
+            // Prescription flag
+            .ForMember(d => d.HasPrescription, o => o.MapFrom(s =>
+                s.PrescriptionSphOD.HasValue || s.PrescriptionSphOS.HasValue))
+            // Subtotal: Quantity × (FramePrice + LensPrice + CoatingExtraPrice)
+            .ForMember(d => d.Subtotal, o => o.MapFrom(s =>
+                s.Quantity * (
+                    (s.ProductVariant != null ? s.ProductVariant.Price : 0)
+                    + (s.LensVariant != null ? s.LensVariant.Price : 0)
+                    + s.CoatingExtraPrice)));
 
         // Address mappings
         CreateMap<Address, AddressDto>();

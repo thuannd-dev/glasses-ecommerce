@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Persistence;
 
@@ -11,9 +12,11 @@ using Persistence;
 namespace Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260407190420_AddLensSystem")]
+    partial class AddLensSystem
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -391,10 +394,6 @@ namespace Persistence.Migrations
 
                     b.ToTable("CartItems", t =>
                         {
-                            t.HasCheckConstraint("CK_CartItem_AxisOD", "[PrescriptionAxisOD] IS NULL OR ([PrescriptionAxisOD] >= 0 AND [PrescriptionAxisOD] <= 180)");
-
-                            t.HasCheckConstraint("CK_CartItem_AxisOS", "[PrescriptionAxisOS] IS NULL OR ([PrescriptionAxisOS] >= 0 AND [PrescriptionAxisOS] <= 180)");
-
                             t.HasCheckConstraint("CK_CartItem_CoatingExtraPrice", "[CoatingExtraPrice] >= 0");
 
                             t.HasCheckConstraint("CK_CartItem_Quantity", "Quantity > 0");
