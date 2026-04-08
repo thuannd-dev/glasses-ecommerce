@@ -23,11 +23,18 @@ public sealed class AddItemToCartValidator : AbstractValidator<AddItemToCart.Com
             .Must(ids => ids == null || ids.Count > 0)
             .WithMessage("SelectedCoatingIds must be either null (no coating) or a non-empty list. Use null to indicate no coating selection.");
 
-        // Coating without lens: when no lens is selected, coatings must be omitted entirely.
-        RuleFor(x => x.AddCartItemDto.SelectedCoatingIds)
-            .Must(ids => ids == null)
-            .WithMessage("Coating options can only be added when a lens variant is selected.")
-            .When(x => !x.AddCartItemDto.LensVariantId.HasValue);
+        // Bare frame validation: when no lens variant is selected, strictly reject ANY lens-related input.
+        When(x => !x.AddCartItemDto.LensVariantId.HasValue, () =>
+        {
+            RuleFor(x => x.AddCartItemDto)
+                .Must(dto => !(
+                    dto.SelectedCoatingIds is { Count: > 0 } ||
+                    dto.SphOD.HasValue || dto.CylOD.HasValue || dto.AxisOD.HasValue || dto.AddOD.HasValue || dto.PdOD.HasValue ||
+                    dto.SphOS.HasValue || dto.CylOS.HasValue || dto.AxisOS.HasValue || dto.AddOS.HasValue || dto.PdOS.HasValue ||
+                    dto.Pd.HasValue))
+                .WithMessage("Lens prescription and coating selections require a lens variant.")
+                .WithName("BareFrameRequirements");
+        });
 
         // ── Rules only applicable when a lens variant is provided ────────────
         When(x => x.AddCartItemDto.LensVariantId.HasValue, () =>
