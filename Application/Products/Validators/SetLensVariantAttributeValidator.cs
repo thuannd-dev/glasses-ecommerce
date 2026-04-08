@@ -59,6 +59,20 @@ public sealed class SetLensVariantAttributeValidator : AbstractValidator<SetLens
                 .Null()
                 .WithMessage("ADD range is not applicable for SingleVision lens design.")
                 .When(x => x.Dto.LensDesign == LensDesign.SingleVision);
+
+            RuleFor(x => x.Dto)
+                .Must(dto => dto.LensDesign == LensDesign.SingleVision
+                    || (dto.AddMin.HasValue == dto.AddMax.HasValue))
+                .WithMessage("ADD range must include both AddMin and AddMax, or neither, for non-SingleVision lens designs.")
+                .WithName("AddRangeConsistency");
+
+            RuleFor(x => x.Dto)
+                .Must(dto => dto.LensDesign == LensDesign.SingleVision
+                    || !dto.AddMin.HasValue
+                    || !dto.AddMax.HasValue
+                    || dto.AddMin.Value <= dto.AddMax.Value)
+                .WithMessage("AddMin must be ≤ AddMax.")
+                .WithName("AddRangeValues");
         });
     }
 }
