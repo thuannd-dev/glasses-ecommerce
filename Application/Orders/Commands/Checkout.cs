@@ -39,21 +39,19 @@ public sealed class Checkout
             if (dto.DistrictId <= 0 || string.IsNullOrWhiteSpace(dto.WardCode))
                 return Result<CustomerOrderDto>.Failure("DistrictId and WardCode are required to calculate shipping fee.", 400);
 
-            // Include lens price + coating in shipping weight estimate.
-            // ProjectTo is used because SumAsync cannot reliably translate optional navigation joins.
-            var _shippingAmounts = await context.CartItems
+            // Include lens price and coating in the estimated amount used for shipping calculation.
+            // Project each selected cart item directly to a single decimal total to avoid an anonymous intermediate projection.
+            List<decimal> shippingAmounts = await context.CartItems
+                .AsNoTracking()
                 .Where(ci => ci.Cart.UserId == userId
                           && ci.Cart.Status == CartStatus.Active
                           && dto.SelectedCartItemIds.Contains(ci.Id))
-                .Select(ci => new
-                {
-                    FrameAmt   = (decimal)ci.Quantity * ci.ProductVariant.Price,
-                    LensAmt    = ci.LensVariantId != null ? (decimal)ci.Quantity * ci.LensVariant!.Price : 0m,
-                    CoatingAmt = (decimal)ci.Quantity * ci.CoatingExtraPrice,
-                })
+                .Select(ci =>
+                    ((decimal)ci.Quantity * ci.ProductVariant.Price) +
+                    (ci.LensVariantId != null ? (decimal)ci.Quantity * ci.LensVariant!.Price : 0m) +
+                    ((decimal)ci.Quantity * ci.CoatingExtraPrice))
                 .ToListAsync(ct);
-            decimal estimatedTotalAmount = _shippingAmounts
-                .Sum(x => x.FrameAmt + x.LensAmt + x.CoatingAmt);
+            decimal estimatedTotalAmount = shippingAmounts.Sum();
 
             decimal precalculatedShippingFee;
             try
@@ -251,11 +249,30 @@ public sealed class Checkout
                 // Cart stores only IDs (SelectedCoatingIdsJson); we re-query here to snapshot
                 // name + price at the moment of purchase — guarantees the snapshot stays valid
                 // even if the coating record is later edited or soft-deleted.
-                List<Guid> allCoatingIds = selectedItems
-                    .Where(i => i.SelectedCoatingIdsJson != null)
-                    .SelectMany(i => JsonSerializer.Deserialize<List<Guid>>(i.SelectedCoatingIdsJson!) ?? [])
-                    .Distinct()
-                    .ToList();
+                //
+                // Safe-parse: corrupt/legacy JSON returns [] instead of throwing inside the transaction.
+                // CoatingExtraPrice on CartItem is the authoritative pricing source, so the worst case
+                // for corrupt JSON is an incomplete audit snapshot (not a pricing error or a 500).
+                static List<Guid> ParseCoatingIdsSafely(string? json)
+                {
+                    if (string.IsNullOrWhiteSpace(json)) return [];
+                    try
+                    {
+                        return JsonSerializer.Deserialize<List<Guid>>(json) ?? [];
+                    }
+                    catch (Exception ex) when (ex is JsonException or NotSupportedException)
+                    {
+                        return [];
+                    }
+                }
+
+                HashSet<Guid> allCoatingIdSet = [];
+                foreach (CartItem selectedItem in selectedItems)
+                {
+                    foreach (Guid id in ParseCoatingIdsSafely(selectedItem.SelectedCoatingIdsJson))
+                        allCoatingIdSet.Add(id);
+                }
+                List<Guid> allCoatingIds = [.. allCoatingIdSet];
 
                 Dictionary<Guid, LensCoatingOption> coatingLookup = [];
                 if (allCoatingIds.Count > 0)
@@ -266,6 +283,7 @@ public sealed class Checkout
                         .ToListAsync(ct))
                         .ToDictionary(c => c.Id);
                 }
+
 
                 // Group 1: Bare-frame items (no lens, no prescription) → merge by variant
                 var mergedBareItems = selectedItems
