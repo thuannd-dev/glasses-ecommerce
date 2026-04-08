@@ -120,8 +120,9 @@ public sealed class AddItemToCart
                 }
 
                 // ── AXIS validation (DB-dependent rules only) ─────────────
-                // Rule 1: Lens is spherical-only (CylMax == 0) → reject any AXIS input (needs attr.CylMax from DB)
-                if (attr.CylMax == 0 && (dto.AxisOD.HasValue || dto.AxisOS.HasValue))
+                // Rule 1: Lens is spherical-only (CylMin == 0 && CylMax == 0) → reject any AXIS input
+                bool isSphericalOnly = attr.CylMin == 0 && attr.CylMax == 0;
+                if (isSphericalOnly && (dto.AxisOD.HasValue || dto.AxisOS.HasValue))
                     return Result<CartItemDto>.Failure(
                         "This lens does not support astigmatism correction. AXIS values should not be provided.", 400);
 
