@@ -213,6 +213,7 @@ public sealed class AddItemToCart
                 return Result<CartItemDto>.Failure("Failed to add item to cart.", 500);
 
             CartItemDto? cartItemDto = await context.CartItems
+                .AsNoTracking()
                 .Where(ci => ci.Id == cartItem.Id)
                 .ProjectTo<CartItemDto>(mapper.ConfigurationProvider)
                 .FirstOrDefaultAsync(cancellationToken);
