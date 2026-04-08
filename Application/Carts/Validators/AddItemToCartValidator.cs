@@ -23,9 +23,9 @@ public sealed class AddItemToCartValidator : AbstractValidator<AddItemToCart.Com
             .Must(ids => ids == null || ids.Count > 0)
             .WithMessage("SelectedCoatingIds must be either null (no coating) or a non-empty list. Use null to indicate no coating selection.");
 
-        // Coating without lens: pure cross-field, no DB needed → FluentValidation
+        // Coating without lens: when no lens is selected, coatings must be omitted entirely.
         RuleFor(x => x.AddCartItemDto.SelectedCoatingIds)
-            .Must(ids => ids == null || ids.Count == 0)
+            .Must(ids => ids == null)
             .WithMessage("Coating options can only be added when a lens variant is selected.")
             .When(x => !x.AddCartItemDto.LensVariantId.HasValue);
 

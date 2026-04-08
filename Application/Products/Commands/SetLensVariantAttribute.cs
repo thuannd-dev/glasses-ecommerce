@@ -13,6 +13,7 @@ public sealed class SetLensVariantAttribute
 {
     public sealed class Command : IRequest<Result<LensVariantAttributeDto>>
     {
+        public required Guid ProductId { get; set; }
         public required Guid VariantId { get; set; }
         public required UpsertLensVariantAttributeDto Dto { get; set; }
     }
@@ -35,6 +36,10 @@ public sealed class SetLensVariantAttribute
             if (variant.Product.Type != ProductType.Lens)
                 return Result<LensVariantAttributeDto>.Failure(
                     "Lens attributes can only be set on variants of Lens products.", 400);
+
+            if (variant.ProductId != request.ProductId)
+                return Result<LensVariantAttributeDto>.Failure(
+                    "The specified variant does not belong to the provided product.", 400);
 
             // Upsert
             if (variant.LensVariantAttribute == null)

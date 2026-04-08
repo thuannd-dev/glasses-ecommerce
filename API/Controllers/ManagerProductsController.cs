@@ -164,7 +164,7 @@ public sealed class ManagerProductsController : BaseApiController
         Guid id, Guid variantId, UpsertLensVariantAttributeDto dto, CancellationToken ct)
     {
         return HandleResult(await Mediator.Send(
-            new SetLensVariantAttribute.Command { VariantId = variantId, Dto = dto }, ct));
+            new SetLensVariantAttribute.Command { ProductId = id, VariantId = variantId, Dto = dto }, ct));
     }
 
     // ────────────────────── LENS COATING OPTIONS ─────────────────────────
