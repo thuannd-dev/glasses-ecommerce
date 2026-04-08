@@ -31,11 +31,15 @@ public sealed class AddItemToCart
             // ── 1. Validate frame variant ────────────────────────────────
             ProductVariant? frameVariant = await context.ProductVariants
                 .AsNoTracking()
+                .Include(pv => pv.Product)
                 .Include(pv => pv.Stock)
                 .FirstOrDefaultAsync(pv => pv.Id == dto.ProductVariantId, cancellationToken);
 
             if (frameVariant == null)
                 return Result<CartItemDto>.Failure("Product variant not found.", 404);
+
+            if (frameVariant.Product.Type != ProductType.Frame)
+                return Result<CartItemDto>.Failure("The base product variant must be a frame.", 400);
 
             if (!frameVariant.IsActive)
                 return Result<CartItemDto>.Failure("Product variant is not available.", 400);
@@ -47,7 +51,7 @@ public sealed class AddItemToCart
                         $"Insufficient stock. Only {frameVariant.Stock?.QuantityAvailable ?? 0} items available.", 400);
             }
 
-            decimal lensPrice = 0;
+
             decimal coatingExtraPrice = 0;
             string? coatingIdsJson = null;
 
@@ -135,7 +139,7 @@ public sealed class AddItemToCart
                     return Result<CartItemDto>.Failure(
                         "ADD values cannot be used with Single Vision lenses.", 400);
 
-                lensPrice = lensVariant.Price;
+
 
                 // ── 3. Validate coating IDs ────────────────────────────────
                 if (dto.SelectedCoatingIds is { Count: > 0 })
