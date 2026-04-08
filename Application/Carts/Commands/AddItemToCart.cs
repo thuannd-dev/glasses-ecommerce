@@ -48,6 +48,11 @@ public sealed class AddItemToCart
             }
 
             // ── 2. Validate lens variant (optional) ──────────────────────
+            // Guard: coating options are meaningless without a lens
+            if (dto.SelectedCoatingIds is { Count: > 0 } && !dto.LensVariantId.HasValue)
+                return Result<CartItemDto>.Failure(
+                    "Coating options can only be added when a lens variant is selected.", 400);
+
             decimal lensPrice = 0;
             decimal coatingExtraPrice = 0;
             string? coatingIdsJson = null;
@@ -69,6 +74,15 @@ public sealed class AddItemToCart
 
                 if (lensVariant.Product.Type != ProductType.Lens)
                     return Result<CartItemDto>.Failure("Selected variant is not a lens product.", 400);
+
+                // Validate frame ↔ lens compatibility
+                bool isCompatible = await context.FrameLensCompatibilities
+                    .AnyAsync(flc => flc.FrameProductId == frameVariant.ProductId
+                                  && flc.LensProductId == lensVariant.ProductId, cancellationToken);
+
+                if (!isCompatible)
+                    return Result<CartItemDto>.Failure(
+                        "Selected lens is not compatible with this frame.", 400);
 
                 if (lensVariant.LensVariantAttribute == null)
                     return Result<CartItemDto>.Failure(
