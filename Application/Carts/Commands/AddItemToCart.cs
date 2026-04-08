@@ -130,6 +130,11 @@ public sealed class AddItemToCart
                     return Result<CartItemDto>.Failure(
                         $"Left eye AXIS ({dto.AxisOS.Value}°) is outside this lens range ({attr.AxisMin}° to {attr.AxisMax}°).", 400);
 
+                // ADD validation: only valid for Progressive / Bifocal (needs attr.LensDesign from DB)
+                if ((dto.AddOD.HasValue || dto.AddOS.HasValue) && attr.LensDesign == LensDesign.SingleVision)
+                    return Result<CartItemDto>.Failure(
+                        "ADD values cannot be used with Single Vision lenses.", 400);
+
                 lensPrice = lensVariant.Price;
 
                 // ── 3. Validate coating IDs ────────────────────────────────

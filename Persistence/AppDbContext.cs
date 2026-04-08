@@ -691,6 +691,15 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
                     "CK_CartItem_CoatingExtraPrice",
                     "[CoatingExtraPrice] >= 0"
                 );
+                // AXIS [0, 180] — matches ophthalmic domain convention
+                t.HasCheckConstraint(
+                    "CK_CartItem_AxisOD",
+                    "[PrescriptionAxisOD] IS NULL OR ([PrescriptionAxisOD] >= 0 AND [PrescriptionAxisOD] <= 180)"
+                );
+                t.HasCheckConstraint(
+                    "CK_CartItem_AxisOS",
+                    "[PrescriptionAxisOS] IS NULL OR ([PrescriptionAxisOS] >= 0 AND [PrescriptionAxisOS] <= 180)"
+                );
             });
         });
 
