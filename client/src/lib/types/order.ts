@@ -40,6 +40,8 @@ export interface OrderItemPrescriptionPayload {
 /** Prescription request shape for POST /api/me/orders (PascalCase for API) */
 export interface PrescriptionInputDto {
   Details: PrescriptionDetailInputDto[];
+  /** Optional prescription paper image (Cloudinary). */
+  ImageUrl?: string | null;
 }
 
 /** One eye detail for prescription (PascalCase for API). Eye: 1 = Left, 2 = Right. */

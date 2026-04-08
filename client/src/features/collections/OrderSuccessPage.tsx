@@ -16,6 +16,10 @@ const PALETTE = {
   accent: "#B68C5A",
 };
 
+/** Order summary line: thumbnail + gap 1.5 (12px) — prescription block aligns with product text when thumb shown. */
+const ORDER_SUMMARY_THUMB_PX = 44;
+const ORDER_SUMMARY_ROW_GAP_PX = 12;
+
 function getStatusChipStyle(status: string | undefined) {
   if (!status) return {};
   const lower = status.toLowerCase();
@@ -474,72 +478,92 @@ export default function OrderSuccessPage() {
                 Order summary
               </Typography>
               <Divider sx={{ my: 2, borderColor: PALETTE.divider }} />
-              {order.items.map((item) => (
+              {order.items.map((item, idx) => (
                 <Box
                   key={item.id}
                   sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 1.5,
-                    mb: 1.25,
+                    mb: 1.75,
+                    pb: 1.5,
+                    borderBottom:
+                      idx < order.items.length - 1
+                        ? `1px solid ${PALETTE.divider}`
+                        : "none",
                   }}
                 >
                   <Box
                     sx={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: 1.5,
-                      bgcolor: "#F7F7F7",
-                      overflow: "hidden",
-                      flexShrink: 0,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1.5,
                     }}
                   >
                     {item.imageUrl ? (
                       <Box
-                        component="img"
-                        src={item.imageUrl}
-                        alt=""
-                        sx={{ width: "100%", height: "100%", objectFit: "cover" }}
-                      />
+                        sx={{
+                          width: ORDER_SUMMARY_THUMB_PX,
+                          height: ORDER_SUMMARY_THUMB_PX,
+                          borderRadius: 1.5,
+                          bgcolor: "#F7F7F7",
+                          overflow: "hidden",
+                          flexShrink: 0,
+                        }}
+                      >
+                        <Box
+                          component="img"
+                          src={item.imageUrl}
+                          alt={item.productName ? `${item.productName} thumbnail` : "Product thumbnail"}
+                          sx={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        />
+                      </Box>
                     ) : null}
-                  </Box>
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography
+                        sx={{
+                          fontSize: 14,
+                          color: PALETTE.textMain,
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                      >
+                        {item.productName}
+                      </Typography>
+                      <Typography
+                        sx={{
+                          fontSize: 12,
+                          color: PALETTE.textMuted,
+                        }}
+                      >
+                        {item.variantName ? `${item.variantName} · ` : ""}
+                        × {item.quantity}
+                      </Typography>
+                    </Box>
                     <Typography
                       sx={{
+                        fontWeight: 700,
                         fontSize: 14,
                         color: PALETTE.textMain,
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
+                        flexShrink: 0,
                       }}
                     >
-                      {item.productName}
+                      {formatMoney(item.totalPrice)}
                     </Typography>
-                    <Typography
-                      sx={{
-                        fontSize: 12,
-                        color: PALETTE.textMuted,
-                      }}
-                    >
-                      {item.variantName ? `${item.variantName} · ` : ""}
-                      × {item.quantity}
-                    </Typography>
-                    {(() => {
-                      const prescription = getOrderPrescription(order.id, item.id);
-                      return prescription ? (
-                        <PrescriptionDisplay prescription={prescription} variant="inline" />
-                      ) : null;
-                    })()}
                   </Box>
-                  <Typography
-                    sx={{
-                      fontWeight: 700,
-                      fontSize: 14,
-                      color: PALETTE.textMain,
-                    }}
-                  >
-                    {formatMoney(item.totalPrice)}
-                  </Typography>
+                  {(() => {
+                    const prescription = getOrderPrescription(order.id, item.id);
+                    return prescription ? (
+                      <Box
+                        sx={{
+                          mt: 1,
+                          pl: item.imageUrl
+                            ? `${ORDER_SUMMARY_THUMB_PX + ORDER_SUMMARY_ROW_GAP_PX}px`
+                            : 0,
+                        }}
+                      >
+                        <PrescriptionDisplay prescription={prescription} variant="block" />
+                      </Box>
+                    ) : null;
+                  })()}
                 </Box>
               ))}
               <Divider sx={{ my: 2, borderColor: PALETTE.divider }} />

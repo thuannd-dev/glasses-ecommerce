@@ -11,6 +11,8 @@ interface ImportMetaEnv {
   readonly VITE_OPENAI_API_KEY?: string;
   readonly VITE_OPENAI_API_URL?: string;
   readonly VITE_OPENAI_MODEL?: string;
+  /** Cloudinary cloud name for trusted prescription image URLs (default matches app uploads). */
+  readonly VITE_CLOUDINARY_CLOUD_NAME?: string;
 }
 
 interface ImportMeta {

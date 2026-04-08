@@ -1,5 +1,6 @@
 import { Box, Typography } from "@mui/material";
 
+import { clampLensProgressStepIndex } from "./lensFlowSteps";
 import { LENS_FLOW_ACCENT, LENS_FLOW_DONE_LABEL } from "./lensFlowTheme";
 
 const TRACK = "rgba(22, 23, 27, 0.08)";
@@ -16,6 +17,8 @@ type Props = {
  * Minimal progress rail — no numbered circles. Suited for premium eyewear flows.
  */
 export function LuxuryLensProgress({ steps, currentStepIndex, id }: Props) {
+    const safeStepIndex = clampLensProgressStepIndex(currentStepIndex, steps.length);
+
     return (
         <Box
             id={id}
@@ -32,8 +35,8 @@ export function LuxuryLensProgress({ steps, currentStepIndex, id }: Props) {
                 }}
             >
                 {steps.map((_, i) => {
-                    const done = i < currentStepIndex;
-                    const active = i === currentStepIndex;
+                    const done = i < safeStepIndex;
+                    const active = i === safeStepIndex;
                     return (
                         <Box
                             key={i}
@@ -64,8 +67,8 @@ export function LuxuryLensProgress({ steps, currentStepIndex, id }: Props) {
                 }}
             >
                 {steps.map((label, i) => {
-                    const done = i < currentStepIndex;
-                    const active = i === currentStepIndex;
+                    const done = i < safeStepIndex;
+                    const active = i === safeStepIndex;
                     return (
                         <Typography
                             key={label}

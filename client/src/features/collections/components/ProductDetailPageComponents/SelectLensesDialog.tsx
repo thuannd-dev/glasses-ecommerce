@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import {
+    Alert,
     Dialog,
     DialogActions,
     DialogContent,
@@ -7,6 +8,7 @@ import {
     Button,
     Box,
     Container,
+    Link,
     Typography,
     TextField,
     Table,
@@ -36,6 +38,8 @@ import {
     LENS_CONFIGURATOR_MAX_WIDTH_PX,
     lensEmbeddedGridSx,
 } from "./lensSelection/lensConfiguratorLayout";
+import type { PrescriptionFormOcrSeed } from "../../../../lib/utils/mapPrescriptionOcrToFormSeed";
+import { toast } from "react-toastify";
 
 const INITIAL_DETAILS: PrescriptionDetailRow[] = [
     { eye: 1, sph: null, cyl: null, axis: null, pd: null, add: null },
@@ -88,6 +92,9 @@ function isPdChoiceValid(value: string, mode: "single" | "dual"): boolean {
 const SPH_OPTIONS = buildSphOptions();
 const CYL_OPTIONS = buildCylOptions();
 
+/** Reading addition (optional). +0.25 … +4.00 D in 0.25 steps — multifocal / near segment. */
+const ADD_OPTIONS = Array.from({ length: 16 }, (_, i) => ((i + 1) * 0.25).toFixed(2));
+
 const NAV_OFFSET_PT = "calc(56px + 24px)";
 
 type Props = {
@@ -138,6 +145,8 @@ export function SelectLensesDialog({
     const [pdLeft, setPdLeft] = useState<string>("");
     const [pdRight, setPdRight] = useState<string>("");
     const [pdHelpOpen, setPdHelpOpen] = useState(false);
+    /** Set when user came from photo upload + OCR — shown in banner and sent as ImageUrl on order. */
+    const [rxPrescriptionImageUrl, setRxPrescriptionImageUrl] = useState<string | null>(null);
 
     const prescription: PrescriptionData = useMemo(() => {
         const rows = details.map((row) => {
@@ -152,8 +161,25 @@ export function SelectLensesDialog({
                 pd: pdNum === undefined || Number.isNaN(pdNum) ? null : pdNum,
             };
         });
-        return { details: rows };
-    }, [details, pdSingle, pdLeft, pdRight, twoPdNumbers]);
+        const base: PrescriptionData = { details: rows };
+        if (rxPrescriptionImageUrl?.trim()) {
+            return { ...base, imageUrl: rxPrescriptionImageUrl.trim() };
+        }
+        return base;
+    }, [details, pdSingle, pdLeft, pdRight, twoPdNumbers, rxPrescriptionImageUrl]);
+
+    const handleApplyOcrFromUpload = useCallback((seed: PrescriptionFormOcrSeed) => {
+        setDetails(seed.details.map((d) => ({ ...d })));
+        setPdSingle(seed.pdSingle);
+        setTwoPdNumbers(seed.twoPdNumbers);
+        setPdLeft(seed.pdLeft);
+        setPdRight(seed.pdRight);
+        setRxPrescriptionImageUrl(seed.imageUrl);
+        setHasEnteredPrescriptionFlow(true);
+        if (seed.ocrWarnings.length > 0) {
+            toast.info(seed.ocrWarnings.slice(0, 3).join(" · "));
+        }
+    }, []);
 
     useEffect(() => {
         if (!open) {
@@ -172,6 +198,7 @@ export function SelectLensesDialog({
         setPdRight("");
         setTwoPdNumbers(false);
         setPdHelpOpen(false);
+        setRxPrescriptionImageUrl(null);
     }, [open]);
 
     const handleUsagePick = useCallback((pick: LensUsagePick) => {
@@ -231,6 +258,7 @@ export function SelectLensesDialog({
         setHasEnteredPrescriptionFlow(false);
         setStep("form");
         setRxUsageLabel("Single Vision");
+        setRxPrescriptionImageUrl(null);
     }, []);
 
     const formatNum = (n: number | null) =>
@@ -528,7 +556,10 @@ export function SelectLensesDialog({
                                         railVariant="circles"
                                         onPrevious={
                                             step === "form"
-                                                ? () => setHasEnteredPrescriptionFlow(false)
+                                                ? () => {
+                                                      setRxPrescriptionImageUrl(null);
+                                                      setHasEnteredPrescriptionFlow(false);
+                                                  }
                                                 : handleEdit
                                         }
                                     />
@@ -543,6 +574,22 @@ export function SelectLensesDialog({
                                             alignItems: "stretch",
                                         }}
                                     >
+                                        {rxPrescriptionImageUrl ? (
+                                            <Alert severity="info" sx={{ mb: 2, alignItems: "flex-start" }}>
+                                                <Typography variant="body2" sx={{ lineHeight: 1.55 }}>
+                                                    Please confirm your prescription matches the information below.{" "}
+                                                    <Link
+                                                        href={rxPrescriptionImageUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        underline="hover"
+                                                        sx={{ fontWeight: 700 }}
+                                                    >
+                                                        View uploaded prescription
+                                                    </Link>
+                                                </Typography>
+                                            </Alert>
+                                        ) : null}
                                         <Box
                                             sx={{
                                                 border: "1px solid rgba(17,24,39,0.1)",
@@ -562,6 +609,7 @@ export function SelectLensesDialog({
                                                         <TableCell sx={{ fontWeight: 700 }}>SPH</TableCell>
                                                         <TableCell sx={{ fontWeight: 700 }}>CYL</TableCell>
                                                         <TableCell sx={{ fontWeight: 700 }}>Axis</TableCell>
+                                                        <TableCell sx={{ fontWeight: 700 }}>ADD</TableCell>
                                                     </TableRow>
                                                 </TableHead>
                                                 <TableBody>
@@ -667,6 +715,47 @@ export function SelectLensesDialog({
                                                                     ))}
                                                                 </TextField>
                                                             </TableCell>
+                                                            <TableCell>
+                                                                <TextField
+                                                                    select
+                                                                    size="small"
+                                                                    value={
+                                                                        row.add != null
+                                                                            ? row.add.toFixed(2)
+                                                                            : ""
+                                                                    }
+                                                                    onChange={(e) => {
+                                                                        const v = e.target.value;
+                                                                        updateDetail(
+                                                                            row.eye,
+                                                                            "add",
+                                                                            v === "" ? null : parseFloat(v),
+                                                                        );
+                                                                    }}
+                                                                    sx={{ minWidth: 88 }}
+                                                                    SelectProps={{
+                                                                        displayEmpty: true,
+                                                                        renderValue: (selected: unknown) =>
+                                                                            selected === ""
+                                                                                ? "—"
+                                                                                : (selected as string),
+                                                                        MenuProps: {
+                                                                            PaperProps: {
+                                                                                sx: { maxHeight: 280 },
+                                                                            },
+                                                                        },
+                                                                    }}
+                                                                >
+                                                                    <MenuItem value="">
+                                                                        <em>None</em>
+                                                                    </MenuItem>
+                                                                    {ADD_OPTIONS.map((opt) => (
+                                                                        <MenuItem key={opt} value={opt}>
+                                                                            {opt}
+                                                                        </MenuItem>
+                                                                    ))}
+                                                                </TextField>
+                                                            </TableCell>
                                                         </TableRow>
                                                     ))}
                                                     <TableRow>
@@ -684,7 +773,7 @@ export function SelectLensesDialog({
                                                             </Typography>
                                                         </TableCell>
                                                         <TableCell
-                                                            colSpan={3}
+                                                            colSpan={4}
                                                             sx={{
                                                                 verticalAlign: "top",
                                                                 ...(embeddedInPage
@@ -925,6 +1014,7 @@ export function SelectLensesDialog({
                                                         <TableCell sx={{ fontWeight: 700 }}>SPH</TableCell>
                                                         <TableCell sx={{ fontWeight: 700 }}>CYL</TableCell>
                                                         <TableCell sx={{ fontWeight: 700 }}>Axis</TableCell>
+                                                        <TableCell sx={{ fontWeight: 700 }}>ADD</TableCell>
                                                     </TableRow>
                                                 </TableHead>
                                                 <TableBody>
@@ -936,6 +1026,7 @@ export function SelectLensesDialog({
                                                             <TableCell>{formatNum(row.sph)}</TableCell>
                                                             <TableCell>{formatNum(row.cyl)}</TableCell>
                                                             <TableCell>{formatNum(row.axis)}</TableCell>
+                                                            <TableCell>{formatNum(row.add)}</TableCell>
                                                         </TableRow>
                                                     ))}
                                                 </TableBody>
@@ -1023,6 +1114,7 @@ export function SelectLensesDialog({
                                     <SingleVisionPrescriptionPanel
                                         onBack={resetToOptionStep}
                                         onFillManually={() => setHasEnteredPrescriptionFlow(true)}
+                                        onOcrComplete={handleApplyOcrFromUpload}
                                         embedConfiguratorLayout={embeddedInPage}
                                     />
                                 )}

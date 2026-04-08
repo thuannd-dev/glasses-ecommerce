@@ -27,6 +27,7 @@ export function toPrescriptionInputDto(data: PrescriptionData): PrescriptionInpu
     n != null && Number.isFinite(n) ? Math.round(n * 100) / 100 : null;
 
   return {
+    ImageUrl: data.imageUrl?.trim() ? data.imageUrl.trim() : undefined,
     Details: data.details.map((d) => {
       let sph: number | null = round2(d.sph) ?? null;
       let cyl: number | null = round2(d.cyl) ?? null;
