@@ -789,7 +789,7 @@ export default function ProductDetailPage() {
                                         </Typography>
                                     </Box>
                                 )}
-                                {currentVariant?.quantityAvailable && currentVariant.quantityAvailable > 0 && (
+                                {currentVariant?.quantityAvailable != null && (
                                     <Box sx={{ display: "flex", justifyContent: "space-between" }}>
                                         <Typography color="rgba(15,23,42,0.6)">
                                             In stock

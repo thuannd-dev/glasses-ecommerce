@@ -16,6 +16,11 @@ export type CartItemDto = {
   productId: string;
   productName: string;
   productImageUrl: string;
+  lensVariantId: string | null;
+  lensVariantName: string | null;
+  lensPrice: number;
+  coatingExtraPrice: number;
+  hasPrescription: boolean;
   subtotal: number;
 };
 
@@ -32,8 +37,22 @@ export type AddCartItemPayload = {
   productVariantId: string;
   /** Quantity to add */
   quantity: number;
-  /** When set, server should create a separate line so "same variant + prescription" and "same variant + no prescription" are different lines. */
-  prescription?: import("./prescription").PrescriptionData | null;
+  /** Optional lens variant for this frame line. Null/undefined = frame-only. */
+  lensVariantId?: string | null;
+  /** Optional selected coating IDs for the chosen lens. */
+  selectedCoatingIds?: string[] | null;
+  /** Flattened RX fields expected by AddCartItemDto (OD/OS + PD). */
+  sphOD?: number | null;
+  cylOD?: number | null;
+  axisOD?: number | null;
+  addOD?: number | null;
+  pdOD?: number | null;
+  sphOS?: number | null;
+  cylOS?: number | null;
+  axisOS?: number | null;
+  addOS?: number | null;
+  pdOS?: number | null;
+  pd?: number | null;
 };
 
 export type UpdateCartItemPayload = {

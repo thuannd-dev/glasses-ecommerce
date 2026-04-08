@@ -51,6 +51,7 @@ export default function SelectLensesPage() {
                 open
                 embeddedInPage
                 isPreOrder={isPreOrder}
+                productId={product.id}
                 onClose={handleDialogClose}
                 onLogoClick={() => navigate("/collections")}
                 productName={product.name}

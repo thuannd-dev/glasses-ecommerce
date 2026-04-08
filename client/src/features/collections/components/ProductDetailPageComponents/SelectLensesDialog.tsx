@@ -18,6 +18,7 @@ import {
     TableHead,
     FormControlLabel,
     Checkbox,
+    CircularProgress,
     MenuItem,
 } from "@mui/material";
 import type { PrescriptionData, PrescriptionDetailRow } from "../../../../lib/types/prescription";
@@ -40,13 +41,19 @@ import {
 } from "./lensSelection/lensConfiguratorLayout";
 import type { PrescriptionFormOcrSeed } from "../../../../lib/utils/mapPrescriptionOcrToFormSeed";
 import { toast } from "react-toastify";
+import {
+    useCompatibleLenses,
+    type CompatibleLensVariantDto,
+} from "../../../../lib/hooks/useCompatibleLenses";
+import { useLensCoatingOptions } from "../../../../lib/hooks/useLensCoatingOptions";
+import { formatMoney } from "../../../../lib/utils/format";
 
 const INITIAL_DETAILS: PrescriptionDetailRow[] = [
     { eye: 1, sph: null, cyl: null, axis: null, pd: null, add: null },
     { eye: 2, sph: null, cyl: null, axis: null, pd: null, add: null },
 ];
 
-type Step = "form" | "confirm";
+type Step = "form" | "lens" | "confirm";
 
 function buildSphOptions(): string[] {
     const out: string[] = [];
@@ -104,6 +111,7 @@ type Props = {
     /** When true, render as page content under the app NavBar (no fullscreen dialog). */
     embeddedInPage?: boolean;
     isPreOrder?: boolean;
+    productId: string;
     productName: string;
     variantLabel: string;
     productImageUrl: string;
@@ -111,7 +119,11 @@ type Props = {
     onNonPrescriptionAddToCart: () => Promise<boolean>;
     canAddToCart: boolean;
     /** Return `true` when add-to-cart ran (caller may close); `false` if blocked (e.g. sign-in required). */
-    onPrescriptionConfirm: (prescription: PrescriptionData) => Promise<boolean>;
+    onPrescriptionConfirm: (payload: {
+        prescription: PrescriptionData;
+        lensVariantId?: string | null;
+        selectedCoatingIds?: string[];
+    }) => Promise<boolean>;
     onLogoClick?: () => void;
 };
 
@@ -121,6 +133,7 @@ export function SelectLensesDialog({
     fullPage,
     embeddedInPage,
     isPreOrder,
+    productId,
     productName,
     variantLabel,
     productImageUrl,
@@ -199,6 +212,8 @@ export function SelectLensesDialog({
         setTwoPdNumbers(false);
         setPdHelpOpen(false);
         setRxPrescriptionImageUrl(null);
+        setSelectedCompatibleVariantId(null);
+        setSelectedCoatingId(null);
     }, [open]);
 
     const handleUsagePick = useCallback((pick: LensUsagePick) => {
@@ -220,22 +235,90 @@ export function SelectLensesDialog({
     };
 
     const isPrescriptionFormValid = useMemo(() => {
-        const bothEyesFilled = details.every(
-            (row) => row.sph != null && row.cyl != null && row.axis != null
+        const hasSphOrCylForBothEyes = details.every(
+            (row) => row.sph != null || row.cyl != null
         );
         const pdFilled = twoPdNumbers
             ? isPdChoiceValid(pdRight, "dual") && isPdChoiceValid(pdLeft, "dual")
             : isPdChoiceValid(pdSingle, "single");
-        return bothEyesFilled && pdFilled;
+        return hasSphOrCylForBothEyes && pdFilled;
     }, [details, twoPdNumbers, pdSingle, pdRight, pdLeft]);
 
-    const handleFormContinue = () => setStep("confirm");
+    const rxQuery = useMemo(() => {
+        const right = details.find((row) => row.eye === 1);
+        const left = details.find((row) => row.eye === 2);
+        return {
+            sphOD: right?.sph ?? null,
+            cylOD: right?.cyl ?? null,
+            sphOS: left?.sph ?? null,
+            cylOS: left?.cyl ?? null,
+        };
+    }, [details]);
+
+    const shouldFetchCompatibleLenses =
+        selectedOption === "prescription" &&
+        hasEnteredPrescriptionFlow &&
+        step === "lens" &&
+        isPrescriptionFormValid;
+
+    const compatibleLensesQuery = useCompatibleLenses(
+        productId,
+        rxQuery,
+        shouldFetchCompatibleLenses
+    );
+
+    const compatibleVariants = useMemo<
+        Array<CompatibleLensVariantDto & { lensProductId: string; lensProductName: string }>
+    >(
+        () =>
+            (compatibleLensesQuery.data ?? []).flatMap((lens) =>
+                (lens.variants ?? []).map((variant) => ({
+                    ...variant,
+                    lensProductId: lens.lensProductId,
+                    lensProductName: lens.lensProductName,
+                }))
+            ),
+        [compatibleLensesQuery.data]
+    );
+
+    const [selectedCompatibleVariantId, setSelectedCompatibleVariantId] = useState<string | null>(
+        null
+    );
+
+    useEffect(() => {
+        if (!compatibleVariants.length) {
+            setSelectedCompatibleVariantId(null);
+            return;
+        }
+        const stillExists = compatibleVariants.some((v) => v.variantId === selectedCompatibleVariantId);
+        if (!stillExists) {
+            setSelectedCompatibleVariantId(compatibleVariants[0].variantId);
+        }
+    }, [compatibleVariants, selectedCompatibleVariantId]);
+
+    const handleFormContinue = () => setStep("lens");
+    const canContinueFromLens = Boolean(selectedCompatibleVariantId);
+    const handleLensContinue = () => {
+        if (!canContinueFromLens) {
+            toast.error("Please select a compatible lens before continuing.");
+            return;
+        }
+        setStep("confirm");
+    };
     const handleEdit = () => setStep("form");
     const handleYes = async () => {
+        if (!selectedCompatibleVariant) {
+            toast.error("Please select a compatible lens.");
+            return;
+        }
         if (rxConfirming) return;
         setRxConfirming(true);
         try {
-            const ok = await onPrescriptionConfirm(prescription);
+            const ok = await onPrescriptionConfirm({
+                prescription,
+                lensVariantId: selectedCompatibleVariant?.variantId ?? null,
+                selectedCoatingIds: selectedCoating ? [selectedCoating.id] : [],
+            });
             if (ok) onClose();
         } finally {
             setRxConfirming(false);
@@ -259,10 +342,41 @@ export function SelectLensesDialog({
         setStep("form");
         setRxUsageLabel("Single Vision");
         setRxPrescriptionImageUrl(null);
+        setSelectedCompatibleVariantId(null);
+        setSelectedCoatingId(null);
     }, []);
 
     const formatNum = (n: number | null) =>
         n == null ? "—" : Number.isInteger(n) ? String(n) : n.toFixed(2);
+
+    const selectedCompatibleVariant = useMemo(
+        () => compatibleVariants.find((v) => v.variantId === selectedCompatibleVariantId) ?? null,
+        [compatibleVariants, selectedCompatibleVariantId]
+    );
+    const [selectedCoatingId, setSelectedCoatingId] = useState<string | null>(null);
+
+    const coatingOptionsQuery = useLensCoatingOptions(
+        selectedCompatibleVariant?.lensProductId,
+        step === "lens" && Boolean(selectedCompatibleVariant?.lensProductId)
+    );
+
+    const selectedCoating = useMemo(
+        () =>
+            (coatingOptionsQuery.data ?? []).find((c) => c.id === selectedCoatingId) ?? null,
+        [coatingOptionsQuery.data, selectedCoatingId]
+    );
+
+    useEffect(() => {
+        const coatings = coatingOptionsQuery.data ?? [];
+        if (!coatings.length) {
+            setSelectedCoatingId(null);
+            return;
+        }
+        const stillExists = coatings.some((c) => c.id === selectedCoatingId);
+        if (!stillExists) {
+            setSelectedCoatingId(coatings[0].id);
+        }
+    }, [coatingOptionsQuery.data, selectedCoatingId]);
 
     const rxTableCellSx = embeddedInPage
         ? {
@@ -552,7 +666,7 @@ export function SelectLensesDialog({
                                 >
                                     <LensProgressNav
                                         steps={LENS_WIZARD_STEPS}
-                                        currentStepIndex={1}
+                                        currentStepIndex={step === "form" ? 1 : step === "lens" ? 2 : 3}
                                         railVariant="circles"
                                         onPrevious={
                                             step === "form"
@@ -560,7 +674,9 @@ export function SelectLensesDialog({
                                                       setRxPrescriptionImageUrl(null);
                                                       setHasEnteredPrescriptionFlow(false);
                                                   }
-                                                : handleEdit
+                                                : step === "lens"
+                                                  ? () => setStep("form")
+                                                  : () => setStep("lens")
                                         }
                                     />
                                 </Box>
@@ -964,6 +1080,227 @@ export function SelectLensesDialog({
                                     </Box>
                                 )}
 
+                                {step === "lens" && (
+                                    <Box sx={{ width: "100%" }}>
+                                        <Typography
+                                            textAlign={embeddedInPage ? "left" : "center"}
+                                            color="text.secondary"
+                                            sx={{
+                                                fontSize: 14,
+                                                mb: 2,
+                                                maxWidth: embeddedInPage ? "none" : 440,
+                                                mx: embeddedInPage ? 0 : "auto",
+                                                lineHeight: 1.55,
+                                            }}
+                                        >
+                                            Here are lens options compatible with your prescription.
+                                        </Typography>
+                                        <Box sx={{ mb: 2 }}>
+                                            <Typography sx={{ fontWeight: 800, fontSize: 18, mb: 1 }}>
+                                                Premium
+                                            </Typography>
+                                            {compatibleLensesQuery.isLoading ? (
+                                                <Box sx={{ py: 2, display: "flex", alignItems: "center", gap: 1 }}>
+                                                    <CircularProgress size={18} />
+                                                    <Typography fontSize={14} color="text.secondary">
+                                                        Loading compatible lenses...
+                                                    </Typography>
+                                                </Box>
+                                            ) : compatibleLensesQuery.isError ? (
+                                                <Alert severity="warning" sx={{ mb: 1 }}>
+                                                    Could not load compatible lenses right now. You can still
+                                                    continue.
+                                                </Alert>
+                                            ) : compatibleVariants.length > 0 ? (
+                                                <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+                                                    {compatibleVariants.map((variant, idx) => {
+                                                        const isSelected =
+                                                            variant.variantId === selectedCompatibleVariantId;
+                                                        const isRecommended = idx === 0;
+                                                        return (
+                                                            <Box
+                                                                key={variant.variantId}
+                                                                role="button"
+                                                                tabIndex={0}
+                                                                onClick={() =>
+                                                                    setSelectedCompatibleVariantId(variant.variantId)
+                                                                }
+                                                                onKeyDown={(e) => {
+                                                                    if (e.key === "Enter" || e.key === " ") {
+                                                                        e.preventDefault();
+                                                                        setSelectedCompatibleVariantId(
+                                                                            variant.variantId
+                                                                        );
+                                                                    }
+                                                                }}
+                                                                sx={{
+                                                                    p: 2.5,
+                                                                    borderRadius: 1,
+                                                                    border: isSelected
+                                                                        ? `2px solid ${LENS_FLOW_ACCENT}`
+                                                                        : "1px solid #ECECEC",
+                                                                    bgcolor: isRecommended ? "#F8FAFC" : "#FAFAFA",
+                                                                    cursor: "pointer",
+                                                                }}
+                                                            >
+                                                                {isRecommended ? (
+                                                                    <Typography
+                                                                        sx={{
+                                                                            color: "#1D4ED8",
+                                                                            fontWeight: 700,
+                                                                            fontSize: 14,
+                                                                            mb: 0.75,
+                                                                        }}
+                                                                    >
+                                                                        Recommended for your prescription
+                                                                    </Typography>
+                                                                ) : null}
+                                                                <Typography sx={{ fontSize: 31, fontWeight: 400 }}>
+                                                                    {variant.variantName || variant.lensProductName}
+                                                                </Typography>
+                                                                <Box
+                                                                    component="ul"
+                                                                    sx={{
+                                                                        m: 0,
+                                                                        mt: 0.75,
+                                                                        pl: 2.5,
+                                                                        color: "#374151",
+                                                                        "& li": { mb: 0.5, lineHeight: 1.45 },
+                                                                    }}
+                                                                >
+                                                                    <li>Lens index {variant.index.toFixed(2)}</li>
+                                                                    <li>
+                                                                        Covers SPH {formatNum(variant.sphMin)} to{" "}
+                                                                        {formatNum(variant.sphMax)}
+                                                                    </li>
+                                                                    <li>
+                                                                        Includes CYL range {formatNum(variant.cylMin)} to{" "}
+                                                                        {formatNum(variant.cylMax)}
+                                                                    </li>
+                                                                    <li>From {formatMoney(variant.price)}</li>
+                                                                </Box>
+                                                            </Box>
+                                                        );
+                                                    })}
+                                                </Box>
+                                            ) : (
+                                                <Alert severity="info" sx={{ mb: 1 }}>
+                                                    No compatible lenses match this prescription range yet.
+                                                </Alert>
+                                            )}
+                                        </Box>
+                                        {selectedCompatibleVariant ? (
+                                            <Box sx={{ mb: 2 }}>
+                                                <Typography sx={{ fontWeight: 800, fontSize: 16, mb: 1 }}>
+                                                    Lens options
+                                                </Typography>
+                                                {coatingOptionsQuery.isLoading ? (
+                                                    <Box
+                                                        sx={{
+                                                            py: 1,
+                                                            display: "flex",
+                                                            alignItems: "center",
+                                                            gap: 1,
+                                                        }}
+                                                    >
+                                                        <CircularProgress size={16} />
+                                                        <Typography fontSize={13} color="text.secondary">
+                                                            Loading coating options...
+                                                        </Typography>
+                                                    </Box>
+                                                ) : coatingOptionsQuery.isError ? (
+                                                    <Alert severity="warning">
+                                                        Could not load coating options.
+                                                    </Alert>
+                                                ) : (coatingOptionsQuery.data ?? []).length > 0 ? (
+                                                    <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                                                        {(coatingOptionsQuery.data ?? []).map((option) => {
+                                                            const selected = option.id === selectedCoatingId;
+                                                            return (
+                                                                <Box
+                                                                    key={option.id}
+                                                                    role="button"
+                                                                    tabIndex={0}
+                                                                    onClick={() => setSelectedCoatingId(option.id)}
+                                                                    onKeyDown={(e) => {
+                                                                        if (e.key === "Enter" || e.key === " ") {
+                                                                            e.preventDefault();
+                                                                            setSelectedCoatingId(option.id);
+                                                                        }
+                                                                    }}
+                                                                    sx={{
+                                                                        p: 1.5,
+                                                                        borderRadius: 1,
+                                                                        border: selected
+                                                                            ? `2px solid ${LENS_FLOW_ACCENT}`
+                                                                            : "1px solid #E5E7EB",
+                                                                        bgcolor: selected ? "#F9FAFB" : "#fff",
+                                                                        cursor: "pointer",
+                                                                    }}
+                                                                >
+                                                                    <Typography sx={{ fontWeight: 700, fontSize: 14 }}>
+                                                                        {option.coatingName}
+                                                                    </Typography>
+                                                                    {option.description ? (
+                                                                        <Typography
+                                                                            fontSize={13}
+                                                                            color="text.secondary"
+                                                                            sx={{ mt: 0.25 }}
+                                                                        >
+                                                                            {option.description}
+                                                                        </Typography>
+                                                                    ) : null}
+                                                                    <Typography
+                                                                        fontSize={13}
+                                                                        color="text.secondary"
+                                                                        sx={{ mt: 0.4 }}
+                                                                    >
+                                                                        Extra: {formatMoney(option.extraPrice)}
+                                                                    </Typography>
+                                                                </Box>
+                                                            );
+                                                        })}
+                                                    </Box>
+                                                ) : (
+                                                    <Typography fontSize={13} color="text.secondary">
+                                                        No coating options for this lens.
+                                                    </Typography>
+                                                )}
+                                            </Box>
+                                        ) : null}
+                                        <Button
+                                            variant="contained"
+                                            disabled={!canContinueFromLens}
+                                            fullWidth={embeddedInPage}
+                                            sx={{
+                                                alignSelf: embeddedInPage ? "stretch" : "flex-end",
+                                                mt: embeddedInPage ? 2 : 1,
+                                                width: embeddedInPage ? "100%" : "auto",
+                                                px: 4,
+                                                py: 1.25,
+                                                fontWeight: 800,
+                                                textTransform: "none",
+                                                fontSize: 16,
+                                                borderRadius: 1,
+                                                bgcolor: LENS_FLOW_ACCENT,
+                                                color: LENS_FLOW_ON_ACCENT,
+                                                boxShadow: "none",
+                                                "&:hover": {
+                                                    bgcolor: LENS_FLOW_ACCENT_HOVER,
+                                                    boxShadow: "none",
+                                                },
+                                                "&.Mui-disabled": {
+                                                    bgcolor: LENS_FLOW_DISABLED_FILL,
+                                                    color: LENS_FLOW_ON_ACCENT,
+                                                },
+                                            }}
+                                            onClick={handleLensContinue}
+                                        >
+                                            Continue
+                                        </Button>
+                                    </Box>
+                                )}
+
                                 {step === "confirm" && (
                                     <Box sx={{ width: "100%" }}>
                                         <Typography
@@ -980,21 +1317,74 @@ export function SelectLensesDialog({
                                             Review your entries before confirming. Use the arrow above to edit the
                                             form.
                                         </Typography>
-                                        <Typography
-                                            fontWeight={600}
-                                            sx={{ mb: 1, fontSize: embeddedInPage ? 15 : 14 }}
+                                        <Box
+                                            sx={{
+                                                mb: 2,
+                                                p: 1.5,
+                                                borderRadius: 1.5,
+                                                border: "1px solid rgba(17,24,39,0.1)",
+                                                bgcolor: "#fff",
+                                            }}
                                         >
-                                            Type: {rxUsageLabel}
-                                        </Typography>
-                                        <Typography
-                                            fontSize={embeddedInPage ? 15 : 14}
-                                            sx={{ mb: 2, color: "text.secondary" }}
-                                        >
-                                            PD:{" "}
-                                            {twoPdNumbers
-                                                ? `OD ${pdRight || "—"} / OS ${pdLeft || "—"}`
-                                                : pdSingle || "—"}
-                                        </Typography>
+                                            <Typography sx={{ fontWeight: 800, fontSize: 14, mb: 1 }}>
+                                                Your selections
+                                            </Typography>
+                                            <Box
+                                                sx={{
+                                                    display: "grid",
+                                                    gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+                                                    gap: 0.75,
+                                                }}
+                                            >
+                                                <Typography fontSize={13.5} color="text.secondary">
+                                                    Type: <Box component="span" sx={{ color: "#111827", fontWeight: 600 }}>{rxUsageLabel}</Box>
+                                                </Typography>
+                                                <Typography fontSize={13.5} color="text.secondary">
+                                                    PD mode:{" "}
+                                                    <Box component="span" sx={{ color: "#111827", fontWeight: 600 }}>
+                                                        {twoPdNumbers ? "Dual PD" : "Single PD"}
+                                                    </Box>
+                                                </Typography>
+                                                <Typography fontSize={13.5} color="text.secondary">
+                                                    PD value:{" "}
+                                                    <Box component="span" sx={{ color: "#111827", fontWeight: 600 }}>
+                                                        {twoPdNumbers
+                                                            ? `OD ${pdRight || "—"} / OS ${pdLeft || "—"}`
+                                                            : pdSingle || "—"}
+                                                    </Box>
+                                                </Typography>
+                                                <Typography fontSize={13.5} color="text.secondary">
+                                                    Lens:{" "}
+                                                    <Box component="span" sx={{ color: "#111827", fontWeight: 600 }}>
+                                                        {selectedCompatibleVariant
+                                                            ? `${selectedCompatibleVariant.variantName} (${selectedCompatibleVariant.index.toFixed(2)}) · ${formatMoney(selectedCompatibleVariant.price)}`
+                                                            : "Not selected"}
+                                                    </Box>
+                                                </Typography>
+                                                <Typography fontSize={13.5} color="text.secondary">
+                                                    Lens option:{" "}
+                                                    <Box component="span" sx={{ color: "#111827", fontWeight: 600 }}>
+                                                        {selectedCoating
+                                                            ? `${selectedCoating.coatingName} (+${formatMoney(selectedCoating.extraPrice)})`
+                                                            : "None"}
+                                                    </Box>
+                                                </Typography>
+                                            </Box>
+                                            {rxPrescriptionImageUrl ? (
+                                                <Typography fontSize={13.5} color="text.secondary" sx={{ mt: 0.75 }}>
+                                                    Uploaded image:{" "}
+                                                    <Link
+                                                        href={rxPrescriptionImageUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        underline="hover"
+                                                        sx={{ fontWeight: 700 }}
+                                                    >
+                                                        View uploaded prescription
+                                                    </Link>
+                                                </Typography>
+                                            ) : null}
+                                        </Box>
                                         <Box
                                             sx={{
                                                 border: "1px solid rgba(17,24,39,0.1)",
@@ -1062,7 +1452,7 @@ export function SelectLensesDialog({
                                             </Button>
                                             <Button
                                                 variant="contained"
-                                                disabled={rxConfirming}
+                                                disabled={rxConfirming || !selectedCompatibleVariant}
                                                 onClick={handleYes}
                                                 sx={{
                                                     minWidth: embeddedInPage ? 0 : 160,
@@ -1077,6 +1467,10 @@ export function SelectLensesDialog({
                                                     "&:hover": {
                                                         bgcolor: LENS_FLOW_ACCENT_HOVER,
                                                         boxShadow: "none",
+                                                    },
+                                                    "&.Mui-disabled": {
+                                                        bgcolor: LENS_FLOW_DISABLED_FILL,
+                                                        color: LENS_FLOW_ON_ACCENT,
                                                     },
                                                 }}
                                             >

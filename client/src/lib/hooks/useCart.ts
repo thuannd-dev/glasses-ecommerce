@@ -3,10 +3,7 @@ import { isAxiosError } from "axios";
 import { toast } from "react-toastify";
 
 import agent from "../api/agent";
-import {
-  getCartItemLensMode,
-  removeCartItemLocalData,
-} from "../../features/cart/prescriptionCache";
+import { removeCartItemLocalData } from "../../features/cart/prescriptionCache";
 import type { CartDto, CartItemDto, AddCartItemPayload, UpdateCartItemPayload } from "../types/cart";
 import {
   addCartItemSchema,
@@ -135,12 +132,41 @@ export function useCart() {
         throw new Error(msg);
       }
 
-      const { productVariantId, quantity, prescription } = parsed.data;
+      const {
+        productVariantId,
+        quantity,
+        lensVariantId,
+        selectedCoatingIds,
+        sphOD,
+        cylOD,
+        axisOD,
+        addOD,
+        pdOD,
+        sphOS,
+        cylOS,
+        axisOS,
+        addOS,
+        pdOS,
+        pd,
+      } = parsed.data;
 
       // Client-side merge: same variant → increase qty on one line (no BE merge).
       // Never merge into a prescription line (local lens mode); add RX always skips merge below.
-      const skipMerge =
-        prescription !== undefined && prescription !== null;
+      const hasRx =
+        sphOD != null ||
+        cylOD != null ||
+        axisOD != null ||
+        addOD != null ||
+        pdOD != null ||
+        sphOS != null ||
+        cylOS != null ||
+        axisOS != null ||
+        addOS != null ||
+        pdOS != null ||
+        pd != null;
+      const hasLensOrCoating =
+        Boolean(lensVariantId) || (selectedCoatingIds?.length ?? 0) > 0;
+      const skipMerge = hasRx || hasLensOrCoating;
 
       if (!skipMerge) {
         return runAddCartMergeSerialized(async () => {
@@ -148,7 +174,7 @@ export function useCart() {
           const fresh = await fetchCartFromApi();
           const existing = (fresh.items ?? []).find((it) => {
             if (it.productVariantId !== productVariantId) return false;
-            return getCartItemLensMode(it.id) !== "prescription";
+            return !it.hasPrescription && !it.lensVariantId;
           });
           if (existing) {
             const newQty = existing.quantity + quantity;
@@ -170,7 +196,22 @@ export function useCart() {
       const res = await agent.post<CartItemDto>("/me/cart/items", {
         productVariantId,
         quantity,
-        ...(prescription != null ? { prescription } : {}),
+        lensVariantId: lensVariantId ?? undefined,
+        selectedCoatingIds:
+          selectedCoatingIds && selectedCoatingIds.length > 0
+            ? selectedCoatingIds
+            : undefined,
+        sphOD: sphOD ?? undefined,
+        cylOD: cylOD ?? undefined,
+        axisOD: axisOD ?? undefined,
+        addOD: addOD ?? undefined,
+        pdOD: pdOD ?? undefined,
+        sphOS: sphOS ?? undefined,
+        cylOS: cylOS ?? undefined,
+        axisOS: axisOS ?? undefined,
+        addOS: addOS ?? undefined,
+        pdOS: pdOS ?? undefined,
+        pd: pd ?? undefined,
       });
       return res.data;
     },
