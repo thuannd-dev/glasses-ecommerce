@@ -277,7 +277,9 @@ export function useCart() {
     onError: (err, variables, context) => {
       const id = variables.id;
       const msg = getThrownMessage(err);
-      if (id && isUnavailableCartLineMessage(msg)) {
+      const previousItem = context?.previous?.items?.find((it) => it.id === id);
+      const shouldAutoRemoveUnavailableLine = previousItem ? !previousItem.isPreOrder : true;
+      if (id && isUnavailableCartLineMessage(msg) && shouldAutoRemoveUnavailableLine) {
         void (async () => {
           try {
             await agent.delete(`/me/cart/items/${id}`);
