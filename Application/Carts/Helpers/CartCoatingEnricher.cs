@@ -78,10 +78,15 @@ internal static class CartCoatingEnricher
         // ── 5. Fill each CartItemDto.SelectedCoatings ─────────────────────────
         foreach ((CartItemDto item, List<Guid> ids) in itemCoatingMap)
         {
-            item.SelectedCoatings = ids
-                .Where(id => coatingLookup.ContainsKey(id))
-                .Select(id => coatingLookup[id])
-                .ToList();
+            List<CartItemCoatingDto> coatings = new(ids.Count);
+            foreach (Guid id in ids)
+            {
+                if (coatingLookup.TryGetValue(id, out CartItemCoatingDto? coating))
+                {
+                    coatings.Add(coating);
+                }
+            }
+            item.SelectedCoatings = coatings;
         }
     }
 }
