@@ -33,6 +33,9 @@ export default function CollectionPage() {
     handleChangePage,
   } = useCollectionPage();
 
+  // Filter out Lens products from customer collection view
+  const filteredProducts = productsToShow.filter(p => p.category !== 'lens');
+
   return (
     <Box
       component="main"
@@ -114,8 +117,8 @@ export default function CollectionPage() {
               <Box display="flex" justifyContent="center" py={6}>
                 <CircularProgress />
               </Box>
-            ) : productsToShow.length ? (
-              <ProductGrid products={productsToShow} />
+            ) : filteredProducts.length ? (
+              <ProductGrid products={filteredProducts} />
             ) : (
               <EmptyState />
             )}
@@ -127,7 +130,7 @@ export default function CollectionPage() {
               totalPages={totalPages}
               totalItems={effectiveTotal}
               pageSize={PAGE_SIZE}
-              displayedCount={productsToShow.length}
+              displayedCount={filteredProducts.length}
               onChange={handleChangePage}
             />
           )}

@@ -23,15 +23,14 @@ public sealed class ProductsController : BaseApiController
         [FromQuery] decimal? maxPrice = null,
         [FromQuery] string? search = null,
         [FromQuery] GetProductList.SortByOption sortBy = GetProductList.SortByOption.CreatedAt,
-        [FromQuery] GetProductList.SortOrderOption sortOrder = GetProductList.SortOrderOption.Desc,
-        [FromQuery] bool includeLenses = false)
+        [FromQuery] GetProductList.SortOrderOption sortOrder = GetProductList.SortOrderOption.Desc)
     {
-        // Only managers and admins can include lenses in product listings
-        bool canIncludeLenses = User.IsInRole("Manager") || User.IsInRole("Admin");
+        // Lens products visible to all authenticated roles EXCEPT Customer
+        // Only customers (anonymous or explicit "Customer" role) cannot see lenses
+        bool isCustomer = !User.Identity?.IsAuthenticated ?? true || User.IsInRole("Customer");
         
-        // Block lens access via type=Lens and return explicit 403 for unauthorized lens requests
-        bool requestLensVisibility = includeLenses || type == ProductType.Lens;
-        if (requestLensVisibility && !canIncludeLenses)
+        // Block type=Lens filter for customers and return explicit 403 for unauthorized lens requests
+        if (type == ProductType.Lens && isCustomer)
         {
             return Forbid();
         }
@@ -49,7 +48,7 @@ public sealed class ProductsController : BaseApiController
             SearchTerm = search,
             SortBy = sortBy,
             SortOrder = sortOrder,
-            IncludeLenses = canIncludeLenses && includeLenses
+            IncludeLenses = !isCustomer  // Show lenses for all authenticated non-customer roles
         }));
     }
 
