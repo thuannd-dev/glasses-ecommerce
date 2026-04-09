@@ -26,8 +26,15 @@ public sealed class ProductsController : BaseApiController
         [FromQuery] GetProductList.SortOrderOption sortOrder = GetProductList.SortOrderOption.Desc,
         [FromQuery] bool includeLenses = false)
     {
-        // Only allow managers and admins to include lenses in product listings
+        // Only managers and admins can include lenses in product listings
         bool canIncludeLenses = User.IsInRole("Manager") || User.IsInRole("Admin");
+        
+        // Block lens access via type=Lens and return explicit 403 for unauthorized lens requests
+        bool requestLensVisibility = includeLenses || type == ProductType.Lens;
+        if (requestLensVisibility && !canIncludeLenses)
+        {
+            return Forbid();
+        }
 
         return HandleResult(await Mediator.Send(new GetProductList.Query
         {
