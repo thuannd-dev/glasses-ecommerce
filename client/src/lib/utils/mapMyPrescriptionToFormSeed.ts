@@ -54,15 +54,15 @@ export function mapMyPrescriptionToFormSeed(dto: MyPrescriptionDto): Prescriptio
     }
   }
 
-  if (details[0].add != null && details[1].add == null) details[1].add = details[0].add;
-  if (details[1].add != null && details[0].add == null) details[0].add = details[1].add;
-
   for (const r of details) {
     if (r.add != null && !isPositiveAdd(r.add)) r.add = null;
   }
+  if (details[0].add != null && details[1].add == null) details[1].add = details[0].add;
+  if (details[1].add != null && details[0].add == null) details[0].add = details[1].add;
 
-  const rightRow = dto.details.find((d) => normalizeEye(d.eye) === "right");
-  const leftRow = dto.details.find((d) => normalizeEye(d.eye) === "left");
+  const detailRows = dto.details ?? [];
+  const rightRow = detailRows.find((d) => normalizeEye(d.eye) === "right");
+  const leftRow = detailRows.find((d) => normalizeEye(d.eye) === "left");
   const pdR = rightRow?.pd != null ? formatPdToken(Number(rightRow.pd)) : "";
   const pdL = leftRow?.pd != null ? formatPdToken(Number(leftRow.pd)) : "";
 

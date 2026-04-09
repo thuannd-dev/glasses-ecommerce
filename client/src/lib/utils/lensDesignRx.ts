@@ -8,7 +8,7 @@ export function normalizeLensDesignLabel(raw: string | null | undefined): string
 /**
  * Filter compatible variants by prescription ADD vs variant `lensDesign` from the API.
  * - No positive ADD → only `"SingleVision"`.
- * - Positive ADD → only `"Bifocal"`.
+ * - Positive ADD → `"Bifocal"` or `"Progressive"` (aligned with `LensAttributesTab` multifocal).
  */
 export function variantMatchesPrescriptionLensDesign(
     lensDesign: string | null | undefined,
@@ -18,5 +18,5 @@ export function variantMatchesPrescriptionLensDesign(
     if (!hasPositiveAdd) {
         return d === "singlevision";
     }
-    return d === "bifocal";
+    return d === "bifocal" || d === "progressive";
 }

@@ -17,6 +17,13 @@ function pickNum(v: unknown): number | null {
   return Math.round(n * 100) / 100;
 }
 
+function pickFiniteInt(v: unknown, fallback: number): number {
+  if (typeof v === "number" && Number.isFinite(v)) return Math.trunc(v);
+  const n = parseFloat(String(v ?? "").replace(",", "."));
+  if (!Number.isFinite(n)) return fallback;
+  return Math.trunc(n);
+}
+
 export function normalizeMyPrescriptionsPage(raw: unknown): MyPrescriptionsPageDto {
   if (!isRecord(raw)) {
     return {
@@ -42,16 +49,16 @@ export function normalizeMyPrescriptionsPage(raw: unknown): MyPrescriptionsPageD
       isVerified: Boolean(r.isVerified ?? r.IsVerified ?? false),
       verifiedAt: (r.verifiedAt ?? r.VerifiedAt ?? null) as string | null,
       createdAt: String(r.createdAt ?? r.CreatedAt ?? ""),
-      detailCount: Number(r.detailCount ?? r.DetailCount ?? 0),
+      detailCount: pickFiniteInt(r.detailCount ?? r.DetailCount, 0),
     };
   });
 
   return {
     items,
-    totalCount: Number(raw.totalCount ?? raw.TotalCount ?? 0),
-    pageNumber: Number(raw.pageNumber ?? raw.PageNumber ?? 1),
-    pageSize: Number(raw.pageSize ?? raw.PageSize ?? 10),
-    totalPages: Number(raw.totalPages ?? raw.TotalPages ?? 0),
+    totalCount: pickFiniteInt(raw.totalCount ?? raw.TotalCount, 0),
+    pageNumber: pickFiniteInt(raw.pageNumber ?? raw.PageNumber, 1),
+    pageSize: pickFiniteInt(raw.pageSize ?? raw.PageSize, 10),
+    totalPages: pickFiniteInt(raw.totalPages ?? raw.TotalPages, 0),
     hasPreviousPage: Boolean(raw.hasPreviousPage ?? raw.HasPreviousPage ?? false),
     hasNextPage: Boolean(raw.hasNextPage ?? raw.HasNextPage ?? false),
   };

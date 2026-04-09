@@ -105,7 +105,8 @@ export function SavedPrescriptionsPanel({ onBack, onPrescriptionLoaded, embedCon
             const dto = await fetchDetail.mutateAsync(id);
             onPrescriptionLoaded(mapMyPrescriptionToFormSeed(dto));
             toast.success("Saved prescription loaded — please review.");
-        } catch {
+        } catch (err) {
+            console.error("[SavedPrescriptionsPanel] fetch prescription detail failed", err);
             toast.error("Could not load this prescription. Try again or enter details manually.");
         } finally {
             setSelectingId(null);
@@ -214,7 +215,7 @@ export function SavedPrescriptionsPanel({ onBack, onPrescriptionLoaded, embedCon
                                     <Button
                                         size="small"
                                         variant="contained"
-                                        disabled={rowLoading || useBusy || fetchDetail.isPending}
+                                        disabled={rowLoading || useBusy}
                                         onClick={() => void handleUse(row.id)}
                                         sx={{
                                             textTransform: "none",

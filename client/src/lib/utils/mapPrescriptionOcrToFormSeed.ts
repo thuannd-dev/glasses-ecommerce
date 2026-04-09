@@ -68,12 +68,11 @@ export function mapPrescriptionOcrToFormSeed(ocr: PrescriptionOcrResultDto): Pre
         details[1].add = parseNumField(os.add);
     }
 
-    if (details[0].add != null && details[1].add == null) details[1].add = details[0].add;
-    if (details[1].add != null && details[0].add == null) details[0].add = details[1].add;
-
     for (const r of details) {
         if (r.add != null && !isPositiveAdd(r.add)) r.add = null;
     }
+    if (details[0].add != null && details[1].add == null) details[1].add = details[0].add;
+    if (details[1].add != null && details[0].add == null) details[0].add = details[1].add;
 
     let pdSingle = "";
     let twoPdNumbers = false;

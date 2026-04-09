@@ -18,7 +18,7 @@ import {
     Tooltip,
     Typography,
 } from "@mui/material";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import { useAnalyzePrescriptionFromUrl } from "../../../../../lib/hooks/useAnalyzePrescriptionFromUrl";
 import { useUploadImage } from "../../../../../lib/hooks/useUploadImage";
@@ -68,8 +68,13 @@ export function SingleVisionPrescriptionPanel({
     const isAnalyzing = analyzePrescription.isPending;
 
     const handleOpenSaved = () => {
+        if (!onOcrComplete) return;
         setPanel("saved");
     };
+
+    useEffect(() => {
+        if (panel === "saved" && !onOcrComplete) setPanel("menu");
+    }, [panel, onOcrComplete]);
 
     const openFilePicker = () => fileInputRef.current?.click();
 
@@ -232,13 +237,15 @@ export function SingleVisionPrescriptionPanel({
                         onClick={() => setPanel("upload")}
                         showDivider
                     />
-                    <MethodRow
-                        Icon={ManageSearchOutlinedIcon}
-                        title="Use a saved prescription"
-                        description="Select from prescriptions you have saved before."
-                        onClick={handleOpenSaved}
-                        showDivider={false}
-                    />
+                    {onOcrComplete ? (
+                        <MethodRow
+                            Icon={ManageSearchOutlinedIcon}
+                            title="Use a saved prescription"
+                            description="Select from prescriptions you have saved before."
+                            onClick={handleOpenSaved}
+                            showDivider={false}
+                        />
+                    ) : null}
                 </Box>
             )}
 

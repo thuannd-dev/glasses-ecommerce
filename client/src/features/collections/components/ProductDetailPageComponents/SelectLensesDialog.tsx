@@ -266,10 +266,7 @@ export function SelectLensesDialog({
     useEffect(() => {
         if (allowAddPower || scanVisionMismatch === "single-to-bifocal") return;
         setDetails((prev) =>
-            prev.map((row) => {
-                if (isPositiveAdd(row.add)) return { ...row, add: null };
-                return row.add == null ? row : { ...row, add: null };
-            })
+            prev.map((row) => (row.add == null ? row : { ...row, add: null }))
         );
     }, [allowAddPower, scanVisionMismatch]);
 
