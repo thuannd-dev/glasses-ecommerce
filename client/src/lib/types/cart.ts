@@ -57,7 +57,7 @@ export type AddCartItemPayload = {
   /** Optional lens variant for this frame line. Null/undefined = frame-only. */
   lensVariantId?: string | null;
   /** Optional selected coating IDs for the chosen lens. */
-  selectedCoatingIds?: string[] | null;
+  selectedCoatingIds?: string[];
   /** Flattened RX fields expected by AddCartItemDto (OD/OS + PD). */
   sphOD?: number | null;
   cylOD?: number | null;
