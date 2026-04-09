@@ -240,6 +240,8 @@ public sealed class MappingProfiles : Profile
                     : null))
             .ForMember(d => d.LensVariantName, o => o.MapFrom(s =>
                 s.LensVariant != null ? s.LensVariant.VariantName : null))
+            .ForMember(d => d.LensUnitPrice, o => o.MapFrom(s => s.LensUnitPrice))
+            .ForMember(d => d.CoatingExtraPrice, o => o.MapFrom(s => s.CoatingExtraPrice))
             .ForMember(d => d.SelectedCoatings, o => o.Ignore());
 
         CreateMap<Payment, OrderPaymentDto>()

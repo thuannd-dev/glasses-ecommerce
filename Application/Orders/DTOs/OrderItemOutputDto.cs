@@ -25,6 +25,11 @@ public sealed class OrderItemOutputDto
     [System.Text.Json.Serialization.JsonIgnore]
     public string? CoatingsSnapshot { get; set; }
 
+    private static readonly System.Text.Json.JsonSerializerOptions _coatingJsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
+
     public List<Application.Orders.DTOs.OrderItemCoatingDto> SelectedCoatings 
     { 
         get
@@ -32,9 +37,9 @@ public sealed class OrderItemOutputDto
             if (string.IsNullOrWhiteSpace(CoatingsSnapshot)) return [];
             try 
             { 
-                return System.Text.Json.JsonSerializer.Deserialize<List<Application.Orders.DTOs.OrderItemCoatingDto>>(CoatingsSnapshot, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? []; 
+                return System.Text.Json.JsonSerializer.Deserialize<List<Application.Orders.DTOs.OrderItemCoatingDto>>(CoatingsSnapshot, _coatingJsonOptions) ?? []; 
             }
-            catch 
+            catch (System.Text.Json.JsonException)
             { 
                 return []; 
             }
