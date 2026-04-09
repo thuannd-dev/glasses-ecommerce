@@ -67,12 +67,20 @@ const SalesTicketsScreen = lazy(() =>
 );
 
 const AdminLayout = lazy(() => import("../../features/Admin/AdminLayout"));
-const AdminPolicies = lazy(() => import("../../features/Admin/AdminPolicies"));
-const AdminFeatureToggles = lazy(
-  () => import("../../features/Admin/AdminFeatureToggles"),
+const AdminPolicies = lazy(() =>
+  import("../../features/Admin/screens").then((m) => ({
+    default: m.AdminPolicies,
+  })),
 );
-const RoleManagement = lazy(
-  () => import("../../features/Admin/RoleManagement"),
+const AdminFeatureToggles = lazy(() =>
+  import("../../features/Admin/screens").then((m) => ({
+    default: m.AdminFeatureToggles,
+  })),
+);
+const RoleManagement = lazy(() =>
+  import("../../features/Admin/screens").then((m) => ({
+    default: m.RoleManagement,
+  })),
 );
 const PoliciesGuaranteePage = lazy(() =>
   import("../../features/policies/PoliciesListPage").then((m) => ({

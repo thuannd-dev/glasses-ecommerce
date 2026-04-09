@@ -33,7 +33,7 @@ export function getPolicyTypeLabel(policyType: number | string | undefined): str
 /** Policy Configuration DTO returned from API */
 export interface PolicyConfigurationDto {
   id: string;
-  policyType: PolicyTypeEnum;
+  policyType: PolicyTypeEnum | string;
   policyName: string;
   returnWindowDays: number | null;
   warrantyMonths: number | null;
