@@ -18,13 +18,13 @@ public class CartItem
     // Lưu đủ để tạo Prescription + PrescriptionDetail lúc checkout.
     // OD = Oculus Dexter (mắt phải) | OS = Oculus Sinister (mắt trái)
     public decimal? PrescriptionSphOD  { get; set; }
-    public decimal? PrescriptionCylOD  { get; set; }  // luôn ≤ 0
+    public decimal? PrescriptionCylOD  { get; set; }  // [-6, +6]
     public int?     PrescriptionAxisOD { get; set; }  // 0–180, ý nghĩa khi CYL != 0
     public decimal? PrescriptionAddOD  { get; set; }  // chỉ cho Progressive/Bifocal
     public decimal? PrescriptionPdOD   { get; set; }  // pupillary distance mắt phải (mm)
 
     public decimal? PrescriptionSphOS  { get; set; }
-    public decimal? PrescriptionCylOS  { get; set; }  // luôn ≤ 0
+    public decimal? PrescriptionCylOS  { get; set; }  // [-6, +6]
     public int?     PrescriptionAxisOS { get; set; }
     public decimal? PrescriptionAddOS  { get; set; }
     public decimal? PrescriptionPdOS   { get; set; }  // pupillary distance mắt trái (mm)

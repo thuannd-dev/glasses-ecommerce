@@ -36,12 +36,10 @@ internal static class PrescriptionValidator
         if (eye.CYL?.IsExtracted == true &&
             decimal.TryParse(eye.CYL.Value, out decimal cylValue))
         {
-            if (cylValue < -6m || cylValue > 0m)
+            if (cylValue < -6m || cylValue > 6m)
             {
                 eye.CYL.Confidence = 0m;
-                // Domain rule: CYL must be in [-6, 0]. Positive values are not used in this system
-                // and would be rejected at checkout/order validation — flag early.
-                warnings.Add($"{eyeName} eye: CYL value '{eye.CYL.Value}' is outside the valid domain range [-6, 0].");
+                warnings.Add($"{eyeName} eye: CYL value '{eye.CYL.Value}' is outside the valid domain range [-6, +6].");
             }
             else if (!IsQuarterStep(cylValue))
             {
