@@ -41,6 +41,11 @@ export interface OrderItemRowProps {
     price?: number;
     imageUrl?: string;
     productImageUrl?: string;
+    /** From GET order detail API (lens line item) */
+    lensVariantName?: string | null;
+    lensUnitPrice?: number;
+    coatingExtraPrice?: number;
+    selectedCoatings?: Array<{ coatingName?: string }>;
   };
   /** Compact = smaller thumb, single line on mobile */
   compact?: boolean;
@@ -84,6 +89,15 @@ export function OrderItemRow({
   const unitPrice =
     (item as { unitPrice?: number }).unitPrice ?? (item as { price?: number }).price ?? 0;
   const perEa = qty > 0 ? price / qty : unitPrice;
+
+  const lensName = item.lensVariantName?.trim() || null;
+  const lensUnitPrice = item.lensUnitPrice ?? 0;
+  const coatingExtraPrice = item.coatingExtraPrice ?? 0;
+  const coatingNames =
+    item.selectedCoatings?.map((c) => c.coatingName?.trim()).filter(Boolean).join(", ") || null;
+  const showLensCoatingFromApi =
+    !rxLineSnapshot &&
+    Boolean(lensName || coatingNames || lensUnitPrice > 0 || coatingExtraPrice > 0);
 
   const prescription =
     prescriptionFromProps ?? (orderId && item.id ? getOrderPrescription(orderId, item.id) : undefined);
@@ -222,7 +236,7 @@ export function OrderItemRow({
     <Box
       sx={{
         display: "flex",
-        alignItems: "center",
+        alignItems: "flex-start",
         gap: 2,
         py: compact ? 0.75 : 1.5,
         px: compact ? 1.5 : 2,
@@ -248,6 +262,16 @@ export function OrderItemRow({
         <Typography fontSize={13} sx={{ color: "#8A8A8A" }}>
           {variantName ? `${variantName} · Qty ${qty}` : `Qty ${qty}`}
         </Typography>
+        {showLensCoatingFromApi && (
+          <Box sx={{ mt: 0.35, display: "flex", flexDirection: "column", gap: 0.25 }}>
+            <Typography fontSize={12} sx={{ color: "#6B7280", fontWeight: 700 }}>
+              {`Lens: ${lensName ?? "—"} (${lensUnitPrice.toLocaleString("en-US", { style: "currency", currency: "USD" })})`}
+            </Typography>
+            <Typography fontSize={12} sx={{ color: "#6B7280", fontWeight: 700 }}>
+              {`Coating: ${coatingNames ?? "None"} (${coatingExtraPrice.toLocaleString("en-US", { style: "currency", currency: "USD" })})`}
+            </Typography>
+          </Box>
+        )}
         {prescription &&
           (showPrescriptionDetails ? (
             <Box sx={{ mt: 0.5 }}>

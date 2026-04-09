@@ -182,13 +182,23 @@ export function OrderDetailScreen() {
             order.items.map((item) => {
               const lineTotal =
                 (item.totalPrice ?? item.unitPrice * item.quantity) || 0;
+              const lensName = item.lensVariantName?.trim() || null;
+              const lensUnitPrice = item.lensUnitPrice ?? 0;
+              const coatingExtraPrice = item.coatingExtraPrice ?? 0;
+              const coatingNames =
+                item.selectedCoatings
+                  ?.map((c) => c.coatingName?.trim())
+                  .filter(Boolean)
+                  .join(", ") || null;
+              const showLensCoating =
+                Boolean(lensName || coatingNames || lensUnitPrice > 0 || coatingExtraPrice > 0);
               return (
                 <Box
                   key={item.id}
                   sx={{
                     display: "flex",
                     justifyContent: "space-between",
-                    alignItems: "center",
+                    alignItems: "flex-start",
                     py: 0.5,
                     fontSize: 13,
                   }}
@@ -200,6 +210,22 @@ export function OrderDetailScreen() {
                     <Typography sx={{ color: "text.secondary" }}>
                       {item.variantName} · Qty {item.quantity}
                     </Typography>
+                    {showLensCoating && (
+                      <Box sx={{ mt: 0.25, display: "flex", flexDirection: "column", gap: 0.25 }}>
+                        <Typography sx={{ color: "text.secondary", fontSize: 12, fontWeight: 700 }}>
+                          {`Lens: ${lensName ?? "—"} (${lensUnitPrice.toLocaleString("en-US", {
+                            style: "currency",
+                            currency: "USD",
+                          })})`}
+                        </Typography>
+                        <Typography sx={{ color: "text.secondary", fontSize: 12, fontWeight: 700 }}>
+                          {`Coating: ${coatingNames ?? "None"} (${coatingExtraPrice.toLocaleString("en-US", {
+                            style: "currency",
+                            currency: "USD",
+                          })})`}
+                        </Typography>
+                      </Box>
+                    )}
                   </Box>
                   <Typography sx={{ fontWeight: 600 }}>
                     {lineTotal.toLocaleString("en-US", {

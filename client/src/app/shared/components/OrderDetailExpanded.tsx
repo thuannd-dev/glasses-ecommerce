@@ -322,6 +322,16 @@ export function OrderDetailExpanded({ detail, onProcessOrderClick, showProcessBu
         >
           {detail.items.map((item, idx) => {
             const lineTotal = item.totalPrice ?? item.unitPrice * item.quantity;
+            const lensName = item.lensVariantName?.trim() || null;
+            const lensUnitPrice = item.lensUnitPrice ?? 0;
+            const coatingExtraPrice = item.coatingExtraPrice ?? 0;
+            const coatingNames =
+              item.selectedCoatings
+                ?.map((c) => c.coatingName?.trim())
+                .filter(Boolean)
+                .join(", ") || null;
+            const showLensCoating =
+              Boolean(lensName || coatingNames || lensUnitPrice > 0 || coatingExtraPrice > 0);
             // Find the prescription for this item
             const prescription = detail.prescriptions?.find((rx) => rx.id === item.prescriptionId);
             const isVerified = prescription?.isVerified === true;
@@ -335,7 +345,7 @@ export function OrderDetailExpanded({ detail, onProcessOrderClick, showProcessBu
                 <Box
                   sx={{
                     display: "flex",
-                    alignItems: "center",
+                    alignItems: "flex-start",
                     gap: 2,
                     p: 2,
                     "&:hover": { bgcolor: "#FAFAFA" },
@@ -372,6 +382,16 @@ export function OrderDetailExpanded({ detail, onProcessOrderClick, showProcessBu
                     <Typography sx={{ fontSize: 13, color: TOKENS.textSecondary }}>
                       {item.variantName} · {item.sku} · Qty {item.quantity}
                     </Typography>
+                    {showLensCoating && (
+                      <Box sx={{ mt: 0.5, display: "flex", flexDirection: "column", gap: 0.25 }}>
+                        <Typography sx={{ fontSize: 12, color: TOKENS.muted, fontWeight: 700 }}>
+                          {`Lens: ${lensName ?? "—"} (${lensUnitPrice.toLocaleString("en-US", { style: "currency", currency: "USD" })})`}
+                        </Typography>
+                        <Typography sx={{ fontSize: 12, color: TOKENS.muted, fontWeight: 700 }}>
+                          {`Coating: ${coatingNames ?? "None"} (${coatingExtraPrice.toLocaleString("en-US", { style: "currency", currency: "USD" })})`}
+                        </Typography>
+                      </Box>
+                    )}
                   </Box>
                   <Box sx={{ textAlign: "right" }}>
                     <Typography sx={{ fontWeight: 700, color: TOKENS.textPrimary, fontSize: 15 }}>

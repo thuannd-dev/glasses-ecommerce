@@ -119,6 +119,13 @@ export interface MyOrdersPageDto {
   hasNextPage: boolean;
 }
 
+/** Coating snapshot on order line item (GET /api/me/orders/:id) */
+export interface CustomerOrderItemCoatingDto {
+  id: string;
+  coatingName: string;
+  price: number;
+}
+
 /** Order item from GET /api/me/orders/:id (CustomerOrderDto.items) */
 export interface CustomerOrderItemDto {
   id: string;
@@ -134,6 +141,10 @@ export interface CustomerOrderItemDto {
   name?: string;
   imageUrl?: string;
   productImageUrl?: string;
+  lensVariantName?: string | null;
+  lensUnitPrice?: number;
+  coatingExtraPrice?: number;
+  selectedCoatings?: CustomerOrderItemCoatingDto[];
 }
 
 /** Payment block from GET /api/me/orders/:id */
