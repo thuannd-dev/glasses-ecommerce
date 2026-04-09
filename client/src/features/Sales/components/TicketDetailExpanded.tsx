@@ -69,18 +69,7 @@ interface TicketDetailExpandedProps {
 }
 
 export function TicketDetailExpanded({ detail, onApprove, onReject, isLoading }: TicketDetailExpandedProps) {
-  // DEBUG: Log data structure
-  console.log("🔍 TicketDetailExpanded received detail:", {
-    id: detail.id,
-    itemsCount: detail.items?.length,
-    items: detail.items?.map(item => ({
-      id: item.id,
-      productName: item.productName,
-      prescriptionId: item.prescriptionId,
-      prescriptionDetailsCount: item.prescriptionDetails?.length,
-      prescriptionDetails: item.prescriptionDetails
-    }))
-  });
+
 
   const statusPill = getTicketStatusPill(detail.ticketStatus);
   const typePill = getTicketTypePill(detail.ticketType);

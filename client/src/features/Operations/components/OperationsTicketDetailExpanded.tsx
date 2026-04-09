@@ -378,7 +378,10 @@ export function OperationsTicketDetailExpanded({
 
                       <Typography sx={{ fontSize: 12, fontWeight: 600, color: "#171717" }}>Item Total:</Typography>
                       <Typography sx={{ fontSize: 12, fontWeight: 600, color: "#16A34A" }}>
-                        ${(item.unitPrice + (item.lensUnitPrice || 0) + (item.coatingExtraPrice || 0)).toFixed(2)}
+                        ${(
+                          item.quantity *
+                          (item.unitPrice + (item.lensUnitPrice || 0) + (item.coatingExtraPrice || 0))
+                        ).toFixed(2)}
                       </Typography>
                     </Box>
                   </Box>
