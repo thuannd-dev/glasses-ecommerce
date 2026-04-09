@@ -27,7 +27,7 @@ public sealed class ProductsController : BaseApiController
     {
         // Lens products visible to all authenticated roles EXCEPT Customer
         // Only customers (anonymous or explicit "Customer" role) cannot see lenses
-        bool isCustomer = !User.Identity?.IsAuthenticated ?? true || User.IsInRole("Customer");
+        bool isCustomer = (User.Identity?.IsAuthenticated != true) || User.IsInRole("Customer");
         
         // Block type=Lens filter for customers and return explicit 403 for unauthorized lens requests
         if (type == ProductType.Lens && isCustomer)
