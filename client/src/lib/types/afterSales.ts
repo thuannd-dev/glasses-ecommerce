@@ -55,6 +55,25 @@ export interface TicketItemDto {
   totalPrice: number;
   discountApplied?: number;  // Discount amount for this item
   productImageUrl?: string;
+  prescriptionId?: string;
+  lensVariantName?: string;
+  lensUnitPrice?: number;
+  coatingExtraPrice?: number;
+  coatingsSnapshot?: string;
+  coatings?: Array<{
+    id: string;
+    coatingName: string;
+    price: number;
+  }>;
+  prescriptionDetails?: Array<{
+    id: string;
+    eye?: string;
+    sph?: number | null;
+    cyl?: number | null;
+    axis?: number | null;
+    pd?: number | null;
+    add?: number | null;
+  }>;
 }
 
 /** Ticket detail response (with product items and attachments) */

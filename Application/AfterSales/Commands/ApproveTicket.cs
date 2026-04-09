@@ -37,7 +37,7 @@ public sealed class ApproveTicket
                     await context.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
 
                 AfterSalesTicket? ticket = await context.AfterSalesTickets
-                    .FromSql($"SELECT * FROM AfterSalesTickets WITH (UPDLOCK) WHERE Id = {request.TicketId}")
+                    .FromSqlInterpolated($"SELECT * FROM AfterSalesTickets WITH (UPDLOCK) WHERE Id = {request.TicketId}")
                     .FirstOrDefaultAsync(ct);
 
                 if (ticket == null)

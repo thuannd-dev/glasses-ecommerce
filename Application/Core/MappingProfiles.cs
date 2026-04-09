@@ -242,6 +242,22 @@ public sealed class MappingProfiles : Profile
                 s.LensVariant != null ? s.LensVariant.VariantName : null))
             .ForMember(d => d.LensUnitPrice, o => o.MapFrom(s => s.LensUnitPrice))
             .ForMember(d => d.CoatingExtraPrice, o => o.MapFrom(s => s.CoatingExtraPrice))
+            .ForMember(d => d.PrescriptionDetails, o => o.MapFrom(s =>
+                s.Prescription != null && s.Prescription.Details != null
+                    ? s.Prescription.Details
+                        .OrderBy(pd => pd.Eye)
+                        .Select(pd => new PrescriptionDetailOutputDto
+                        {
+                            Id = pd.Id,
+                            Eye = pd.Eye.ToString(),
+                            SPH = pd.SPH,
+                            CYL = pd.CYL,
+                            AXIS = pd.AXIS,
+                            PD = pd.PD,
+                            ADD = pd.ADD
+                        })
+                        .ToList()
+                    : new List<PrescriptionDetailOutputDto>()))
             .ForMember(d => d.SelectedCoatings, o => o.Ignore());
 
         CreateMap<Payment, OrderPaymentDto>()
@@ -399,6 +415,24 @@ public sealed class MappingProfiles : Profile
             .ForMember(d => d.Items, o => o.Ignore())
             .AfterMap((src, dest) =>
             {
+                // Helper: Parse coatings from JSON snapshot
+                static List<OrderItemCoatingDto> ParseCoatings(string? snapshot)
+                {
+                    if (string.IsNullOrWhiteSpace(snapshot)) return [];
+                    try
+                    {
+                        List<OrderItemCoatingDto>? coatings = System.Text.Json.JsonSerializer.Deserialize<List<OrderItemCoatingDto>>(
+                            snapshot,
+                            new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+                        );
+                        return coatings ?? [];
+                    }
+                    catch
+                    {
+                        return [];
+                    }
+                }
+
                 // Populate Items after standard mapping
                 List<OrderItemOutputDto> items = [];
 
@@ -407,6 +441,24 @@ public sealed class MappingProfiles : Profile
                     src.OrderItem.ProductVariant.Product != null)
                 {
                     // Ticket is for a specific item — all discount applies to this item
+                    List<PrescriptionDetailOutputDto> prescriptionDetails = [];
+                    if (src.OrderItem.Prescription != null && src.OrderItem.Prescription.Details != null)
+                    {
+                        prescriptionDetails = src.OrderItem.Prescription.Details
+                            .OrderBy(pd => pd.Eye)
+                            .Select(pd => new PrescriptionDetailOutputDto
+                            {
+                                Id = pd.Id,
+                                Eye = pd.Eye.ToString(),
+                                SPH = pd.SPH,
+                                CYL = pd.CYL,
+                                AXIS = pd.AXIS,
+                                PD = pd.PD,
+                                ADD = pd.ADD
+                            })
+                            .ToList();
+                    }
+
                     items.Add(new OrderItemOutputDto
                     {
                         Id = src.OrderItem.Id,
@@ -418,6 +470,7 @@ public sealed class MappingProfiles : Profile
                         UnitPrice = src.OrderItem.UnitPrice,
                         TotalPrice = src.OrderItem.Quantity * (src.OrderItem.UnitPrice + src.OrderItem.LensUnitPrice + src.OrderItem.CoatingExtraPrice),
                         DiscountApplied = src.DiscountApplied,
+                        PrescriptionId = src.OrderItem.PrescriptionId,
                         ProductImageUrl = src.OrderItem.ProductVariant.Product.Images
                             ?.OrderBy(pi => pi.DisplayOrder)
                             .Select(pi => pi.ImageUrl)
@@ -425,7 +478,9 @@ public sealed class MappingProfiles : Profile
                         LensVariantName = src.OrderItem.LensVariant?.VariantName,
                         LensUnitPrice = src.OrderItem.LensUnitPrice,
                         CoatingExtraPrice = src.OrderItem.CoatingExtraPrice,
-                        CoatingsSnapshot = src.OrderItem.CoatingsSnapshot
+                        CoatingsSnapshot = src.OrderItem.CoatingsSnapshot,
+                        Coatings = ParseCoatings(src.OrderItem.CoatingsSnapshot),
+                        PrescriptionDetails = prescriptionDetails
                     });
                 }
                 else if (src.Order != null && src.Order.OrderItems != null && src.Order.OrderItems.Count > 0)
@@ -443,6 +498,24 @@ public sealed class MappingProfiles : Profile
                                 ? (itemPrice / totalOrderPrice) * src.DiscountApplied 
                                 : 0;
                             
+                            List<PrescriptionDetailOutputDto> prescriptionDetails = [];
+                            if (oi.Prescription != null && oi.Prescription.Details != null)
+                            {
+                                prescriptionDetails = oi.Prescription.Details
+                                    .OrderBy(pd => pd.Eye)
+                                    .Select(pd => new PrescriptionDetailOutputDto
+                                    {
+                                        Id = pd.Id,
+                                        Eye = pd.Eye.ToString(),
+                                        SPH = pd.SPH,
+                                        CYL = pd.CYL,
+                                        AXIS = pd.AXIS,
+                                        PD = pd.PD,
+                                        ADD = pd.ADD
+                                    })
+                                    .ToList();
+                            }
+                            
                             return new OrderItemOutputDto
                             {
                                 Id = oi.Id,
@@ -454,6 +527,7 @@ public sealed class MappingProfiles : Profile
                                 UnitPrice = oi.UnitPrice,
                                 TotalPrice = oi.Quantity * (oi.UnitPrice + oi.LensUnitPrice + oi.CoatingExtraPrice),
                                 DiscountApplied = itemDiscount,
+                                PrescriptionId = oi.PrescriptionId,
                                 ProductImageUrl = oi.ProductVariant.Product.Images
                                     ?.OrderBy(pi => pi.DisplayOrder)
                                     .Select(pi => pi.ImageUrl)
@@ -461,7 +535,9 @@ public sealed class MappingProfiles : Profile
                                 LensVariantName = oi.LensVariant?.VariantName,
                                 LensUnitPrice = oi.LensUnitPrice,
                                 CoatingExtraPrice = oi.CoatingExtraPrice,
-                                CoatingsSnapshot = oi.CoatingsSnapshot
+                                CoatingsSnapshot = oi.CoatingsSnapshot,
+                                Coatings = ParseCoatings(oi.CoatingsSnapshot),
+                                PrescriptionDetails = prescriptionDetails
                             };
                         })
                         .ToList();

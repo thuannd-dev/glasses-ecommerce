@@ -35,10 +35,17 @@ public sealed class GetMyTicketDetail
                     .ThenInclude(oi => oi.ProductVariant)
                     .ThenInclude(pv => pv.Product)
                     .ThenInclude(p => p.Images)
+                .Include(t => t.Order)
+                    .ThenInclude(o => o.OrderItems)
+                    .ThenInclude(oi => oi.Prescription)
+                    .ThenInclude(p => p!.Details)
                 .Include(t => t.OrderItem!)
                     .ThenInclude(oi => oi.ProductVariant)
                     .ThenInclude(pv => pv.Product)
                     .ThenInclude(p => p.Images)
+                .Include(t => t.OrderItem!)
+                    .ThenInclude(oi => oi.Prescription)
+                    .ThenInclude(p => p!.Details)
                 .Include(t => t.Attachments)
                 .FirstOrDefaultAsync(cancellationToken);
 
