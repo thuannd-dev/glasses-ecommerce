@@ -29,7 +29,16 @@ interface LensAttributeRange {
 }
 
 const REFRACTIVE_INDICES = [1.50, 1.56, 1.60, 1.67, 1.74];
-const LENS_DESIGNS = ["SingleVision", "Progressive", "Bifocal"];
+
+/** ADD null/0 → chỉ SingleVision; ADD > 0 (khoảng có công suất near) → Progressive + Bifocal */
+function allowsMultifocalLensDesigns(r: Pick<LensAttributeRange, "addMin" | "addMax">): boolean {
+  if (r.addMin == null || r.addMax == null) return false;
+  return r.addMin > 0 || r.addMax > 0;
+}
+
+function availableLensDesignsForRanges(r: Pick<LensAttributeRange, "addMin" | "addMax">): string[] {
+  return allowsMultifocalLensDesigns(r) ? ["Progressive", "Bifocal"] : ["SingleVision"];
+}
 
 const DEFAULT_RANGES: LensAttributeRange = {
   sphMin: -20,
@@ -218,6 +227,23 @@ export default function LensAttributesTab() {
       setRanges(DEFAULT_RANGES);
     }
   }, [lensAttribute, selectedVariantId, isLoadingAttributes]);
+
+  // Giữ lensDesign khớp ADD: không ADD → SingleVision; có ADD > 0 → Progressive/Bifocal
+  useEffect(() => {
+    setRanges((prev) => {
+      const allowed = availableLensDesignsForRanges(prev);
+      if (allowed.includes(prev.lensDesign)) return prev;
+      return {
+        ...prev,
+        lensDesign: allowsMultifocalLensDesigns(prev) ? "Progressive" : "SingleVision",
+      };
+    });
+  }, [ranges.addMin, ranges.addMax]);
+
+  const availableLensDesigns = useMemo(
+    () => availableLensDesignsForRanges(ranges),
+    [ranges.addMin, ranges.addMax]
+  );
 
   const handleReset = () => {
     setRanges(DEFAULT_RANGES);
@@ -507,15 +533,25 @@ export default function LensAttributesTab() {
               )}
             </div>
 
-            {/* Lens Design Selection */}
+            {/* Lens Design Selection — lọc theo ADD: null/0 → SingleVision; ADD > 0 → Progressive, Bifocal */}
             <div className="bg-gray-50 p-4 rounded-lg">
-              <label className="text-sm font-semibold text-gray-700 block mb-3">
+              <label className="text-sm font-semibold text-gray-700 block mb-1">
                 Lens Design Type
               </label>
-              <div className="grid grid-cols-3 gap-2">
-                {LENS_DESIGNS.map((design) => (
+              <p className="text-xs text-gray-500 mb-3">
+                {allowsMultifocalLensDesigns(ranges)
+                  ? "ADD range is set — choose Progressive or Bifocal."
+                  : "No ADD (or ADD = 0) — only Single Vision applies."}
+              </p>
+              <div
+                className={`grid gap-2 ${
+                  availableLensDesigns.length <= 1 ? "grid-cols-1" : "grid-cols-2"
+                }`}
+              >
+                {availableLensDesigns.map((design) => (
                   <button
                     key={design}
+                    type="button"
                     onClick={() =>
                       setRanges({ ...ranges, lensDesign: design })
                     }
