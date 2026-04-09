@@ -472,25 +472,25 @@ export function ProductDetailModal({ productId, onClose }: ProductDetailModalPro
                         <Typography fontWeight={600}>{currentVariant.material}</Typography>
                       </Box>
                     )}
-                    {currentVariant?.frameWidth != null && (
+                    {product.type === "Frame" && currentVariant?.frameWidth != null && (
                       <Box sx={{ display: "flex", justifyContent: "space-between" }}>
                         <Typography color="rgba(15,23,42,0.6)">Frame width</Typography>
                         <Typography fontWeight={600}>{currentVariant.frameWidth} mm</Typography>
                       </Box>
                     )}
-                    {currentVariant?.lensWidth != null && (
+                    {product.type === "Frame" && currentVariant?.lensWidth != null && (
                       <Box sx={{ display: "flex", justifyContent: "space-between" }}>
                         <Typography color="rgba(15,23,42,0.6)">Lens width</Typography>
                         <Typography fontWeight={600}>{currentVariant.lensWidth} mm</Typography>
                       </Box>
                     )}
-                    {currentVariant?.bridgeWidth != null && (
+                    {product.type === "Frame" && currentVariant?.bridgeWidth != null && (
                       <Box sx={{ display: "flex", justifyContent: "space-between" }}>
                         <Typography color="rgba(15,23,42,0.6)">Bridge width</Typography>
                         <Typography fontWeight={600}>{currentVariant.bridgeWidth} mm</Typography>
                       </Box>
                     )}
-                    {currentVariant?.templeLength != null && (
+                    {product.type === "Frame" && currentVariant?.templeLength != null && (
                       <Box sx={{ display: "flex", justifyContent: "space-between" }}>
                         <Typography color="rgba(15,23,42,0.6)">Temple length</Typography>
                         <Typography fontWeight={600}>{currentVariant.templeLength} mm</Typography>

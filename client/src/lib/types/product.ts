@@ -45,7 +45,7 @@ export type ApiProductItem = {
 export type ProductDetailApi = {
   id: string;
   productName: string;
-  type: number;
+  type: string | number;
   description: string | null;
   brand: string | null;
   status: number;
@@ -72,6 +72,18 @@ export type ProductDetailApi = {
     isPreOrder: boolean;
     isActive: boolean;
     quantityAvailable: number;
+    lensAttribute?: {
+      sphMin: number;
+      sphMax: number;
+      cylMin: number;
+      cylMax: number;
+      axisMin: number;
+      axisMax: number;
+      addMin: number | null;
+      addMax: number | null;
+      index: number;
+      lensDesign: number;
+    };
     images: Array<{
       id: string;
       imageUrl: string;

@@ -322,12 +322,13 @@ export default function ManagerProductCreateWizardScreen() {
 
   const typeOptions = useMemo(() => {
     const list: string[] = lookups?.productType ?? [];
+    const allowedCreateTypes = new Set([1, 2]); // Frame, Lens only
     return list
       .map((label) => {
         const value = PRODUCT_TYPE_ENUM_BY_LABEL[label];
         return typeof value === "number" ? { value, label } : null;
       })
-      .filter((item): item is { value: number; label: string } => item !== null);
+      .filter((item): item is { value: number; label: string } => item !== null && allowedCreateTypes.has(item.value));
   }, [lookups?.productType]);
 
   const allowedTypeValues = useMemo(
@@ -406,14 +407,16 @@ export default function ManagerProductCreateWizardScreen() {
     const unique = new Set(skus);
     if (unique.size !== skus.length) errors.push("Variant SKU must be unique");
 
+    const isLensType = type === 2;
+
     newVariants.forEach((v, idx) => {
       if (!v.sku.trim()) errors.push(`Variant #${idx + 1}: SKU is required`);
       if (v.sku.trim().length > 100) errors.push(`Variant #${idx + 1}: SKU must not exceed 100 characters`);
       if (!v.variantName || !String(v.variantName).trim()) errors.push(`Variant #${idx + 1}: Variant name is required`);
-      if (!v.color || !String(v.color).trim()) errors.push(`Variant #${idx + 1}: Color is required`);
-      if (!v.size || !String(v.size).trim()) errors.push(`Variant #${idx + 1}: Size is required`);
+      if (!isLensType && (!v.color || !String(v.color).trim())) errors.push(`Variant #${idx + 1}: Color is required`);
+      if (!isLensType && (!v.size || !String(v.size).trim())) errors.push(`Variant #${idx + 1}: Size is required`);
       if (!v.material || !String(v.material).trim()) errors.push(`Variant #${idx + 1}: Material is required`);
-      if (v.pendingImages.length === 0) errors.push(`Variant #${idx + 1}: At least 1 image is required`);
+      if (!isLensType && v.pendingImages.length === 0) errors.push(`Variant #${idx + 1}: At least 1 image is required`);
       if (v.price == null || Number.isNaN(v.price) || v.price < 0) errors.push(`Variant #${idx + 1}: Price must be >= 0`);
       if (v.compareAtPrice != null && v.compareAtPrice < v.price) errors.push(`Variant #${idx + 1}: Compare-at must be >= price`);
       if (v.frameWidth != null && v.frameWidth <= 0) errors.push(`Variant #${idx + 1}: Frame width must be > 0`);
@@ -424,7 +427,7 @@ export default function ManagerProductCreateWizardScreen() {
     });
 
     return errors;
-  }, [newVariants]);
+  }, [newVariants, type]);
 
   const canNext = useMemo(() => {
     if (!savedSteps[step]) return false;
@@ -1196,6 +1199,7 @@ export default function ManagerProductCreateWizardScreen() {
                         <p className="text-xs text-red-600">Variant name is required.</p>
                       ) : null}
                     </div>
+                    {type !== 2 && (
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-zinc-700">Color</label>
                       <div className="flex items-center gap-3">
@@ -1237,6 +1241,8 @@ export default function ManagerProductCreateWizardScreen() {
                         <p className="text-xs text-red-600">Color is required.</p>
                       ) : null}
                     </div>
+                    )}
+                    {type !== 2 && (
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-zinc-700">Size</label>
                       <select
@@ -1261,6 +1267,7 @@ export default function ManagerProductCreateWizardScreen() {
                         <p className="text-xs text-red-600">Size is required.</p>
                       ) : null}
                     </div>
+                    )}
                   </div>
 
                   <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -1304,52 +1311,57 @@ export default function ManagerProductCreateWizardScreen() {
                   </div>
 
                   <div className="mt-5">
-                    <FrameDimensionsForm
-                      dimensions={{
-                        lensWidth: v.lensWidth ?? null,
-                        bridgeWidth: v.bridgeWidth ?? null,
-                        templeLength: v.templeLength ?? null,
-                      }}
-                      onChange={(dimensions) => {
-                        setNewVariants((prev) =>
-                          prev.map((x) =>
-                            x._tempId === v._tempId
-                              ? {
-                                  ...x,
-                                  lensWidth: dimensions.lensWidth,
-                                  bridgeWidth: dimensions.bridgeWidth,
-                                  templeLength: dimensions.templeLength,
-                                }
-                              : x
-                          )
-                        );
-                        setIsDirty((prev) => ({ ...prev, 2: true }));
-                      }}
-                      onSizeChange={(newSize) => {
-                        setNewVariants((prev) =>
-                          prev.map((x) =>
-                            x._tempId === v._tempId ? { ...x, size: newSize } : x
-                          )
-                        );
-                        setIsDirty((prev) => ({ ...prev, 2: true }));
-                      }}
-                    />
-                    <div className="mt-4 space-y-2">
-                      <label className="text-sm font-medium text-zinc-700">Frame width (optional)</label>
-                      <input
-                        type="number"
-                        value={v.frameWidth ?? ""}
-                        onChange={(e) => {
-                          const value = e.target.value === "" ? null : Number(e.target.value);
-                          setNewVariants((prev) => prev.map((x) => (x._tempId === v._tempId ? { ...x, frameWidth: value } : x)));
-                          setIsDirty((prev) => ({ ...prev, 2: true }));
-                        }}
-                        className="w-full px-4 py-2 rounded-lg border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
-                        placeholder="mm"
-                      />
-                    </div>
+                    {type === 1 && (
+                      <>
+                        <FrameDimensionsForm
+                          dimensions={{
+                            lensWidth: v.lensWidth ?? null,
+                            bridgeWidth: v.bridgeWidth ?? null,
+                            templeLength: v.templeLength ?? null,
+                          }}
+                          onChange={(dimensions) => {
+                            setNewVariants((prev) =>
+                              prev.map((x) =>
+                                x._tempId === v._tempId
+                                  ? {
+                                      ...x,
+                                      lensWidth: dimensions.lensWidth,
+                                      bridgeWidth: dimensions.bridgeWidth,
+                                      templeLength: dimensions.templeLength,
+                                    }
+                                  : x
+                              )
+                            );
+                            setIsDirty((prev) => ({ ...prev, 2: true }));
+                          }}
+                          onSizeChange={(newSize) => {
+                            setNewVariants((prev) =>
+                              prev.map((x) =>
+                                x._tempId === v._tempId ? { ...x, size: newSize } : x
+                              )
+                            );
+                            setIsDirty((prev) => ({ ...prev, 2: true }));
+                          }}
+                        />
+                        <div className="mt-4 space-y-2">
+                          <label className="text-sm font-medium text-zinc-700">Frame width (optional)</label>
+                          <input
+                            type="number"
+                            value={v.frameWidth ?? ""}
+                            onChange={(e) => {
+                              const value = e.target.value === "" ? null : Number(e.target.value);
+                              setNewVariants((prev) => prev.map((x) => (x._tempId === v._tempId ? { ...x, frameWidth: value } : x)));
+                              setIsDirty((prev) => ({ ...prev, 2: true }));
+                            }}
+                            className="w-full px-4 py-2 rounded-lg border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                            placeholder="mm"
+                          />
+                        </div>
+                      </>
+                    )}
                   </div>
 
+                  {type !== 2 && (
                   <div className={"mt-6 rounded-2xl border-2 border-dashed p-5 " + (submittedStep2 && v.pendingImages.length === 0 ? "border-red-300 bg-red-50/30" : "border-zinc-200 bg-zinc-50")}>
                     <div className="flex items-center justify-between gap-4">
                       <div>
@@ -1418,8 +1430,10 @@ export default function ManagerProductCreateWizardScreen() {
                       <div className="mt-3 text-sm text-zinc-600">No images selected.</div>
                     )}
                   </div>
+                  )}
 
                   {/* Variant GLB 3D Model */}
+                  {type !== 2 && (
                   <div className="mt-4 rounded-xl border border-zinc-200 bg-zinc-50 p-4">
                     <div className="text-sm font-bold text-zinc-900">3D Model (.glb)</div>
                     <p className="mt-1 text-xs text-zinc-600">Optional — attached to the first variant image.</p>
@@ -1489,6 +1503,7 @@ export default function ManagerProductCreateWizardScreen() {
                       />
                     </div>
                   </div>
+                  )}
                 </div>
               ))}
             </div>

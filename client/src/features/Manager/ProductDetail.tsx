@@ -952,6 +952,7 @@ export default function ProductDetail() {
       {/* Edit Variant Dialog */}
       {editingVariantId && (
         <VariantEditDialog
+          product={product}
           productId={id}
           variant={product.variants.find((v) => v.id === editingVariantId)}
           onClose={() => setEditingVariantId(null)}
@@ -1482,33 +1483,37 @@ export default function ProductDetail() {
               />
             </Grid>
 
-            <Grid item xs={12}>
-              <FrameDimensionsForm
-                dimensions={{
-                  lensWidth: variantLensWidth ? Number(variantLensWidth) : null,
-                  bridgeWidth: variantBridgeWidth ? Number(variantBridgeWidth) : null,
-                  templeLength: variantTempleLength ? Number(variantTempleLength) : null,
-                }}
-                onChange={(dimensions) => {
-                  setVariantLensWidth(dimensions.lensWidth?.toString() ?? "");
-                  setVariantBridgeWidth(dimensions.bridgeWidth?.toString() ?? "");
-                  setVariantTempleLength(dimensions.templeLength?.toString() ?? "");
-                }}
-                onSizeChange={(size) => setVariantSize(size)}
-              />
-            </Grid>
+            {product?.type === "Frame" && (
+              <>
+                <Grid item xs={12}>
+                  <FrameDimensionsForm
+                    dimensions={{
+                      lensWidth: variantLensWidth ? Number(variantLensWidth) : null,
+                      bridgeWidth: variantBridgeWidth ? Number(variantBridgeWidth) : null,
+                      templeLength: variantTempleLength ? Number(variantTempleLength) : null,
+                    }}
+                    onChange={(dimensions) => {
+                      setVariantLensWidth(dimensions.lensWidth?.toString() ?? "");
+                      setVariantBridgeWidth(dimensions.bridgeWidth?.toString() ?? "");
+                      setVariantTempleLength(dimensions.templeLength?.toString() ?? "");
+                    }}
+                    onSizeChange={(size) => setVariantSize(size)}
+                  />
+                </Grid>
 
-            <Grid item xs={12}>
-              <TextField
-                size="small"
-                fullWidth
-                label="Frame width (mm)"
-                type="number"
-                value={variantFrameWidth}
-                onChange={(e) => setVariantFrameWidth(e.target.value)}
-                helperText="Optional - Total width of the frame"
-              />
-            </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    size="small"
+                    fullWidth
+                    label="Frame width (mm)"
+                    type="number"
+                    value={variantFrameWidth}
+                    onChange={(e) => setVariantFrameWidth(e.target.value)}
+                    helperText="Optional - Total width of the frame"
+                  />
+                </Grid>
+              </>
+            )}
 
             <Grid item xs={12} sm={6}>
               <TextField
@@ -2177,6 +2182,7 @@ function SortableVariantImageCard({
 }
 
 function VariantEditDialog({
+  product,
   productId,
   variant,
   onClose,
@@ -2189,6 +2195,7 @@ function VariantEditDialog({
   patchImageModelUrl,
   isPatchingModelUrl,
 }: {
+  product: any;
   productId: string | undefined;
   variant: any;
   onClose: () => void;
@@ -2492,33 +2499,37 @@ function VariantEditDialog({
             />
           </Grid>
 
-          <Grid item xs={12}>
-            <FrameDimensionsForm
-              dimensions={{
-                lensWidth: lensWidth ? Number(lensWidth) : null,
-                bridgeWidth: bridgeWidth ? Number(bridgeWidth) : null,
-                templeLength: templeLength ? Number(templeLength) : null,
-              }}
-              onChange={(dimensions) => {
-                setLensWidth(dimensions.lensWidth?.toString() ?? "");
-                setBridgeWidth(dimensions.bridgeWidth?.toString() ?? "");
-                setTempleLength(dimensions.templeLength?.toString() ?? "");
-              }}
-              onSizeChange={(newSize) => setSize(newSize)}
-            />
-          </Grid>
+          {product?.type === "Frame" && (
+            <>
+              <Grid item xs={12}>
+                <FrameDimensionsForm
+                  dimensions={{
+                    lensWidth: lensWidth ? Number(lensWidth) : null,
+                    bridgeWidth: bridgeWidth ? Number(bridgeWidth) : null,
+                    templeLength: templeLength ? Number(templeLength) : null,
+                  }}
+                  onChange={(dimensions) => {
+                    setLensWidth(dimensions.lensWidth?.toString() ?? "");
+                    setBridgeWidth(dimensions.bridgeWidth?.toString() ?? "");
+                    setTempleLength(dimensions.templeLength?.toString() ?? "");
+                  }}
+                  onSizeChange={(newSize) => setSize(newSize)}
+                />
+              </Grid>
 
-          <Grid item xs={12}>
-            <TextField
-              size="small"
-              fullWidth
-              label="Frame width (mm)"
-              type="number"
+              <Grid item xs={12}>
+                <TextField
+                  size="small"
+                  fullWidth
+                  label="Frame width (mm)"
+                  type="number"
               value={frameWidth}
               onChange={(e) => setFrameWidth(e.target.value)}
               helperText="Optional - Total width of the frame"
             />
-          </Grid>
+              </Grid>
+            </>
+          )}
 
           <Grid item xs={12} sm={6}>
             <TextField
