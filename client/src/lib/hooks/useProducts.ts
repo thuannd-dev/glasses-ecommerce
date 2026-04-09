@@ -14,11 +14,13 @@ import type { Product } from "../types/collections";
 // Chuyển 1 item từ API (productName, category.slug...) sang dạng Product dùng ở UI (name, category, glassesType)
 export function mapApiItemToProduct(item: ApiProductItem): Product {
   const categorySlug = item.category?.slug ?? "";
+  // Check if this is a Lens product by its type (ProductType.Lens = 2)
+  const isLens = item.type === 2 || item.type === "Lens";
   const category: Product["category"] =
-    categorySlug === "eyeglasses" || categorySlug === "sunglasses"
-      ? "glasses"
-      : categorySlug === "lens"
-        ? "lens"
+    isLens
+      ? "lens"
+      : categorySlug === "eyeglasses" || categorySlug === "sunglasses"
+        ? "glasses"
         : categorySlug === "fashion"
           ? "fashion"
           : "glasses";
