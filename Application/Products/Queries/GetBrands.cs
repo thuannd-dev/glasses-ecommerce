@@ -1,5 +1,4 @@
 using Application.Core;
-using Domain;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Persistence;
@@ -18,7 +17,6 @@ public sealed class GetBrands
         public async Task<Result<List<string>>> Handle(Query request, CancellationToken cancellationToken)
         {
             var brands = await context.Products
-                .Where(p => p.Type != ProductType.Lens)
                 .Where(p => p.Brand != null && p.Brand != string.Empty)
                 .Select(p => p.Brand!)
                 .Distinct()

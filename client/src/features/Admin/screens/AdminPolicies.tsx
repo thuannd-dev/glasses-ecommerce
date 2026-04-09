@@ -330,7 +330,7 @@ export default function AdminPolicies() {
               ⏳ Loading policies...
             </Typography>
           </Box>
-        ) : policies.length === 0 ? (
+        ) : !policies || policies.length === 0 ? (
           <Box sx={{ p: 8, textAlign: "center" }}>
             <Typography sx={{ color: "text.secondary", mb: 1.5, fontSize: 18, fontWeight: 600 }}>
               📭 No policies found

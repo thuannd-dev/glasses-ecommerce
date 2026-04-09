@@ -26,6 +26,9 @@ public sealed class ProductsController : BaseApiController
         [FromQuery] GetProductList.SortOrderOption sortOrder = GetProductList.SortOrderOption.Desc,
         [FromQuery] bool includeLenses = false)
     {
+        // Only allow managers and admins to include lenses in product listings
+        bool canIncludeLenses = User.IsInRole("Manager") || User.IsInRole("Admin");
+
         return HandleResult(await Mediator.Send(new GetProductList.Query
         {
             PageNumber = pageNumber,
@@ -39,7 +42,7 @@ public sealed class ProductsController : BaseApiController
             SearchTerm = search,
             SortBy = sortBy,
             SortOrder = sortOrder,
-            IncludeLenses = includeLenses
+            IncludeLenses = canIncludeLenses && includeLenses
         }));
     }
 
