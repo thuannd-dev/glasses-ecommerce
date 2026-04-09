@@ -29,15 +29,9 @@ export function toPrescriptionInputDto(data: PrescriptionData): PrescriptionInpu
   return {
     ImageUrl: data.imageUrl?.trim() ? data.imageUrl.trim() : undefined,
     Details: data.details.map((d) => {
-      let sph: number | null = round2(d.sph) ?? null;
-      let cyl: number | null = round2(d.cyl) ?? null;
-      let axis: number | null = d.axis != null ? Math.round(d.axis) : null;
-
-      // Clamp CYL to valid range [-6, +6] in case of drift or old data
-      if (cyl != null && (cyl < -6 || cyl > 6)) {
-        cyl = Math.max(-6, Math.min(6, cyl));
-        cyl = round2(cyl);
-      }
+      const sph: number | null = round2(d.sph) ?? null;
+      const cyl: number | null = round2(d.cyl) ?? null;
+      const axis: number | null = d.axis != null ? Math.round(d.axis) : null;
 
       return {
         Eye: (d.eye === 1 ? 2 : 1) as 1 | 2,
