@@ -1,5 +1,20 @@
+/** Shared flattened prescription fields (OD/OS + optional single PD). */
+export type RxFields = {
+  sphOD?: number | null;
+  cylOD?: number | null;
+  axisOD?: number | null;
+  addOD?: number | null;
+  pdOD?: number | null;
+  sphOS?: number | null;
+  cylOS?: number | null;
+  axisOS?: number | null;
+  addOS?: number | null;
+  pdOS?: number | null;
+  pd?: number | null;
+};
+
 /** Cart DTOs used by /api/carts endpoints */
-export type CartItemDto = {
+export type CartItemDto = RxFields & {
   id: string;
   cartId: string;
   productVariantId: string;
@@ -27,17 +42,6 @@ export type CartItemDto = {
     currentExtraPrice: number;
   }>;
   hasPrescription: boolean;
-  sphOD?: number | null;
-  cylOD?: number | null;
-  axisOD?: number | null;
-  addOD?: number | null;
-  pdOD?: number | null;
-  sphOS?: number | null;
-  cylOS?: number | null;
-  axisOS?: number | null;
-  addOS?: number | null;
-  pdOS?: number | null;
-  pd?: number | null;
   subtotal: number;
 };
 
@@ -48,8 +52,8 @@ export type CartDto = {
   totalAmount: number;
 };
 
-/** Optional prescription; when present, backend should create a NEW cart line (do not merge with same variant). */
-export type AddCartItemPayload = {
+/** Add-to-cart payload with optional flattened prescription fields. */
+export type AddCartItemPayload = RxFields & {
   /** Product variant ID to add to cart */
   productVariantId: string;
   /** Quantity to add */
@@ -58,18 +62,6 @@ export type AddCartItemPayload = {
   lensVariantId?: string | null;
   /** Optional selected coating IDs for the chosen lens. */
   selectedCoatingIds?: string[];
-  /** Flattened RX fields expected by AddCartItemDto (OD/OS + PD). */
-  sphOD?: number | null;
-  cylOD?: number | null;
-  axisOD?: number | null;
-  addOD?: number | null;
-  pdOD?: number | null;
-  sphOS?: number | null;
-  cylOS?: number | null;
-  axisOS?: number | null;
-  addOS?: number | null;
-  pdOS?: number | null;
-  pd?: number | null;
 };
 
 export type UpdateCartItemPayload = {
