@@ -1,4 +1,5 @@
 using Application.Carts.DTOs;
+using Application.Carts.Helpers;
 using Application.Core;
 using Application.Interfaces;
 using AutoMapper;
@@ -44,6 +45,10 @@ public sealed class GetCart
                     TotalPrice = 0
                 });
             }
+
+            // Enrich coating details (single batched query)
+            if (cartDto.Items.Count > 0)
+                await CartCoatingEnricher.EnrichAsync(cartDto.Items, context, cancellationToken);
 
             return Result<CartDto>.Success(cartDto);
         }

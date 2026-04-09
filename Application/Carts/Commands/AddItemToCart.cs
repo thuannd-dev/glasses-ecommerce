@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Application.Carts.DTOs;
+using Application.Carts.Helpers;
 using Application.Core;
 using Application.Interfaces;
 using AutoMapper;
@@ -220,6 +221,9 @@ public sealed class AddItemToCart
 
             if (cartItemDto == null)
                 return Result<CartItemDto>.Failure("Failed to retrieve cart item.", 500);
+
+            // Enrich coating details (single batched query)
+            await CartCoatingEnricher.EnrichAsync([cartItemDto], context, cancellationToken);
 
             return Result<CartItemDto>.Success(cartItemDto);
         }
