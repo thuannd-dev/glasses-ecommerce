@@ -185,7 +185,7 @@ public sealed class ManagerProductsController : BaseApiController
     /// Customer-facing chỉ thấy active, dùng endpoint customer tương ứng.
     /// </summary>
     [HttpGet("{id}/coating-options")]
-    public async Task<ActionResult<List<LensCoatingOptionDto>>> GetLensCoatingOptions(
+    public async Task<ActionResult<List<LensCoatingOptionDto>>> GetAllLensCoatingOptions(
         Guid id, CancellationToken ct)
     {
         return HandleResult(await Mediator.Send(

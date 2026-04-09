@@ -11,8 +11,8 @@ public sealed class GetLensVariantAttribute
 {
     public sealed class Query : IRequest<Result<LensVariantAttributeDto>>
     {
-        public required Guid ProductId   { get; set; }
-        public required Guid VariantId   { get; set; }
+        public required Guid ProductId { get; set; }
+        public required Guid VariantId { get; set; }
     }
 
     internal sealed class Handler(AppDbContext context)
