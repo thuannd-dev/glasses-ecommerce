@@ -40,6 +40,12 @@ export type StaffRevenueReport = Record<string, unknown>;
 
 // Detail type for GET /api/staff/orders/{id}
 
+export interface StaffOrderItemCoatingDto {
+  id: string;
+  coatingName: string;
+  price: number;
+}
+
 export interface StaffOrderItemDto {
   id: string;
   productVariantId: string;
@@ -49,8 +55,13 @@ export interface StaffOrderItemDto {
   quantity: number;
   unitPrice: number;
   totalPrice: number;
+  discountApplied?: number;
   productImageUrl?: string | null;
   prescriptionId?: string | null;
+  lensVariantName?: string | null;
+  lensUnitPrice?: number;
+  coatingExtraPrice?: number;
+  selectedCoatings?: StaffOrderItemCoatingDto[];
 }
 
 export interface StaffOrderPaymentDto {
