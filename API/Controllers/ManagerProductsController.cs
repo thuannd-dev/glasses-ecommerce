@@ -157,6 +157,17 @@ public sealed class ManagerProductsController : BaseApiController
     // ────────────────────── LENS VARIANT ATTRIBUTES ──────────────────────
 
     /// <summary>
+    /// Lấy thông số quang học (SPH, CYL, AXIS, Index, LensDesign) của một Lens variant.
+    /// </summary>
+    [HttpGet("{id}/variants/{variantId}/lens-attributes")]
+    public async Task<ActionResult<LensVariantAttributeDto>> GetLensVariantAttribute(
+        Guid id, Guid variantId, CancellationToken ct)
+    {
+        return HandleResult(await Mediator.Send(
+            new GetLensVariantAttribute.Query { ProductId = id, VariantId = variantId }, ct));
+    }
+
+    /// <summary>
     /// Tạo hoặc cập nhật thông số quang học (SPH, CYL, AXIS, Index, LensDesign) cho một Lens variant.
     /// </summary>
     [HttpPut("{id}/variants/{variantId}/lens-attributes")]
@@ -168,6 +179,18 @@ public sealed class ManagerProductsController : BaseApiController
     }
 
     // ────────────────────── LENS COATING OPTIONS ─────────────────────────
+
+    /// <summary>
+    /// Lấy TẤT CẢ coating options (bao gồm inactive) của một Lens Product — Manager only.
+    /// Customer-facing chỉ thấy active, dùng endpoint customer tương ứng.
+    /// </summary>
+    [HttpGet("{id}/coating-options")]
+    public async Task<ActionResult<List<LensCoatingOptionDto>>> GetAllLensCoatingOptions(
+        Guid id, CancellationToken ct)
+    {
+        return HandleResult(await Mediator.Send(
+            new GetAllLensCoatingOptions.Query { LensProductId = id }, ct));
+    }
 
     /// <summary>
     /// Thêm một coating option (UV, BlueLight...) vào Lens Product.
