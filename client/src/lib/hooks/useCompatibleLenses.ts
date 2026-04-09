@@ -10,6 +10,7 @@ export type CompatibleLensVariantDto = {
   sphMax: number;
   cylMin: number;
   cylMax: number;
+  lensDesign?: string | null;
 };
 
 export type CompatibleLensDto = {

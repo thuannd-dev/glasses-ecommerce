@@ -391,7 +391,7 @@ export function SelectLensesDialog({
         setStep("form");
         setRxUsageLabel("Single Vision");
         setRxPrescriptionImageUrl(null);
-        setScanAddDetected(false);
+        setScanVisionMismatch(null);
         setScanVisionChoice("");
         setSelectedCompatibleVariantId(null);
         setSelectedCoatingIds([]);

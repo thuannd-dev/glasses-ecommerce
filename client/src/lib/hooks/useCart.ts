@@ -278,8 +278,6 @@ export function useCart() {
       const id = variables.id;
       const msg = getThrownMessage(err);
       if (id && isUnavailableCartLineMessage(msg)) {
-        const prev = context?.previous;
-
         void (async () => {
           try {
             await agent.delete(`/me/cart/items/${id}`);
