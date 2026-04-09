@@ -1638,8 +1638,8 @@ export default function ProductDetail() {
                   variant: {
                     sku,
                     variantName: variantName.trim() ? variantName.trim() : null,
-                    color: variantColor.trim() || null,
-                    size: variantSize.trim() || null,
+                    color: isFrameProduct(product?.type) ? (variantColor.trim() || null) : null,
+                    size: isFrameProduct(product?.type) ? (variantSize.trim() || null) : null,
                     material: variantMaterial.trim(),
                     frameWidth,
                     lensWidth,
@@ -2657,8 +2657,8 @@ function VariantEditDialog({
                 variant: {
                   sku: cleanSku,
                   variantName: variantName.trim() ? variantName.trim() : null,
-                  color: color.trim() || null,
-                  size: size.trim() || null,
+                  color: isFrameProduct(product?.type) ? (color.trim() || null) : null,
+                  size: isFrameProduct(product?.type) ? (size.trim() || null) : null,
                   material: material.trim(),
                   frameWidth: nextFrameWidth,
                   lensWidth: nextLensWidth,
