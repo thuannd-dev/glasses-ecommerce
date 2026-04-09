@@ -8,14 +8,8 @@ import {
   TableHead,
   TableRow,
   Chip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Button,
   TextField,
-  FormControlLabel,
-  Checkbox,
   Paper,
   Switch,
   Grid,
@@ -23,13 +17,14 @@ import {
   MenuItem,
   IconButton,
 } from "@mui/material";
+import { DeleteConfirmDialog, FeatureToggleFormDialog } from "../components";
 import { useState } from "react";
-import { useAdminFeatureToggles } from "../../lib/hooks/useAdminFeatureToggles";
+import { useAdminFeatureToggles } from "../../../lib/hooks/useAdminFeatureToggles";
 import type {
   FeatureToggleDto,
   CreateFeatureTogglePayload,
   UpdateFeatureTogglePayload,
-} from "../../lib/types";
+} from "../../../lib/types";
 import { toast } from "react-toastify";
 import AddIcon from "@mui/icons-material/Add";
 import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownRounded";
@@ -137,7 +132,7 @@ export default function AdminFeatureToggles() {
 
   // Handle form input change
   const handleFormChange = (field: keyof CreateFeatureTogglePayload, value: unknown) => {
-    setFormData((prev) => ({
+    setFormData((prev: CreateFeatureTogglePayload) => ({
       ...prev,
       [field]: value,
     }));
@@ -356,8 +351,8 @@ export default function AdminFeatureToggles() {
               }
             >
               <MenuItem value="">All Status</MenuItem>
-              <MenuItem value="true">✓ Enabled</MenuItem>
-              <MenuItem value="false">✕ Disabled</MenuItem>
+              <MenuItem value="true">Enabled</MenuItem>
+              <MenuItem value="false">Disabled</MenuItem>
             </TextField>
           </Grid>
 
@@ -461,7 +456,7 @@ export default function AdminFeatureToggles() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {toggles.map((toggle) => (
+                  {toggles.map((toggle: FeatureToggleDto) => (
                     <>
                       <TableRow
                         key={toggle.id}
@@ -498,7 +493,7 @@ export default function AdminFeatureToggles() {
                         </TableCell>
                         <TableCell>
                           <Chip
-                            label={toggle.isEnabled ? "✓ Enabled" : "✕ Disabled"}
+                            label={toggle.isEnabled ? "Enabled" : "Disabled"}
                             size="medium"
                             color={toggle.isEnabled ? "success" : "default"}
                             variant={toggle.isEnabled ? "filled" : "outlined"}
@@ -663,260 +658,25 @@ export default function AdminFeatureToggles() {
         )}
       </Paper>
 
-      {/* Feature Toggle Form Dialog */}
-      <Dialog
+      <FeatureToggleFormDialog
         open={openDialog}
+        isEditing={!!editingToggle}
+        isCreating={isCreating}
+        isUpdating={isUpdating}
+        formData={formData}
         onClose={handleCloseDialog}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: 2,
-            boxShadow: "0 20px 60px rgba(0, 0, 0, 0.15)",
-          },
-        }}
-      >
-        <DialogTitle
-          sx={{
-            fontWeight: 800,
-            fontSize: 19,
-            borderBottom: "2px solid",
-            borderColor: "rgba(33, 150, 243, 0.15)",
-            pb: 2.5,
-            background: "linear-gradient(135deg, rgba(33, 150, 243, 0.04) 0%, rgba(33, 150, 243, 0.02) 100%)",
-          }}
-        >
-          {editingToggle ? "✏️  Edit Feature Toggle" : "➕ Create New Feature Toggle"}
-        </DialogTitle>
-        <DialogContent sx={{ pt: 4, pb: 3 }}>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            {/* Basic Information Section */}
-            <Box>
-              <Typography sx={{ fontWeight: 700, fontSize: 13, color: "primary.main", mb: 2, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                Basic Information
-              </Typography>
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
-                <TextField
-                  autoFocus
-                  fullWidth
-                  label="Feature Name *"
-                  placeholder="e.g., 3DModels, VirtualTryOn, Chatbot"
-                  value={formData.featureName}
-                  onChange={(e) => handleFormChange("featureName", e.target.value)}
-                  variant="outlined"
-                  required
-                  inputProps={{ maxLength: 100 }}
-                  helperText={`${formData.featureName.length}/100 • Use PascalCase. Common: 3DModels, VirtualTryOn, Chatbot`}
-                  sx={{
-                    "& .MuiOutlinedInput-root": {
-                      transition: "all 0.2s ease",
-                    },
-                  }}
-                />
+        onFormChange={handleFormChange}
+        onSave={handleSaveToggle}
+      />
 
-                <TextField
-                  fullWidth
-                  label="Description"
-                  placeholder="Describe what this feature toggle controls"
-                  value={formData.description || ""}
-                  onChange={(e) => handleFormChange("description", e.target.value || "")}
-                  variant="outlined"
-                  multiline
-                  rows={3}
-                  inputProps={{ maxLength: 500 }}
-                  helperText={`${(formData.description || "").length}/500`}
-                  sx={{
-                    "& .MuiOutlinedInput-root textarea": {
-                      transition: "all 0.2s ease",
-                    },
-                  }}
-                />
-              </Box>
-            </Box>
-
-            {/* Enable/Disable */}
-            <Box
-              sx={{
-                p: 2.5,
-                bgcolor: "rgba(76, 175, 80, 0.04)",
-                borderRadius: 1.5,
-                border: "1.5px solid",
-                borderColor: "rgba(76, 175, 80, 0.15)",
-                transition: "all 0.2s ease",
-              }}
-            >
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={formData.isEnabled || false}
-                    onChange={(e) => handleFormChange("isEnabled", e.target.checked)}
-                    size="medium"
-                  />
-                }
-                label={
-                  <Typography sx={{ fontWeight: 600, fontSize: 14 }}>
-                    {formData.isEnabled ? "✓ Feature is Enabled" : "✕ Feature is Disabled"}
-                  </Typography>
-                }
-              />
-            </Box>
-
-            {/* Scoping Section */}
-            <Box>
-              <Typography sx={{ fontWeight: 700, fontSize: 13, color: "primary.main", mb: 2, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                Scope (Optional)
-              </Typography>
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
-                <TextField
-                  fullWidth
-                  label="Scope"
-                  placeholder="e.g., region, tenant, cohort"
-                  value={formData.scope || ""}
-                  onChange={(e) => handleFormChange("scope", e.target.value || null)}
-                  variant="outlined"
-                  inputProps={{ maxLength: 50 }}
-                  helperText="Leave empty for global toggle"
-                />
-
-                <TextField
-                  fullWidth
-                  label="Scope Value"
-                  placeholder="e.g., US-West, customer-123"
-                  value={formData.scopeValue || ""}
-                  onChange={(e) => handleFormChange("scopeValue", e.target.value || null)}
-                  variant="outlined"
-                  disabled={!formData.scope}
-                  inputProps={{ maxLength: 200 }}
-                  helperText={formData.scope ? "Specific value for the scope" : "Only available when Scope is provided"}
-                />
-              </Box>
-            </Box>
-
-            {/* Time-Based Activation */}
-            <Box>
-              <Typography sx={{ fontWeight: 700, fontSize: 13, color: "primary.main", mb: 2, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                Time-Based Activation (Optional)
-              </Typography>
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
-                <TextField
-                  fullWidth
-                  label="Effective From"
-                  type="date"
-                  value={formData.effectiveFrom || ""}
-                  onChange={(e) => handleFormChange("effectiveFrom", e.target.value || null)}
-                  variant="outlined"
-                  InputLabelProps={{
-                    shrink: true,
-                  }}
-                  helperText="Leave empty to activate immediately"
-                />
-
-                <TextField
-                  fullWidth
-                  label="Effective To"
-                  type="date"
-                  value={formData.effectiveTo || ""}
-                  onChange={(e) => handleFormChange("effectiveTo", e.target.value || null)}
-                  variant="outlined"
-                  disabled={!formData.effectiveFrom}
-                  InputLabelProps={{
-                    shrink: true,
-                  }}
-                  helperText={
-                    formData.effectiveFrom
-                      ? "Must be after Effective From date"
-                      : "Only available if Effective From is set"
-                  }
-                />
-              </Box>
-            </Box>
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ p: 2.5, borderTop: "1px solid", borderColor: "rgba(0, 0, 0, 0.08)", gap: 1.5 }}>
-          <Button 
-            onClick={handleCloseDialog} 
-            sx={{ textTransform: "none", fontWeight: 600 }}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSaveToggle}
-            variant="contained"
-            disabled={isCreating || isUpdating}
-            sx={{ 
-              textTransform: "none",
-              fontWeight: 700,
-              boxShadow: "0 2px 8px rgba(33, 150, 243, 0.3)",
-              transition: "all 0.2s ease",
-              "&:hover:not(:disabled)": {
-                boxShadow: "0 4px 12px rgba(33, 150, 243, 0.4)",
-              },
-            }}
-          >
-            {editingToggle ? "💾 Update" : "✓ Create"}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog
+      <DeleteConfirmDialog
         open={openDeleteDialog}
-        onClose={() => setOpenDeleteDialog(false)}
-        maxWidth="xs"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: 2,
-            boxShadow: "0 20px 60px rgba(0, 0, 0, 0.15)",
-          },
-        }}
-      >
-        <DialogTitle 
-          sx={{ 
-            fontWeight: 800, 
-            fontSize: 18,
-            background: "linear-gradient(135deg, rgba(211, 47, 47, 0.05) 0%, rgba(211, 47, 47, 0.02) 100%)",
-            borderBottom: "2px solid",
-            borderColor: "rgba(211, 47, 47, 0.15)",
-            pb: 2.5,
-          }}
-        >
-          🗑️ Delete Feature Toggle
-        </DialogTitle>
-        <DialogContent sx={{ pt: 4 }}>
-          <Typography sx={{ fontWeight: 600, fontSize: 16, mb: 1.5 }}>
-            Are you sure?
-          </Typography>
-          <Typography sx={{ color: "text.secondary", fontSize: 14, lineHeight: 1.6 }}>
-            This action will permanently delete this feature toggle from the system. This cannot be undone and may affect features that depend on this toggle.
-          </Typography>
-        </DialogContent>
-        <DialogActions sx={{ p: 2.5, borderTop: "1px solid", borderColor: "rgba(0, 0, 0, 0.08)", gap: 1.5 }}>
-          <Button 
-            onClick={() => setOpenDeleteDialog(false)} 
-            sx={{ textTransform: "none", fontWeight: 600 }}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleConfirmDelete}
-            variant="contained"
-            color="error"
-            disabled={isDeleting}
-            sx={{ 
-              textTransform: "none",
-              fontWeight: 700,
-              boxShadow: "0 2px 8px rgba(211, 47, 47, 0.3)",
-              transition: "all 0.2s ease",
-              "&:hover:not(:disabled)": {
-                boxShadow: "0 4px 12px rgba(211, 47, 47, 0.4)",
-              },
-            }}
-          >
-            ✓ Delete Permanently
-          </Button>
-        </DialogActions>
-      </Dialog>
+        title="Delete Feature Toggle"
+        message="This action will permanently delete this feature toggle from the system. This cannot be undone and may affect features that depend on this toggle."
+        isDeleting={isDeleting}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setOpenDeleteDialog(false)}
+      />
     </Box>
   );
 }

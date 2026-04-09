@@ -23,8 +23,19 @@ public sealed class ProductsController : BaseApiController
         [FromQuery] decimal? maxPrice = null,
         [FromQuery] string? search = null,
         [FromQuery] GetProductList.SortByOption sortBy = GetProductList.SortByOption.CreatedAt,
-        [FromQuery] GetProductList.SortOrderOption sortOrder = GetProductList.SortOrderOption.Desc)
+        [FromQuery] GetProductList.SortOrderOption sortOrder = GetProductList.SortOrderOption.Desc,
+        [FromQuery] bool includeLenses = false)
     {
+        // Only managers and admins can include lenses in product listings
+        bool canIncludeLenses = User.IsInRole("Manager") || User.IsInRole("Admin");
+        
+        // Block lens access via type=Lens and return explicit 403 for unauthorized lens requests
+        bool requestLensVisibility = includeLenses || type == ProductType.Lens;
+        if (requestLensVisibility && !canIncludeLenses)
+        {
+            return Forbid();
+        }
+
         return HandleResult(await Mediator.Send(new GetProductList.Query
         {
             PageNumber = pageNumber,
@@ -37,7 +48,8 @@ public sealed class ProductsController : BaseApiController
             MaxPrice = maxPrice,
             SearchTerm = search,
             SortBy = sortBy,
-            SortOrder = sortOrder
+            SortOrder = sortOrder,
+            IncludeLenses = canIncludeLenses && includeLenses
         }));
     }
 
