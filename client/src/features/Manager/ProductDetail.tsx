@@ -1429,6 +1429,7 @@ export default function ProductDetail() {
               />
             </Grid>
 
+            {isFrameProduct(product?.type) && (
             <Grid item xs={12} sm={6}>
               <Box>
                 <Typography sx={{ fontSize: 12, color: "text.secondary", fontWeight: 700, mb: 1 }}>
@@ -1455,7 +1456,9 @@ export default function ProductDetail() {
                 </Box>
               </Box>
             </Grid>
+            )}
 
+            {isFrameProduct(product?.type) && (
             <Grid item xs={12} sm={6}>
               <TextField
                 size="small"
@@ -1474,6 +1477,7 @@ export default function ProductDetail() {
                 <MenuItem value="Small">Small</MenuItem>
               </TextField>
             </Grid>
+            )}
 
             <Grid item xs={12}>
               <TextField
@@ -1587,12 +1591,12 @@ export default function ProductDetail() {
                 return;
               }
 
-              if (!variantColor.trim()) {
+              if (isFrameProduct(product?.type) && !variantColor.trim()) {
                 toast.error("Color is required");
                 return;
               }
 
-              if (!variantSize.trim()) {
+              if (isFrameProduct(product?.type) && !variantSize.trim()) {
                 toast.error("Size is required");
                 return;
               }
@@ -1634,8 +1638,8 @@ export default function ProductDetail() {
                   variant: {
                     sku,
                     variantName: variantName.trim() ? variantName.trim() : null,
-                    color: variantColor.trim(),
-                    size: variantSize.trim(),
+                    color: variantColor.trim() || null,
+                    size: variantSize.trim() || null,
                     material: variantMaterial.trim(),
                     frameWidth,
                     lensWidth,
@@ -2445,6 +2449,7 @@ function VariantEditDialog({
             />
           </Grid>
 
+          {isFrameProduct(product?.type) && (
           <Grid item xs={12} sm={6}>
             <Box>
               <Typography sx={{ fontSize: 12, color: "text.secondary", fontWeight: 700, mb: 1 }}>
@@ -2471,7 +2476,9 @@ function VariantEditDialog({
               </Box>
             </Box>
           </Grid>
+          )}
 
+          {isFrameProduct(product?.type) && (
           <Grid item xs={12} sm={6}>
             <TextField
               size="small"
@@ -2490,6 +2497,7 @@ function VariantEditDialog({
               <MenuItem value="Small">Small</MenuItem>
             </TextField>
           </Grid>
+          )}
 
           <Grid item xs={12}>
             <TextField
@@ -2605,11 +2613,11 @@ function VariantEditDialog({
               return;
             }
 
-            if (!color.trim()) {
+            if (isFrameProduct(product?.type) && !color.trim()) {
               toast.error("Color is required");
               return;
             }
-            if (!size.trim()) {
+            if (isFrameProduct(product?.type) && !size.trim()) {
               toast.error("Size is required");
               return;
             }
@@ -2649,8 +2657,8 @@ function VariantEditDialog({
                 variant: {
                   sku: cleanSku,
                   variantName: variantName.trim() ? variantName.trim() : null,
-                  color: color.trim(),
-                  size: size.trim(),
+                  color: color.trim() || null,
+                  size: size.trim() || null,
                   material: material.trim(),
                   frameWidth: nextFrameWidth,
                   lensWidth: nextLensWidth,
