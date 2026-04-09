@@ -49,12 +49,17 @@ import { useNavigate, useParams } from "react-router";
 import { Fragment, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useProductDetail } from "../../lib/hooks/useProductDetail";
+import type { ProductDetailApi } from "../../lib/types/product";
 import { useCategories } from "../../lib/hooks/useProducts";
 import { useManagerProducts } from "../../lib/hooks/useManagerProducts";
 import { toast } from "react-toastify";
 import axios from "axios";
 import agent from "../../lib/api/agent";
 import FrameDimensionsForm from "./components/FrameDimensionsForm";
+
+function isFrameProduct(type: string | number | undefined): boolean {
+  return type === "Frame" || type === 1;
+}
 
 export default function ProductDetail() {
   const navigate = useNavigate();
@@ -952,6 +957,7 @@ export default function ProductDetail() {
       {/* Edit Variant Dialog */}
       {editingVariantId && (
         <VariantEditDialog
+          product={product}
           productId={id}
           variant={product.variants.find((v) => v.id === editingVariantId)}
           onClose={() => setEditingVariantId(null)}
@@ -1423,6 +1429,7 @@ export default function ProductDetail() {
               />
             </Grid>
 
+            {isFrameProduct(product?.type) && (
             <Grid item xs={12} sm={6}>
               <Box>
                 <Typography sx={{ fontSize: 12, color: "text.secondary", fontWeight: 700, mb: 1 }}>
@@ -1449,7 +1456,9 @@ export default function ProductDetail() {
                 </Box>
               </Box>
             </Grid>
+            )}
 
+            {isFrameProduct(product?.type) && (
             <Grid item xs={12} sm={6}>
               <TextField
                 size="small"
@@ -1468,6 +1477,7 @@ export default function ProductDetail() {
                 <MenuItem value="Small">Small</MenuItem>
               </TextField>
             </Grid>
+            )}
 
             <Grid item xs={12}>
               <TextField
@@ -1482,33 +1492,37 @@ export default function ProductDetail() {
               />
             </Grid>
 
-            <Grid item xs={12}>
-              <FrameDimensionsForm
-                dimensions={{
-                  lensWidth: variantLensWidth ? Number(variantLensWidth) : null,
-                  bridgeWidth: variantBridgeWidth ? Number(variantBridgeWidth) : null,
-                  templeLength: variantTempleLength ? Number(variantTempleLength) : null,
-                }}
-                onChange={(dimensions) => {
-                  setVariantLensWidth(dimensions.lensWidth?.toString() ?? "");
-                  setVariantBridgeWidth(dimensions.bridgeWidth?.toString() ?? "");
-                  setVariantTempleLength(dimensions.templeLength?.toString() ?? "");
-                }}
-                onSizeChange={(size) => setVariantSize(size)}
-              />
-            </Grid>
+            {isFrameProduct(product?.type) && (
+              <>
+                <Grid item xs={12}>
+                  <FrameDimensionsForm
+                    dimensions={{
+                      lensWidth: variantLensWidth ? Number(variantLensWidth) : null,
+                      bridgeWidth: variantBridgeWidth ? Number(variantBridgeWidth) : null,
+                      templeLength: variantTempleLength ? Number(variantTempleLength) : null,
+                    }}
+                    onChange={(dimensions) => {
+                      setVariantLensWidth(dimensions.lensWidth?.toString() ?? "");
+                      setVariantBridgeWidth(dimensions.bridgeWidth?.toString() ?? "");
+                      setVariantTempleLength(dimensions.templeLength?.toString() ?? "");
+                    }}
+                    onSizeChange={(size) => setVariantSize(size)}
+                  />
+                </Grid>
 
-            <Grid item xs={12}>
-              <TextField
-                size="small"
-                fullWidth
-                label="Frame width (mm)"
-                type="number"
-                value={variantFrameWidth}
-                onChange={(e) => setVariantFrameWidth(e.target.value)}
-                helperText="Optional - Total width of the frame"
-              />
-            </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    size="small"
+                    fullWidth
+                    label="Frame width (mm)"
+                    type="number"
+                    value={variantFrameWidth}
+                    onChange={(e) => setVariantFrameWidth(e.target.value)}
+                    helperText="Optional - Total width of the frame"
+                  />
+                </Grid>
+              </>
+            )}
 
             <Grid item xs={12} sm={6}>
               <TextField
@@ -1577,12 +1591,12 @@ export default function ProductDetail() {
                 return;
               }
 
-              if (!variantColor.trim()) {
+              if (isFrameProduct(product?.type) && !variantColor.trim()) {
                 toast.error("Color is required");
                 return;
               }
 
-              if (!variantSize.trim()) {
+              if (isFrameProduct(product?.type) && !variantSize.trim()) {
                 toast.error("Size is required");
                 return;
               }
@@ -1624,8 +1638,8 @@ export default function ProductDetail() {
                   variant: {
                     sku,
                     variantName: variantName.trim() ? variantName.trim() : null,
-                    color: variantColor.trim(),
-                    size: variantSize.trim(),
+                    color: isFrameProduct(product?.type) ? (variantColor.trim() || null) : null,
+                    size: isFrameProduct(product?.type) ? (variantSize.trim() || null) : null,
                     material: variantMaterial.trim(),
                     frameWidth,
                     lensWidth,
@@ -2177,6 +2191,7 @@ function SortableVariantImageCard({
 }
 
 function VariantEditDialog({
+  product,
   productId,
   variant,
   onClose,
@@ -2189,6 +2204,7 @@ function VariantEditDialog({
   patchImageModelUrl,
   isPatchingModelUrl,
 }: {
+  product: ProductDetailApi | undefined;
   productId: string | undefined;
   variant: any;
   onClose: () => void;
@@ -2433,6 +2449,7 @@ function VariantEditDialog({
             />
           </Grid>
 
+          {isFrameProduct(product?.type) && (
           <Grid item xs={12} sm={6}>
             <Box>
               <Typography sx={{ fontSize: 12, color: "text.secondary", fontWeight: 700, mb: 1 }}>
@@ -2459,7 +2476,9 @@ function VariantEditDialog({
               </Box>
             </Box>
           </Grid>
+          )}
 
+          {isFrameProduct(product?.type) && (
           <Grid item xs={12} sm={6}>
             <TextField
               size="small"
@@ -2478,6 +2497,7 @@ function VariantEditDialog({
               <MenuItem value="Small">Small</MenuItem>
             </TextField>
           </Grid>
+          )}
 
           <Grid item xs={12}>
             <TextField
@@ -2492,33 +2512,37 @@ function VariantEditDialog({
             />
           </Grid>
 
-          <Grid item xs={12}>
-            <FrameDimensionsForm
-              dimensions={{
-                lensWidth: lensWidth ? Number(lensWidth) : null,
-                bridgeWidth: bridgeWidth ? Number(bridgeWidth) : null,
-                templeLength: templeLength ? Number(templeLength) : null,
-              }}
-              onChange={(dimensions) => {
-                setLensWidth(dimensions.lensWidth?.toString() ?? "");
-                setBridgeWidth(dimensions.bridgeWidth?.toString() ?? "");
-                setTempleLength(dimensions.templeLength?.toString() ?? "");
-              }}
-              onSizeChange={(newSize) => setSize(newSize)}
-            />
-          </Grid>
+          {isFrameProduct(product?.type) && (
+            <>
+              <Grid item xs={12}>
+                <FrameDimensionsForm
+                  dimensions={{
+                    lensWidth: lensWidth ? Number(lensWidth) : null,
+                    bridgeWidth: bridgeWidth ? Number(bridgeWidth) : null,
+                    templeLength: templeLength ? Number(templeLength) : null,
+                  }}
+                  onChange={(dimensions) => {
+                    setLensWidth(dimensions.lensWidth?.toString() ?? "");
+                    setBridgeWidth(dimensions.bridgeWidth?.toString() ?? "");
+                    setTempleLength(dimensions.templeLength?.toString() ?? "");
+                  }}
+                  onSizeChange={(newSize) => setSize(newSize)}
+                />
+              </Grid>
 
-          <Grid item xs={12}>
-            <TextField
-              size="small"
-              fullWidth
-              label="Frame width (mm)"
-              type="number"
+              <Grid item xs={12}>
+                <TextField
+                  size="small"
+                  fullWidth
+                  label="Frame width (mm)"
+                  type="number"
               value={frameWidth}
               onChange={(e) => setFrameWidth(e.target.value)}
               helperText="Optional - Total width of the frame"
             />
-          </Grid>
+              </Grid>
+            </>
+          )}
 
           <Grid item xs={12} sm={6}>
             <TextField
@@ -2589,11 +2613,11 @@ function VariantEditDialog({
               return;
             }
 
-            if (!color.trim()) {
+            if (isFrameProduct(product?.type) && !color.trim()) {
               toast.error("Color is required");
               return;
             }
-            if (!size.trim()) {
+            if (isFrameProduct(product?.type) && !size.trim()) {
               toast.error("Size is required");
               return;
             }
@@ -2633,8 +2657,8 @@ function VariantEditDialog({
                 variant: {
                   sku: cleanSku,
                   variantName: variantName.trim() ? variantName.trim() : null,
-                  color: color.trim(),
-                  size: size.trim(),
+                  color: isFrameProduct(product?.type) ? (color.trim() || null) : null,
+                  size: isFrameProduct(product?.type) ? (size.trim() || null) : null,
                   material: material.trim(),
                   frameWidth: nextFrameWidth,
                   lensWidth: nextLensWidth,

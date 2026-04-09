@@ -24,6 +24,10 @@ import { formatMoney } from "../../../lib/utils/format";
 
 const VirtualTryOn = lazy(() => import("./VirtualTryOn"));
 
+function isFrameProduct(type: string | number | undefined): boolean {
+  return type === "Frame" || type === 1;
+}
+
 interface ProductCardProps {
   product: ProductListItem;
   onViewDetails: (id: string) => void;
@@ -472,25 +476,25 @@ export function ProductDetailModal({ productId, onClose }: ProductDetailModalPro
                         <Typography fontWeight={600}>{currentVariant.material}</Typography>
                       </Box>
                     )}
-                    {currentVariant?.frameWidth != null && (
+                    {isFrameProduct(product.type) && currentVariant?.frameWidth != null && (
                       <Box sx={{ display: "flex", justifyContent: "space-between" }}>
                         <Typography color="rgba(15,23,42,0.6)">Frame width</Typography>
                         <Typography fontWeight={600}>{currentVariant.frameWidth} mm</Typography>
                       </Box>
                     )}
-                    {currentVariant?.lensWidth != null && (
+                    {isFrameProduct(product.type) && currentVariant?.lensWidth != null && (
                       <Box sx={{ display: "flex", justifyContent: "space-between" }}>
                         <Typography color="rgba(15,23,42,0.6)">Lens width</Typography>
                         <Typography fontWeight={600}>{currentVariant.lensWidth} mm</Typography>
                       </Box>
                     )}
-                    {currentVariant?.bridgeWidth != null && (
+                    {isFrameProduct(product.type) && currentVariant?.bridgeWidth != null && (
                       <Box sx={{ display: "flex", justifyContent: "space-between" }}>
                         <Typography color="rgba(15,23,42,0.6)">Bridge width</Typography>
                         <Typography fontWeight={600}>{currentVariant.bridgeWidth} mm</Typography>
                       </Box>
                     )}
-                    {currentVariant?.templeLength != null && (
+                    {isFrameProduct(product.type) && currentVariant?.templeLength != null && (
                       <Box sx={{ display: "flex", justifyContent: "space-between" }}>
                         <Typography color="rgba(15,23,42,0.6)">Temple length</Typography>
                         <Typography fontWeight={600}>{currentVariant.templeLength} mm</Typography>
