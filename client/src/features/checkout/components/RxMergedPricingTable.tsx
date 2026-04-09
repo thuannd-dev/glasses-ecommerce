@@ -94,6 +94,7 @@ export type RxMergedPricingTableProps = {
   perUnitPrice: number;
   lensDisplay?: CartLensLineDisplayMeta | null;
   lensVariantName?: string | null;
+  coatingOptionLabel?: string | null;
   formatMoney: (n: number) => string;
   /** Default true — order detail hides this so line total in header is the single “each” price. */
   showPerUnit?: boolean;
@@ -106,6 +107,7 @@ export function RxMergedPricingTable({
   perUnitPrice,
   lensDisplay,
   lensVariantName,
+  coatingOptionLabel,
   formatMoney,
   showPerUnit = true,
 }: RxMergedPricingTableProps) {
@@ -115,7 +117,7 @@ export function RxMergedPricingTable({
       ? null
       : coatingRaw
         ? stripCoatingTrailingPrice(coatingRaw)
-        : null;
+        : coatingOptionLabel?.trim() || null;
   const showCoatingDetail = Boolean(coatingDetail && coatingDetail !== "None");
 
   const lensSpecText = lensDisplay

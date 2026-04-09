@@ -17,13 +17,12 @@ import { NavLink, useNavigate } from "react-router-dom";
 
 import { useCart } from "../../lib/hooks/useCart";
 import { formatMoney } from "../../lib/utils/format";
-import { getCartItemLensDisplays, getCartItemPrescriptions, getCartItemLensMode } from "./prescriptionCache";
 import { CartSelectedLensLines } from "./CartSelectedLensLines";
 import { PrescriptionDisplay } from "../../app/shared/components/PrescriptionDisplay";
 import type { CartItemDto } from "../../lib/types/cart";
 import { cartItemPerUnitEa, showRxLensPriceSplit } from "../checkout/orderSummaryItemUtils";
 import type { PrescriptionData } from "../../lib/types/prescription";
-import type { CartLensLineDisplayMeta, CartLensMode } from "../../lib/types/lensSelection";
+import { prescriptionFromCartItem } from "./cartItemPrescription";
 
 /** Stable fallback — `cart?.items ?? []` creates a new [] every render when cart is missing → infinite useEffect loop. */
 const EMPTY_CART_ITEMS: CartItemDto[] = [];
@@ -32,8 +31,6 @@ function CartItemRow({
     item,
     selected,
     prescription,
-    lensDisplay,
-    lensMode,
     onToggle,
     onIncrease,
     onDecrease,
@@ -43,8 +40,6 @@ function CartItemRow({
     item: CartItemDto;
     selected: boolean;
     prescription?: PrescriptionData;
-    lensDisplay?: CartLensLineDisplayMeta;
-    lensMode?: CartLensMode;
     onToggle: () => void;
     onIncrease: () => void;
     onDecrease: () => void;
@@ -152,15 +147,10 @@ function CartItemRow({
                         Unit price · {fmt(item.price)}
                     </Typography>
                 )}
-                {lensMode === "non-prescription" && (
-                    <Typography sx={{ mt: 0.35, fontSize: 12, color: "#6B7280" }}>
-                        Non-prescription lenses
-                    </Typography>
-                )}
                 {prescription && (
                     <>
                         <PrescriptionDisplay prescription={prescription} variant="inline" />
-                        <CartSelectedLensLines item={item} lensDisplay={lensDisplay} formatMoney={fmt} />
+                        <CartSelectedLensLines item={item} formatMoney={fmt} />
                     </>
                 )}
             </Box>
@@ -267,17 +257,14 @@ export default function CartPage() {
     const itemIds = useMemo(() => items.map((i) => i.id), [items]);
 
     /** Split items: pre-order takes priority, then prescription, then standard. */
-    const itemPrescriptions = useMemo(
-        () => getCartItemPrescriptions(items),
-        [items],
-    );
-    const itemLensDisplays = useMemo(
-        () =>
-            getCartItemLensDisplays(
-                items.map((i) => ({ id: i.id, productVariantId: i.productVariantId })),
-            ),
-        [items],
-    );
+    const itemPrescriptions = useMemo(() => {
+        const out: Record<string, PrescriptionData> = {};
+        items.forEach((item) => {
+            const p = prescriptionFromCartItem(item);
+            if (p) out[item.id] = p;
+        });
+        return out;
+    }, [items]);
     const prescriptionItemIds = useMemo(
         () => new Set(Object.keys(itemPrescriptions)),
         [itemPrescriptions],
@@ -573,7 +560,6 @@ export default function CartPage() {
                                             key={item.id}
                                             item={item}
                                             selected={selectedIds.has(item.id)}
-                                            lensMode={getCartItemLensMode(item.id)}
                                             onToggle={() => handleToggleItem(item.id)}
                                             onIncrease={() =>
                                                 handleIncrease(item.id, item.quantity)
@@ -631,9 +617,7 @@ export default function CartPage() {
                                             key={item.id}
                                             item={item}
                                             selected={selectedIds.has(item.id)}
-                                            lensMode={getCartItemLensMode(item.id)}
                                             prescription={itemPrescriptions[item.id]}
-                                            lensDisplay={itemLensDisplays[item.id]}
                                             onToggle={() => handleToggleItem(item.id)}
                                             onIncrease={() =>
                                                 handleIncrease(item.id, item.quantity)
@@ -691,9 +675,7 @@ export default function CartPage() {
                                             key={item.id}
                                             item={item}
                                             selected={selectedIds.has(item.id)}
-                                            lensMode={getCartItemLensMode(item.id)}
                                             prescription={itemPrescriptions[item.id]}
-                                            lensDisplay={itemLensDisplays[item.id]}
                                             onToggle={() => handleToggleItem(item.id)}
                                             onIncrease={() =>
                                                 handleIncrease(item.id, item.quantity)

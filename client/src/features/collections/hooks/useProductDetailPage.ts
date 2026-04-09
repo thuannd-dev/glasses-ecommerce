@@ -7,11 +7,6 @@ import { useProductDetail } from "../../../lib/hooks/useProducts";
 import { cartStore } from "../../../lib/stores/cartStore";
 import { useCart } from "../../../lib/hooks/useCart";
 import type { CartAuthGateApi } from "../../../lib/hooks/useRequireAuthForCart";
-import {
-  setCartItemLensDisplay,
-  setCartItemPrescription,
-  setLensDisplayByVariantId,
-} from "../../cart/prescriptionCache";
 import type { PrescriptionData } from "../../../lib/types/prescription";
 import type { CartDto, CartItemDto } from "../../../lib/types/cart";
 import type { CartLensLineDisplayMeta } from "../../../lib/types/lensSelection";
@@ -124,8 +119,11 @@ export function useProductDetailPage(
       const variantId = addToCartPayload.variantId;
       const right = prescription.details.find((d) => d.eye === 1);
       const left = prescription.details.find((d) => d.eye === 2);
+      const rightPd = right?.pd ?? null;
+      const leftPd = left?.pd ?? null;
+      // Send single PD only when both eyes effectively share one value.
       const singlePd =
-        prescription.details.find((d) => d.pd != null)?.pd ?? null;
+        rightPd != null && leftPd != null && rightPd === leftPd ? rightPd : null;
 
       const cart = await addItemAsync({
         productVariantId: variantId,
@@ -136,12 +134,12 @@ export function useProductDetailPage(
         cylOD: right?.cyl ?? null,
         axisOD: right?.axis ?? null,
         addOD: right?.add ?? null,
-        pdOD: right?.pd ?? null,
+        pdOD: rightPd,
         sphOS: left?.sph ?? null,
         cylOS: left?.cyl ?? null,
         axisOS: left?.axis ?? null,
         addOS: left?.add ?? null,
-        pdOS: left?.pd ?? null,
+        pdOS: leftPd,
         pd: singlePd,
       });
 
@@ -151,11 +149,6 @@ export function useProductDetailPage(
         return false;
       }
 
-      setCartItemPrescription(item.id, prescription);
-      if (lensDisplay) {
-        setCartItemLensDisplay(item.id, lensDisplay);
-        setLensDisplayByVariantId(variantId, lensDisplay);
-      }
       return true;
     });
   };

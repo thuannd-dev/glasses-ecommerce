@@ -6,6 +6,7 @@ export type OrderRxLineSnapshot = {
   lensPrice: number;
   coatingExtraPrice: number;
   lensVariantName?: string | null;
+  coatingOptionLabel?: string | null;
   lensDisplay?: CartLensLineDisplayMeta | null;
 };
 

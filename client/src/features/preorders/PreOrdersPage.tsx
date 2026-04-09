@@ -16,10 +16,10 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { usePreOrders } from "../../lib/hooks/usePreOrders";
 import { useCart } from "../../lib/hooks/useCart";
 import { formatMoney } from "../../lib/utils/format";
-import { getCartItemPrescriptions } from "../cart/prescriptionCache";
 import { PrescriptionDisplay } from "../../app/shared/components/PrescriptionDisplay";
 import type { CartItemDto } from "../../lib/types/cart";
 import type { PrescriptionData } from "../../lib/types/prescription";
+import { prescriptionFromCartItem } from "../cart/cartItemPrescription";
 
 function PreOrderItemRow({
     item,
@@ -131,10 +131,14 @@ export default function PreOrdersPage() {
     const { isLoading, updateItem, removeItem } = useCart();
 
     // Get prescriptions for pre-order items
-    const itemPrescriptions = useMemo(
-        () => getCartItemPrescriptions(preOrderItems),
-        [preOrderItems],
-    );
+    const itemPrescriptions = useMemo(() => {
+        const out: Record<string, PrescriptionData> = {};
+        preOrderItems.forEach((item) => {
+            const p = prescriptionFromCartItem(item);
+            if (p) out[item.id] = p;
+        });
+        return out;
+    }, [preOrderItems]);
 
     const itemIds = useMemo(() => preOrderItems.map((i) => i.id), [preOrderItems]);
 

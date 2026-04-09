@@ -578,6 +578,7 @@ export default function OrderSuccessPage() {
                               perUnitPrice={perEa}
                               lensDisplay={rxSnap.lensDisplay ?? undefined}
                               lensVariantName={rxSnap.lensVariantName}
+                              coatingOptionLabel={rxSnap.coatingOptionLabel}
                               formatMoney={formatMoney}
                             />
                           </Box>

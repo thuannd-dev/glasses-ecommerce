@@ -70,6 +70,8 @@ export function CartSelectedLensLines({
     lensDisplay?.coatingLineLabel === "None" && (item.coatingExtraPrice ?? 0) > 0
       ? `${formatMoney(item.coatingExtraPrice ?? 0)}`
       : lensDisplay?.coatingLineLabel;
+  const coatingNamesFromItem =
+    item.selectedCoatings?.map((c) => c.coatingName).filter(Boolean).join(", ") || null;
 
   const checkoutBody = lensDisplay ? (
     <>
@@ -78,16 +80,18 @@ export function CartSelectedLensLines({
       {lensDisplay.lensProductName ? (
         <DefRow label="Lens product" value={lensDisplay.lensProductName} />
       ) : null}
-      <DefRow label="Lens" value={lensDisplay.lensLineLabel || item.lensVariantName || "—"} />
-      <DefRow label="Lens option" value={optionText ?? "—"} />
+      <DefRow
+        label="Lens"
+        value={`${lensDisplay.lensLineLabel || item.lensVariantName || "—"} · ${formatMoney(item.lensPrice ?? 0)}`}
+      />
+      <DefRow label="Lens option" value={`${optionText ?? "—"} · ${formatMoney(item.coatingExtraPrice ?? 0)}`} />
     </>
   ) : (
     <>
-      {item.lensVariantName ? <DefRow label="Lens" value={item.lensVariantName} /> : null}
-      <DefRow
-        label="Add-ons"
-        value={`Lens ${formatMoney(item.lensPrice ?? 0)} · Options ${formatMoney(item.coatingExtraPrice ?? 0)}`}
-      />
+      {item.lensVariantName ? (
+        <DefRow label="Lens" value={`${item.lensVariantName} · ${formatMoney(item.lensPrice ?? 0)}`} />
+      ) : null}
+      <DefRow label="Lens option" value={`${coatingNamesFromItem ?? "None"} · ${formatMoney(item.coatingExtraPrice ?? 0)}`} />
     </>
   );
 
@@ -132,16 +136,14 @@ export function CartSelectedLensLines({
             <Typography sx={lineSx}>Lens product: {lensDisplay.lensProductName}</Typography>
           ) : null}
           <Typography sx={lineSx}>
-            Lens: {lensDisplay.lensLineLabel || item.lensVariantName || "—"}
+            Lens: {lensDisplay.lensLineLabel || item.lensVariantName || "—"} · {formatMoney(item.lensPrice ?? 0)}
           </Typography>
-          <Typography sx={lineSx}>Lens option: {optionText ?? "—"}</Typography>
+          <Typography sx={lineSx}>Lens option: {optionText ?? "—"} · {formatMoney(item.coatingExtraPrice ?? 0)}</Typography>
         </>
       ) : (
         <>
-          {item.lensVariantName ? <Typography sx={lineSx}>Lens: {item.lensVariantName}</Typography> : null}
-          <Typography sx={lineSx}>
-            Lens add-on: {formatMoney(item.lensPrice ?? 0)} · Options: {formatMoney(item.coatingExtraPrice ?? 0)}
-          </Typography>
+          <Typography sx={lineSx}>Lens: {item.lensVariantName || "—"} · {formatMoney(item.lensPrice ?? 0)}</Typography>
+          <Typography sx={lineSx}>Lens option: {coatingNamesFromItem ?? "None"} · {formatMoney(item.coatingExtraPrice ?? 0)}</Typography>
         </>
       )}
     </Box>

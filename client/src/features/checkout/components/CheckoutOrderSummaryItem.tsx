@@ -15,6 +15,8 @@ type Props = {
 export function CheckoutOrderSummaryItem({ item, hasRx, lensDisplay, formatMoney }: Props) {
   const splitLens = showRxLensPriceSplit(item, hasRx);
   const perEa = cartItemPerUnitEa(item);
+  const coatingOptionLabel =
+    item.selectedCoatings?.map((c) => c.coatingName).filter(Boolean).join(", ") || null;
 
   if (splitLens) {
     return (
@@ -93,6 +95,7 @@ export function CheckoutOrderSummaryItem({ item, hasRx, lensDisplay, formatMoney
               perUnitPrice={perEa}
               lensDisplay={lensDisplay}
               lensVariantName={item.lensVariantName}
+              coatingOptionLabel={coatingOptionLabel}
               formatMoney={formatMoney}
             />
           </Box>

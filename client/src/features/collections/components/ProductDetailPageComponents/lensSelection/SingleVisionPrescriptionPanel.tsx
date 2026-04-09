@@ -61,6 +61,7 @@ export function SingleVisionPrescriptionPanel({
     const analyzePrescription = useAnalyzePrescriptionFromUrl();
     const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
     const [uploadedPublicId, setUploadedPublicId] = useState<string | null>(null);
+    const [previewLoadFailed, setPreviewLoadFailed] = useState(false);
 
     const isUploading = uploadImage.isPending;
     const isAnalyzing = analyzePrescription.isPending;
@@ -78,6 +79,7 @@ export function SingleVisionPrescriptionPanel({
             if (!file) return;
             setUploadedImageUrl(null);
             setUploadedPublicId(null);
+            setPreviewLoadFailed(false);
             if (!file.type.startsWith("image/")) {
                 toast.error("Please choose an image file (JPG, PNG, HEIC, or WebP).");
                 return;
@@ -343,20 +345,54 @@ export function SingleVisionPrescriptionPanel({
                             >
                                 Preview
                             </Typography>
-                            <Box
-                                component="img"
-                                src={uploadedImageUrl}
-                                alt="Uploaded prescription preview"
-                                sx={{
-                                    display: "block",
-                                    width: "100%",
-                                    maxHeight: 280,
-                                    objectFit: "contain",
-                                    borderRadius: 2,
-                                    border: "1px solid rgba(17,24,39,0.12)",
-                                    bgcolor: "#fafafa",
-                                }}
-                            />
+                            {previewLoadFailed ? (
+                                <Box
+                                    sx={{
+                                        borderRadius: 2,
+                                        border: "1px solid rgba(17,24,39,0.12)",
+                                        bgcolor: "#fafafa",
+                                        minHeight: 140,
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        justifyContent: "center",
+                                        alignItems: "center",
+                                        gap: 0.75,
+                                        px: 2,
+                                        textAlign: "center",
+                                    }}
+                                >
+                                    <Typography variant="body2" color="text.secondary">
+                                        Could not render preview image here.
+                                    </Typography>
+                                    <Button
+                                        size="small"
+                                        variant="text"
+                                        component="a"
+                                        href={uploadedImageUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        sx={{ textTransform: "none", fontWeight: 700 }}
+                                    >
+                                        Open image in new tab
+                                    </Button>
+                                </Box>
+                            ) : (
+                                <Box
+                                    component="img"
+                                    src={uploadedImageUrl}
+                                    alt="Uploaded prescription preview"
+                                    onError={() => setPreviewLoadFailed(true)}
+                                    sx={{
+                                        display: "block",
+                                        width: "100%",
+                                        maxHeight: 280,
+                                        objectFit: "contain",
+                                        borderRadius: 2,
+                                        border: "1px solid rgba(17,24,39,0.12)",
+                                        bgcolor: "#fafafa",
+                                    }}
+                                />
+                            )}
                         </Box>
                     ) : null}
 

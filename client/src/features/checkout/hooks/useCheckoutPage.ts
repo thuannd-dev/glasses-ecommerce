@@ -10,11 +10,11 @@ import { setOrderShippingAddress } from "../../orders/orderShippingAddressCache"
 import { setOrderPrescriptions } from "../../orders/orderPrescriptionCache";
 import { setOrderRxLineSnapshots, type OrderRxLineSnapshot } from "../../orders/orderRxLineCache";
 import { showRxLensPriceSplit } from "../orderSummaryItemUtils";
-import { getCartItemLensDisplays, getCartItemPrescriptions } from "../../cart/prescriptionCache";
 import type { PrescriptionData } from "../../../lib/types/prescription";
 import type { ActivePromotionDto } from "../../../lib/types/promotion";
 import type { CheckoutShippingForm, CheckoutSnackbarState, PaymentMethodUI } from "../types";
 import { toApiPaymentMethod, isValidVietnamPhone, toPrescriptionInputDto } from "../utils";
+import { prescriptionFromCartItem } from "../../cart/cartItemPrescription";
 
 const initialAddress: CheckoutShippingForm = {
   recipientName: "",
@@ -75,20 +75,14 @@ export function useCheckoutPage() {
   const finalAmount = Math.max(0, totalAmount - discountAmount);
   const isEmptyCart = items.length === 0;
 
-  const itemPrescriptions = useMemo(
-    () =>
-      getCartItemPrescriptions(
-        items.map((i) => ({ id: i.id, productVariantId: i.productVariantId })),
-      ),
-    [items],
-  );
-  const itemLensDisplays = useMemo(
-    () =>
-      getCartItemLensDisplays(
-        items.map((i) => ({ id: i.id, productVariantId: i.productVariantId })),
-      ),
-    [items],
-  );
+  const itemPrescriptions = useMemo(() => {
+    const out: Record<string, PrescriptionData> = {};
+    items.forEach((item) => {
+      const p = prescriptionFromCartItem(item);
+      if (p) out[item.id] = p;
+    });
+    return out;
+  }, [items]);
   const prescriptionItems = useMemo(
     () => items.filter((i) => i.hasPrescription),
     [items]
@@ -392,7 +386,8 @@ export function useCheckoutPage() {
           lensPrice: cartItem.lensPrice ?? 0,
           coatingExtraPrice: cartItem.coatingExtraPrice ?? 0,
           lensVariantName: cartItem.lensVariantName,
-          lensDisplay: itemLensDisplays[cartItem.id] ?? null,
+          coatingOptionLabel:
+            cartItem.selectedCoatings?.map((c) => c.coatingName).filter(Boolean).join(", ") || null,
         };
       });
       if (Object.keys(rxSnapshots).length > 0) {
@@ -457,7 +452,6 @@ export function useCheckoutPage() {
     appliedPromo,
     isEmptyCart,
     itemPrescriptions,
-    itemLensDisplays,
     cartLoading,
     savedAddresses,
     defaultAddress,

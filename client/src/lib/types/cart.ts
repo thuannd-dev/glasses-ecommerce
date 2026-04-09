@@ -20,7 +20,24 @@ export type CartItemDto = {
   lensVariantName: string | null;
   lensPrice: number;
   coatingExtraPrice: number;
+  selectedCoatings?: Array<{
+    id: string;
+    coatingName: string;
+    description?: string | null;
+    currentExtraPrice: number;
+  }>;
   hasPrescription: boolean;
+  sphOD?: number | null;
+  cylOD?: number | null;
+  axisOD?: number | null;
+  addOD?: number | null;
+  pdOD?: number | null;
+  sphOS?: number | null;
+  cylOS?: number | null;
+  axisOS?: number | null;
+  addOS?: number | null;
+  pdOS?: number | null;
+  pd?: number | null;
   subtotal: number;
 };
 

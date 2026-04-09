@@ -183,6 +183,7 @@ export function OrderItemRow({
               perUnitPrice={perEa}
               lensDisplay={rxLineSnapshot.lensDisplay ?? undefined}
               lensVariantName={rxLineSnapshot.lensVariantName}
+              coatingOptionLabel={rxLineSnapshot.coatingOptionLabel}
               formatMoney={formatMoney}
               showPerUnit={false}
             />

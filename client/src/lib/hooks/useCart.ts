@@ -3,7 +3,6 @@ import { isAxiosError } from "axios";
 import { toast } from "react-toastify";
 
 import agent from "../api/agent";
-import { removeCartItemLocalData } from "../../features/cart/prescriptionCache";
 import type { CartDto, CartItemDto, AddCartItemPayload, UpdateCartItemPayload } from "../types/cart";
 import {
   addCartItemSchema,
@@ -280,8 +279,6 @@ export function useCart() {
       const msg = getThrownMessage(err);
       if (id && isUnavailableCartLineMessage(msg)) {
         const prev = context?.previous;
-        const variantId = prev?.items?.find((it) => it.id === id)?.productVariantId;
-        removeCartItemLocalData(id, variantId ?? null);
 
         void (async () => {
           try {

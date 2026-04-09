@@ -80,11 +80,8 @@ const AXIS_OPTIONS = Array.from({ length: 181 }, (_, i) => String(i));
 /** Binocular / “one PD” (typical adult ~54–74 mm). Backend allows 40–80 per stored row. */
 const SINGLE_PD_OPTIONS = Array.from({ length: 31 }, (_, i) => String(50 + i));
 
-/**
- * Monocular PD per eye when “I have 2 PD numbers” (typically ~25–40 mm each).
- * DB check is 40–80 per eye, so options start at 40; cap below binocular totals to avoid nonsense like 65 mm for one eye only.
- */
-const DUAL_PD_OPTIONS = Array.from({ length: 16 }, (_, i) => String(40 + i));
+/** Monocular OD/OS PD options: 49–79 mm. */
+const DUAL_PD_OPTIONS = Array.from({ length: 31 }, (_, i) => String(49 + i));
 
 function isPdChoiceValid(value: string, mode: "single" | "dual"): boolean {
     if (value === "") return false;
@@ -165,6 +162,8 @@ export function SelectLensesDialog({
     const [pdHelpOpen, setPdHelpOpen] = useState(false);
     /** Set when user came from photo upload + OCR — shown in banner and sent as ImageUrl on order. */
     const [rxPrescriptionImageUrl, setRxPrescriptionImageUrl] = useState<string | null>(null);
+    const [scanVisionMismatch, setScanVisionMismatch] = useState<"single-to-bifocal" | "bifocal-to-single" | null>(null);
+    const [scanVisionChoice, setScanVisionChoice] = useState("");
 
     const prescription: PrescriptionData = useMemo(() => {
         const rows = details.map((row) => {
@@ -187,12 +186,21 @@ export function SelectLensesDialog({
     }, [details, pdSingle, pdLeft, pdRight, twoPdNumbers, rxPrescriptionImageUrl]);
 
     const handleApplyOcrFromUpload = useCallback((seed: PrescriptionFormOcrSeed) => {
+        const hasAddFromOcr = seed.details.some((d) => d.add != null);
         setDetails(seed.details.map((d) => ({ ...d })));
         setPdSingle(seed.pdSingle);
         setTwoPdNumbers(seed.twoPdNumbers);
         setPdLeft(seed.pdLeft);
         setPdRight(seed.pdRight);
         setRxPrescriptionImageUrl(seed.imageUrl);
+        const mismatch =
+            hasAddFromOcr && rxUsageLabel !== "Bifocals"
+                ? "single-to-bifocal"
+                : !hasAddFromOcr && rxUsageLabel === "Bifocals"
+                  ? "bifocal-to-single"
+                  : null;
+        setScanVisionMismatch(mismatch);
+        setScanVisionChoice("");
         setHasEnteredPrescriptionFlow(true);
         if (seed.ocrWarnings.length > 0) {
             toast.info(seed.ocrWarnings.slice(0, 3).join(" · "));
@@ -217,8 +225,10 @@ export function SelectLensesDialog({
         setTwoPdNumbers(false);
         setPdHelpOpen(false);
         setRxPrescriptionImageUrl(null);
+        setScanVisionMismatch(null);
+        setScanVisionChoice("");
         setSelectedCompatibleVariantId(null);
-        setSelectedCoatingId(null);
+        setSelectedCoatingIds([]);
     }, [open]);
 
     const handleUsagePick = useCallback((pick: LensUsagePick) => {
@@ -227,11 +237,21 @@ export function SelectLensesDialog({
             return;
         }
         setSelectedOption("prescription");
-        setRxUsageLabel("Single Vision");
+        setRxUsageLabel(pick === "bifocals" ? "Bifocals" : "Single Vision");
+        setScanVisionMismatch(null);
+        setScanVisionChoice("");
     }, []);
 
     const showLegacyPrescriptionFlow =
         selectedOption === "prescription" && hasEnteredPrescriptionFlow;
+    const allowAddPower = rxUsageLabel === "Bifocals";
+
+    useEffect(() => {
+        if (allowAddPower || scanVisionMismatch === "single-to-bifocal") return;
+        setDetails((prev) =>
+            prev.map((row) => (row.add == null ? row : { ...row, add: null }))
+        );
+    }, [allowAddPower, scanVisionMismatch]);
 
     const updateDetail = (eye: 1 | 2, field: keyof PrescriptionDetailRow, value: number | null) => {
         setDetails((prev) =>
@@ -271,19 +291,28 @@ export function SelectLensesDialog({
         rxQuery,
         shouldFetchCompatibleLenses
     );
+    const hasAnyAddValues = useMemo(
+        () => details.some((row) => row.add != null),
+        [details]
+    );
 
     const compatibleVariants = useMemo<
         Array<CompatibleLensVariantDto & { lensProductId: string; lensProductName: string }>
     >(
         () =>
             (compatibleLensesQuery.data ?? []).flatMap((lens) =>
-                (lens.variants ?? []).map((variant) => ({
-                    ...variant,
-                    lensProductId: lens.lensProductId,
-                    lensProductName: lens.lensProductName,
-                }))
+                (lens.variants ?? [])
+                    .filter((variant) => {
+                        if (!hasAnyAddValues) return true;
+                        return (variant.lensDesign ?? "").toLowerCase() !== "singlevision";
+                    })
+                    .map((variant) => ({
+                        ...variant,
+                        lensProductId: lens.lensProductId,
+                        lensProductName: lens.lensProductName,
+                    }))
             ),
-        [compatibleLensesQuery.data]
+        [compatibleLensesQuery.data, hasAnyAddValues]
     );
 
     const [selectedCompatibleVariantId, setSelectedCompatibleVariantId] = useState<string | null>(
@@ -329,14 +358,14 @@ export function SelectLensesDialog({
                 lensLineLabel: selectedCompatibleVariant
                     ? `${selectedCompatibleVariant.variantName} (${selectedCompatibleVariant.index.toFixed(2)}) · ${formatMoney(selectedCompatibleVariant.price)}`
                     : "",
-                coatingLineLabel: selectedCoating
-                    ? `${selectedCoating.coatingName} (+${formatMoney(selectedCoating.extraPrice)})`
+                coatingLineLabel: selectedCoatingLabels.length
+                    ? selectedCoatingLabels.join(", ")
                     : "None",
             };
             const ok = await onPrescriptionConfirm({
                 prescription,
                 lensVariantId: selectedCompatibleVariant?.variantId ?? null,
-                selectedCoatingIds: selectedCoating ? [selectedCoating.id] : [],
+                selectedCoatingIds,
                 lensDisplay,
             });
             if (ok) onClose();
@@ -362,41 +391,88 @@ export function SelectLensesDialog({
         setStep("form");
         setRxUsageLabel("Single Vision");
         setRxPrescriptionImageUrl(null);
+        setScanAddDetected(false);
+        setScanVisionChoice("");
         setSelectedCompatibleVariantId(null);
-        setSelectedCoatingId(null);
+        setSelectedCoatingIds([]);
     }, []);
 
     const formatNum = (n: number | null) =>
         n == null ? "—" : Number.isInteger(n) ? String(n) : n.toFixed(2);
 
+    const showScanVisionSelector = scanVisionMismatch != null;
+    const scanMismatchMessage =
+        scanVisionMismatch === "single-to-bifocal"
+            ? "You selected single vision while your prescription is for bifocal/progressives."
+            : "You selected bifocals while your prescription looks like single vision.";
+    const scanPrimaryOptionLabel =
+        scanVisionMismatch === "single-to-bifocal" ? "Change to Bifocal" : "Change to Single Vision";
+    const scanPrimaryOptionValue = scanVisionMismatch === "single-to-bifocal" ? "bifocals" : "single";
+    const scanSecondaryOptionLabel =
+        scanVisionMismatch === "single-to-bifocal" ? "Keep Single Vision" : "Keep Bifocals";
+    const scanSecondaryOptionValue = scanVisionMismatch === "single-to-bifocal" ? "single" : "bifocals";
+    const handleScanVisionChoice = (value: string) => {
+        setScanVisionChoice(value);
+        if (value === "bifocals") {
+            setRxUsageLabel("Bifocals");
+            setScanVisionMismatch(null);
+            return;
+        }
+        if (value === "single") {
+            setDetails((prev) => prev.map((row) => ({ ...row, add: null })));
+            setRxUsageLabel("Single Vision");
+            setScanVisionMismatch(null);
+        }
+    };
+
     const selectedCompatibleVariant = useMemo(
         () => compatibleVariants.find((v) => v.variantId === selectedCompatibleVariantId) ?? null,
         [compatibleVariants, selectedCompatibleVariantId]
     );
-    const [selectedCoatingId, setSelectedCoatingId] = useState<string | null>(null);
+    const [selectedCoatingIds, setSelectedCoatingIds] = useState<string[]>([]);
 
     const coatingOptionsQuery = useLensCoatingOptions(
         selectedCompatibleVariant?.lensProductId,
         step === "lens" && Boolean(selectedCompatibleVariant?.lensProductId)
     );
 
-    const selectedCoating = useMemo(
+    const selectedCoatingLabels = useMemo(
         () =>
-            (coatingOptionsQuery.data ?? []).find((c) => c.id === selectedCoatingId) ?? null,
-        [coatingOptionsQuery.data, selectedCoatingId]
+            (coatingOptionsQuery.data ?? [])
+                .filter((c) => selectedCoatingIds.includes(c.id))
+                .map((c) => `${c.coatingName} (+${formatMoney(c.extraPrice)})`),
+        [coatingOptionsQuery.data, selectedCoatingIds]
     );
+    const selectedCoatingExtraTotal = useMemo(
+        () =>
+            (coatingOptionsQuery.data ?? [])
+                .filter((c) => selectedCoatingIds.includes(c.id))
+                .reduce((sum, c) => sum + (c.extraPrice ?? 0), 0),
+        [coatingOptionsQuery.data, selectedCoatingIds]
+    );
+    const runningTotal = useMemo(() => {
+        const lensTotal =
+            selectedOption === "prescription" && hasEnteredPrescriptionFlow && selectedCompatibleVariant
+                ? (selectedCompatibleVariant.price ?? 0) + selectedCoatingExtraTotal
+                : 0;
+        return price + lensTotal;
+    }, [
+        price,
+        selectedOption,
+        hasEnteredPrescriptionFlow,
+        selectedCompatibleVariant,
+        selectedCoatingExtraTotal,
+    ]);
 
     useEffect(() => {
         const coatings = coatingOptionsQuery.data ?? [];
         if (!coatings.length) {
-            setSelectedCoatingId(null);
+            setSelectedCoatingIds([]);
             return;
         }
-        const stillExists = coatings.some((c) => c.id === selectedCoatingId);
-        if (!stillExists) {
-            setSelectedCoatingId(coatings[0].id);
-        }
-    }, [coatingOptionsQuery.data, selectedCoatingId]);
+        const coatingSet = new Set(coatings.map((c) => c.id));
+        setSelectedCoatingIds((prev) => prev.filter((id) => coatingSet.has(id)));
+    }, [coatingOptionsQuery.data]);
 
     const rxTableCellSx = embeddedInPage
         ? {
@@ -570,7 +646,7 @@ export function SelectLensesDialog({
                                 fontSize={embeddedInPage ? { xs: 20, md: 24 } : 24}
                                 sx={{ mt: embeddedInPage ? 2.5 : 2, textAlign: embeddedInPage ? "left" : "center" }}
                             >
-                                {embeddedInPage ? "Total: " : ""}${price.toFixed(2)}
+                                {embeddedInPage ? "Total: " : ""}${runningTotal.toFixed(2)}
                             </Typography>
                             {!embeddedInPage && (
                                 <>
@@ -618,7 +694,7 @@ export function SelectLensesDialog({
                                     minWidth: 0,
                                     width: "100%",
                                     p: embeddedInPage ? { xs: 0, md: 0 } : { xs: 2, md: 3 },
-                                    overflow: "auto",
+                                    overflow: "visible",
                                 }}
                             >
                                 <Typography
@@ -711,41 +787,129 @@ export function SelectLensesDialog({
                                         }}
                                     >
                                         {rxPrescriptionImageUrl ? (
-                                            <Alert severity="info" sx={{ mb: 2, alignItems: "flex-start" }}>
-                                                <Typography variant="body2" sx={{ lineHeight: 1.55 }}>
-                                                    Please confirm your prescription matches the information below.{" "}
-                                                    <Link
-                                                        href={rxPrescriptionImageUrl}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        underline="hover"
-                                                        sx={{ fontWeight: 700 }}
+                                            showScanVisionSelector ? (
+                                                <Box
+                                                    sx={{
+                                                        mb: 2,
+                                                        p: 2,
+                                                        borderRadius: 2,
+                                                        bgcolor: "#EFF7FB",
+                                                        border: "1px solid rgba(2,132,199,0.18)",
+                                                    }}
+                                                >
+                                                    <Typography
+                                                        sx={{
+                                                            fontWeight: 800,
+                                                            fontSize: 22,
+                                                            textAlign: "center",
+                                                            color: "#111827",
+                                                            mb: 1,
+                                                        }}
                                                     >
-                                                        View uploaded prescription
-                                                    </Link>
-                                                </Typography>
-                                            </Alert>
+                                                        Your Scan Results
+                                                    </Typography>
+                                                    <Alert
+                                                        severity="warning"
+                                                        icon={false}
+                                                        sx={{
+                                                            mb: 1.5,
+                                                            bgcolor: "rgba(2,132,199,0.1)",
+                                                            color: "#0F172A",
+                                                            "& .MuiAlert-message": {
+                                                                width: "100%",
+                                                                py: 0.25,
+                                                                fontSize: 16,
+                                                                fontWeight: 700,
+                                                            },
+                                                        }}
+                                                    >
+                                                        {scanMismatchMessage}
+                                                    </Alert>
+                                                    <Typography sx={{ textAlign: "center", mb: 2 }}>
+                                                        <Link
+                                                            href={rxPrescriptionImageUrl}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            underline="hover"
+                                                            sx={{ fontWeight: 700 }}
+                                                        >
+                                                            View Uploaded Prescription
+                                                        </Link>
+                                                    </Typography>
+                                                    <Typography
+                                                        sx={{
+                                                            fontWeight: 700,
+                                                            fontSize: 20,
+                                                            textAlign: "center",
+                                                            color: "#111827",
+                                                            mb: 1.5,
+                                                        }}
+                                                    >
+                                                        What vision type would you like to continue with?
+                                                    </Typography>
+                                                    <TextField
+                                                        select
+                                                        fullWidth
+                                                        value={scanVisionChoice}
+                                                        onChange={(e) => handleScanVisionChoice(e.target.value)}
+                                                        sx={{
+                                                            maxWidth: 370,
+                                                            mx: "auto",
+                                                            display: "block",
+                                                            "& .MuiOutlinedInput-root": {
+                                                                bgcolor: "#fff",
+                                                            },
+                                                        }}
+                                                    >
+                                                        <MenuItem value="">--Select--</MenuItem>
+                                                        <MenuItem value={scanPrimaryOptionValue}>
+                                                            {scanPrimaryOptionLabel}
+                                                        </MenuItem>
+                                                        <MenuItem value={scanSecondaryOptionValue}>
+                                                            {scanSecondaryOptionLabel}
+                                                        </MenuItem>
+                                                    </TextField>
+                                                </Box>
+                                            ) : (
+                                                <Alert severity="info" sx={{ mb: 2, alignItems: "flex-start" }}>
+                                                    <Typography variant="body2" sx={{ lineHeight: 1.55 }}>
+                                                        Please confirm your prescription matches the information below.{" "}
+                                                        <Link
+                                                            href={rxPrescriptionImageUrl}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            underline="hover"
+                                                            sx={{ fontWeight: 700 }}
+                                                        >
+                                                            View uploaded prescription
+                                                        </Link>
+                                                    </Typography>
+                                                </Alert>
+                                            )
                                         ) : null}
-                                        <Box
-                                            sx={{
-                                                border: "1px solid rgba(17,24,39,0.1)",
-                                                borderRadius: 2,
-                                                overflow: "hidden",
-                                                bgcolor: "#fff",
-                                                mb: 2,
-                                                boxShadow: embeddedInPage
-                                                    ? "0 1px 2px rgba(17,24,39,0.04)"
-                                                    : undefined,
-                                            }}
-                                        >
-                                            <Table size="small" sx={rxTableCellSx}>
+                                        {showScanVisionSelector ? null : (
+                                            <Box
+                                                sx={{
+                                                    border: "1px solid rgba(17,24,39,0.1)",
+                                                    borderRadius: 2,
+                                                    overflow: "hidden",
+                                                    bgcolor: "#fff",
+                                                    mb: 2,
+                                                    boxShadow: embeddedInPage
+                                                        ? "0 1px 2px rgba(17,24,39,0.04)"
+                                                        : undefined,
+                                                }}
+                                            >
+                                                <Table size="small" sx={rxTableCellSx}>
                                                 <TableHead>
                                                     <TableRow>
                                                         <TableCell sx={{ fontWeight: 700 }}></TableCell>
                                                         <TableCell sx={{ fontWeight: 700 }}>SPH</TableCell>
                                                         <TableCell sx={{ fontWeight: 700 }}>CYL</TableCell>
                                                         <TableCell sx={{ fontWeight: 700 }}>Axis</TableCell>
-                                                        <TableCell sx={{ fontWeight: 700 }}>ADD</TableCell>
+                                                        {allowAddPower ? (
+                                                            <TableCell sx={{ fontWeight: 700 }}>ADD</TableCell>
+                                                        ) : null}
                                                     </TableRow>
                                                 </TableHead>
                                                 <TableBody>
@@ -851,47 +1015,49 @@ export function SelectLensesDialog({
                                                                     ))}
                                                                 </TextField>
                                                             </TableCell>
-                                                            <TableCell>
-                                                                <TextField
-                                                                    select
-                                                                    size="small"
-                                                                    value={
-                                                                        row.add != null
-                                                                            ? row.add.toFixed(2)
-                                                                            : ""
-                                                                    }
-                                                                    onChange={(e) => {
-                                                                        const v = e.target.value;
-                                                                        updateDetail(
-                                                                            row.eye,
-                                                                            "add",
-                                                                            v === "" ? null : parseFloat(v),
-                                                                        );
-                                                                    }}
-                                                                    sx={{ minWidth: 88 }}
-                                                                    SelectProps={{
-                                                                        displayEmpty: true,
-                                                                        renderValue: (selected: unknown) =>
-                                                                            selected === ""
-                                                                                ? "—"
-                                                                                : (selected as string),
-                                                                        MenuProps: {
-                                                                            PaperProps: {
-                                                                                sx: { maxHeight: 280 },
+                                                            {allowAddPower ? (
+                                                                <TableCell>
+                                                                    <TextField
+                                                                        select
+                                                                        size="small"
+                                                                        value={
+                                                                            row.add != null
+                                                                                ? row.add.toFixed(2)
+                                                                                : ""
+                                                                        }
+                                                                        onChange={(e) => {
+                                                                            const v = e.target.value;
+                                                                            updateDetail(
+                                                                                row.eye,
+                                                                                "add",
+                                                                                v === "" ? null : parseFloat(v),
+                                                                            );
+                                                                        }}
+                                                                        sx={{ minWidth: 88 }}
+                                                                        SelectProps={{
+                                                                            displayEmpty: true,
+                                                                            renderValue: (selected: unknown) =>
+                                                                                selected === ""
+                                                                                    ? "—"
+                                                                                    : (selected as string),
+                                                                            MenuProps: {
+                                                                                PaperProps: {
+                                                                                    sx: { maxHeight: 280 },
+                                                                                },
                                                                             },
-                                                                        },
-                                                                    }}
-                                                                >
-                                                                    <MenuItem value="">
-                                                                        <em>None</em>
-                                                                    </MenuItem>
-                                                                    {ADD_OPTIONS.map((opt) => (
-                                                                        <MenuItem key={opt} value={opt}>
-                                                                            {opt}
+                                                                        }}
+                                                                    >
+                                                                        <MenuItem value="">
+                                                                            <em>None</em>
                                                                         </MenuItem>
-                                                                    ))}
-                                                                </TextField>
-                                                            </TableCell>
+                                                                        {ADD_OPTIONS.map((opt) => (
+                                                                            <MenuItem key={opt} value={opt}>
+                                                                                {opt}
+                                                                            </MenuItem>
+                                                                        ))}
+                                                                    </TextField>
+                                                                </TableCell>
+                                                            ) : null}
                                                         </TableRow>
                                                     ))}
                                                     <TableRow>
@@ -1065,11 +1231,12 @@ export function SelectLensesDialog({
                                                         </TableCell>
                                                     </TableRow>
                                                 </TableBody>
-                                            </Table>
-                                        </Box>
+                                                </Table>
+                                            </Box>
+                                        )}
                                         <Button
                                             variant="contained"
-                                            disabled={!isPrescriptionFormValid}
+                                            disabled={!isPrescriptionFormValid || (showScanVisionSelector && !scanVisionChoice)}
                                             fullWidth={embeddedInPage}
                                             sx={{
                                                 alignSelf: embeddedInPage ? "stretch" : "flex-end",
@@ -1132,7 +1299,16 @@ export function SelectLensesDialog({
                                                     continue.
                                                 </Alert>
                                             ) : compatibleVariants.length > 0 ? (
-                                                <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+                                                <Box
+                                                    sx={{
+                                                        display: "flex",
+                                                        flexDirection: "column",
+                                                        gap: 1,
+                                                        maxHeight: embeddedInPage ? { xs: 300, md: 360 } : "none",
+                                                        overflowY: embeddedInPage ? "auto" : "visible",
+                                                        pr: embeddedInPage ? 0.5 : 0,
+                                                    }}
+                                                >
                                                     {compatibleVariants.map((variant, idx) => {
                                                         const isSelected =
                                                             variant.variantId === selectedCompatibleVariantId;
@@ -1154,7 +1330,7 @@ export function SelectLensesDialog({
                                                                     }
                                                                 }}
                                                                 sx={{
-                                                                    p: 2.5,
+                                                                    p: embeddedInPage ? 1.25 : 2.5,
                                                                     borderRadius: 1,
                                                                     border: isSelected
                                                                         ? `2px solid ${LENS_FLOW_ACCENT}`
@@ -1168,24 +1344,36 @@ export function SelectLensesDialog({
                                                                         sx={{
                                                                             color: "#1D4ED8",
                                                                             fontWeight: 700,
-                                                                            fontSize: 14,
-                                                                            mb: 0.75,
+                                                                            fontSize: embeddedInPage ? 12 : 14,
+                                                                            mb: embeddedInPage ? 0.4 : 0.75,
                                                                         }}
                                                                     >
                                                                         Recommended for your prescription
                                                                     </Typography>
                                                                 ) : null}
-                                                                <Typography sx={{ fontSize: 31, fontWeight: 400 }}>
+                                                                <Typography
+                                                                    sx={{
+                                                                        fontSize: embeddedInPage
+                                                                            ? { xs: 21, md: 23 }
+                                                                            : 31,
+                                                                        fontWeight: 400,
+                                                                        lineHeight: 1.2,
+                                                                    }}
+                                                                >
                                                                     {variant.variantName || variant.lensProductName}
                                                                 </Typography>
                                                                 <Box
                                                                     component="ul"
                                                                     sx={{
                                                                         m: 0,
-                                                                        mt: 0.75,
-                                                                        pl: 2.5,
+                                                                        mt: 0.4,
+                                                                        pl: 2.2,
                                                                         color: "#374151",
-                                                                        "& li": { mb: 0.5, lineHeight: 1.45 },
+                                                                        "& li": {
+                                                                            mb: embeddedInPage ? 0.18 : 0.5,
+                                                                            lineHeight: 1.35,
+                                                                            fontSize: embeddedInPage ? 13 : 15,
+                                                                        },
                                                                     }}
                                                                 >
                                                                     <li>Lens index {variant.index.toFixed(2)}</li>
@@ -1205,7 +1393,9 @@ export function SelectLensesDialog({
                                                 </Box>
                                             ) : (
                                                 <Alert severity="info" sx={{ mb: 1 }}>
-                                                    No compatible lenses match this prescription range yet.
+                                                    {hasAnyAddValues
+                                                        ? "No compatible lenses available. ADD values cannot be used with Single Vision lenses."
+                                                        : "No compatible lenses match this prescription range yet."}
                                                 </Alert>
                                             )}
                                         </Box>
@@ -1235,17 +1425,27 @@ export function SelectLensesDialog({
                                                 ) : (coatingOptionsQuery.data ?? []).length > 0 ? (
                                                     <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
                                                         {(coatingOptionsQuery.data ?? []).map((option) => {
-                                                            const selected = option.id === selectedCoatingId;
+                                                            const selected = selectedCoatingIds.includes(option.id);
                                                             return (
                                                                 <Box
                                                                     key={option.id}
                                                                     role="button"
                                                                     tabIndex={0}
-                                                                    onClick={() => setSelectedCoatingId(option.id)}
+                                                                    onClick={() =>
+                                                                        setSelectedCoatingIds((prev) =>
+                                                                            prev.includes(option.id)
+                                                                                ? prev.filter((id) => id !== option.id)
+                                                                                : [...prev, option.id]
+                                                                        )
+                                                                    }
                                                                     onKeyDown={(e) => {
                                                                         if (e.key === "Enter" || e.key === " ") {
                                                                             e.preventDefault();
-                                                                            setSelectedCoatingId(option.id);
+                                                                            setSelectedCoatingIds((prev) =>
+                                                                                prev.includes(option.id)
+                                                                                    ? prev.filter((id) => id !== option.id)
+                                                                                    : [...prev, option.id]
+                                                                            );
                                                                         }
                                                                     }}
                                                                     sx={{
@@ -1384,8 +1584,8 @@ export function SelectLensesDialog({
                                                 <Typography fontSize={13.5} color="text.secondary">
                                                     Lens option:{" "}
                                                     <Box component="span" sx={{ color: "#111827", fontWeight: 600 }}>
-                                                        {selectedCoating
-                                                            ? `${selectedCoating.coatingName} (+${formatMoney(selectedCoating.extraPrice)})`
+                                                        {selectedCoatingLabels.length
+                                                            ? selectedCoatingLabels.join(", ")
                                                             : "None"}
                                                     </Box>
                                                 </Typography>
@@ -1424,7 +1624,9 @@ export function SelectLensesDialog({
                                                         <TableCell sx={{ fontWeight: 700 }}>SPH</TableCell>
                                                         <TableCell sx={{ fontWeight: 700 }}>CYL</TableCell>
                                                         <TableCell sx={{ fontWeight: 700 }}>Axis</TableCell>
-                                                        <TableCell sx={{ fontWeight: 700 }}>ADD</TableCell>
+                                                        {allowAddPower ? (
+                                                            <TableCell sx={{ fontWeight: 700 }}>ADD</TableCell>
+                                                        ) : null}
                                                     </TableRow>
                                                 </TableHead>
                                                 <TableBody>
@@ -1436,7 +1638,9 @@ export function SelectLensesDialog({
                                                             <TableCell>{formatNum(row.sph)}</TableCell>
                                                             <TableCell>{formatNum(row.cyl)}</TableCell>
                                                             <TableCell>{formatNum(row.axis)}</TableCell>
-                                                            <TableCell>{formatNum(row.add)}</TableCell>
+                                                            {allowAddPower ? (
+                                                                <TableCell>{formatNum(row.add)}</TableCell>
+                                                            ) : null}
                                                         </TableRow>
                                                     ))}
                                                 </TableBody>

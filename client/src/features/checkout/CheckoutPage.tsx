@@ -65,7 +65,6 @@ export default function CheckoutPage() {
         appliedPromo,
         isEmptyCart,
         itemPrescriptions,
-        itemLensDisplays,
         cartLoading,
         address,
         setAddress,
@@ -829,7 +828,6 @@ export default function CheckoutPage() {
                                                     key={item.id}
                                                     item={item}
                                                     hasRx={Boolean(itemPrescriptions[item.id])}
-                                                    lensDisplay={itemLensDisplays[item.id]}
                                                     formatMoney={formatMoney}
                                                 />
                                             ))}
