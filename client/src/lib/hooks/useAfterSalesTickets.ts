@@ -37,20 +37,6 @@ export function useAfterSalesTickets(params?: AfterSalesTicketsQueryParams) {
 
 async function fetchStaffAfterSalesTicketById(id: string): Promise<TicketDetailDto> {
   const res = await agent.get<TicketDetailDto>(`/staff/after-sales/${id}`);
-  console.log("🔍 API Response - /staff/after-sales/" + id, {
-    status: res.status,
-    data: {
-      id: res.data.id,
-      itemsCount: res.data.items?.length,
-      items: res.data.items?.map(item => ({
-        id: item.id,
-        productName: item.productName,
-        prescriptionId: item.prescriptionId,
-        prescriptionDetailsCount: item.prescriptionDetails?.length,
-        prescriptionDetails: item.prescriptionDetails
-      }))
-    }
-  });
   return res.data;
 }
 
