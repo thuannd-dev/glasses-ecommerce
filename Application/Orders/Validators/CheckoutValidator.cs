@@ -94,9 +94,9 @@ public sealed class CheckoutValidator : AbstractValidator<Checkout.Command>
                                 .WithMessage("SPH must be between -20 and +20.");
 
                             detail.RuleFor(d => d.CYL)
-                                .InclusiveBetween(-6m, 0m)
+                                .InclusiveBetween(-6m, 6m)
                                 .When(d => d.CYL.HasValue)
-                                .WithMessage("CYL must be between -6 and 0.");
+                                .WithMessage("CYL must be between -6 and +6.");
 
                             detail.RuleFor(d => d.AXIS)
                                 .InclusiveBetween(0, 180)

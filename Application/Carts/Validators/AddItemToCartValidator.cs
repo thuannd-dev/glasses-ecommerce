@@ -39,15 +39,15 @@ public sealed class AddItemToCartValidator : AbstractValidator<AddItemToCart.Com
         // ── Rules only applicable when a lens variant is provided ────────────
         When(x => x.AddCartItemDto.LensVariantId.HasValue, () =>
         {
-            // CYL must be ≤ 0 (negative cylinder convention)
+            // CYL range [-6, +6]
             RuleFor(x => x.AddCartItemDto.CylOD)
-                .LessThanOrEqualTo(0)
-                .WithMessage("Right eye CYL must be ≤ 0.")
+                .InclusiveBetween(-6m, 6m)
+                .WithMessage("Right eye CYL must be between -6 and +6.")
                 .When(x => x.AddCartItemDto.CylOD.HasValue);
 
             RuleFor(x => x.AddCartItemDto.CylOS)
-                .LessThanOrEqualTo(0)
-                .WithMessage("Left eye CYL must be ≤ 0.")
+                .InclusiveBetween(-6m, 6m)
+                .WithMessage("Left eye CYL must be between -6 and +6.")
                 .When(x => x.AddCartItemDto.CylOS.HasValue);
 
             // AXIS general range 0–180 (ophthalmic convention)

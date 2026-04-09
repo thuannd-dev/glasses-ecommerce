@@ -30,11 +30,11 @@ public class LensVariantAttribute
     /// <summary>Độ cầu tối đa mà lens này hỗ trợ, e.g. +6.00</summary>
     public decimal SphMax { get; set; }
 
-    // ── CYL range — luôn ≤ 0 (negative cylinder convention) ─────
-    /// <summary>Độ loạn tối thiểu, e.g. -6.00. Luôn ≤ 0.</summary>
+    // ── CYL range — [-6, +6] ─────────────────────────────────────
+    /// <summary>Độ loạn tối thiểu, e.g. -6.00.</summary>
     public decimal CylMin { get; set; }
 
-    /// <summary>Độ loạn tối đa, e.g. 0.00 (không loạn = 0). Luôn ≤ 0.</summary>
+    /// <summary>Độ loạn tối đa, e.g. +6.00. 0.00 = không loạn.</summary>
     public decimal CylMax { get; set; }
 
     // ── AXIS range — luôn đi kèm CYL (0–180 độ) ─────────────────
