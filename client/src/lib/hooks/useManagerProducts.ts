@@ -44,6 +44,7 @@ export interface GetProductsParams {
   maxPrice?: number;
   sortBy?: number;
   sortOrder?: number;
+  includeLenses?: boolean;
 }
 
 const SORT_BY_MAP: Record<number, string> = {
@@ -145,6 +146,8 @@ export function useManagerProducts(params?: GetProductsParams) {
       if (params?.sortOrder !== undefined) {
         queryParams.append("sortOrder", SORT_ORDER_MAP[params.sortOrder] ?? params.sortOrder.toString());
       }
+      // Always include lenses in manager view for full product inventory management
+      queryParams.append("includeLenses", "true");
 
       const res = await agent.get<ProductsResponse>(
         `/products?${queryParams.toString()}`

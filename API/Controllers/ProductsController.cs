@@ -23,7 +23,8 @@ public sealed class ProductsController : BaseApiController
         [FromQuery] decimal? maxPrice = null,
         [FromQuery] string? search = null,
         [FromQuery] GetProductList.SortByOption sortBy = GetProductList.SortByOption.CreatedAt,
-        [FromQuery] GetProductList.SortOrderOption sortOrder = GetProductList.SortOrderOption.Desc)
+        [FromQuery] GetProductList.SortOrderOption sortOrder = GetProductList.SortOrderOption.Desc,
+        [FromQuery] bool includeLenses = false)
     {
         return HandleResult(await Mediator.Send(new GetProductList.Query
         {
@@ -37,7 +38,8 @@ public sealed class ProductsController : BaseApiController
             MaxPrice = maxPrice,
             SearchTerm = search,
             SortBy = sortBy,
-            SortOrder = sortOrder
+            SortOrder = sortOrder,
+            IncludeLenses = includeLenses
         }));
     }
 
