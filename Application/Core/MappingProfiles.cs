@@ -221,7 +221,7 @@ public sealed class MappingProfiles : Profile
             .ForMember(d => d.ProductName, o => o.MapFrom(s =>
                 s.ProductVariant != null && s.ProductVariant.Product != null
                     ? s.ProductVariant.Product.ProductName : null))
-            .ForMember(d => d.TotalPrice, o => o.MapFrom(s => s.Quantity * s.UnitPrice))
+            .ForMember(d => d.TotalPrice, o => o.MapFrom(s => s.Quantity * (s.UnitPrice + s.LensUnitPrice + s.CoatingExtraPrice)))
             .ForMember(d => d.PrescriptionId, o => o.MapFrom(s => s.PrescriptionId))
             .ForMember(d => d.ProductImageUrl, o => o.MapFrom(s =>
                 s.ProductVariant != null
@@ -237,7 +237,12 @@ public sealed class MappingProfiles : Profile
                                 .Select(i => i.ImageUrl)
                                 .FirstOrDefault()
                             : null))
-                    : null));
+                    : null))
+            .ForMember(d => d.LensVariantName, o => o.MapFrom(s =>
+                s.LensVariant != null ? s.LensVariant.VariantName : null))
+            .ForMember(d => d.LensUnitPrice, o => o.MapFrom(s => s.LensUnitPrice))
+            .ForMember(d => d.CoatingExtraPrice, o => o.MapFrom(s => s.CoatingExtraPrice))
+            .ForMember(d => d.SelectedCoatings, o => o.Ignore());
 
         CreateMap<Payment, OrderPaymentDto>()
             .ForMember(d => d.PaymentMethod, o => o.MapFrom(s => s.PaymentMethod.ToString()))
@@ -411,25 +416,29 @@ public sealed class MappingProfiles : Profile
                         ProductName = src.OrderItem.ProductVariant.Product.ProductName,
                         Quantity = src.OrderItem.Quantity,
                         UnitPrice = src.OrderItem.UnitPrice,
-                        TotalPrice = src.OrderItem.Quantity * src.OrderItem.UnitPrice,
+                        TotalPrice = src.OrderItem.Quantity * (src.OrderItem.UnitPrice + src.OrderItem.LensUnitPrice + src.OrderItem.CoatingExtraPrice),
                         DiscountApplied = src.DiscountApplied,
                         ProductImageUrl = src.OrderItem.ProductVariant.Product.Images
                             ?.OrderBy(pi => pi.DisplayOrder)
                             .Select(pi => pi.ImageUrl)
-                            .FirstOrDefault()
+                            .FirstOrDefault(),
+                        LensVariantName = src.OrderItem.LensVariant?.VariantName,
+                        LensUnitPrice = src.OrderItem.LensUnitPrice,
+                        CoatingExtraPrice = src.OrderItem.CoatingExtraPrice,
+                        CoatingsSnapshot = src.OrderItem.CoatingsSnapshot
                     });
                 }
                 else if (src.Order != null && src.Order.OrderItems != null && src.Order.OrderItems.Count > 0)
                 {
                     // Ticket is for the whole order — distribute discount proportionally across items
-                    decimal totalOrderPrice = src.Order.OrderItems.Sum(oi => oi.Quantity * oi.UnitPrice);
+                    decimal totalOrderPrice = src.Order.OrderItems.Sum(oi => oi.Quantity * (oi.UnitPrice + oi.LensUnitPrice + oi.CoatingExtraPrice));
                     
                     items = src.Order.OrderItems
                         .Where(oi => oi.ProductVariant != null && oi.ProductVariant.Product != null)
                         .Select(oi =>
                         {
                             // Calculate proportional discount for this item
-                            decimal itemPrice = oi.Quantity * oi.UnitPrice;
+                            decimal itemPrice = oi.Quantity * (oi.UnitPrice + oi.LensUnitPrice + oi.CoatingExtraPrice);
                             decimal itemDiscount = totalOrderPrice > 0 
                                 ? (itemPrice / totalOrderPrice) * src.DiscountApplied 
                                 : 0;
@@ -443,12 +452,16 @@ public sealed class MappingProfiles : Profile
                                 ProductName = oi.ProductVariant.Product.ProductName,
                                 Quantity = oi.Quantity,
                                 UnitPrice = oi.UnitPrice,
-                                TotalPrice = oi.Quantity * oi.UnitPrice,
+                                TotalPrice = oi.Quantity * (oi.UnitPrice + oi.LensUnitPrice + oi.CoatingExtraPrice),
                                 DiscountApplied = itemDiscount,
                                 ProductImageUrl = oi.ProductVariant.Product.Images
                                     ?.OrderBy(pi => pi.DisplayOrder)
                                     .Select(pi => pi.ImageUrl)
-                                    .FirstOrDefault()
+                                    .FirstOrDefault(),
+                                LensVariantName = oi.LensVariant?.VariantName,
+                                LensUnitPrice = oi.LensUnitPrice,
+                                CoatingExtraPrice = oi.CoatingExtraPrice,
+                                CoatingsSnapshot = oi.CoatingsSnapshot
                             };
                         })
                         .ToList();

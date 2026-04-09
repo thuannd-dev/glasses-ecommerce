@@ -646,7 +646,7 @@ public sealed class Checkout
                         .Select(oi => (
                             ProductName: oi.ProductName ?? "Unknown Product",
                             Quantity: oi.Quantity,
-                            Price: oi.UnitPrice))
+                            Price: oi.UnitPrice + oi.LensUnitPrice + oi.CoatingExtraPrice))
                         .ToList();
 
                     OrderEmailBreakdownDto breakdown = new()

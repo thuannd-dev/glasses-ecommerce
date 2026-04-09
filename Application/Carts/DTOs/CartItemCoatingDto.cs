@@ -1,8 +1,11 @@
 namespace Application.Carts.DTOs;
 
+/// <summary>
+/// Represents a coating option selected for a cart item.
+/// </summary>
 public sealed class CartItemCoatingDto
 {
-    public Guid   Id          { get; set; }
+    public Guid Id { get; set; }
     public string CoatingName { get; set; } = null!;
     public string? Description { get; set; }
 
@@ -10,5 +13,5 @@ public sealed class CartItemCoatingDto
     /// Giá mới nhất của coating. Có thể khác với CoatingExtraPrice 
     /// (giá được chốt tại thời điểm đưa vào giỏ hàng).
     /// </summary>
-    public decimal CurrentExtraPrice  { get; set; }
+    public decimal CurrentExtraPrice { get; set; }
 }
