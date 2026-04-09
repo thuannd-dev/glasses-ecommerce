@@ -44,7 +44,6 @@ export interface GetProductsParams {
   maxPrice?: number;
   sortBy?: number;
   sortOrder?: number;
-  includeLenses?: boolean;
 }
 
 const SORT_BY_MAP: Record<number, string> = {
@@ -146,9 +145,8 @@ export function useManagerProducts(params?: GetProductsParams) {
       if (params?.sortOrder !== undefined) {
         queryParams.append("sortOrder", SORT_ORDER_MAP[params.sortOrder] ?? params.sortOrder.toString());
       }
-      // Default true for manager view, but allow explicit override via params
-      const includeLenses = params?.includeLenses ?? true;
-      queryParams.append("includeLenses", String(includeLenses));
+      // Backend automatically includes lenses based on user role
+      // No need to explicitly pass includeLenses parameter
 
       const res = await agent.get<ProductsResponse>(
         `/products?${queryParams.toString()}`
