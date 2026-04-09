@@ -34,9 +34,32 @@ public sealed class CartItemDto
     // ── Coating snapshot ─────────────────────────────────────────
     public decimal CoatingExtraPrice { get; set; }
 
-    // ── Prescription flag ────────────────────────────────────────
+    /// <summary>
+    /// Danh sách coating đã chọn với tên và giá — được resolve từ DB sau khi map.
+    /// Empty nếu không chọn coating nào.
+    /// </summary>
+    public List<CartItemCoatingDto> SelectedCoatings { get; set; } = [];
+
+    // ── Prescription snapshot ────────────────────────────────────
     /// <summary>True nếu khách đã nhập toa.</summary>
     public bool HasPrescription { get; set; }
+
+    // OD = Oculus Dexter (mắt phải)
+    public decimal? SphOD  { get; set; }
+    public decimal? CylOD  { get; set; }
+    public int?     AxisOD { get; set; }
+    public decimal? AddOD  { get; set; }
+    public decimal? PdOD   { get; set; }
+
+    // OS = Oculus Sinister (mắt trái)
+    public decimal? SphOS  { get; set; }
+    public decimal? CylOS  { get; set; }
+    public int?     AxisOS { get; set; }
+    public decimal? AddOS  { get; set; }
+    public decimal? PdOS   { get; set; }
+
+    /// <summary>PD tổng nếu không chia per eye.</summary>
+    public decimal? Pd { get; set; }
 
     // ── Calculated ───────────────────────────────────────────────
     /// <summary>Quantity × (FramePrice + LensPrice + CoatingExtraPrice)</summary>

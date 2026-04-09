@@ -131,9 +131,24 @@ public sealed class MappingProfiles : Profile
                 s.LensVariant != null ? s.LensVariant.VariantName : null))
             .ForMember(d => d.LensPrice, o => o.MapFrom(s =>
                 s.LensVariant != null ? s.LensVariant.Price : 0))
+            // Coating — SelectedCoatings filled manually in handler (requires async DB call)
+            .ForMember(d => d.SelectedCoatings, o => o.Ignore())
             // Prescription flag
             .ForMember(d => d.HasPrescription, o => o.MapFrom(s =>
                 s.PrescriptionSphOD.HasValue || s.PrescriptionSphOS.HasValue))
+            // Prescription snapshot — OD (right eye)
+            .ForMember(d => d.SphOD,  o => o.MapFrom(s => s.PrescriptionSphOD))
+            .ForMember(d => d.CylOD,  o => o.MapFrom(s => s.PrescriptionCylOD))
+            .ForMember(d => d.AxisOD, o => o.MapFrom(s => s.PrescriptionAxisOD))
+            .ForMember(d => d.AddOD,  o => o.MapFrom(s => s.PrescriptionAddOD))
+            .ForMember(d => d.PdOD,   o => o.MapFrom(s => s.PrescriptionPdOD))
+            // Prescription snapshot — OS (left eye)
+            .ForMember(d => d.SphOS,  o => o.MapFrom(s => s.PrescriptionSphOS))
+            .ForMember(d => d.CylOS,  o => o.MapFrom(s => s.PrescriptionCylOS))
+            .ForMember(d => d.AxisOS, o => o.MapFrom(s => s.PrescriptionAxisOS))
+            .ForMember(d => d.AddOS,  o => o.MapFrom(s => s.PrescriptionAddOS))
+            .ForMember(d => d.PdOS,   o => o.MapFrom(s => s.PrescriptionPdOS))
+            .ForMember(d => d.Pd,     o => o.MapFrom(s => s.PrescriptionPd))
             // Subtotal: Quantity × (FramePrice + LensPrice + CoatingExtraPrice)
             .ForMember(d => d.Subtotal, o => o.MapFrom(s =>
                 s.Quantity * (
