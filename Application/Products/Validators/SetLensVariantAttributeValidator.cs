@@ -22,14 +22,14 @@ public sealed class SetLensVariantAttributeValidator : AbstractValidator<SetLens
                 .LessThanOrEqualTo(x => x.Dto.SphMax)
                 .WithMessage("SphMin must be ≤ SphMax.");
 
-            // CYL range
+            // CYL — negative cylinder convention
             RuleFor(x => x.Dto.CylMin)
-                .InclusiveBetween(-6, 6)
-                .WithMessage("CylMin must be between -6 and 6.");
+                .LessThanOrEqualTo(0)
+                .WithMessage("CylMin must be ≤ 0 (negative cylinder convention).");
 
             RuleFor(x => x.Dto.CylMax)
-                .InclusiveBetween(-6, 6)
-                .WithMessage("CylMax must be between -6 and 6.");
+                .LessThanOrEqualTo(0)
+                .WithMessage("CylMax must be ≤ 0 (negative cylinder convention).");
 
             RuleFor(x => x.Dto.CylMin)
                 .LessThanOrEqualTo(x => x.Dto.CylMax)
