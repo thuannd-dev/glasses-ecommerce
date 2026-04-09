@@ -1,5 +1,6 @@
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import LandscapeOutlinedIcon from "@mui/icons-material/LandscapeOutlined";
+import ViewAgendaOutlinedIcon from "@mui/icons-material/ViewAgendaOutlined";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import { Box, Button, Tooltip, Typography } from "@mui/material";
 
@@ -26,6 +27,12 @@ const ROWS: RowDef[] = [
         title: "Single Vision",
         description: "General use to see Near, Intermediate, or Distance.",
         Icon: LandscapeOutlinedIcon,
+    },
+    {
+        pick: "bifocals",
+        title: "Bifocals",
+        description: "Two-zone lenses for distance and near vision.",
+        Icon: ViewAgendaOutlinedIcon,
     },
     {
         pick: "non-prescription",

@@ -17,11 +17,12 @@ import { NavLink, useNavigate } from "react-router-dom";
 
 import { useCart } from "../../lib/hooks/useCart";
 import { formatMoney } from "../../lib/utils/format";
-import { getCartItemPrescriptions, getCartItemLensMode } from "./prescriptionCache";
+import { CartSelectedLensLines } from "./CartSelectedLensLines";
 import { PrescriptionDisplay } from "../../app/shared/components/PrescriptionDisplay";
 import type { CartItemDto } from "../../lib/types/cart";
+import { cartItemPerUnitEa, showRxLensPriceSplit } from "../checkout/orderSummaryItemUtils";
 import type { PrescriptionData } from "../../lib/types/prescription";
-import type { CartLensMode } from "../../lib/types/lensSelection";
+import { prescriptionFromCartItem } from "./cartItemPrescription";
 
 /** Stable fallback — `cart?.items ?? []` creates a new [] every render when cart is missing → infinite useEffect loop. */
 const EMPTY_CART_ITEMS: CartItemDto[] = [];
@@ -30,7 +31,6 @@ function CartItemRow({
     item,
     selected,
     prescription,
-    lensMode,
     onToggle,
     onIncrease,
     onDecrease,
@@ -40,19 +40,21 @@ function CartItemRow({
     item: CartItemDto;
     selected: boolean;
     prescription?: PrescriptionData;
-    lensMode?: CartLensMode;
     onToggle: () => void;
     onIncrease: () => void;
     onDecrease: () => void;
     onRemove?: () => void;
     formatMoney: (n: number) => string;
 }) {
+    const splitLens = showRxLensPriceSplit(item, Boolean(prescription));
+    const perEa = cartItemPerUnitEa(item);
+
     return (
         <Box
             sx={{
                 display: "flex",
                 gap: 2,
-                alignItems: "center",
+                alignItems: prescription ? "flex-start" : "center",
                 py: 1.75,
                 px: 1,
                 borderBottom: "1px solid #F1F1F1",
@@ -105,22 +107,51 @@ function CartItemRow({
                 >
                     {item.productName}
                 </Typography>
-                <Typography
-                    sx={{
-                        mt: 0.25,
-                        fontSize: 13,
-                        color: "#8A8A8A",
-                    }}
-                >
-                    Unit price · {fmt(item.price)}
-                </Typography>
-                {lensMode === "non-prescription" && (
-                    <Typography sx={{ mt: 0.35, fontSize: 12, color: "#6B7280" }}>
-                        Non-prescription lenses
+                {splitLens ? (
+                    <>
+                        <Typography
+                            sx={{
+                                mt: 0.25,
+                                fontSize: 13,
+                                color: "#8A8A8A",
+                            }}
+                        >
+                            Frame (unit) · {fmt(item.price)}
+                        </Typography>
+                        <Typography
+                            sx={{
+                                mt: 0.2,
+                                fontSize: 12,
+                                color: "#737373",
+                                lineHeight: 1.45,
+                            }}
+                        >
+                            Lens {fmt(item.lensPrice ?? 0)}
+                            <Box component="span" sx={{ color: "#D4D4D4", mx: 0.5 }}>
+                                ·
+                            </Box>
+                            Options {fmt(item.coatingExtraPrice ?? 0)}
+                            <Box component="span" sx={{ color: "#A3A3A3", ml: 0.75 }}>
+                                → {fmt(perEa)} /ea
+                            </Box>
+                        </Typography>
+                    </>
+                ) : (
+                    <Typography
+                        sx={{
+                            mt: 0.25,
+                            fontSize: 13,
+                            color: "#8A8A8A",
+                        }}
+                    >
+                        Unit price · {fmt(item.price)}
                     </Typography>
                 )}
                 {prescription && (
-                    <PrescriptionDisplay prescription={prescription} variant="inline" />
+                    <>
+                        <PrescriptionDisplay prescription={prescription} variant="inline" />
+                        <CartSelectedLensLines item={item} formatMoney={fmt} />
+                    </>
                 )}
             </Box>
             {/* quantity pill */}
@@ -134,6 +165,7 @@ function CartItemRow({
                     px: 0.5,
                     gap: 0.5,
                     flexShrink: 0,
+                    alignSelf: prescription ? "center" : undefined,
                 }}
             >
                 <IconButton
@@ -183,6 +215,7 @@ function CartItemRow({
                     gap: 0.5,
                     flexShrink: 0,
                     minWidth: 80,
+                    alignSelf: prescription ? "center" : undefined,
                 }}
             >
                 <Typography
@@ -224,10 +257,14 @@ export default function CartPage() {
     const itemIds = useMemo(() => items.map((i) => i.id), [items]);
 
     /** Split items: pre-order takes priority, then prescription, then standard. */
-    const itemPrescriptions = useMemo(
-        () => getCartItemPrescriptions(items),
-        [items],
-    );
+    const itemPrescriptions = useMemo(() => {
+        const out: Record<string, PrescriptionData> = {};
+        items.forEach((item) => {
+            const p = prescriptionFromCartItem(item);
+            if (p) out[item.id] = p;
+        });
+        return out;
+    }, [items]);
     const prescriptionItemIds = useMemo(
         () => new Set(Object.keys(itemPrescriptions)),
         [itemPrescriptions],
@@ -523,7 +560,6 @@ export default function CartPage() {
                                             key={item.id}
                                             item={item}
                                             selected={selectedIds.has(item.id)}
-                                            lensMode={getCartItemLensMode(item.id)}
                                             onToggle={() => handleToggleItem(item.id)}
                                             onIncrease={() =>
                                                 handleIncrease(item.id, item.quantity)
@@ -581,7 +617,6 @@ export default function CartPage() {
                                             key={item.id}
                                             item={item}
                                             selected={selectedIds.has(item.id)}
-                                            lensMode={getCartItemLensMode(item.id)}
                                             prescription={itemPrescriptions[item.id]}
                                             onToggle={() => handleToggleItem(item.id)}
                                             onIncrease={() =>
@@ -640,7 +675,6 @@ export default function CartPage() {
                                             key={item.id}
                                             item={item}
                                             selected={selectedIds.has(item.id)}
-                                            lensMode={getCartItemLensMode(item.id)}
                                             prescription={itemPrescriptions[item.id]}
                                             onToggle={() => handleToggleItem(item.id)}
                                             onIncrease={() =>

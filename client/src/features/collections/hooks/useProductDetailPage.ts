@@ -7,9 +7,14 @@ import { useProductDetail } from "../../../lib/hooks/useProducts";
 import { cartStore } from "../../../lib/stores/cartStore";
 import { useCart } from "../../../lib/hooks/useCart";
 import type { CartAuthGateApi } from "../../../lib/hooks/useRequireAuthForCart";
-import { setCartItemLensMode, setCartItemPrescription } from "../../cart/prescriptionCache";
 import type { PrescriptionData } from "../../../lib/types/prescription";
 import type { CartDto, CartItemDto } from "../../../lib/types/cart";
+
+type PrescriptionCartSelections = {
+  prescription: PrescriptionData;
+  lensVariantId?: string | null;
+  selectedCoatingIds?: string[];
+};
 
 export function useProductDetailPage(
   initialVariantId: string | null | undefined,
@@ -95,7 +100,11 @@ export function useProductDetailPage(
     return item ?? null;
   };
 
-  const handleAddWithPrescription = async (prescription: PrescriptionData): Promise<boolean> => {
+  const handleAddWithPrescription = async ({
+    prescription,
+    lensVariantId,
+    selectedCoatingIds,
+  }: PrescriptionCartSelections): Promise<boolean> => {
     return cartAuth.runWithAuthAsync(async () => {
       if (!addToCartPayload) return false;
       cartStore.addItem({
@@ -105,13 +114,30 @@ export function useProductDetailPage(
         price: addToCartPayload.price,
       });
       const variantId = addToCartPayload.variantId;
-      // Must send `prescription` so useCart sets skipMerge: otherwise it finds the existing
-      // non-RX line (same variant), PUTs quantity+1 on that row, then we attach RX to that id —
-      // the non-prescription line “becomes” prescription with merged qty.
+      const right = prescription.details.find((d) => d.eye === 1);
+      const left = prescription.details.find((d) => d.eye === 2);
+      const rightPd = right?.pd ?? null;
+      const leftPd = left?.pd ?? null;
+      // Send single PD only when both eyes effectively share one value.
+      const singlePd =
+        rightPd != null && leftPd != null && rightPd === leftPd ? rightPd : null;
+
       const cart = await addItemAsync({
         productVariantId: variantId,
         quantity: 1,
-        prescription,
+        lensVariantId: lensVariantId ?? undefined,
+        selectedCoatingIds: selectedCoatingIds?.length ? selectedCoatingIds : undefined,
+        sphOD: right?.sph ?? null,
+        cylOD: right?.cyl ?? null,
+        axisOD: right?.axis ?? null,
+        addOD: right?.add ?? null,
+        pdOD: rightPd,
+        sphOS: left?.sph ?? null,
+        cylOS: left?.cyl ?? null,
+        axisOS: left?.axis ?? null,
+        addOS: left?.add ?? null,
+        pdOS: leftPd,
+        pd: singlePd,
       });
 
       const item = await resolveLastCartItemForVariant(variantId, cart);
@@ -120,7 +146,6 @@ export function useProductDetailPage(
         return false;
       }
 
-      setCartItemPrescription(item.id, prescription);
       return true;
     });
   };
@@ -146,7 +171,6 @@ export function useProductDetailPage(
         return false;
       }
 
-      setCartItemLensMode(item.id, "non-prescription");
       return true;
     });
   };

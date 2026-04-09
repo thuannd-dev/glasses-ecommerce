@@ -8,11 +8,13 @@ import { useValidatePromotion, useActivePromotions } from "../../../lib/hooks/us
 import { setOrderItemImages } from "../../orders/orderImageCache";
 import { setOrderShippingAddress } from "../../orders/orderShippingAddressCache";
 import { setOrderPrescriptions } from "../../orders/orderPrescriptionCache";
-import { getCartItemPrescriptions } from "../../cart/prescriptionCache";
+import { setOrderRxLineSnapshots, type OrderRxLineSnapshot } from "../../orders/orderRxLineCache";
+import { showRxLensPriceSplit } from "../orderSummaryItemUtils";
 import type { PrescriptionData } from "../../../lib/types/prescription";
 import type { ActivePromotionDto } from "../../../lib/types/promotion";
 import type { CheckoutShippingForm, CheckoutSnackbarState, PaymentMethodUI } from "../types";
 import { toApiPaymentMethod, isValidVietnamPhone, toPrescriptionInputDto } from "../utils";
+import { prescriptionFromCartItem } from "../../cart/cartItemPrescription";
 
 const initialAddress: CheckoutShippingForm = {
   recipientName: "",
@@ -73,12 +75,17 @@ export function useCheckoutPage() {
   const finalAmount = Math.max(0, totalAmount - discountAmount);
   const isEmptyCart = items.length === 0;
 
-  const itemPrescriptions = useMemo(
-    () =>
-      getCartItemPrescriptions(
-        items.map((i) => ({ id: i.id, productVariantId: i.productVariantId })),
-      ),
-    [items],
+  const itemPrescriptions = useMemo(() => {
+    const out: Record<string, PrescriptionData> = {};
+    items.forEach((item) => {
+      const p = prescriptionFromCartItem(item);
+      if (p) out[item.id] = p;
+    });
+    return out;
+  }, [items]);
+  const prescriptionItems = useMemo(
+    () => items.filter((i) => i.hasPrescription),
+    [items]
   );
 
   // Prefill form with default address when it loads (only first time)
@@ -250,22 +257,44 @@ export function useCheckoutPage() {
         addressIdToUse = createdAddress.id;
       }
 
-      const hasPrescriptionItems = Object.keys(itemPrescriptions).length > 0;
+      const hasPrescriptionItems = prescriptionItems.length > 0;
       
       // Build prescriptions array: each cart item with prescription becomes an OrderItemPrescriptionDto
       const prescriptionsArray = hasPrescriptionItems
-        ? Object.entries(itemPrescriptions)
-            .filter(([, prescription]) => prescription.details?.length > 0)
-            .map(([cartItemId, prescription]) => ({
-              cartItemId,
-              prescription: toPrescriptionInputDto(prescription),
-            }))
+        ? prescriptionItems
+            .map((item) => {
+              const prescription = itemPrescriptions[item.id];
+              if (!prescription || !prescription.details?.length) return null;
+              return {
+                cartItemId: item.id,
+                prescription: toPrescriptionInputDto(prescription),
+              };
+            })
+            .filter((x): x is { cartItemId: string; prescription: ReturnType<typeof toPrescriptionInputDto> } => x != null)
         : [];
 
       if (hasPrescriptionItems && prescriptionsArray.length === 0) {
         setSnackbar({
           open: true,
           message: "Prescription details are required for prescription items. Please go back and re-enter prescription for your lens selection.",
+          severity: "error",
+        });
+        setSubmitting(false);
+        return;
+      }
+      if (hasPrescriptionItems && prescriptionsArray.length < prescriptionItems.length) {
+        const missing = prescriptionItems
+          .filter((i) => !itemPrescriptions[i.id]?.details?.length)
+          .map((i) => i.productName)
+          .filter(Boolean)
+          .slice(0, 2)
+          .join(", ");
+        setSnackbar({
+          open: true,
+          message:
+            missing.length > 0
+              ? `Prescription details missing for: ${missing}. Please re-enter lens prescription.`
+              : "Prescription details are missing for one or more prescription items. Please re-enter.",
           severity: "error",
         });
         setSubmitting(false);
@@ -345,6 +374,26 @@ export function useCheckoutPage() {
         }
       });
       setOrderPrescriptions(orderForState.id, prescriptionsByOrderItem);
+
+      const rxSnapshots: Record<string, OrderRxLineSnapshot> = {};
+      items.forEach((cartItem, index) => {
+        const orderItem = orderForState.items[index];
+        if (!orderItem) return;
+        const hasRx = Boolean(itemPrescriptions[cartItem.id]);
+        if (!showRxLensPriceSplit(cartItem, hasRx)) return;
+        rxSnapshots[orderItem.id] = {
+          framePrice: cartItem.price,
+          lensPrice: cartItem.lensPrice ?? 0,
+          coatingExtraPrice: cartItem.coatingExtraPrice ?? 0,
+          lensVariantName: cartItem.lensVariantName,
+          coatingOptionLabel:
+            cartItem.selectedCoatings?.map((c) => c.coatingName).filter(Boolean).join(", ") || null,
+        };
+      });
+      if (Object.keys(rxSnapshots).length > 0) {
+        setOrderRxLineSnapshots(orderForState.id, rxSnapshots);
+      }
+
       const orderItemsWithImage = orderForState.items.map((oItem) => ({
         ...oItem,
         imageUrl: variantToImage[oItem.productVariantId] ?? undefined,

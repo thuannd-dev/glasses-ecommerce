@@ -11,9 +11,12 @@ export function usePreOrders() {
 
   const preOrderItems = useMemo(() => {
     if (!cart?.items) return [];
-    return (cart.items as Array<CartItemDto & { isPreOrder?: boolean }>).filter(
-      (item) => item.isPreOrder === true
-    );
+    return (cart.items as Array<CartItemDto & { isPreOrder?: boolean }>).filter((item) => {
+      // Primary source from API.
+      if (item.isPreOrder === true) return true;
+      // Fallback: some lens pre-order lines may come back without isPreOrder flag.
+      return (item.isInStock === false || (item.quantityAvailable ?? 0) <= 0) && item.hasPrescription;
+    });
   }, [cart?.items]);
 
   const totalQuantity = useMemo(() => {
