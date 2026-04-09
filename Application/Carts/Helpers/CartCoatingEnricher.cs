@@ -42,13 +42,20 @@ internal static class CartCoatingEnricher
 
         foreach (CartItemDto item in itemCoatingMap.Keys)
         {
-            if (jsonByItemId.TryGetValue(item.Id, out string? json) && !string.IsNullOrEmpty(json))
+            if (jsonByItemId.TryGetValue(item.Id, out string? json) && !string.IsNullOrWhiteSpace(json))
             {
-                List<Guid>? ids = JsonSerializer.Deserialize<List<Guid>>(json);
-                if (ids is { Count: > 0 })
+                try
                 {
-                    itemCoatingMap[item] = ids;
-                    allCoatingIds.UnionWith(ids);
+                    List<Guid>? ids = JsonSerializer.Deserialize<List<Guid>>(json);
+                    if (ids is { Count: > 0 })
+                    {
+                        itemCoatingMap[item] = ids;
+                        allCoatingIds.UnionWith(ids);
+                    }
+                }
+                catch (Exception ex) when (ex is JsonException || ex is NotSupportedException)
+                {
+                    // Ignore corrupt JSON — treat as empty
                 }
             }
         }
