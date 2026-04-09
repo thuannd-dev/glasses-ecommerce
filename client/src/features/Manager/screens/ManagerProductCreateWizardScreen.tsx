@@ -331,8 +331,10 @@ export default function ManagerProductCreateWizardScreen() {
       .filter((item): item is { value: number; label: string } => item !== null && allowedCreateTypes.has(item.value));
   }, [lookups?.productType]);
 
+  const ALLOWED_CREATE_TYPES = new Set([1, 2]); // Frame, Lens only
+
   const allowedTypeValues = useMemo(
-    () => new Set<number>(Object.values(PRODUCT_TYPE_ENUM_BY_LABEL)),
+    () => ALLOWED_CREATE_TYPES,
     []
   );
 
@@ -367,7 +369,8 @@ export default function ManagerProductCreateWizardScreen() {
     const p = productDetailQuery.data;
     setCategoryId(p.category?.id ?? "");
     setProductName(p.productName ?? "");
-    setType(typeof p.type === "number" ? p.type : "");
+    const resumedType = typeof p.type === "number" ? p.type : "";
+    setType(resumedType !== "" && ALLOWED_CREATE_TYPES.has(resumedType as number) ? resumedType : "");
     setBrand(p.brand ?? "");
     setDescription(p.description ?? "");
 

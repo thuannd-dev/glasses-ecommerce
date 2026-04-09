@@ -179,9 +179,13 @@ export function useManagerLens() {
     }) => {
       // Backend uses JsonStringEnumConverter, so send enum as string
       const sanitizedDto = sanitizeLensVariantAttributeDto(data.dto);
+      const designStr = LENS_DESIGN_MAP[sanitizedDto.lensDesign];
+      if (!designStr) {
+        throw new Error(`Invalid lens design value: ${sanitizedDto.lensDesign}. Expected one of: ${Object.keys(LENS_DESIGN_MAP).join(", ")}`);
+      }
       const payload = {
         ...sanitizedDto,
-        lensDesign: LENS_DESIGN_MAP[sanitizedDto.lensDesign] || "SingleVision",
+        lensDesign: designStr,
       };
       const res = await agent.put<LensVariantAttribute>(
         `/manager/products/${data.productId}/variants/${data.variantId}/lens-attributes`,

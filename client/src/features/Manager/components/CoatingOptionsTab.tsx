@@ -234,12 +234,21 @@ function CoatingOptionsList({
   onDelete: (id: string) => void;
   onToggleActive: (id: string, isActive: boolean) => void;
 }) {
-  const { data: coatings = [], isLoading } = getLensCoatingOptions(productId);
+  const { data: coatings = [], isLoading, isError, error } = getLensCoatingOptions(productId);
 
   if (isLoading) {
     return (
       <div className="text-center py-12">
         <Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-600" />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="bg-red-50 rounded-xl p-8 text-center border border-red-200">
+        <p className="text-red-700 font-medium">Failed to load coating options</p>
+        <p className="text-red-500 text-sm mt-1">{(error as Error)?.message || "Unknown error"}</p>
       </div>
     );
   }

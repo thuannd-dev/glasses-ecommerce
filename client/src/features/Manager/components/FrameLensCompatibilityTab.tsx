@@ -22,7 +22,7 @@ export default function FrameLensCompatibilityTab() {
   const [searchLensTerm, setSearchLensTerm] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
 
-  const { categories } = useCategories();
+  const { categories, isLoading: isLoadingCategories } = useCategories();
   
   // Find Eyeglasses category ID
   const eyeglassesCategoryId = useMemo(() => {
@@ -34,7 +34,7 @@ export default function FrameLensCompatibilityTab() {
 
   const { products: frameProducts, isLoading: isLoadingFrames, error: frameError } = useManagerProducts({
     type: "Frame",
-    categoryIds: eyeglassesCategoryId ? [eyeglassesCategoryId] : undefined,
+    categoryIds: eyeglassesCategoryId ? [eyeglassesCategoryId] : [],
     pageSize: 50,
   });
 
@@ -43,7 +43,7 @@ export default function FrameLensCompatibilityTab() {
     pageSize: 50,
   });
 
-  const isLoadingProducts = isLoadingFrames || isLoadingLenses;
+  const isLoadingProducts = isLoadingCategories || isLoadingFrames || isLoadingLenses;
   const error = frameError;
 
   const {
@@ -68,8 +68,10 @@ export default function FrameLensCompatibilityTab() {
   );
 
   const {
-    data: compatibleLenses = [],
+    data: compatibleLenses,
     isLoading: isLoadingCompatible,
+    isError: isCompatibleError,
+    error: compatibleError,
   } = getCompatibleLenses(selectedFrameId);
 
   const handleAddCompatibleLens = async (lensProductId: string) => {
@@ -94,10 +96,13 @@ export default function FrameLensCompatibilityTab() {
     }
   };
 
+  const safeCompatibleLenses = compatibleLenses ?? [];
+
   const availableLenses = useMemo(() => {
-    const compatibleIds = new Set(compatibleLenses.map((l) => l.lensProductId));
+    if (isCompatibleError || isLoadingCompatible) return [];
+    const compatibleIds = new Set(safeCompatibleLenses.map((l) => l.lensProductId));
     return lensProducts.filter((l) => !compatibleIds.has(l.id));
-  }, [lensProducts, compatibleLenses]);
+  }, [lensProducts, safeCompatibleLenses, isCompatibleError, isLoadingCompatible]);
 
   return (
     <div className="space-y-6">
@@ -205,7 +210,7 @@ export default function FrameLensCompatibilityTab() {
                     {selectedFrame?.productName}
                   </h3>
                   <p className="text-gray-600 text-sm mt-1">
-                    {compatibleLenses.length} compatible lens product(s)
+                    {safeCompatibleLenses.length} compatible lens product(s)
                   </p>
                 </div>
                 <button
@@ -221,7 +226,12 @@ export default function FrameLensCompatibilityTab() {
                 <div className="text-center py-12">
                   <Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-600" />
                 </div>
-              ) : compatibleLenses.length === 0 ? (
+              ) : isCompatibleError ? (
+                <div className="bg-red-50 rounded-xl p-8 text-center border border-red-200">
+                  <p className="text-red-700 font-medium">Failed to load compatible lenses</p>
+                  <p className="text-red-500 text-sm mt-1">{(compatibleError as Error)?.message || "Unknown error"}</p>
+                </div>
+              ) : safeCompatibleLenses.length === 0 ? (
                 <div className="bg-gray-50 rounded-xl p-12 text-center border-2 border-dashed border-gray-300">
                   <LinkIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                   <p className="text-gray-600">No lenses linked yet</p>
@@ -231,7 +241,7 @@ export default function FrameLensCompatibilityTab() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 gap-3">
-                  {compatibleLenses.map((lens) => (
+                  {safeCompatibleLenses.map((lens) => (
                     <motion.div
                       key={lens.lensProductId}
                       initial={{ opacity: 0, y: 20 }}

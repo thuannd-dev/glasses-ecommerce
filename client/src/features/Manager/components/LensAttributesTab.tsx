@@ -178,6 +178,16 @@ export default function LensAttributesTab() {
     [products]
   );
 
+  const filteredProducts = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return lensProducts;
+    return lensProducts.filter(
+      (p) =>
+        p.productName.toLowerCase().includes(term) ||
+        (p.brand && p.brand.toLowerCase().includes(term))
+    );
+  }, [lensProducts, searchTerm]);
+
   const variants = useMemo(
     () => selectedProductDetail?.variants || [],
     [selectedProductDetail]
@@ -279,10 +289,10 @@ export default function LensAttributesTab() {
                   <div className="w-6 h-6 animate-spin mx-auto mb-2">⏳</div>
                   Loading...
                 </div>
-              ) : lensProducts.length === 0 ? (
+              ) : filteredProducts.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">No lens products found</div>
               ) : (
-                lensProducts.map((product) => (
+                filteredProducts.map((product) => (
                   <button
                     key={product.id}
                     onClick={() => {

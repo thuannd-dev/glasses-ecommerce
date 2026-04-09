@@ -49,12 +49,17 @@ import { useNavigate, useParams } from "react-router";
 import { Fragment, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useProductDetail } from "../../lib/hooks/useProductDetail";
+import type { ProductDetailApi } from "../../lib/types/product";
 import { useCategories } from "../../lib/hooks/useProducts";
 import { useManagerProducts } from "../../lib/hooks/useManagerProducts";
 import { toast } from "react-toastify";
 import axios from "axios";
 import agent from "../../lib/api/agent";
 import FrameDimensionsForm from "./components/FrameDimensionsForm";
+
+function isFrameProduct(type: string | number | undefined): boolean {
+  return type === "Frame" || type === 1;
+}
 
 export default function ProductDetail() {
   const navigate = useNavigate();
@@ -1483,7 +1488,7 @@ export default function ProductDetail() {
               />
             </Grid>
 
-            {product?.type === "Frame" && (
+            {isFrameProduct(product?.type) && (
               <>
                 <Grid item xs={12}>
                   <FrameDimensionsForm
@@ -2195,7 +2200,7 @@ function VariantEditDialog({
   patchImageModelUrl,
   isPatchingModelUrl,
 }: {
-  product: any;
+  product: ProductDetailApi | undefined;
   productId: string | undefined;
   variant: any;
   onClose: () => void;
@@ -2499,7 +2504,7 @@ function VariantEditDialog({
             />
           </Grid>
 
-          {product?.type === "Frame" && (
+          {isFrameProduct(product?.type) && (
             <>
               <Grid item xs={12}>
                 <FrameDimensionsForm
