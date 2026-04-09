@@ -238,15 +238,16 @@ public sealed class SubmitTicket
             else
             {
                 // Item-specific tickets: distribute discount proportionally by item value
+                // Include lens and coating prices for accurate distribution
                 List<OrderItem> selectedItems = order.OrderItems
                     .Where(oi => request.Dto.OrderItemIds.Contains(oi.Id))
                     .ToList();
                 
-                decimal selectedItemsTotalValue = selectedItems.Sum(oi => oi.UnitPrice * oi.Quantity);
+                decimal selectedItemsTotalValue = selectedItems.Sum(oi => oi.Quantity * (oi.UnitPrice + oi.LensUnitPrice + oi.CoatingExtraPrice));
                 
                 foreach (OrderItem item in selectedItems)
                 {
-                    decimal itemValue = item.UnitPrice * item.Quantity;
+                    decimal itemValue = item.Quantity * (item.UnitPrice + item.LensUnitPrice + item.CoatingExtraPrice);
                     decimal itemDiscount = selectedItemsTotalValue > 0
                         ? Math.Round((itemValue / selectedItemsTotalValue) * totalDiscountApplied, 2, MidpointRounding.AwayFromZero)
                         : 0m;
@@ -297,11 +298,12 @@ public sealed class SubmitTicket
                         if (withinRefundWindow)
                         {
                             // Compute original item value for the ticket's scope
+                            // Include lens and coating prices for accurate auto-upgrade threshold evaluation
                             decimal itemValue = request.Dto.OrderItemIds?.Count > 0
                                 ? order.OrderItems
                                     .Where(i => request.Dto.OrderItemIds.Contains(i.Id))
-                                    .Sum(i => i.UnitPrice * i.Quantity)
-                                : order.OrderItems.Sum(i => i.UnitPrice * i.Quantity);
+                                    .Sum(i => i.Quantity * (i.UnitPrice + i.LensUnitPrice + i.CoatingExtraPrice))
+                                : order.OrderItems.Sum(i => i.Quantity * (i.UnitPrice + i.LensUnitPrice + i.CoatingExtraPrice));
 
                             // Check C: FINAL price (after discount) within auto-upgrade threshold
                             // Use totalDiscountApplied (aggregate) for threshold evaluation, not per-item

@@ -75,6 +75,7 @@ public sealed class ApproveTicket
                             "Refund amount is required and must be greater than zero for RefundOnly resolution.", 400);
 
                     // Calculate total amount of items in the ticket
+                    // Include lens and coating prices for accurate refund calculation
                     decimal itemsTotal;
                     if (ticket.OrderItemId != null)
                     {
@@ -86,7 +87,7 @@ public sealed class ApproveTicket
                         if (orderItem == null)
                             return Result<Guid>.Failure("Order item not found for this ticket.", 404);
 
-                        itemsTotal = orderItem.Quantity * orderItem.UnitPrice;
+                        itemsTotal = orderItem.Quantity * (orderItem.UnitPrice + orderItem.LensUnitPrice + orderItem.CoatingExtraPrice);
                     }
                     else
                     {
@@ -94,7 +95,7 @@ public sealed class ApproveTicket
                         itemsTotal = await context.OrderItems
                             .AsNoTracking()
                             .Where(oi => oi.OrderId == ticket.OrderId)
-                            .SumAsync(oi => oi.Quantity * oi.UnitPrice, ct);
+                            .SumAsync(oi => oi.Quantity * (oi.UnitPrice + oi.LensUnitPrice + oi.CoatingExtraPrice), ct);
                     }
 
                     // Calculate refund amount by subtracting the discount applied
