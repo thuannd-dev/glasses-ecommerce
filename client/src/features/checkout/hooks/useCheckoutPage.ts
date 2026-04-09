@@ -8,7 +8,9 @@ import { useValidatePromotion, useActivePromotions } from "../../../lib/hooks/us
 import { setOrderItemImages } from "../../orders/orderImageCache";
 import { setOrderShippingAddress } from "../../orders/orderShippingAddressCache";
 import { setOrderPrescriptions } from "../../orders/orderPrescriptionCache";
-import { getCartItemPrescriptions } from "../../cart/prescriptionCache";
+import { setOrderRxLineSnapshots, type OrderRxLineSnapshot } from "../../orders/orderRxLineCache";
+import { showRxLensPriceSplit } from "../orderSummaryItemUtils";
+import { getCartItemLensDisplays, getCartItemPrescriptions } from "../../cart/prescriptionCache";
 import type { PrescriptionData } from "../../../lib/types/prescription";
 import type { ActivePromotionDto } from "../../../lib/types/promotion";
 import type { CheckoutShippingForm, CheckoutSnackbarState, PaymentMethodUI } from "../types";
@@ -76,6 +78,13 @@ export function useCheckoutPage() {
   const itemPrescriptions = useMemo(
     () =>
       getCartItemPrescriptions(
+        items.map((i) => ({ id: i.id, productVariantId: i.productVariantId })),
+      ),
+    [items],
+  );
+  const itemLensDisplays = useMemo(
+    () =>
+      getCartItemLensDisplays(
         items.map((i) => ({ id: i.id, productVariantId: i.productVariantId })),
       ),
     [items],
@@ -371,6 +380,25 @@ export function useCheckoutPage() {
         }
       });
       setOrderPrescriptions(orderForState.id, prescriptionsByOrderItem);
+
+      const rxSnapshots: Record<string, OrderRxLineSnapshot> = {};
+      items.forEach((cartItem, index) => {
+        const orderItem = orderForState.items[index];
+        if (!orderItem) return;
+        const hasRx = Boolean(itemPrescriptions[cartItem.id]);
+        if (!showRxLensPriceSplit(cartItem, hasRx)) return;
+        rxSnapshots[orderItem.id] = {
+          framePrice: cartItem.price,
+          lensPrice: cartItem.lensPrice ?? 0,
+          coatingExtraPrice: cartItem.coatingExtraPrice ?? 0,
+          lensVariantName: cartItem.lensVariantName,
+          lensDisplay: itemLensDisplays[cartItem.id] ?? null,
+        };
+      });
+      if (Object.keys(rxSnapshots).length > 0) {
+        setOrderRxLineSnapshots(orderForState.id, rxSnapshots);
+      }
+
       const orderItemsWithImage = orderForState.items.map((oItem) => ({
         ...oItem,
         imageUrl: variantToImage[oItem.productVariantId] ?? undefined,
@@ -429,6 +457,7 @@ export function useCheckoutPage() {
     appliedPromo,
     isEmptyCart,
     itemPrescriptions,
+    itemLensDisplays,
     cartLoading,
     savedAddresses,
     defaultAddress,

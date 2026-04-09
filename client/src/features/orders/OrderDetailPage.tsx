@@ -28,6 +28,7 @@ import { SubmitAfterSalesTicketDialog } from "./SubmitAfterSalesTicketDialog";
 import { OrderTicketsSection } from "./OrderTicketsSection";
 import type { PrescriptionData } from "../../lib/types/prescription";
 import type { StaffOrderPrescriptionDto } from "../../lib/types/staffOrders";
+import { getOrderRxLineSnapshot } from "./orderRxLineCache";
 
 const CANCELABLE_STATUSES = ["Pending", "pending"];
 
@@ -478,6 +479,9 @@ export default function OrderDetailPage() {
                     orderId={orderId}
                     prescription={prescriptionsByItemId[item.id]}
                     showPrescriptionDetails
+                    rxLineSnapshot={
+                      order?.id ? getOrderRxLineSnapshot(order.id, item.id) : undefined
+                    }
                   />
                 </Box>
               ))}

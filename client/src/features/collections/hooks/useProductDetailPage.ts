@@ -7,14 +7,20 @@ import { useProductDetail } from "../../../lib/hooks/useProducts";
 import { cartStore } from "../../../lib/stores/cartStore";
 import { useCart } from "../../../lib/hooks/useCart";
 import type { CartAuthGateApi } from "../../../lib/hooks/useRequireAuthForCart";
-import { setCartItemPrescription } from "../../cart/prescriptionCache";
+import {
+  setCartItemLensDisplay,
+  setCartItemPrescription,
+  setLensDisplayByVariantId,
+} from "../../cart/prescriptionCache";
 import type { PrescriptionData } from "../../../lib/types/prescription";
 import type { CartDto, CartItemDto } from "../../../lib/types/cart";
+import type { CartLensLineDisplayMeta } from "../../../lib/types/lensSelection";
 
 type PrescriptionCartSelections = {
   prescription: PrescriptionData;
   lensVariantId?: string | null;
   selectedCoatingIds?: string[];
+  lensDisplay?: CartLensLineDisplayMeta;
 };
 
 export function useProductDetailPage(
@@ -105,6 +111,7 @@ export function useProductDetailPage(
     prescription,
     lensVariantId,
     selectedCoatingIds,
+    lensDisplay,
   }: PrescriptionCartSelections): Promise<boolean> => {
     return cartAuth.runWithAuthAsync(async () => {
       if (!addToCartPayload) return false;
@@ -145,6 +152,10 @@ export function useProductDetailPage(
       }
 
       setCartItemPrescription(item.id, prescription);
+      if (lensDisplay) {
+        setCartItemLensDisplay(item.id, lensDisplay);
+        setLensDisplayByVariantId(variantId, lensDisplay);
+      }
       return true;
     });
   };

@@ -23,7 +23,11 @@ import {
 } from "@mui/material";
 import type { PrescriptionData, PrescriptionDetailRow } from "../../../../lib/types/prescription";
 import { EYE_LABELS } from "../../../../lib/types/prescription";
-import type { LensSelectionOption, LensUsagePick } from "../../../../lib/types/lensSelection";
+import type {
+    CartLensLineDisplayMeta,
+    LensSelectionOption,
+    LensUsagePick,
+} from "../../../../lib/types/lensSelection";
 import { LensUsageSelector } from "./lensSelection/LensUsageSelector";
 import { NonPrescriptionLensPanel } from "./lensSelection/NonPrescriptionLensPanel";
 import { SingleVisionPrescriptionPanel } from "./lensSelection/SingleVisionPrescriptionPanel";
@@ -123,6 +127,7 @@ type Props = {
         prescription: PrescriptionData;
         lensVariantId?: string | null;
         selectedCoatingIds?: string[];
+        lensDisplay?: CartLensLineDisplayMeta;
     }) => Promise<boolean>;
     onLogoClick?: () => void;
 };
@@ -314,10 +319,25 @@ export function SelectLensesDialog({
         if (rxConfirming) return;
         setRxConfirming(true);
         try {
+            const lensDisplay: CartLensLineDisplayMeta = {
+                usageTypeLabel: rxUsageLabel,
+                pdModeLabel: twoPdNumbers ? "Dual PD" : "Single PD",
+                pdValueLabel: twoPdNumbers
+                    ? `OD ${pdRight || "—"} / OS ${pdLeft || "—"}`
+                    : pdSingle || "—",
+                lensProductName: selectedCompatibleVariant?.lensProductName ?? "",
+                lensLineLabel: selectedCompatibleVariant
+                    ? `${selectedCompatibleVariant.variantName} (${selectedCompatibleVariant.index.toFixed(2)}) · ${formatMoney(selectedCompatibleVariant.price)}`
+                    : "",
+                coatingLineLabel: selectedCoating
+                    ? `${selectedCoating.coatingName} (+${formatMoney(selectedCoating.extraPrice)})`
+                    : "None",
+            };
             const ok = await onPrescriptionConfirm({
                 prescription,
                 lensVariantId: selectedCompatibleVariant?.variantId ?? null,
                 selectedCoatingIds: selectedCoating ? [selectedCoating.id] : [],
+                lensDisplay,
             });
             if (ok) onClose();
         } finally {

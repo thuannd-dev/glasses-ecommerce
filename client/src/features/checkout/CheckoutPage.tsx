@@ -32,6 +32,7 @@ import {
 import { useCheckoutPage } from "./hooks/useCheckoutPage";
 import { isValidVietnamPhone } from "./utils";
 import { SavedAddressPicker } from "./components/SavedAddressPicker";
+import { CheckoutOrderSummaryItem } from "./components/CheckoutOrderSummaryItem";
 
 const HIDDEN_PROVINCE_EXACT = new Set(["Hà Nội 02"]);
 const HIDDEN_PROVINCE_KEYWORDS = ["testalerttinh001"];
@@ -64,6 +65,7 @@ export default function CheckoutPage() {
         appliedPromo,
         isEmptyCart,
         itemPrescriptions,
+        itemLensDisplays,
         cartLoading,
         address,
         setAddress,
@@ -823,91 +825,13 @@ export default function CheckoutPage() {
                                     ) : (
                                         <>
                                             {items.map((item) => (
-                                                <Box
+                                                <CheckoutOrderSummaryItem
                                                     key={item.id}
-                                                    sx={{
-                                                        display: "flex",
-                                                        alignItems: "center",
-                                                        gap: 1.5,
-                                                        mb: 1.25,
-                                                    }}
-                                                >
-                                                    <Box
-                                                        sx={{
-                                                            width: 44,
-                                                            height: 44,
-                                                            borderRadius: 1.5,
-                                                            bgcolor: "#F7F7F7",
-                                                            overflow: "hidden",
-                                                            flexShrink: 0,
-                                                        }}
-                                                    >
-                                                        {item.productImageUrl ? (
-                                                            <Box
-                                                                component="img"
-                                                                src={item.productImageUrl}
-                                                                alt=""
-                                                                sx={{
-                                                                    width: "100%",
-                                                                    height: "100%",
-                                                                    objectFit: "cover",
-                                                                }}
-                                                            />
-                                                        ) : null}
-                                                    </Box>
-                                                    <Box sx={{ flex: 1, minWidth: 0 }}>
-                                                        <Typography
-                                                            sx={{
-                                                                fontSize: 14,
-                                                                color: "#171717",
-                                                                whiteSpace: "nowrap",
-                                                                overflow: "hidden",
-                                                                textOverflow: "ellipsis",
-                                                            }}
-                                                        >
-                                                            {item.productName}
-                                                        </Typography>
-                                                        <Typography
-                                                            sx={{
-                                                                fontSize: 12,
-                                                                color: "#8A8A8A",
-                                                            }}
-                                                        >
-                                                            × {item.quantity}
-                                                            <Box
-                                                                component="span"
-                                                                sx={{ color: "#BDBDBD", mx: 0.5 }}
-                                                            >
-                                                                ·
-                                                            </Box>
-                                                            {formatMoney(
-                                                                item.quantity > 0
-                                                                    ? (item.subtotal ?? item.price * item.quantity) /
-                                                                          item.quantity
-                                                                    : item.price,
-                                                            )}{" "}
-                                                            each
-                                                        </Typography>
-                                                        {itemPrescriptions[item.id] && (
-                                                            <Typography
-                                                                fontSize={12}
-                                                                fontWeight={700}
-                                                                sx={{ mt: 0.25, color: "#B68C5A" }}
-                                                            >
-                                                                Prescription
-                                                            </Typography>
-                                                        )}
-                                                    </Box>
-                                                    <Typography
-                                                        sx={{
-                                                            fontWeight: 700,
-                                                            fontSize: 14,
-                                                            color: "#171717",
-                                                        }}
-                                                    >
-                                                        {formatMoney(item.subtotal)}
-                                                    </Typography>
-                                                </Box>
+                                                    item={item}
+                                                    hasRx={Boolean(itemPrescriptions[item.id])}
+                                                    lensDisplay={itemLensDisplays[item.id]}
+                                                    formatMoney={formatMoney}
+                                                />
                                             ))}
 
                                             <Divider sx={{ my: 2, borderColor: "#F1F1F1" }} />

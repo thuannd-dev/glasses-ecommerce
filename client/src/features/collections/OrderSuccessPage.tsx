@@ -3,7 +3,9 @@ import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import { NavLink } from "react-router-dom";
 import { formatMoney } from "../../lib/utils/format";
 import { getOrderPrescription } from "../orders/orderPrescriptionCache";
+import { getOrderRxLineSnapshot } from "../orders/orderRxLineCache";
 import { PrescriptionDisplay } from "../../app/shared/components/PrescriptionDisplay";
+import { RxMergedPricingTable } from "../checkout/components/RxMergedPricingTable";
 import { useOrderSuccessPage } from "./hooks/useOrderSuccessPage";
 
 const PALETTE = {
@@ -19,6 +21,9 @@ const PALETTE = {
 /** Order summary line: thumbnail + gap 1.5 (12px) — prescription block aligns with product text when thumb shown. */
 const ORDER_SUMMARY_THUMB_PX = 44;
 const ORDER_SUMMARY_ROW_GAP_PX = 12;
+/** Matches checkout RX row for aligned prescription indent. */
+const ORDER_RX_THUMB_PX = 48;
+const ORDER_RX_ROW_GAP_PX = 12;
 
 function getStatusChipStyle(status: string | undefined) {
   if (!status) return {};
@@ -478,94 +483,197 @@ export default function OrderSuccessPage() {
                 Order summary
               </Typography>
               <Divider sx={{ my: 2, borderColor: PALETTE.divider }} />
-              {order.items.map((item, idx) => (
-                <Box
-                  key={item.id}
-                  sx={{
-                    mb: 1.75,
-                    pb: 1.5,
-                    borderBottom:
-                      idx < order.items.length - 1
-                        ? `1px solid ${PALETTE.divider}`
-                        : "none",
-                  }}
-                >
+              {order.items.map((item, idx) => {
+                const prescription = getOrderPrescription(order.id, item.id);
+                const rxSnap = getOrderRxLineSnapshot(order.id, item.id);
+                const perEa =
+                  item.quantity > 0 ? item.totalPrice / item.quantity : item.unitPrice;
+
+                return (
                   <Box
+                    key={item.id}
                     sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 1.5,
+                      mb: 1.75,
+                      pb: 1.5,
+                      borderBottom:
+                        idx < order.items.length - 1
+                          ? `1px solid ${PALETTE.divider}`
+                          : "none",
                     }}
                   >
-                    {item.imageUrl ? (
-                      <Box
-                        sx={{
-                          width: ORDER_SUMMARY_THUMB_PX,
-                          height: ORDER_SUMMARY_THUMB_PX,
-                          borderRadius: 1.5,
-                          bgcolor: "#F7F7F7",
-                          overflow: "hidden",
-                          flexShrink: 0,
-                        }}
-                      >
+                    {rxSnap ? (
+                      <>
+                        <Box sx={{ display: "flex", gap: 1.5, alignItems: "flex-start" }}>
+                          <Box
+                            sx={{
+                              width: ORDER_RX_THUMB_PX,
+                              height: ORDER_RX_THUMB_PX,
+                              borderRadius: 2,
+                              bgcolor: "#F4F4F5",
+                              overflow: "hidden",
+                              flexShrink: 0,
+                              border: `1px solid ${PALETTE.border}`,
+                            }}
+                          >
+                            {item.imageUrl ? (
+                              <Box
+                                component="img"
+                                src={item.imageUrl}
+                                alt={
+                                  item.productName
+                                    ? `${item.productName} thumbnail`
+                                    : "Product thumbnail"
+                                }
+                                sx={{ width: "100%", height: "100%", objectFit: "cover" }}
+                              />
+                            ) : null}
+                          </Box>
+                          <Box sx={{ flex: 1, minWidth: 0 }}>
+                            <Box
+                              sx={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "flex-start",
+                                gap: 1,
+                                mb: 1,
+                              }}
+                            >
+                              <Box sx={{ minWidth: 0 }}>
+                                <Typography
+                                  sx={{
+                                    fontSize: 14,
+                                    fontWeight: 700,
+                                    color: PALETTE.textMain,
+                                    lineHeight: 1.3,
+                                  }}
+                                >
+                                  {item.productName}
+                                </Typography>
+                                <Typography sx={{ fontSize: 12, color: "#A1A1AA", mt: 0.25 }}>
+                                  Qty {item.quantity}
+                                  {item.variantName ? (
+                                    <Box component="span" sx={{ color: PALETTE.textMuted }}>
+                                      {" "}
+                                      · {item.variantName}
+                                    </Box>
+                                  ) : null}
+                                </Typography>
+                              </Box>
+                              <Typography
+                                sx={{
+                                  fontSize: 15,
+                                  fontWeight: 800,
+                                  color: PALETTE.textMain,
+                                  fontVariantNumeric: "tabular-nums",
+                                  flexShrink: 0,
+                                }}
+                              >
+                                {formatMoney(item.totalPrice)}
+                              </Typography>
+                            </Box>
+                            <RxMergedPricingTable
+                              framePrice={rxSnap.framePrice}
+                              lensPrice={rxSnap.lensPrice}
+                              coatingExtraPrice={rxSnap.coatingExtraPrice}
+                              perUnitPrice={perEa}
+                              lensDisplay={rxSnap.lensDisplay ?? undefined}
+                              lensVariantName={rxSnap.lensVariantName}
+                              formatMoney={formatMoney}
+                            />
+                          </Box>
+                        </Box>
+                        {prescription ? (
+                          <Box
+                            sx={{
+                              mt: 1,
+                              pl: `${ORDER_RX_THUMB_PX + ORDER_RX_ROW_GAP_PX}px`,
+                            }}
+                          >
+                            <PrescriptionDisplay prescription={prescription} variant="block" />
+                          </Box>
+                        ) : null}
+                      </>
+                    ) : (
+                      <>
                         <Box
-                          component="img"
-                          src={item.imageUrl}
-                          alt={item.productName ? `${item.productName} thumbnail` : "Product thumbnail"}
-                          sx={{ width: "100%", height: "100%", objectFit: "cover" }}
-                        />
-                      </Box>
-                    ) : null}
-                    <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <Typography
-                        sx={{
-                          fontSize: 14,
-                          color: PALETTE.textMain,
-                          whiteSpace: "nowrap",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                        }}
-                      >
-                        {item.productName}
-                      </Typography>
-                      <Typography
-                        sx={{
-                          fontSize: 12,
-                          color: PALETTE.textMuted,
-                        }}
-                      >
-                        {item.variantName ? `${item.variantName} · ` : ""}
-                        × {item.quantity}
-                      </Typography>
-                    </Box>
-                    <Typography
-                      sx={{
-                        fontWeight: 700,
-                        fontSize: 14,
-                        color: PALETTE.textMain,
-                        flexShrink: 0,
-                      }}
-                    >
-                      {formatMoney(item.totalPrice)}
-                    </Typography>
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1.5,
+                          }}
+                        >
+                          {item.imageUrl ? (
+                            <Box
+                              sx={{
+                                width: ORDER_SUMMARY_THUMB_PX,
+                                height: ORDER_SUMMARY_THUMB_PX,
+                                borderRadius: 1.5,
+                                bgcolor: "#F7F7F7",
+                                overflow: "hidden",
+                                flexShrink: 0,
+                              }}
+                            >
+                              <Box
+                                component="img"
+                                src={item.imageUrl}
+                                alt={
+                                  item.productName
+                                    ? `${item.productName} thumbnail`
+                                    : "Product thumbnail"
+                                }
+                                sx={{ width: "100%", height: "100%", objectFit: "cover" }}
+                              />
+                            </Box>
+                          ) : null}
+                          <Box sx={{ flex: 1, minWidth: 0 }}>
+                            <Typography
+                              sx={{
+                                fontSize: 14,
+                                color: PALETTE.textMain,
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                              }}
+                            >
+                              {item.productName}
+                            </Typography>
+                            <Typography
+                              sx={{
+                                fontSize: 12,
+                                color: PALETTE.textMuted,
+                              }}
+                            >
+                              {item.variantName ? `${item.variantName} · ` : ""}× {item.quantity}
+                            </Typography>
+                          </Box>
+                          <Typography
+                            sx={{
+                              fontWeight: 700,
+                              fontSize: 14,
+                              color: PALETTE.textMain,
+                              flexShrink: 0,
+                            }}
+                          >
+                            {formatMoney(item.totalPrice)}
+                          </Typography>
+                        </Box>
+                        {prescription ? (
+                          <Box
+                            sx={{
+                              mt: 1,
+                              pl: item.imageUrl
+                                ? `${ORDER_SUMMARY_THUMB_PX + ORDER_SUMMARY_ROW_GAP_PX}px`
+                                : 0,
+                            }}
+                          >
+                            <PrescriptionDisplay prescription={prescription} variant="block" />
+                          </Box>
+                        ) : null}
+                      </>
+                    )}
                   </Box>
-                  {(() => {
-                    const prescription = getOrderPrescription(order.id, item.id);
-                    return prescription ? (
-                      <Box
-                        sx={{
-                          mt: 1,
-                          pl: item.imageUrl
-                            ? `${ORDER_SUMMARY_THUMB_PX + ORDER_SUMMARY_ROW_GAP_PX}px`
-                            : 0,
-                        }}
-                      >
-                        <PrescriptionDisplay prescription={prescription} variant="block" />
-                      </Box>
-                    ) : null;
-                  })()}
-                </Box>
-              ))}
+                );
+              })}
               <Divider sx={{ my: 2, borderColor: PALETTE.divider }} />
               <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}>
                 <Typography sx={{ fontSize: 13, color: PALETTE.textSecondary }}>

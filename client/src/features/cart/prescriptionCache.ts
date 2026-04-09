@@ -1,10 +1,12 @@
 import type { PrescriptionData } from "../../lib/types/prescription";
-import type { CartLensMode } from "../../lib/types/lensSelection";
+import type { CartLensLineDisplayMeta, CartLensMode } from "../../lib/types/lensSelection";
 
 /** In-memory cache only (no local/session storage). */
 const byCartItemId: Record<string, PrescriptionData> = {};
 const byVariantId: Record<string, PrescriptionData> = {};
 const lensModes: Record<string, CartLensMode> = {};
+const lensDisplayByCartItemId: Record<string, CartLensLineDisplayMeta> = {};
+const lensDisplayByVariantId: Record<string, CartLensLineDisplayMeta> = {};
 
 /** Clear prescription + lens mode for a line; optional variant key for by-variant cache. */
 export function removeCartItemLocalData(
@@ -13,9 +15,41 @@ export function removeCartItemLocalData(
 ) {
   delete byCartItemId[cartItemId];
   delete lensModes[cartItemId];
+  delete lensDisplayByCartItemId[cartItemId];
   if (productVariantId) {
     delete byVariantId[productVariantId];
+    delete lensDisplayByVariantId[productVariantId];
   }
+}
+
+export function setCartItemLensDisplay(cartItemId: string, meta: CartLensLineDisplayMeta) {
+  lensDisplayByCartItemId[cartItemId] = meta;
+}
+
+export function setLensDisplayByVariantId(productVariantId: string, meta: CartLensLineDisplayMeta) {
+  lensDisplayByVariantId[productVariantId] = meta;
+}
+
+function getLensDisplay(
+  cartItemId: string | undefined,
+  productVariantId: string | undefined,
+): CartLensLineDisplayMeta | undefined {
+  if (cartItemId && lensDisplayByCartItemId[cartItemId]) return lensDisplayByCartItemId[cartItemId];
+  if (productVariantId && lensDisplayByVariantId[productVariantId]) {
+    return lensDisplayByVariantId[productVariantId];
+  }
+  return undefined;
+}
+
+export function getCartItemLensDisplays(
+  items: Array<{ id: string; productVariantId: string }>,
+): Record<string, CartLensLineDisplayMeta> {
+  const out: Record<string, CartLensLineDisplayMeta> = {};
+  items.forEach((item) => {
+    const meta = getLensDisplay(item.id, item.productVariantId);
+    if (meta) out[item.id] = meta;
+  });
+  return out;
 }
 
 export function setCartItemLensMode(cartItemId: string, mode: CartLensMode) {
