@@ -312,7 +312,7 @@ export function OperationsTicketDetailExpanded({
                             {item.lensVariantName && (
                               <Box sx={{ display: "grid", gridTemplateColumns: "120px 1fr", gap: 1, mt: 1 }}>
                                 <Typography sx={{ fontSize: 12, color: "#8A8A8A", fontWeight: 600 }}>Lens:</Typography>
-                                <Typography sx={{ fontSize: 12, color: "#171717" }}>{item.lensVariantName} (${item.lensUnitPrice?.toFixed(2)})</Typography>
+                                <Typography sx={{ fontSize: 12, color: "#171717" }}>{item.lensVariantName} (${item.lensUnitPrice?.toFixed(2) ?? "0.00"})</Typography>
                               </Box>
                             )}
                             {item.coatingExtraPrice && item.coatingExtraPrice > 0 && (
