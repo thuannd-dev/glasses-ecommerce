@@ -193,6 +193,9 @@ const PromotionsScreen = lazy(
 const PreOrderSummaryScreen = lazy(
   () => import("../../features/Manager/screens/PreOrderSummaryScreen"),
 );
+const LensManagementScreen = lazy(
+  () => import("../../features/Manager/screens/LensManagementScreen"),
+);
 
 function lazyElement(element: ReactElement): ReactElement {
   return <Suspense fallback={<RouteLoadingFallback />}>{element}</Suspense>;
@@ -337,6 +340,10 @@ export const router = createBrowserRouter([
               {
                 path: "preorder-summary",
                 element: lazyElement(<PreOrderSummaryScreen />),
+              },
+              {
+                path: "lens-management",
+                element: lazyElement(<LensManagementScreen />),
               },
             ],
           },

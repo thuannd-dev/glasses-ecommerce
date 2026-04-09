@@ -4,6 +4,7 @@ export { default as InventoryTransactionsScreen } from "./InventoryTransactionsS
 export { default as ManagerProductsScreen } from "./ManagerProductsScreen";
 export { default as ManagerProductDetailScreen } from "./ManagerProductDetailScreen";
 export { default as ManagerProductCreateWizardScreen } from "./ManagerProductCreateWizardScreen";
+export { default as LensManagementScreen } from "./LensManagementScreen";
 export { default as RevenueReportScreen } from "./RevenueReportScreen";
 export { default as PromotionsScreen } from "./PromotionsScreen";
 export { default as PreOrderSummaryScreen } from "./PreOrderSummaryScreen";

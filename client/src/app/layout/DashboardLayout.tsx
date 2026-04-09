@@ -51,6 +51,7 @@ const SALES_SUB_LINKS: { path: string; label: string; icon: React.ReactNode }[] 
 const MANAGER_SUB_LINKS: { path: string; label: string; icon: React.ReactNode }[] = [
   { path: "/manager", label: "Dashboard", icon: <DashboardOutlined /> },
   { path: "/manager/products", label: "Products", icon: <StorefrontOutlined /> },
+  { path: "/manager/lens-management", label: "Lens Management", icon: <VisibilityOutlined /> },
   { path: "/manager/inbound", label: "Inbound", icon: <MoveToInboxOutlined /> },
   { path: "/manager/promotions", label: "Promotions", icon: <LocalOfferOutlined /> },
   { path: "/manager/preorder-summary", label: "Pre-Orders", icon: <ScheduleOutlined /> },
