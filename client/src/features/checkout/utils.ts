@@ -20,7 +20,7 @@ export function isValidVietnamPhone(phone: string): boolean {
 /**
  * Convert frontend PrescriptionData to API PrescriptionInputDto.
  * - Frontend: eye 1 = OD (Right), 2 = OS (Left). API: Eye 1 = Left, 2 = Right.
- * - Backend requires CYL in [-6, 0] (negative cylinder). If user entered positive CYL, convert to minus cylinder.
+ * - Backend requires CYL in [-6, +6].
  */
 export function toPrescriptionInputDto(data: PrescriptionData): PrescriptionInputDto {
   const round2 = (n: number | null | undefined) =>
@@ -29,21 +29,9 @@ export function toPrescriptionInputDto(data: PrescriptionData): PrescriptionInpu
   return {
     ImageUrl: data.imageUrl?.trim() ? data.imageUrl.trim() : undefined,
     Details: data.details.map((d) => {
-      let sph: number | null = round2(d.sph) ?? null;
-      let cyl: number | null = round2(d.cyl) ?? null;
-      let axis: number | null = d.axis != null ? Math.round(d.axis) : null;
-
-      // Backend requires CYL between -6 and 0. Convert positive cylinder to negative.
-      if (cyl != null && cyl > 0) {
-        sph = sph != null ? round2(sph + cyl) : null;
-        cyl = round2(-cyl);
-        axis = axis != null ? ((axis + 90) % 180) || 180 : null;
-      }
-      // Clamp CYL to valid range in case of drift or old data
-      if (cyl != null && (cyl < -6 || cyl > 0)) {
-        cyl = Math.max(-6, Math.min(0, cyl));
-        cyl = round2(cyl);
-      }
+      const sph: number | null = round2(d.sph) ?? null;
+      const cyl: number | null = round2(d.cyl) ?? null;
+      const axis: number | null = d.axis != null ? Math.round(d.axis) : null;
 
       return {
         Eye: (d.eye === 1 ? 2 : 1) as 1 | 2,

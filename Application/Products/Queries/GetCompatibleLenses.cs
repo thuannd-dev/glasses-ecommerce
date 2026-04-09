@@ -80,7 +80,7 @@ public sealed class GetCompatibleLenses
                                     // SPH — variant range must cover both eyes' values
                                     (!rxSphLow.HasValue  || pv.LensVariantAttribute!.SphMin <= rxSphLow.Value)
                                  && (!rxSphHigh.HasValue || pv.LensVariantAttribute!.SphMax >= rxSphHigh.Value)
-                                    // CYL — variant range must cover both eyes' values (all ≤ 0)
+                                    // CYL — variant range must cover both eyes' values
                                  && (!rxCylLow.HasValue  || pv.LensVariantAttribute!.CylMin <= rxCylLow.Value)
                                  && (!rxCylHigh.HasValue || pv.LensVariantAttribute!.CylMax >= rxCylHigh.Value)
                                ))

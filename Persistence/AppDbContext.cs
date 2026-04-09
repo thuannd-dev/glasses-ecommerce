@@ -1031,7 +1031,7 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
 
                 t.HasCheckConstraint(
                     "CK_PrescriptionDetail_CYL",
-                    "[CYL] IS NULL OR ([CYL] BETWEEN -6.00 AND 0.00)"
+                    "[CYL] IS NULL OR ([CYL] BETWEEN -6.00 AND 6.00)"
                 );
 
                 t.HasCheckConstraint(
@@ -1529,10 +1529,6 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<User, Id
             // Constraints (enforce ophthalmic domain rules)
             entity.ToTable(t =>
             {
-                t.HasCheckConstraint(
-                    "CK_LensVariantAttribute_CylNegative",
-                    "[CylMin] <= 0 AND [CylMax] <= 0"
-                );
                 t.HasCheckConstraint(
                     "CK_LensVariantAttribute_AxisRange",
                     "[AxisMin] >= 0 AND [AxisMax] <= 180 AND [AxisMin] <= [AxisMax]"
