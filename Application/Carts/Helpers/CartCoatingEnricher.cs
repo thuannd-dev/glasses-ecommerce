@@ -21,7 +21,7 @@ internal static class CartCoatingEnricher
         CancellationToken cancellationToken)
     {
         // ── 1. Build item → coating-id-list map ───────────────────────────────
-        var itemCoatingMap = new Dictionary<CartItemDto, List<Guid>>();
+        Dictionary<CartItemDto, List<Guid>> itemCoatingMap = [];
 
         foreach (CartItemDto item in items)
             itemCoatingMap[item] = [];
@@ -38,7 +38,7 @@ internal static class CartCoatingEnricher
             .ToDictionaryAsync(x => x.Id, x => x.SelectedCoatingIdsJson, cancellationToken);
 
         // ── 3. Parse JSON and collect unique coating IDs ──────────────────────
-        var allCoatingIds = new HashSet<Guid>();
+        HashSet<Guid> allCoatingIds = [];
 
         foreach (CartItemDto item in itemCoatingMap.Keys)
         {
