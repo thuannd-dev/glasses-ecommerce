@@ -71,7 +71,7 @@ internal static class CartCoatingEnricher
                 Id          = c.Id,
                 CoatingName = c.CoatingName,
                 Description = c.Description,
-                ExtraPrice  = c.ExtraPrice,
+                CurrentExtraPrice  = c.ExtraPrice,
             })
             .ToDictionaryAsync(c => c.Id, cancellationToken);
 

@@ -5,5 +5,10 @@ public sealed class CartItemCoatingDto
     public Guid   Id          { get; set; }
     public string CoatingName { get; set; } = null!;
     public string? Description { get; set; }
-    public decimal ExtraPrice  { get; set; }
+
+    /// <summary>
+    /// Giá mới nhất của coating. Có thể khác với CoatingExtraPrice 
+    /// (giá được chốt tại thời điểm đưa vào giỏ hàng).
+    /// </summary>
+    public decimal CurrentExtraPrice  { get; set; }
 }
