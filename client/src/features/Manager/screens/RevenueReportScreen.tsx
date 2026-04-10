@@ -238,7 +238,7 @@ export default function RevenueReportScreen() {
                   {formatCurrency(report.netRevenue)}
                 </Typography>
                 <Typography fontSize={12} color="text.secondary" mt={0.5}>
-                  After discounts & refs
+                  After discounts & refunds
                 </Typography>
               </Paper>
             </Grid>

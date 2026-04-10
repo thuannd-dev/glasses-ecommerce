@@ -291,7 +291,7 @@ export default function ManagerDashboard() {
         { Metric: "Cancelled Orders", Value: revenue.cancelledOrders },
         { Metric: "Total Revenue", Value: revenue.totalRevenue },
         { Metric: "Total Discount", Value: revenue.totalDiscount },
-        { Metric: "Total Refund", Value: revenue.totalRefund },
+        { Metric: "Total Refunds", Value: revenue.totalRefund },
         { Metric: "Net Revenue", Value: revenue.netRevenue },
       ];
       XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(revData), "Revenue");
