@@ -51,7 +51,7 @@ public sealed class UpdateProduct
             if (dto.Status.HasValue)
                 product.Status = dto.Status.Value;
 
-            bool success = await context.SaveChangesAsync(ct) > 0;
+            bool success = !context.ChangeTracker.HasChanges() || await context.SaveChangesAsync(ct) > 0;
 
             // success = false is acceptable when no fields actually changed
             if (!success && context.Entry(product).State == EntityState.Unchanged)

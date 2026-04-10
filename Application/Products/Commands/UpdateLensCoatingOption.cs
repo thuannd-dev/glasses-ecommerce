@@ -44,7 +44,7 @@ public sealed class UpdateLensCoatingOption
             if (dto.IsActive.HasValue)
                 coating.IsActive = dto.IsActive.Value;
 
-            bool success = await context.SaveChangesAsync(ct) > 0;
+            bool success = !context.ChangeTracker.HasChanges() || await context.SaveChangesAsync(ct) > 0;
             if (!success)
                 return Result<LensCoatingOptionDto>.Failure("Failed to update coating option.", 500);
 

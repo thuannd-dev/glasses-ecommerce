@@ -79,7 +79,7 @@ public sealed class UpdateCartItem
                 cartItem.Cart.UpdatedAt = DateTime.UtcNow;
             }
 
-            bool success = await context.SaveChangesAsync(cancellationToken) > 0;
+            bool success = !context.ChangeTracker.HasChanges() || await context.SaveChangesAsync(cancellationToken) > 0;
 
             if (!success && cartItem.Quantity != request.UpdateCartItemDto.Quantity)
             {

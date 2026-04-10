@@ -35,7 +35,7 @@ public sealed class SetVariantPreOrder
 
             variant.IsPreOrder = request.IsPreOrder;
 
-            bool success = await context.SaveChangesAsync(ct) > 0;
+            bool success = !context.ChangeTracker.HasChanges() || await context.SaveChangesAsync(ct) > 0;
 
             if (!success)
                 return Result<Unit>.Failure("Failed to update variant pre-order status.", 500);

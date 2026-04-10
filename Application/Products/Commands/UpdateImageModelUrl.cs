@@ -35,7 +35,7 @@ public sealed class UpdateImageModelUrl
             if (!context.ChangeTracker.HasChanges())
                 return Result<Unit>.Success(Unit.Value);
 
-            bool success = await context.SaveChangesAsync(ct) > 0;
+            bool success = !context.ChangeTracker.HasChanges() || await context.SaveChangesAsync(ct) > 0;
 
             if (!success)
                 return Result<Unit>.Failure("Failed to update image model URL.", 500);
