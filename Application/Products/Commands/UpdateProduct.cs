@@ -53,10 +53,6 @@ public sealed class UpdateProduct
 
             bool success = !context.ChangeTracker.HasChanges() || await context.SaveChangesAsync(ct) > 0;
 
-            // success = false is acceptable when no fields actually changed
-            if (!success && context.Entry(product).State == EntityState.Unchanged)
-                return Result<Unit>.Success(Unit.Value);
-
             if (!success)
                 return Result<Unit>.Failure("Failed to update product.", 500);
 
