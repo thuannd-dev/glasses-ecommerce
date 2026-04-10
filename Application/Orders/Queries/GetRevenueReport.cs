@@ -41,8 +41,7 @@ public sealed class GetRevenueReport
                     OrderCount = g.Count(),
                     CompletedCount = g.Count(o =>
                         o.OrderStatus == OrderStatus.Delivered ||
-                        o.OrderStatus == OrderStatus.Completed ||
-                        o.OrderStatus == OrderStatus.Refunded),
+                        o.OrderStatus == OrderStatus.Completed),
                     CancelledCount = g.Count(o => o.OrderStatus == OrderStatus.Cancelled),
                     Revenue = g.Where(o =>
                             o.OrderStatus == OrderStatus.Delivered ||
@@ -57,10 +56,7 @@ public sealed class GetRevenueReport
                         .SelectMany(o => o.PromoUsageLogs)
                         .Select(p => (decimal?)p.DiscountApplied)
                         .Sum() ?? 0m,
-                    RefundAmount = g.Where(o =>
-                            o.OrderStatus == OrderStatus.Delivered ||
-                            o.OrderStatus == OrderStatus.Completed ||
-                            o.OrderStatus == OrderStatus.Refunded)
+                    RefundAmount = g
                         .SelectMany(o => o.Payments)
                         .SelectMany(p => p.Refunds)
                         .Where(r => r.RefundStatus == RefundStatus.Completed)

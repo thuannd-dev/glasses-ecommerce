@@ -19,6 +19,7 @@ import {
 } from "@mui/material";
 import { toast } from "react-toastify";
 import type { RevenueReportDto } from "../../../lib/types/inventory";
+import agent from "../../../lib/api/agent";
 
 const SOURCE_OPTIONS = [
   { value: "", label: "All Sources" },
@@ -62,11 +63,17 @@ export default function RevenueReportScreen() {
   const loadReport = async () => {
     setLoading(true);
     try {
-      // TODO: Implement revenue report API integration
-      toast.info("Revenue report feature coming soon");
-      setReport(null);
+      const response = await agent.get<RevenueReportDto>("/manager/reports/revenue", {
+        params: {
+          source: sourceFilter || undefined,
+          fromDate,
+          toDate,
+        },
+      });
+      setReport(response.data);
     } catch {
       toast.error("Failed to load revenue report");
+      setReport(null);
     } finally {
       setLoading(false);
     }

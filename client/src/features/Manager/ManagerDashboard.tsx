@@ -469,7 +469,7 @@ export default function ManagerDashboard() {
                     {formatCurrency(revenue.netRevenue)}
                   </div>
                   <div className="text-xs text-emerald-600 font-medium truncate">
-                    After {formatCurrency(revenue.totalDiscount)} discounts & {formatCurrency(revenue.totalRefund)} refunds
+                    After {formatCurrency(revenue.totalDiscount)} discounts
                   </div>
                 </div>
               </div>
