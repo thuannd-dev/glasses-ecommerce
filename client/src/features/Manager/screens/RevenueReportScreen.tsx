@@ -518,7 +518,7 @@ export default function RevenueReportScreen() {
                     </TableRow>
                   ) : (
                     <>
-                      {report.bySource.map((row: any) => (
+                      {report.bySource.map((row) => (
                         <TableRow
                           key={row.source}
                           hover

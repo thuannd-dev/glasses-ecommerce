@@ -90,5 +90,8 @@ export interface RevenueReportDto {
     source: string;
     revenue: number;
     orderCount: number;
+    discount: number;
+    totalRefund: number;
+    netRevenue: number;
   }>;
 }
