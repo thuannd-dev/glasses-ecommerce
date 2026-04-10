@@ -15,6 +15,7 @@ public sealed class RevenueReportDto
 
     public decimal TotalRevenue { get; set; }
     public decimal TotalDiscount { get; set; }
+    public decimal TotalRefund { get; set; }
     public decimal NetRevenue { get; set; }
 
     public List<RevenueBySourceDto> BySource { get; set; } = [];

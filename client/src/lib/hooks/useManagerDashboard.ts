@@ -7,6 +7,7 @@ export interface RevenueBySource {
   orderCount: number;
   revenue: number;
   discount: number;
+  totalRefund: number;
   netRevenue: number;
 }
 
@@ -19,6 +20,7 @@ export interface RevenueSummary {
   cancelledOrders: number;
   totalRevenue: number;
   totalDiscount: number;
+  totalRefund: number;
   netRevenue: number;
   bySource: RevenueBySource[];
 }

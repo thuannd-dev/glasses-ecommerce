@@ -19,6 +19,7 @@ import {
 } from "@mui/material";
 import { toast } from "react-toastify";
 import type { RevenueReportDto } from "../../../lib/types/inventory";
+import agent from "../../../lib/api/agent";
 
 const SOURCE_OPTIONS = [
   { value: "", label: "All Sources" },
@@ -62,11 +63,17 @@ export default function RevenueReportScreen() {
   const loadReport = async () => {
     setLoading(true);
     try {
-      // TODO: Implement revenue report API integration
-      toast.info("Revenue report feature coming soon");
-      setReport(null);
+      const response = await agent.get<RevenueReportDto>("/manager/reports/revenue", {
+        params: {
+          source: sourceFilter || undefined,
+          fromDate,
+          toDate,
+        },
+      });
+      setReport(response.data);
     } catch {
       toast.error("Failed to load revenue report");
+      setReport(null);
     } finally {
       setLoading(false);
     }
@@ -216,7 +223,7 @@ export default function RevenueReportScreen() {
           {/* KPI Cards */}
           <Grid container spacing={3} sx={{ mb: 4 }}>
             {/* Net Revenue */}
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid item xs={12} sm={6} md={2.4}>
               <Paper
                 elevation={0}
                 sx={{
@@ -238,13 +245,13 @@ export default function RevenueReportScreen() {
                   {formatCurrency(report.netRevenue)}
                 </Typography>
                 <Typography fontSize={12} color="text.secondary" mt={0.5}>
-                  After discounts applied
+                  After discounts & refunds
                 </Typography>
               </Paper>
             </Grid>
 
             {/* Total Revenue */}
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid item xs={12} sm={6} md={2.4}>
               <Paper
                 elevation={0}
                 sx={{
@@ -272,7 +279,7 @@ export default function RevenueReportScreen() {
             </Grid>
 
             {/* Total Discount */}
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid item xs={12} sm={6} md={2.4}>
               <Paper
                 elevation={0}
                 sx={{
@@ -299,8 +306,36 @@ export default function RevenueReportScreen() {
               </Paper>
             </Grid>
 
+            {/* Total Refund */}
+            <Grid item xs={12} sm={6} md={2.4}>
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 3,
+                  borderRadius: 2,
+                  bgcolor: "#ffffff",
+                  border: "1px solid rgba(0,0,0,0.08)",
+                }}
+              >
+                <Typography fontSize={12} color="text.secondary" fontWeight={600}>
+                  Total Refunds
+                </Typography>
+                <Typography
+                  fontSize={28}
+                  fontWeight={900}
+                  mt={1}
+                  color="#d32f2f"
+                >
+                  {formatCurrency(report.totalRefund)}
+                </Typography>
+                <Typography fontSize={12} color="text.secondary" mt={0.5}>
+                  After-sales returns
+                </Typography>
+              </Paper>
+            </Grid>
+
             {/* Total Orders */}
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid item xs={12} sm={6} md={2.4}>
               <Paper
                 elevation={0}
                 sx={{
@@ -469,6 +504,12 @@ export default function RevenueReportScreen() {
                       align="right"
                       sx={{ fontWeight: 700, color: "text.primary" }}
                     >
+                      Refunds
+                    </TableCell>
+                    <TableCell
+                      align="right"
+                      sx={{ fontWeight: 700, color: "text.primary" }}
+                    >
                       Net Revenue
                     </TableCell>
                   </TableRow>
@@ -476,7 +517,7 @@ export default function RevenueReportScreen() {
                 <TableBody>
                   {report.bySource.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
+                      <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
                         <Typography color="text.secondary">
                           No data available for the selected period
                         </Typography>
@@ -484,7 +525,7 @@ export default function RevenueReportScreen() {
                     </TableRow>
                   ) : (
                     <>
-                      {report.bySource.map((row: any) => (
+                      {report.bySource.map((row) => (
                         <TableRow
                           key={row.source}
                           hover
@@ -530,6 +571,11 @@ export default function RevenueReportScreen() {
                             </Typography>
                           </TableCell>
                           <TableCell align="right">
+                            <Typography color="#d32f2f" fontWeight={600}>
+                              -{formatCurrency(row.totalRefund)}
+                            </Typography>
+                          </TableCell>
+                          <TableCell align="right">
                             <Typography color="#2e7d32" fontWeight={700}>
                               {formatCurrency(row.netRevenue)}
                             </Typography>
@@ -563,6 +609,11 @@ export default function RevenueReportScreen() {
                         <TableCell align="right">
                           <Typography fontWeight={800} color="#e65100">
                             -{formatCurrency(report.totalDiscount)}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Typography fontWeight={800} color="#d32f2f">
+                            -{formatCurrency(report.totalRefund)}
                           </Typography>
                         </TableCell>
                         <TableCell align="right">

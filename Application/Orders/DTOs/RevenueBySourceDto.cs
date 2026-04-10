@@ -7,5 +7,6 @@ public sealed class RevenueBySourceDto
     public int OrderCount { get; set; }
     public decimal Revenue { get; set; }
     public decimal Discount { get; set; }
+    public decimal TotalRefund { get; set; }
     public decimal NetRevenue { get; set; }
 }

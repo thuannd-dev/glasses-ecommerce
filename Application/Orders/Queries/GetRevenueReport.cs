@@ -45,14 +45,22 @@ public sealed class GetRevenueReport
                     CancelledCount = g.Count(o => o.OrderStatus == OrderStatus.Cancelled),
                     Revenue = g.Where(o =>
                             o.OrderStatus == OrderStatus.Delivered ||
-                            o.OrderStatus == OrderStatus.Completed)
+                            o.OrderStatus == OrderStatus.Completed ||
+                            o.OrderStatus == OrderStatus.Refunded)
                         .Select(o => (decimal?)(o.TotalAmount + o.ShippingFee))
                         .Sum() ?? 0m,
                     Discount = g.Where(o =>
                             o.OrderStatus == OrderStatus.Delivered ||
-                            o.OrderStatus == OrderStatus.Completed)
+                            o.OrderStatus == OrderStatus.Completed ||
+                            o.OrderStatus == OrderStatus.Refunded)
                         .SelectMany(o => o.PromoUsageLogs)
                         .Select(p => (decimal?)p.DiscountApplied)
+                        .Sum() ?? 0m,
+                    RefundAmount = g
+                        .SelectMany(o => o.Payments)
+                        .SelectMany(p => p.Refunds)
+                        .Where(r => r.RefundStatus == RefundStatus.Completed)
+                        .Select(r => (decimal?)r.Amount)
                         .Sum() ?? 0m,
                 })
                 .ToListAsync(ct);
@@ -69,14 +77,16 @@ public sealed class GetRevenueReport
                 CancelledOrders = bySource.Sum(s => s.CancelledCount),
                 TotalRevenue = bySource.Sum(s => s.Revenue),
                 TotalDiscount = bySource.Sum(s => s.Discount),
-                NetRevenue = bySource.Sum(s => s.Revenue - s.Discount),
+                TotalRefund = bySource.Sum(s => s.RefundAmount),
+                NetRevenue = bySource.Sum(s => s.Revenue - s.Discount - s.RefundAmount),
                 BySource = [.. bySource.Select(s => new RevenueBySourceDto
                 {
                     Source = s.Source.ToString(),
                     OrderCount = s.OrderCount,
                     Revenue = s.Revenue,
                     Discount = s.Discount,
-                    NetRevenue = s.Revenue - s.Discount,
+                    TotalRefund = s.RefundAmount,
+                    NetRevenue = s.Revenue - s.Discount - s.RefundAmount,
                 })],
             };
 

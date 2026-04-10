@@ -78,6 +78,7 @@ export interface RevenueReportDto {
   totalRevenue: number;
   netRevenue: number;
   totalDiscount: number;
+  totalRefund: number;
   totalOrders: number;
   completedOrders: number;
   cancelledOrders: number;
@@ -89,5 +90,8 @@ export interface RevenueReportDto {
     source: string;
     revenue: number;
     orderCount: number;
+    discount: number;
+    totalRefund: number;
+    netRevenue: number;
   }>;
 }
