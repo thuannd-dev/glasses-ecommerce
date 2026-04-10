@@ -35,7 +35,7 @@ public sealed class SetFeatureToggleEnabled
             toggle.UpdatedAt = DateTime.UtcNow;
             toggle.UpdatedBy = userAccessor.GetUserId();
 
-            bool success = await context.SaveChangesAsync(ct) > 0;
+            bool success = !context.ChangeTracker.HasChanges() || await context.SaveChangesAsync(ct) > 0;
 
             if (!success)
                 return Result<FeatureToggleDto>.Failure("Failed to update feature toggle.", 500);

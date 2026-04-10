@@ -60,7 +60,7 @@ public sealed class GetProductList
                 return Result<PagedResult<ProductListDto>>
                     .Failure("Invalid pagination parameters.", 400);
 
-            IQueryable<Product> query = context.Products.AsNoTracking();
+            IQueryable<Product> query = context.Products.AsNoTracking().AsSplitQuery();
 
             // Apply filters
             if (request.CategoryIds != null && request.CategoryIds.Count > 0)

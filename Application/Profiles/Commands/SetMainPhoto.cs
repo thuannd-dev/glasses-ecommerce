@@ -26,7 +26,7 @@ public class SetMainPhoto
 
             user.ImageUrl = photo.Url;
 
-            var result = await context.SaveChangesAsync(cancellationToken) > 0;
+            var result = !context.ChangeTracker.HasChanges() || await context.SaveChangesAsync(cancellationToken) > 0;
 
             return result
                 ? Result<Unit>.Success(Unit.Value)

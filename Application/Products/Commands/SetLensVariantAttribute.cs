@@ -77,7 +77,7 @@ public sealed class SetLensVariantAttribute
                 attr.LensDesign = dto.LensDesign;
             }
 
-            bool success = await context.SaveChangesAsync(ct) > 0;
+            bool success = !context.ChangeTracker.HasChanges() || await context.SaveChangesAsync(ct) > 0;
             if (!success)
                 return Result<LensVariantAttributeDto>.Failure("Failed to save lens attributes.", 500);
 
