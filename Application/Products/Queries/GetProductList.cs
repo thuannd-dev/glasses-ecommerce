@@ -36,6 +36,13 @@ public sealed class GetProductList
         public decimal? MinPrice { get; set; }
         public decimal? MaxPrice { get; set; }
         public string? SearchTerm { get; set; }
+        
+        /// <summary>
+        /// Include Lens products in listing (for manager views).
+        /// Customers (false): Lens products are excluded unless explicitly filtering by Type=Lens
+        /// Managers (true): Lens products are included for full inventory management
+        /// </summary>
+        public bool IncludeLenses { get; set; } = false;
 
         [JsonConverter(typeof(JsonStringEnumConverter))]
         public SortByOption SortBy { get; set; } = SortByOption.CreatedAt;
@@ -70,6 +77,14 @@ public sealed class GetProductList
             // Default to Active if no status specified
             var statusFilter = request.Status ?? ProductStatus.Active;
             query = query.Where(p => p.Status == statusFilter);
+
+            // Exclude Lens products from customer-facing listings unless explicitly requested
+            // Lenses are manager-only for inventory management, customers see them only via type filter
+            // Managers can pass includeLenses=true to see all products including Lenses
+            if (!request.IncludeLenses && (!request.Type.HasValue || request.Type.Value != ProductType.Lens))
+            {
+                query = query.Where(p => p.Type != ProductType.Lens);
+            }
 
             // IMPORTANT: Ensure product has at least one active variant when needed
             // (required for price-based filtering and sorting to avoid default price edge cases)

@@ -19,7 +19,7 @@ import {
   Checkbox,
 } from "@mui/material";
 import { useState } from "react";
-import { useAdminRoles } from "../../lib/hooks/useAdminRoles";
+import { useAdminRoles, type RoleDto, type UserRoleDto } from "../../../lib/hooks/useAdminRoles";
 import { toast } from "react-toastify";
 
 export default function RoleManagement() {
@@ -29,7 +29,7 @@ export default function RoleManagement() {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
 
-  const selectedUser = users.find((u) => u.userId === selectedUserId);
+  const selectedUser = users.find((u: UserRoleDto) => u.userId === selectedUserId);
 
   const handleOpenDialog = (userId: string, currentUserRoles: string[]) => {
     setSelectedUserId(userId);
@@ -145,7 +145,7 @@ export default function RoleManagement() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {users.map((user) => (
+              {users.map((user: UserRoleDto) => (
                 <TableRow 
                   key={user.userId} 
                   hover
@@ -171,7 +171,7 @@ export default function RoleManagement() {
                   <TableCell>
                     <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
                       {user.roles.length > 0 ? (
-                        user.roles.map((role) => (
+                        user.roles.map((role: string) => (
                           <Chip
                             key={role}
                             label={role}
@@ -224,21 +224,21 @@ export default function RoleManagement() {
       >
         <DialogTitle
           sx={{
-            fontWeight: 800,
+            fontWeight: 700,
             fontSize: 18,
-            borderBottom: "2px solid",
-            borderColor: "rgba(33, 150, 243, 0.15)",
-            pb: 2.5,
-            background: "linear-gradient(135deg, rgba(33, 150, 243, 0.04) 0%, rgba(33, 150, 243, 0.02) 100%)",
+            borderBottom: "1px solid",
+            borderColor: "divider",
+            pb: 2,
           }}
         >
-          👥 Assign Roles for {selectedUser?.displayName}
+          Assign Roles for {selectedUser?.displayName}
         </DialogTitle>
-        <DialogContent sx={{ pt: 4, pb: 3 }}>
-          <Box sx={{ mb: 3 }}>
-            <Typography sx={{ fontSize: 12, color: "text.secondary", textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 700, mb: 1 }}>
-              User Info
-            </Typography>
+        <DialogContent sx={{ pt: 6, pb: 3 }}>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 3.5 }}>
+            <Box>
+              <Typography sx={{ fontSize: 12, color: "text.secondary", textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 700, mb: 1.5 }}>
+                User Info
+              </Typography>
             <Box sx={{ p: 2, bgcolor: "rgba(33, 150, 243, 0.04)", borderRadius: 1.5, border: "1px solid", borderColor: "rgba(33, 150, 243, 0.15)" }}>
               <Typography sx={{ fontSize: 13, color: "text.secondary", mb: 0.75 }}>
                 <strong>Email:</strong> {selectedUser?.email}
@@ -247,12 +247,14 @@ export default function RoleManagement() {
                 <strong>Username:</strong> {selectedUser?.userName}
               </Typography>
             </Box>
-          </Box>
-          <Typography sx={{ fontSize: 12, color: "text.secondary", textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 700, mb: 2 }}>
-            Select Roles
-          </Typography>
-          <FormGroup sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-            {roles.map((role) => (
+            </Box>
+
+            <Box>
+              <Typography sx={{ fontSize: 12, color: "text.secondary", textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 700, mb: 1.5 }}>
+                Select Roles
+              </Typography>
+              <FormGroup sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+            {roles.map((role: RoleDto) => (
               <FormControlLabel
                 key={role.id}
                 control={
@@ -279,12 +281,15 @@ export default function RoleManagement() {
                 }}
               />
             ))}
-          </FormGroup>
+              </FormGroup>
+            </Box>
+          </Box>
         </DialogContent>
-        <DialogActions sx={{ p: 2.5, borderTop: "1px solid", borderColor: "rgba(0, 0, 0, 0.08)", gap: 1.5 }}>
-          <Button 
-            onClick={handleCloseDialog} 
-            sx={{ textTransform: "none", fontWeight: 600 }}
+        <DialogActions sx={{ p: 2.5, gap: 1.5 }}>
+          <Button
+            onClick={handleCloseDialog}
+            variant="outlined"
+            sx={{ textTransform: "none", fontWeight: 700, fontSize: 15 }}
           >
             Cancel
           </Button>
@@ -292,17 +297,9 @@ export default function RoleManagement() {
             onClick={handleSaveRoles}
             variant="contained"
             disabled={isAssigning}
-            sx={{ 
-              textTransform: "none",
-              fontWeight: 700,
-              boxShadow: "0 2px 8px rgba(33, 150, 243, 0.3)",
-              transition: "all 0.2s ease",
-              "&:hover:not(:disabled)": {
-                boxShadow: "0 4px 12px rgba(33, 150, 243, 0.4)",
-              },
-            }}
+            sx={{ textTransform: "none", fontWeight: 700, fontSize: 15 }}
           >
-            {isAssigning ? "💾 Saving..." : "✓ Save Roles"}
+            {isAssigning ? "Saving..." : "Save Roles"}
           </Button>
         </DialogActions>
       </Dialog>

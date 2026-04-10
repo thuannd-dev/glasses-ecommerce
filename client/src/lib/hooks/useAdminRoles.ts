@@ -1,13 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import agent from "../../lib/api/agent";
 
-interface RoleDto {
+export interface RoleDto {
   id: string;
   name: string;
   userCount: number;
 }
 
-interface UserRoleDto {
+export interface UserRoleDto {
   userId: string;
   userName: string;
   email: string;
@@ -18,7 +18,7 @@ interface UserRoleDto {
 export const useAdminRoles = () => {
   const queryClient = useQueryClient();
 
-  const { data: roles = [], isLoading: rolesLoading } = useQuery({
+  const { data: roles = [], isLoading: rolesLoading } = useQuery<RoleDto[]>({
     queryKey: ["admin", "roles"],
     queryFn: async () => {
       const response = await agent.get<RoleDto[]>("/admin/roles");
@@ -26,7 +26,7 @@ export const useAdminRoles = () => {
     },
   });
 
-  const { data: users = [], isLoading: usersLoading } = useQuery({
+  const { data: users = [], isLoading: usersLoading } = useQuery<UserRoleDto[]>({
     queryKey: ["admin", "users"],
     queryFn: async () => {
       const response = await agent.get<UserRoleDto[]>("/admin/users");

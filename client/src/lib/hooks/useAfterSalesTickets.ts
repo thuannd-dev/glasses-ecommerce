@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import agent from "../api/agent";
-import type { AfterSalesTicketDto, AfterSalesTicketsResponse } from "../types/afterSales";
+import type { AfterSalesTicketDto, AfterSalesTicketsResponse, TicketDetailDto } from "../types/afterSales";
 
 // ---- Sales after-sales tickets (staff) ----
 
@@ -35,8 +35,8 @@ export function useAfterSalesTickets(params?: AfterSalesTicketsQueryParams) {
 
 // ---- Staff after-sales detail + actions ----
 
-async function fetchStaffAfterSalesTicketById(id: string): Promise<AfterSalesTicketDto> {
-  const res = await agent.get<AfterSalesTicketDto>(`/staff/after-sales/${id}`);
+async function fetchStaffAfterSalesTicketById(id: string): Promise<TicketDetailDto> {
+  const res = await agent.get<TicketDetailDto>(`/staff/after-sales/${id}`);
   return res.data;
 }
 

@@ -18,7 +18,7 @@ import {
     Tooltip,
     Typography,
 } from "@mui/material";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import { useAnalyzePrescriptionFromUrl } from "../../../../../lib/hooks/useAnalyzePrescriptionFromUrl";
 import { useUploadImage } from "../../../../../lib/hooks/useUploadImage";
@@ -28,6 +28,7 @@ import {
 } from "../../../../../lib/utils/mapPrescriptionOcrToFormSeed";
 
 import { LensProgressNav } from "./LensProgressNav";
+import { SavedPrescriptionsPanel } from "./SavedPrescriptionsPanel";
 import { LENS_WIZARD_STEPS } from "./lensFlowSteps";
 import {
     LENS_FLOW_ACCENT,
@@ -45,7 +46,7 @@ type Props = {
     embedConfiguratorLayout?: boolean;
 };
 
-type Panel = "menu" | "upload";
+type Panel = "menu" | "upload" | "saved";
 
 export function SingleVisionPrescriptionPanel({
     onBack,
@@ -66,9 +67,14 @@ export function SingleVisionPrescriptionPanel({
     const isUploading = uploadImage.isPending;
     const isAnalyzing = analyzePrescription.isPending;
 
-    const handleSaved = () => {
-        toast.info("Saved prescriptions are coming soon.");
+    const handleOpenSaved = () => {
+        if (!onOcrComplete) return;
+        setPanel("saved");
     };
+
+    useEffect(() => {
+        if (panel === "saved" && !onOcrComplete) setPanel("menu");
+    }, [panel, onOcrComplete]);
 
     const openFilePicker = () => fileInputRef.current?.click();
 
@@ -192,7 +198,9 @@ export function SingleVisionPrescriptionPanel({
             >
                 {panel === "menu"
                     ? "Choose how you’d like to provide your prescription."
-                    : "Upload a clear photo of your written prescription. We’ll use it to verify your lenses."}
+                    : panel === "saved"
+                      ? "Pick a saved prescription from your account. Values load from your past orders."
+                      : "Upload a clear photo of your written prescription. We’ll use it to verify your lenses."}
             </Typography>
 
             <Box sx={{ mb: page ? 3.5 : 3, width: "100%" }}>
@@ -200,7 +208,7 @@ export function SingleVisionPrescriptionPanel({
                     steps={LENS_WIZARD_STEPS}
                     currentStepIndex={1}
                     railVariant="circles"
-                    onPrevious={panel === "upload" ? () => setPanel("menu") : onBack}
+                    onPrevious={panel === "menu" ? onBack : () => setPanel("menu")}
                 />
             </Box>
 
@@ -229,14 +237,24 @@ export function SingleVisionPrescriptionPanel({
                         onClick={() => setPanel("upload")}
                         showDivider
                     />
-                    <MethodRow
-                        Icon={ManageSearchOutlinedIcon}
-                        title="Use a saved prescription"
-                        description="Select from prescriptions you have saved before."
-                        onClick={handleSaved}
-                        showDivider={false}
-                    />
+                    {onOcrComplete ? (
+                        <MethodRow
+                            Icon={ManageSearchOutlinedIcon}
+                            title="Use a saved prescription"
+                            description="Select from prescriptions you have saved before."
+                            onClick={handleOpenSaved}
+                            showDivider={false}
+                        />
+                    ) : null}
                 </Box>
+            )}
+
+            {panel === "saved" && onOcrComplete && (
+                <SavedPrescriptionsPanel
+                    onBack={() => setPanel("menu")}
+                    onPrescriptionLoaded={onOcrComplete}
+                    embedConfiguratorLayout={embedConfiguratorLayout}
+                />
             )}
 
             {panel === "upload" && (

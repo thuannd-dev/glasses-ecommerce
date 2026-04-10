@@ -145,6 +145,8 @@ export function useManagerProducts(params?: GetProductsParams) {
       if (params?.sortOrder !== undefined) {
         queryParams.append("sortOrder", SORT_ORDER_MAP[params.sortOrder] ?? params.sortOrder.toString());
       }
+      // Backend automatically includes lenses based on user role
+      // No need to explicitly pass includeLenses parameter
 
       const res = await agent.get<ProductsResponse>(
         `/products?${queryParams.toString()}`

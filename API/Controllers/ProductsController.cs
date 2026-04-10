@@ -25,6 +25,16 @@ public sealed class ProductsController : BaseApiController
         [FromQuery] GetProductList.SortByOption sortBy = GetProductList.SortByOption.CreatedAt,
         [FromQuery] GetProductList.SortOrderOption sortOrder = GetProductList.SortOrderOption.Desc)
     {
+        // Lens products visible to all authenticated roles EXCEPT Customer
+        // Only customers (anonymous or explicit "Customer" role) cannot see lenses
+        bool isCustomer = (User.Identity?.IsAuthenticated != true) || User.IsInRole("Customer");
+        
+        // Block type=Lens filter for customers and return explicit 403 for unauthorized lens requests
+        if (type == ProductType.Lens && isCustomer)
+        {
+            return Forbid();
+        }
+
         return HandleResult(await Mediator.Send(new GetProductList.Query
         {
             PageNumber = pageNumber,
@@ -37,7 +47,8 @@ public sealed class ProductsController : BaseApiController
             MaxPrice = maxPrice,
             SearchTerm = search,
             SortBy = sortBy,
-            SortOrder = sortOrder
+            SortOrder = sortOrder,
+            IncludeLenses = !isCustomer  // Show lenses for all authenticated non-customer roles
         }));
     }
 

@@ -44,6 +44,8 @@ import {
     lensEmbeddedGridSx,
 } from "./lensSelection/lensConfiguratorLayout";
 import type { PrescriptionFormOcrSeed } from "../../../../lib/utils/mapPrescriptionOcrToFormSeed";
+import { variantMatchesPrescriptionLensDesign } from "../../../../lib/utils/lensDesignRx";
+import { hasAnyPositiveAdd, isPositiveAdd } from "../../../../lib/utils/rxAdd";
 import { toast } from "react-toastify";
 import {
     useCompatibleLenses,
@@ -186,26 +188,41 @@ export function SelectLensesDialog({
     }, [details, pdSingle, pdLeft, pdRight, twoPdNumbers, rxPrescriptionImageUrl]);
 
     const handleApplyOcrFromUpload = useCallback((seed: PrescriptionFormOcrSeed) => {
-        const hasAddFromOcr = seed.details.some((d) => d.add != null);
+        const hasAddFromOcr = hasAnyPositiveAdd(seed.details);
         setDetails(seed.details.map((d) => ({ ...d })));
         setPdSingle(seed.pdSingle);
         setTwoPdNumbers(seed.twoPdNumbers);
         setPdLeft(seed.pdLeft);
         setPdRight(seed.pdRight);
         setRxPrescriptionImageUrl(seed.imageUrl);
-        const mismatch =
-            hasAddFromOcr && rxUsageLabel !== "Bifocals"
-                ? "single-to-bifocal"
-                : !hasAddFromOcr && rxUsageLabel === "Bifocals"
-                  ? "bifocal-to-single"
-                  : null;
-        setScanVisionMismatch(mismatch);
-        setScanVisionChoice("");
+        /**
+         * Saved prescriptions do not provide scan image URL. If ADD presence implies
+         * a different vision type, auto-sync the label so the form remains visible.
+         * The manual mismatch selector is only meaningful for photo-scan flow.
+         */
+        const fromScanUpload = Boolean(seed.imageUrl?.trim());
+        if (!fromScanUpload) {
+            const nextUsage = hasAddFromOcr ? "Bifocals" : "Single Vision";
+            if (nextUsage !== rxUsageLabel) {
+                setRxUsageLabel(nextUsage);
+            }
+            setScanVisionMismatch(null);
+            setScanVisionChoice("");
+        } else {
+            const mismatch =
+                hasAddFromOcr && rxUsageLabel !== "Bifocals"
+                    ? "single-to-bifocal"
+                    : !hasAddFromOcr && rxUsageLabel === "Bifocals"
+                      ? "bifocal-to-single"
+                      : null;
+            setScanVisionMismatch(mismatch);
+            setScanVisionChoice("");
+        }
         setHasEnteredPrescriptionFlow(true);
         if (seed.ocrWarnings.length > 0) {
             toast.info(seed.ocrWarnings.slice(0, 3).join(" · "));
         }
-    }, []);
+    }, [rxUsageLabel]);
 
     useEffect(() => {
         if (!open) {
@@ -291,10 +308,7 @@ export function SelectLensesDialog({
         rxQuery,
         shouldFetchCompatibleLenses
     );
-    const hasAnyAddValues = useMemo(
-        () => details.some((row) => row.add != null),
-        [details]
-    );
+    const hasAnyAddValues = useMemo(() => hasAnyPositiveAdd(details), [details]);
 
     const compatibleVariants = useMemo<
         Array<CompatibleLensVariantDto & { lensProductId: string; lensProductName: string }>
@@ -302,10 +316,9 @@ export function SelectLensesDialog({
         () =>
             (compatibleLensesQuery.data ?? []).flatMap((lens) =>
                 (lens.variants ?? [])
-                    .filter((variant) => {
-                        if (!hasAnyAddValues) return true;
-                        return (variant.lensDesign ?? "").toLowerCase() !== "singlevision";
-                    })
+                    .filter((variant) =>
+                        variantMatchesPrescriptionLensDesign(variant.lensDesign, hasAnyAddValues),
+                    )
                     .map((variant) => ({
                         ...variant,
                         lensProductId: lens.lensProductId,
@@ -1021,7 +1034,7 @@ export function SelectLensesDialog({
                                                                         select
                                                                         size="small"
                                                                         value={
-                                                                            row.add != null
+                                                                            isPositiveAdd(row.add)
                                                                                 ? row.add.toFixed(2)
                                                                                 : ""
                                                                         }
