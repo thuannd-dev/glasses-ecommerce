@@ -63,6 +63,7 @@ export default function ManagerDashboard() {
     revenue: number;
     orders: number;
     discount: number;
+    refunds: number;
   }>>([]);
   const [isLoadingMonthly, setIsLoadingMonthly] = useState(false);
 
@@ -94,6 +95,7 @@ export default function ManagerDashboard() {
             revenue: data.totalRevenue || 0,
             orders: data.totalOrders || 0,
             discount: data.totalDiscount || 0,
+            refunds: data.totalRefund || 0,
           }))
           .catch((error) => {
             if (error.name === 'AbortError') throw error;
@@ -103,6 +105,7 @@ export default function ManagerDashboard() {
               revenue: 0,
               orders: 0,
               discount: 0,
+              refunds: 0,
             };
           });
 
@@ -469,7 +472,7 @@ export default function ManagerDashboard() {
                     {formatCurrency(revenue.netRevenue)}
                   </div>
                   <div className="text-xs text-emerald-600 font-medium truncate">
-                    After {formatCurrency(revenue.totalDiscount)} discounts
+                    After {formatCurrency(revenue.totalDiscount)} discounts & {formatCurrency(revenue.totalRefund)} refunds
                   </div>
                 </div>
               </div>
@@ -904,11 +907,17 @@ function RevenueTooltip({ active, payload, label }: any) {
             <span className="text-base font-bold text-rose-400">{formatCurrency(payload[0].payload.discount)}</span>
           </div>
         )}
-        {payload[0].payload.orders != null && payload[0].payload.discount != null && (
+        {payload[0].payload.refunds != null && payload[0].payload.refunds > 0 && (
+          <div className="flex justify-between items-center gap-6">
+            <span className="text-xs text-slate-400 font-medium uppercase tracking-wider">Refunds</span>
+            <span className="text-base font-bold text-rose-500">{formatCurrency(payload[0].payload.refunds)}</span>
+          </div>
+        )}
+        {payload[0].payload.orders != null && (
           <div className="pt-2.5 mt-2.5 border-t border-slate-700">
             <div className="flex justify-between items-center gap-6">
               <span className="text-xs text-emerald-400 font-semibold uppercase tracking-wider">Net Revenue</span>
-              <span className="text-base font-bold text-emerald-300">{formatCurrency(payload[0].value - (payload[0].payload.discount || 0))}</span>
+              <span className="text-base font-bold text-emerald-300">{formatCurrency(payload[0].value - (payload[0].payload.discount || 0) - (payload[0].payload.refunds || 0))}</span>
             </div>
           </div>
         )}
