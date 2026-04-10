@@ -44,10 +44,12 @@ public sealed class DiscountCalculationService(AppDbContext context)
             return Result<decimal>.Failure("No valid items found in the order for the specified ticket.", 400);
 
         // Calculate total value of all order items (for proportional distribution)
-        decimal totalOrderValue = order.OrderItems.Sum(oi => oi.UnitPrice * oi.Quantity);
+        // Include lens and coating prices in the total value calculation
+        decimal totalOrderValue = order.OrderItems.Sum(oi => oi.Quantity * (oi.UnitPrice + oi.LensUnitPrice + oi.CoatingExtraPrice));
         
         // Calculate total value of selected ticket items
-        decimal ticketItemsValue = itemsInTicket.Sum(ti => ti.UnitPrice * ti.Quantity);
+        // Include lens and coating prices for accurate proportional distribution
+        decimal ticketItemsValue = itemsInTicket.Sum(ti => ti.Quantity * (ti.UnitPrice + ti.LensUnitPrice + ti.CoatingExtraPrice));
 
         if (totalOrderValue == 0)
             return Result<decimal>.Failure("Order has no items with value.", 400);

@@ -44,7 +44,7 @@ public sealed class GetTicketsByOrder
             if (order == null)
                 return Result<List<TicketWithItemsDto>>.Failure("Order not found.", 404);
 
-            decimal totalOrderValue = order.OrderItems.Sum(oi => oi.UnitPrice * oi.Quantity);
+            decimal totalOrderValue = order.OrderItems.Sum(oi => oi.Quantity * (oi.UnitPrice + oi.LensUnitPrice + oi.CoatingExtraPrice));
 
             List<TicketWithItemsDto> tickets = await context.AfterSalesTickets
                 .AsNoTracking()
@@ -93,8 +93,11 @@ public sealed class GetTicketsByOrder
                                 ProductName = oi.ProductVariant.Product.ProductName,
                                 Quantity = oi.Quantity,
                                 UnitPrice = oi.UnitPrice,
-                                TotalPrice = oi.Quantity * oi.UnitPrice,
+                                TotalPrice = oi.Quantity * (oi.UnitPrice + oi.LensUnitPrice + oi.CoatingExtraPrice),
                                 DiscountApplied = t.DiscountApplied,
+                                LensVariantName = oi.LensVariant != null ? oi.LensVariant.VariantName : null,
+                                LensUnitPrice = oi.LensUnitPrice,
+                                CoatingExtraPrice = oi.CoatingExtraPrice,
                                 ProductImageUrl = oi.ProductVariant.Product.Images
                                     .OrderBy(pi => pi.DisplayOrder)
                                     .Select(pi => pi.ImageUrl)
@@ -112,10 +115,13 @@ public sealed class GetTicketsByOrder
                                 ProductName = oi.ProductVariant.Product.ProductName,
                                 Quantity = oi.Quantity,
                                 UnitPrice = oi.UnitPrice,
-                                TotalPrice = oi.Quantity * oi.UnitPrice,
+                                TotalPrice = oi.Quantity * (oi.UnitPrice + oi.LensUnitPrice + oi.CoatingExtraPrice),
                                 DiscountApplied = totalOrderValue > 0
-                                    ? (oi.Quantity * oi.UnitPrice / totalOrderValue) * t.DiscountApplied
+                                    ? Math.Min((oi.Quantity * (oi.UnitPrice + oi.LensUnitPrice + oi.CoatingExtraPrice) / totalOrderValue) * t.DiscountApplied, oi.Quantity * (oi.UnitPrice + oi.LensUnitPrice + oi.CoatingExtraPrice))
                                     : 0,
+                                LensVariantName = oi.LensVariant != null ? oi.LensVariant.VariantName : null,
+                                LensUnitPrice = oi.LensUnitPrice,
+                                CoatingExtraPrice = oi.CoatingExtraPrice,
                                 ProductImageUrl = oi.ProductVariant.Product.Images
                                     .OrderBy(pi => pi.DisplayOrder)
                                     .Select(pi => pi.ImageUrl)

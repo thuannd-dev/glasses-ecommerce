@@ -25,6 +25,12 @@ public sealed class OrderItemOutputDto
     [System.Text.Json.Serialization.JsonIgnore]
     public string? CoatingsSnapshot { get; set; }
 
+    // Parsed coatings for display
+    public List<Application.Orders.DTOs.OrderItemCoatingDto> Coatings { get; set; } = [];
+
+    // Prescription fields
+    public List<Application.Orders.DTOs.PrescriptionDetailOutputDto> PrescriptionDetails { get; set; } = [];
+
     private static readonly System.Text.Json.JsonSerializerOptions _coatingJsonOptions = new()
     {
         PropertyNameCaseInsensitive = true
