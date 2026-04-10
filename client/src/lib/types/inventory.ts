@@ -78,6 +78,7 @@ export interface RevenueReportDto {
   totalRevenue: number;
   netRevenue: number;
   totalDiscount: number;
+  totalRefund: number;
   totalOrders: number;
   completedOrders: number;
   cancelledOrders: number;

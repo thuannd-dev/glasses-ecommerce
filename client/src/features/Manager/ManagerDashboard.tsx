@@ -291,6 +291,7 @@ export default function ManagerDashboard() {
         { Metric: "Cancelled Orders", Value: revenue.cancelledOrders },
         { Metric: "Total Revenue", Value: revenue.totalRevenue },
         { Metric: "Total Discount", Value: revenue.totalDiscount },
+        { Metric: "Total Refund", Value: revenue.totalRefund },
         { Metric: "Net Revenue", Value: revenue.netRevenue },
       ];
       XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(revData), "Revenue");
@@ -371,7 +372,7 @@ export default function ManagerDashboard() {
         </div>
 
         {/* ── KPI Cards ── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-4 mb-8">
           <KpiCard
             title="Total Orders"
             value={revenue ? formatNumber(revenue.totalOrders) : "…"}
@@ -405,6 +406,13 @@ export default function ManagerDashboard() {
             value={revenue ? formatCurrency(revenue.totalDiscount) : "…"}
             icon={Ticket}
             gradient="from-violet-500 to-purple-600"
+            loading={isLoading}
+          />
+          <KpiCard
+            title="Total Refunds"
+            value={revenue ? formatCurrency(revenue.totalRefund) : "…"}
+            icon={ArrowUpDown}
+            gradient="from-pink-500 to-rose-700"
             loading={isLoading}
           />
           <KpiCard
@@ -460,8 +468,8 @@ export default function ManagerDashboard() {
                   <div className="text-3xl font-extrabold text-emerald-900 mb-1">
                     {formatCurrency(revenue.netRevenue)}
                   </div>
-                  <div className="text-xs text-emerald-600 font-medium">
-                    After {formatCurrency(revenue.totalDiscount)} discounts
+                  <div className="text-xs text-emerald-600 font-medium truncate">
+                    After {formatCurrency(revenue.totalDiscount)} discounts & {formatCurrency(revenue.totalRefund)} refunds
                   </div>
                 </div>
               </div>
